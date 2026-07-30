@@ -1,0 +1,17 @@
+{
+  "model": "sonnet",
+  "enabledPlugins": {
+    "phpstorm-plugin@phpstorm-marketplace": true
+  },
+  "extraKnownMarketplaces": {
+    "phpstorm-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "jetbrains/phpstorm-claude-marketplace"
+      }
+    }
+  },
+  "effortLevel": "xhigh",
+  "advisorModel": "opus",
+  "editorMode": "normal"
+}
