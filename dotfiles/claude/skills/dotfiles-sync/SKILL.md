@@ -33,3 +33,11 @@ description: How to add, edit, or relink files in this dotfiles/setup_scripts re
    server config with per-project trust state and can carry OAuth tokens.
    Use `dotfiles/claude/mcp/setup.sh` (a script of `claude mcp add`
    commands) instead of syncing that file.
+7. To pull in a skill written elsewhere rather than writing one from
+   scratch, vendor a single narrow skill (never a hub topic that could
+   argue against a choice made here) at a pinned commit, with its license
+   file, into its own `dotfiles/claude/skills/<name>/` directory — record
+   it in `dotfiles/claude/skills/VENDORED.md` (source URL, commit, license,
+   refresh command, why that one and not its siblings). See
+   `qdrant-multitenancy` and `postgres-database-migration` there for the
+   pattern.

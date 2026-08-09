@@ -14,6 +14,7 @@
   "effortLevel": "xhigh",
   "advisorModel": "opus",
   "editorMode": "normal",
+  "autoMemoryEnabled": true,
   "hooks": {
     "PreToolUse": [
       {

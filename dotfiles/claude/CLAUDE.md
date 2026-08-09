@@ -42,3 +42,22 @@ is what makes it actionable instead of generic.
 7. **Fail loud.** Surface uncertainty, skipped steps, and unverified claims
    explicitly. Never let "I couldn't check this" read as "this works".
    *Catches: silent gaps the reader assumes were covered.*
+
+## Document set
+
+Once a project outgrows a single README, split docs by role instead of
+letting one file try to be all of them — mixing them buries rules in
+changelog and decisions in rules.
+
+| File | Holds |
+|---|---|
+| `README.md` | The system as it is now. |
+| `CLAUDE.md` (project-level) | Rules — add one only once something already cost you something, not because it's "good practice." Name the failure it catches, same as above. |
+| `docs/PATTERNS.md` | Recurring shapes in the codebase, and what's deliberately absent. |
+| `docs/TECHNICAL_DECISIONS.md` | Why a choice was made, and what was rejected. |
+| `docs/IDEAS.md` | Parking lot, plus a table of rejected candidates and why. |
+| `docs/MEMORY.md` | Session state. Read it first, update it last. |
+
+Don't apply this to a small repo that doesn't need it — six files for a
+project with one contributor and no history worth recording is the same
+mistake as one file trying to hold everything.
