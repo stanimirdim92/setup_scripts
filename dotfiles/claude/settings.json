@@ -13,5 +13,16 @@
   },
   "effortLevel": "xhigh",
   "advisorModel": "opus",
-  "editorMode": "normal"
+  "editorMode": "normal",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "$HOME/.claude/hooks/block-destructive-bash.sh" },
+          { "type": "command", "command": "$HOME/.claude/hooks/warn-force-push.sh" }
+        ]
+      }
+    ]
+  }
 }
