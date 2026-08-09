@@ -16,7 +16,7 @@ including right after `git clone` on a new machine:
 
 Synced:
 - `dotfiles/claude/CLAUDE.md` -> `~/.claude/CLAUDE.md` — global working rules (Karpathy's rules + kept extensions + the document-set convention), loaded on every session unconditionally, unlike skills below
-- `dotfiles/claude/settings.json` -> `~/.claude/settings.json` — model, plugins, `hooks` (PreToolUse safety checks), and `autoMemoryEnabled` (Claude Code's own per-project memory; its output lives under the already-excluded `~/.claude/projects/` below)
+- `dotfiles/claude/settings.json` -> `~/.claude/settings.json` — model, plugins (including `episodic-memory@superpowers-marketplace` — cross-project conversation search, see `dotfiles/claude/CLAUDE.md`'s memory section), `hooks` (PreToolUse safety checks), and `autoMemoryEnabled` (Claude Code's own per-project memory; its output lives under the already-excluded `~/.claude/projects/` below)
 - `dotfiles/claude/remote-settings.json` -> `~/.claude/remote-settings.json`
 - `dotfiles/claude/agents/` -> `~/.claude/agents/` (whole directory) — custom subagents (`infra-reviewer`, `security-reviewer`)
 - `dotfiles/claude/skills/` -> `~/.claude/skills/` (whole directory) — on-demand, per-technology skills: `php`, `mysql`, `nginx`, `redis`, `postgresql`, `python`, `fastapi`, `dotfiles-sync` (meta, for this repo's own tooling), plus two vendored skills (`qdrant-multitenancy`, `postgres-database-migration` — see `dotfiles/claude/skills/VENDORED.md` for source/license/refresh)
@@ -52,3 +52,7 @@ Deliberately **not** synced:
 - `~/.codex/skills/.system/*` — vendor-shipped system skills bundled with Codex itself,
   not user config.
 - `~/.ai/mcp/mcp.json` — currently empty (0 bytes), nothing to sync yet.
+- `~/.config/superpowers/` — the `episodic-memory` plugin's archived conversation
+  transcripts and local SQLite/vector index. Rebuilds itself from `~/.claude/projects`
+  and `~/.codex/sessions` on each machine; nothing here is worth carrying over, and
+  transcripts can hold anything that was ever pasted into a session.

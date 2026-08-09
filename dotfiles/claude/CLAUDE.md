@@ -62,21 +62,25 @@ Don't apply this to a small repo that doesn't need it — six files for a
 project with one contributor and no history worth recording is the same
 mistake as one file trying to hold everything.
 
-## Dual memory
+## Memory: three systems, not one
 
-Two memory systems exist side by side and are not interchangeable, despite
-sharing a name:
+Three memory systems exist side by side and are not interchangeable,
+despite two of them sharing a name:
 
-| | **Auto-memory** | **`docs/MEMORY.md`** |
-|---|---|---|
-| Written by | Claude, automatically | Whoever's working, deliberately |
-| Lives in | `~/.claude/projects/<project>/memory/` — local to this machine | The repo itself — committed, git-tracked |
-| Travels with | Nothing. A new machine or a `git clone` starts empty. | The repo. Every clone, every collaborator, every agent gets it. |
-| Good for | Low-stakes continuity: preferences picked up mid-session, small facts worth not re-explaining tomorrow on this machine. | Anything that must survive a clone or be visible to someone else: why the last session ended where it did, what was measured, what's mid-flight. |
+| | **Auto-memory** | **`docs/MEMORY.md`** | **Episodic memory** |
+|---|---|---|---|
+| Written by | Claude, automatically | Whoever's working, deliberately | Nobody — it indexes conversations you already had |
+| Lives in | `~/.claude/projects/<project>/memory/` — local to this machine | The repo itself — committed, git-tracked | `~/.config/superpowers/` — local SQLite + vector index, local to this machine |
+| Scope | This project, this machine | This project, every clone/collaborator | **Every** project, every Claude Code + Codex session, this machine |
+| Retrieval | Auto-loaded at session start | Read deliberately (read first, update last) | Searched on demand, semantically, when something seems worth recalling |
+| Good for | Low-stakes continuity: preferences picked up mid-session, small facts worth not re-explaining tomorrow. | Anything that must survive a clone or be visible to someone else: why the last session ended where it did, what was measured, what's mid-flight. | "Did I already solve something like this, in some other repo, months ago?" |
 
-The failure mode this prevents: treating auto-memory as if it were durable
-project state. It isn't committed, isn't shared, and isn't there on a fresh
-clone or a different machine — so anything that actually matters to the
-next session or the next person goes in `docs/MEMORY.md` explicitly, never
-left to auto-memory to carry. Rule of thumb: if losing it on a new machine
-would be a problem, it belongs in `docs/MEMORY.md`, not auto-memory.
+The failure mode this prevents: treating auto-memory or episodic memory as
+if either were durable, shareable project state. Neither is committed,
+neither survives a fresh clone or a different machine — so anything that
+actually matters to the next session or the next person goes in
+`docs/MEMORY.md` explicitly. Rule of thumb: if losing it on a new machine
+would be a problem, it belongs in `docs/MEMORY.md`; if it's "have I hit
+this before, somewhere else," reach for episodic memory (the
+`episodic-memory` plugin — ask it to search past conversations rather than
+re-deriving something you already worked out).
