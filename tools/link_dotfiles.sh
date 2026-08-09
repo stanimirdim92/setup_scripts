@@ -29,5 +29,19 @@ link() {
 link "$DOTFILES/claude/CLAUDE.md"              "$HOME/.claude/CLAUDE.md"
 link "$DOTFILES/claude/settings.json"          "$HOME/.claude/settings.json"
 link "$DOTFILES/claude/remote-settings.json"   "$HOME/.claude/remote-settings.json"
+
+# Linked as whole directories (not per-file) so new agents/skills/hooks don't
+# need a script change — see dotfiles/claude/skills/dotfiles-sync/SKILL.md.
+link "$DOTFILES/claude/agents"                 "$HOME/.claude/agents"
+link "$DOTFILES/claude/skills"                 "$HOME/.claude/skills"
+link "$DOTFILES/claude/hooks"                  "$HOME/.claude/hooks"
+
 link "$DOTFILES/codex/config.toml"             "$HOME/.codex/config.toml"
 link "$DOTFILES/codex/rules/default.rules"     "$HOME/.codex/rules/default.rules"
+
+# MCP servers are NOT symlinked: `claude mcp add` writes into ~/.claude.json,
+# which also holds per-project trust state and can carry OAuth tokens/API
+# keys. Run the setup script by hand on each machine instead:
+#   ./dotfiles/claude/mcp/setup.sh
+echo
+echo "Note: MCP servers aren't auto-linked. Run ./dotfiles/claude/mcp/setup.sh separately (once per machine, needs GITHUB_TOKEN)."
