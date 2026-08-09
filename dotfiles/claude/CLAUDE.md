@@ -56,8 +56,27 @@ changelog and decisions in rules.
 | `docs/PATTERNS.md` | Recurring shapes in the codebase, and what's deliberately absent. |
 | `docs/TECHNICAL_DECISIONS.md` | Why a choice was made, and what was rejected. |
 | `docs/IDEAS.md` | Parking lot, plus a table of rejected candidates and why. |
-| `docs/MEMORY.md` | Session state. Read it first, update it last. |
+| `docs/MEMORY.md` | Session state — the committed half of dual memory below. Read it first, update it last. |
 
 Don't apply this to a small repo that doesn't need it — six files for a
 project with one contributor and no history worth recording is the same
 mistake as one file trying to hold everything.
+
+## Dual memory
+
+Two memory systems exist side by side and are not interchangeable, despite
+sharing a name:
+
+| | **Auto-memory** | **`docs/MEMORY.md`** |
+|---|---|---|
+| Written by | Claude, automatically | Whoever's working, deliberately |
+| Lives in | `~/.claude/projects/<project>/memory/` — local to this machine | The repo itself — committed, git-tracked |
+| Travels with | Nothing. A new machine or a `git clone` starts empty. | The repo. Every clone, every collaborator, every agent gets it. |
+| Good for | Low-stakes continuity: preferences picked up mid-session, small facts worth not re-explaining tomorrow on this machine. | Anything that must survive a clone or be visible to someone else: why the last session ended where it did, what was measured, what's mid-flight. |
+
+The failure mode this prevents: treating auto-memory as if it were durable
+project state. It isn't committed, isn't shared, and isn't there on a fresh
+clone or a different machine — so anything that actually matters to the
+next session or the next person goes in `docs/MEMORY.md` explicitly, never
+left to auto-memory to carry. Rule of thumb: if losing it on a new machine
+would be a problem, it belongs in `docs/MEMORY.md`, not auto-memory.
