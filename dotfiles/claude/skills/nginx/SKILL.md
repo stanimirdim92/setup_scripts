@@ -1,13 +1,36 @@
 ---
-name: nginx-tuning
-description: House-style conventions for this repo's nginx config (nginx/nginx.conf, nginx/conf.d/*.conf) — worker/connection sizing, header policy, caching maps, upstream proxy settings. Use when adding a new vhost or changing nginx performance/security settings.
+name: nginx
+description: nginx conventions and tuning — worker/connection sizing, header policy, caching, reverse-proxy/upstream settings, TLS. Use whenever adding a vhost or changing nginx config, in this repo or any other project.
 ---
 
-# nginx conventions in this repo
+# nginx conventions
 
-These are the decisions already baked into `nginx/nginx.conf` and
-`nginx/conf.d/default.conf` — follow them rather than re-deriving from a
-generic nginx tutorial.
+General good practice, plus (marked explicitly) the specific decisions
+already baked into this repo's `nginx/nginx.conf` and
+`nginx/conf.d/default.conf` as a worked example to match against rather
+than a from-scratch tutorial.
+
+## General
+
+- Put sizing/security directives that apply to every vhost in `http{}`
+  once — `worker_connections`, `client_max_body_size`, gzip types,
+  security headers. Never re-declare a global directive per-vhost;
+  drift between vhosts is the most common nginx config bug.
+- Prefer `map{}` blocks keyed on `$sent_http_content_type` (or similar)
+  over per-`location` `add_header`/`expires` — one source of truth
+  instead of N copies that go stale independently.
+- Reverse proxy: always set `proxy_set_header Host/X-Real-IP/X-Forwarded-For/X-Forwarded-Proto`,
+  decide `proxy_buffering` deliberately (off for streaming/SSE, on for
+  everything else), and give each upstream its own named
+  `proxy_cache_path`/cache key — never share a cache zone across apps.
+- TLS: `ssl_protocols TLSv1.2 TLSv1.3` minimum, a modern cipher list,
+  `ssl_stapling on`, and more than one DNS `resolver` for redundancy if
+  the config resolves upstream hostnames dynamically.
+- Always deny dotfiles and common sensitive extensions
+  (`.bak|.conf|.sql|.env|...`) at the server level — one regex, not
+  per-location.
+
+## This repo's conventions (worked example)
 
 **Global vs. per-vhost**: sizing (`worker_connections 10000`,
 `client_max_body_size 20m`), the gzip type list, the `$expires`/`$cache_control`
