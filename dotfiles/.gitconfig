@@ -210,30 +210,5 @@
     tags = tag -l
     root = rev-parse --show-toplevel
 
-[url "git://gist.github.com/"]
-	insteadOf = gist:
-[url "git://github.com/"]
-	insteadOf = github:
-[url "git@github.com:"]
-    insteadOf = "gh:"
-    insteadOf = "git://github.com"
-    pushInsteadOf = "github:"
-    pushInsteadOf = "git://github.com/"
-    pushInsteadOf = "https://github.com/"
-[url "git@bitbucket.org:"]
-	insteadOf = bb:
-	pushInsteadOf = bitbucket:
-	pushInsteadOf = git://bitbucket.org/
-[url "git@gist.github.com:"]
-    insteadOf = "gst:"
-    pushInsteadOf = "gist:"
-    pushInsteadOf = "git://gist.github.com/"
-    pushInsteadOf = "https://gist.github.com/"
-
-[url "git@gitlab.com:"]
-	insteadOf = gl:
-	pushInsteadOf = gitlab:
-	pushInsteadOf = git://gitlab.com/
-
 [help]
     autocorrect = 1
