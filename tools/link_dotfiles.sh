@@ -35,6 +35,13 @@ link "$DOTFILES/claude/remote-settings.json"   "$HOME/.claude/remote-settings.js
 link "$DOTFILES/claude/agents"                 "$HOME/.claude/agents"
 link "$DOTFILES/claude/skills"                 "$HOME/.claude/skills"
 link "$DOTFILES/claude/hooks"                  "$HOME/.claude/hooks"
+link "$DOTFILES/claude/commands"               "$HOME/.claude/commands"
+
+# Sibling of skills/, not nested inside it: some vendored skills reference
+# shared checklists via a relative ../../references/ path (matching their
+# upstream repo's layout), which only resolves if this sits next to skills/
+# at the same ~/.claude/ level.
+link "$DOTFILES/claude/references"             "$HOME/.claude/references"
 
 link "$DOTFILES/codex/config.toml"             "$HOME/.codex/config.toml"
 link "$DOTFILES/codex/rules/default.rules"     "$HOME/.codex/rules/default.rules"
