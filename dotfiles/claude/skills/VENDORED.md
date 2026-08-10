@@ -71,11 +71,12 @@ Postgres project is otherwise doing.
 | Source | https://github.com/addyosmani/agent-skills |
 | Commit | `7676817c12a1317454ae3898a0c5c1eacf5dd3d5` |
 | License | MIT — `ADDYOSMANI_AGENT_SKILLS_LICENSE` |
-| Taken | 6 of 24 skills, 1 of 4 agents, 3 of 7 shared `references/`, plus 4 matching commands (adapted, see below) |
+| Taken | 7 of 24 skills, 1 of 4 agents, 3 of 7 shared `references/`, plus 4 matching commands (adapted, see below) |
 
 Skills: `spec-driven-development`, `planning-and-task-breakdown`,
 `test-driven-development`, `code-review-and-quality`,
-`debugging-and-error-recovery`, `git-workflow-and-versioning`.
+`debugging-and-error-recovery`, `git-workflow-and-versioning`,
+`ci-cd-and-automation`.
 Agent: `agents/code-reviewer.md`. References (sibling of `skills/`, since
 upstream skills point at them with `../../references/...`):
 `references/definition-of-done.md`, `references/security-checklist.md`,
@@ -85,7 +86,8 @@ Refresh:
 
     git clone --depth 1 https://github.com/addyosmani/agent-skills /tmp/agent-skills
     for s in spec-driven-development planning-and-task-breakdown test-driven-development \
-             code-review-and-quality debugging-and-error-recovery git-workflow-and-versioning; do
+             code-review-and-quality debugging-and-error-recovery git-workflow-and-versioning \
+             ci-cd-and-automation; do
       cp /tmp/agent-skills/skills/$s/SKILL.md dotfiles/claude/skills/$s/SKILL.md
     done
     cp /tmp/agent-skills/agents/code-reviewer.md dotfiles/claude/agents/code-reviewer.md
@@ -108,22 +110,37 @@ would silently undo them:
    run independently and report separately — the same shape, just under
    different names.
 
+**`ci-cd-and-automation` is vendored verbatim, unadapted, with one thing
+worth knowing rather than fixing:** its concrete examples (GitHub Actions
+YAML, `npm ci`/`eslint`/`tsc`/`playwright`, Vercel deploy previews) are all
+npm-ecosystem-flavored — none of this repo's actual CI (if it ever gets
+one) would look like that. Left as-is because the skill's actual content
+— Shift Left, Faster is Safer, the quality-gate pipeline shape, the
+CI-failure-feeds-back-to-the-agent loop, feature flags, staged rollouts,
+Build Cop role, the CI-optimization ordering (cache → parallelize →
+path-filter → matrix → bigger runners) — is the stack-agnostic 80% of the
+skill, same "principles transfer, syntax doesn't" situation as
+`test-driven-development`'s dropped JS reference above. Adapting every
+YAML example to Docker/GitHub-Actions-for-PHP would be rewriting the skill,
+not vendoring it.
+
 Everything else — prose mentions of skills like `security-and-hardening` or
 `browser-testing-with-devtools` that aren't vendored — is left as-is. A
 missing skill by name just means Claude can't act on that specific
 cross-reference; it's a soft miss, not a broken link, and is the same
 partial-adoption gap upstream's own README names (issue #361).
 
-**Taken, not the other 18** (`interview-me`, `security-and-hardening`,
-`ci-cd-and-automation`, etc.) — these six are the ones that fill an actual
-gap in this dotfiles repo (nothing for spec/plan/TDD/review/debug/git
-discipline at all), are fully stack-agnostic, and were explicitly requested.
-The rest are either narrower to Addy Osmani's own web/frontend focus
-(`frontend-ui-engineering`, `browser-testing-with-devtools`,
-`performance-optimization`'s Core Web Vitals framing) or redundant with
-what's already here (`security-and-hardening` overlaps this repo's
-`security-reviewer` agent). Revisit individually against actual need, same
-as the Qdrant set above — not as a block import.
+**Taken, not the other 17** (`interview-me`, `security-and-hardening`,
+`frontend-ui-engineering`, etc.) — these seven are the ones that fill an
+actual gap in this dotfiles repo (nothing for spec/plan/TDD/review/debug/
+git/CI discipline at all), are fully stack-agnostic in their principles,
+and were explicitly requested. The rest are either narrower to Addy
+Osmani's own web/frontend focus (`frontend-ui-engineering`,
+`browser-testing-with-devtools`, `performance-optimization`'s Core Web
+Vitals framing) or redundant with what's already here
+(`security-and-hardening` overlaps this repo's `security-reviewer` agent).
+Revisit individually against actual need, same as the Qdrant set above —
+not as a block import.
 
 **Commands** (`dotfiles/claude/commands/spec.md`, `plan.md`, `test.md`,
 `review.md`) are adapted, not vendored verbatim: upstream's versions invoke
