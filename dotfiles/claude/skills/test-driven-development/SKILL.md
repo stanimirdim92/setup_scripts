@@ -358,7 +358,7 @@ This separation ensures the test is written without knowledge of the fix, making
 
 ## See Also
 
-Upstream also has a JS/TS-specific testing-patterns reference (Jest, React Testing Library, Supertest, Playwright) illustrating these principles — not vendored here since this dotfiles repo has no JS/TS skill; see `dotfiles/claude/skills/VENDORED.md` if it's ever needed. The principles above transfer to any ecosystem, including the `php`/`python`/`fastapi` skills in this repo.
+Upstream also has a JS/TS-specific testing-patterns reference (Jest, React Testing Library, Supertest, Playwright) illustrating these principles — not vendored here since this dotfiles repo has no JS/TS skill. The principles above transfer to any ecosystem, including the `fastapi` skill in this repo.
 
 ## Common Rationalizations
 

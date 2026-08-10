@@ -5,8 +5,8 @@ description: FastAPI conventions — Pydantic models, dependency injection, asyn
 
 # FastAPI conventions
 
-Builds on the general `python` skill — this covers what's specific to
-FastAPI.
+Assumes general Python conventions (type hints, `ruff`, `pytest`) — this
+covers what's specific to FastAPI.
 
 ## Models & validation
 
