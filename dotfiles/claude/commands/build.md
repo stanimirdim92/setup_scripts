@@ -34,6 +34,9 @@ against the resulting diff:
 - `security-reviewer` — always
 - `infra-reviewer` — only if the diff touches `nginx/`, `database/`,
   `redis/`, `php/fpm/`, `linux/etc/`, or a Dockerfile
+- `distributed-systems-reviewer` — only if the diff touches a cross-
+  process/network/queue boundary: an RPC or HTTP call between services, a
+  queue producer/consumer, a scheduled job, or a background worker
 
 Give each reviewer only the diff. Not the plan, not each other's output —
 each axis reviews blind to the others, same reasoning as the two-axis
@@ -45,7 +48,9 @@ findings starts anchoring on them instead of forming its own.
 Report each reviewer's findings under its own heading — Correctness/
 Readability/Architecture/Security/Performance from `code-reviewer`,
 security findings from `security-reviewer`, infra findings from
-`infra-reviewer` if it ran. **Don't blend them into one ranked list.**
+`infra-reviewer` if it ran, cross-boundary reliability findings from
+`distributed-systems-reviewer` if it ran. **Don't blend them into one
+ranked list.**
 Reporting them separately is deliberate: it stops one axis's silence from
 reading as another axis's clearance, and stops a loud axis from burying a
 quiet but real finding from a different one.
@@ -58,8 +63,9 @@ quiet but real finding from a different one.
   can override explicitly; don't talk yourself into overriding it.
 - No Critical findings, some Required/Important findings → your call,
   but say what's outstanding either way.
-- Clean across all three → **GO**. The work is already committed
-  per-increment by the executor(s); there's nothing left to land.
+- Clean across every reviewer that ran → **GO**. The work is already
+  committed per-increment by the executor(s); there's nothing left to
+  land.
 
 On **NO-GO**, list exactly what has to change and hand it back — either a
 fresh `executor` dispatch scoped to just the fix, or handle it directly if
