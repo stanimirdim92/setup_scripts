@@ -58,13 +58,16 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
 - SDLC skills, most aliased by a same-named command: `spec-driven-development`
   (`/spec`), `planning-and-task-breakdown` (`/plan`), `test-driven-development`
   (`/test`), `code-review-and-quality` (`/review`),
-  `debugging-and-error-recovery`, `git-workflow-and-versioning`.
+  `debugging-and-error-recovery`, `git-workflow-and-versioning`,
+  `incremental-implementation` (`/build`, alongside `executor` below).
 - `research` — spin off a background agent to chase primary sources and
   write cited findings to a file, instead of doing the reading inline.
 - `handoff` — compact the current conversation into a document a fresh
   session picks up from; use before a long session's context runs out.
 - Subagents: `infra-reviewer`, `security-reviewer` (first-party), vendored
-  `code-reviewer` (five-axis review).
+  `code-reviewer` (five-axis review), first-party `executor` (dispatched
+  by `/build` to implement one planned task end-to-end; never invokes
+  another agent — review and the go/no-go call stay with the orchestrator).
 
 Update this list and README's together — `dotfiles-sync`'s checklist
 covers both.
