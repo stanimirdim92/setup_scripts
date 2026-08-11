@@ -71,3 +71,31 @@ On **NO-GO**, list exactly what has to change and hand it back — either a
 fresh `executor` dispatch scoped to just the fix, or handle it directly if
 it's small enough that spinning up another agent would cost more than it
 saves.
+
+## 6. Retro (only after GO)
+
+Once the work has actually landed, ask one question: **is there anything
+about how this run went that should change next time?** Don't force an
+answer — "nothing" is a complete answer, same as `code-review-and-quality`
+never manufacturing a finding to justify the review.
+
+If the answer names something, sort it before recording it:
+
+- **About `/build` itself, `executor`, or the review fan-out** — a real
+  process gap (wrong dispatch order, a reviewer that should've run and
+  didn't, a step that should exist and doesn't). This belongs in the
+  dotfiles repo (`stanimirdim92/setup_scripts`), not in whatever project
+  you were just working in — state the exact change and which file it
+  belongs in (usually `dotfiles/claude/commands/build.md` or
+  `dotfiles/claude/agents/executor.md`), and apply it directly if this
+  session already has that repo open; otherwise hand the user the
+  specific edit to carry over.
+- **About this project specifically** — a convention, a gotcha, a "why we
+  do it this way" that the next session here needs and wouldn't otherwise
+  know. This belongs in *this* project's `docs/MEMORY.md`, per
+  `CLAUDE.md`'s memory section — read it first, update it last, and don't
+  let it silently rot into auto-memory instead where the next machine
+  won't see it.
+
+One or the other, not both by default — a retro finding is usually about
+the process or about this codebase, rarely genuinely both at once.
