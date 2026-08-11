@@ -59,6 +59,10 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
   (`/spec`), `planning-and-task-breakdown` (`/plan`), `test-driven-development`
   (`/test`), `code-review-and-quality` (`/review`),
   `debugging-and-error-recovery`, `git-workflow-and-versioning`.
+- `research` — spin off a background agent to chase primary sources and
+  write cited findings to a file, instead of doing the reading inline.
+- `handoff` — compact the current conversation into a document a fresh
+  session picks up from; use before a long session's context runs out.
 - Subagents: `infra-reviewer`, `security-reviewer` (first-party), vendored
   `code-reviewer` (five-axis review).
 
