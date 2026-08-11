@@ -1,46 +1,4 @@
 {
-  "model": "sonnet",
-  "enabledPlugins": {
-    "phpstorm-plugin@phpstorm-marketplace": true,
-    "episodic-memory@superpowers-marketplace": true,
-    "commit-commands@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "feature-dev@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "code-simplifier@claude-plugins-official": true,
-    "playwright@claude-plugins-official": true
-  },
-  "extraKnownMarketplaces": {
-    "phpstorm-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "jetbrains/phpstorm-claude-marketplace"
-      }
-    },
-    "superpowers-marketplace": {
-      "source": {
-        "source": "github",
-        "repo": "obra/superpowers-marketplace"
-      }
-    }
-  },
-  "effortLevel": "xhigh",
-  "advisorModel": "opus",
-  "editorMode": "normal",
-  "autoMemoryEnabled": true,
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "$HOME/.claude/hooks/block-destructive-bash.sh" },
-          { "type": "command", "command": "$HOME/.claude/hooks/warn-force-push.sh" }
-        ]
-      }
-    ]
-  },
   "env": {
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "400000",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
@@ -138,5 +96,55 @@
       "Read(~/.docker/config.json)"
     ],
     "enableAllProjectMcpServers": true
-  }
+  },
+  "model": "sonnet",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/block-destructive-bash.sh"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/warn-force-push.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "phpstorm-plugin@phpstorm-marketplace": true,
+    "episodic-memory@superpowers-marketplace": true,
+    "commit-commands@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "context7@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "playwright@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "phpstorm-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "jetbrains/phpstorm-claude-marketplace"
+      }
+    },
+    "superpowers-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers-marketplace"
+      }
+    }
+  },
+  "effortLevel": "high",
+  "advisorModel": "opus",
+  "autoMemoryEnabled": true,
+  "editorMode": "normal",
+  "agentPushNotifEnabled": true,
+  "inputNeededNotifEnabled": true
 }

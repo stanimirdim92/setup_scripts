@@ -43,53 +43,27 @@ is what makes it actionable instead of generic.
    explicitly. Never let "I couldn't check this" read as "this works".
    *Catches: silent gaps the reader assumes were covered.*
 
-## Document set
-
-Once a project outgrows a single README, split docs by role instead of
-letting one file try to be all of them — mixing them buries rules in
-changelog and decisions in rules.
-
-| File | Holds |
-|---|---|
-| `README.md` | The system as it is now. |
-| `CLAUDE.md` (project-level) | Rules — add one only once something already cost you something, not because it's "good practice." Name the failure it catches, same as above. |
-| `docs/PATTERNS.md` | Recurring shapes in the codebase, and what's deliberately absent. |
-| `docs/TECHNICAL_DECISIONS.md` | Why a choice was made, and what was rejected. |
-| `docs/IDEAS.md` | Parking lot, plus a table of rejected candidates and why. |
-| `docs/MEMORY.md` | Session state — the committed half of dual memory below. Read it first, update it last. |
-
 Don't apply this to a small repo that doesn't need it — six files for a
 project with one contributor and no history worth recording is the same
 mistake as one file trying to hold everything.
 
-## Patterns
+## Skills this machine ships
 
-`docs/PATTERNS.md` explains the recurring *shapes* in the code — not why a
-technology was chosen (that's `docs/TECHNICAL_DECISIONS.md` below), but why
-the code is arranged the way it is underneath any single decision.
-`CLAUDE.md` stays the short imperative rule list; this file is the longer
-prose explaining the shapes those rules protect.
+Skills/agents/commands symlinked from the `setup_scripts` dotfiles repo —
+its README.md has the authoritative list. Excludes marketplace-plugin
+skills (`superpowers`, `feature-dev`, etc.), which version independently.
 
-- Each entry: the shape, the file that demonstrates it, and **the failure
-  it exists to prevent** — the same discipline as the numbered rules
-  above. A pattern justified only by "it's good practice" gets dropped the
-  first time it's inconvenient; a pattern whose failure mode is named
-  survives review.
-- Add a **Costs:** line wherever the pattern has a real one. Naming only
-  the benefit is how a pattern gets applied somewhere its cost isn't worth
-  paying, then gets blamed for the outcome instead of the misapplication.
-- Number entries for stable cross-referencing. When a new pattern belongs
-  next to an existing one, insert it with a letter suffix (`15b`) instead
-  of renumbering the file — renumbering churns every cross-reference
-  elsewhere for no actual content change.
-- When a pattern replaces an earlier one, say so and say why, rather than
-  quietly deleting the old text. The reversal is exactly the part worth a
-  future reader not re-discovering the hard way.
-- Close with a **"Deliberately absent"** table: things pointedly *not*
-  done, and why — aimed at exactly the abstractions a reviewer is likely
-  to "fix" back in on sight (a repository layer, a DI container, a retry
-  wrapper around an SDK that already retries). Naming an absence is as
-  useful as naming a pattern.
+- `dotfiles-sync` (meta) — add/edit/relink a file in that repo.
+- `fastapi` — FastAPI conventions.
+- SDLC skills, most aliased by a same-named command: `spec-driven-development`
+  (`/spec`), `planning-and-task-breakdown` (`/plan`), `test-driven-development`
+  (`/test`), `code-review-and-quality` (`/review`),
+  `debugging-and-error-recovery`, `git-workflow-and-versioning`.
+- Subagents: `infra-reviewer`, `security-reviewer` (first-party), vendored
+  `code-reviewer` (five-axis review).
+
+Update this list and README's together — `dotfiles-sync`'s checklist
+covers both.
 
 ## Ideas vs. decisions
 
