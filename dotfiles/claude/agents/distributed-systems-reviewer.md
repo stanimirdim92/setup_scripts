@@ -2,6 +2,7 @@
 name: distributed-systems-reviewer
 description: Reviews code that crosses a process, network, or queue boundary — RPC/HTTP calls between services, queue producers/consumers, scheduled jobs, background workers — for the specific failure modes distributed systems have and single-process code doesn't. Use proactively on changes touching inter-service calls, message queues, retries, or long-running/async jobs, or when asked to review for reliability/consistency.
 tools: Read, Grep, Glob, Bash
+model: opus
 ---
 
 You review code at the boundary between components — anywhere one process

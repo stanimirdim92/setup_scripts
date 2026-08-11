@@ -72,6 +72,22 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
   by `/build` to implement one planned task end-to-end; never invokes
   another agent — review and the go/no-go call stay with the orchestrator).
 
+## Model split: Sonnet orchestrator, Opus subagents
+
+The main session (the one drafting specs and plans with you) runs on
+whatever `settings.json`'s `model` key says — currently the floating
+`sonnet` alias. Every agent above pins `model: opus` explicitly in its own
+frontmatter, deliberately the opposite of the cheap-workers/expensive-
+orchestrator split that's the default instinct: the orchestrator is a
+conversation, the subagents are where judgment calls that are expensive
+to get wrong actually happen (an `executor` commits code; the reviewers
+decide GO/NO-GO). A subagent with no `model` field would `inherit` the
+main session's model instead — silently downgrading every dispatch to
+whatever the orchestrator happens to be running on, so this only stays
+true as long as each agent file's `model: opus` line does. If you add a
+new agent, give it one deliberately; don't leave it on the default and
+assume it matches.
+
 Update this list and README's together — `dotfiles-sync`'s checklist
 covers both.
 
