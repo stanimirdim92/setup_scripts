@@ -64,6 +64,11 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
   write cited findings to a file, instead of doing the reading inline.
 - `handoff` — compact the current conversation into a document a fresh
   session picks up from; use before a long session's context runs out.
+- `caveman` — terse chat-only response mode (drops articles/filler/
+  hedging, keeps every technical detail exact). `/caveman [lite|full|
+  ultra|wenyan-*|off]`. Never touches what actually gets written —
+  code, commits, docs, and third-party messages stay normal prose
+  regardless of mode; see its own SKILL.md's Boundaries section.
 - Subagents: `infra-reviewer`, `security-reviewer`,
   `distributed-systems-reviewer` (timeouts, idempotent retries, backoff,
   circuit breakers, backpressure, checkpointing — for anything crossing a
