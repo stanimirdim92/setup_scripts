@@ -25,6 +25,14 @@ echo "==> Filesystem MCP server (user scope, all projects)"
 claude mcp add --transport stdio filesystem --scope user \
   -- npx -y @modelcontextprotocol/server-filesystem "$HOME"
 
+echo "==> Atlassian (Jira/Confluence) MCP server (user scope, all projects)"
+# Official Atlassian remote MCP server (Cloud-only) — also covers
+# Confluence, Jira Service Management, Bitbucket, and Compass under the
+# same endpoint. OAuth 2.1, so no token env var here: after this runs,
+# start a Claude Code session and run `/mcp` to authenticate interactively.
+claude mcp add --transport http jira https://mcp.atlassian.com/v1/mcp/authv2 \
+  --scope user
+
 echo "==> Context7 docs MCP server (user scope, all projects)"
 # Works without a key at low rate limits; set CONTEXT7_API_KEY for a higher
 # limit (free key at https://context7.com/dashboard).

@@ -89,17 +89,22 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
 
 The main session (the one drafting specs and plans with you) runs on
 whatever `settings.json`'s `model` key says — currently the floating
-`sonnet` alias. Every agent above pins `model: opus` explicitly in its own
-frontmatter, deliberately the opposite of the cheap-workers/expensive-
+`sonnet` alias. Every agent above pins `model: claude-opus-4-8` explicitly
+in its own frontmatter — a specific version, not the floating `opus`
+alias — deliberately the opposite of the cheap-workers/expensive-
 orchestrator split that's the default instinct: the orchestrator is a
 conversation, the subagents are where judgment calls that are expensive
 to get wrong actually happen (an `executor` commits code; the reviewers
-decide GO/NO-GO). A subagent with no `model` field would `inherit` the
-main session's model instead — silently downgrading every dispatch to
+decide GO/NO-GO). Pinned rather than floating because `opus` now resolves
+to Opus 5, and delegation work should target a version deliberately
+chosen and verified, not whatever "opus" floats to on the next model
+release. A subagent with no `model` field would `inherit` the main
+session's model instead — silently downgrading every dispatch to
 whatever the orchestrator happens to be running on, so this only stays
-true as long as each agent file's `model: opus` line does. If you add a
-new agent, give it one deliberately; don't leave it on the default and
-assume it matches.
+true as long as each agent file's `model: claude-opus-4-8` line does. If
+you add a new agent, give it one deliberately; don't leave it on the
+default and assume it matches, and don't reach for the floating `opus`
+alias instead of the pinned string.
 
 Update this list and README's together — `dotfiles-sync`'s checklist
 covers both.

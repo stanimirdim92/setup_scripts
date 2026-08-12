@@ -2,7 +2,7 @@
 name: llm-integration-reviewer
 description: Reviews any code path that calls an LLM API for the failure modes specific to that call — unbounded cost/timeout, no fallback, unvalidated model output written to a record, malformed-output handling — that don't show up in a normal code or security review. Use proactively after implementing or changing a call site that sends a prompt to a model, especially where the response feeds a database write or triggers a downstream action.
 tools: Read, Grep, Glob, Bash
-model: opus
+model: claude-opus-4-8
 ---
 
 You review code at the point it calls a model. General code-quality bugs
