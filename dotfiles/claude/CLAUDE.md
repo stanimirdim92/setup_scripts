@@ -60,6 +60,9 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
   (`/test`), `code-review-and-quality` (`/review`),
   `debugging-and-error-recovery`, `git-workflow-and-versioning`,
   `incremental-implementation` (`/build`, alongside `executor` below).
+- `ticket-breakdown-and-delegation` — extends `planning-and-task-breakdown`
+  with sizing per assignee's level when a ticket splits across more than
+  one person, not just by scope.
 - `research` — spin off a background agent to chase primary sources and
   write cited findings to a file, instead of doing the reading inline.
 - `handoff` — compact the current conversation into a document a fresh
@@ -72,7 +75,12 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
 - Subagents: `infra-reviewer`, `security-reviewer`,
   `distributed-systems-reviewer` (timeouts, idempotent retries, backoff,
   circuit breakers, backpressure, checkpointing — for anything crossing a
-  process/network/queue boundary) (all first-party), vendored
+  process/network/queue boundary), `llm-integration-reviewer` (cost/timeout
+  ceilings, output validation before a model response is trusted, malformed-
+  output handling, fallback path, prompt-injection surface — for anything
+  calling a model), `unblock-triage` (given a batch of blocked PRs/tickets,
+  sorts which need this person's own judgment call vs. which can be
+  delegated, ranked by blocking radius) (all first-party), vendored
   `code-reviewer` (five-axis review), first-party `executor` (dispatched
   by `/build` to implement one planned task end-to-end; never invokes
   another agent — review and the go/no-go call stay with the orchestrator).
