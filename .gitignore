@@ -1,0 +1,7 @@
+# Claude Code auto-regenerates these inside the symlinked skills/ directory
+# whenever a bundled/example skill (docx, pdf, pptx, xlsx, skill-creator,
+# morning, session-start-hook, ...) gets listed as available in a session.
+# Not deliberately-curated repo content — see README.md's "Deliberately not
+# synced" list for the same category of auto-regenerated files.
+/dotfiles/claude/skills/synced/
+/dotfiles/claude/skills/session-start-hook/

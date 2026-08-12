@@ -46,6 +46,12 @@ Deliberately **not** synced:
 - `~/.claude/.credentials.json` — OAuth tokens, machine-specific secrets.
 - `~/.claude/plugins/installed_plugins.json`, `known_marketplaces.json` — regenerated
   automatically from `settings.json`'s `enabledPlugins` / `extraKnownMarketplaces`.
+- `dotfiles/claude/skills/synced/`, `dotfiles/claude/skills/session-start-hook/`
+  (gitignored) — Claude Code's own bundled/example skills (docx, pdf, pptx, xlsx,
+  skill-creator, morning, session-start-hook), auto-materialized inside the
+  symlinked `skills/` directory whenever one gets listed as available in a
+  session. Same "regenerated automatically" category as the plugin files above,
+  just written into a path this repo otherwise curates deliberately.
 - `~/.claude/{projects,sessions,cache,downloads,shell-snapshots,file-history,
   session-env,backups,ide,daemon,jobs,paste-cache}`, `~/.claude/history.jsonl`,
   `~/.claude/policy-limits.json`, `~/.claude/.last-*` — runtime state/logs, not config.
