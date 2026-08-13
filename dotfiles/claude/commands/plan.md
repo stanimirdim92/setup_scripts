@@ -15,3 +15,12 @@ Read the existing spec (SPEC.md or equivalent) and the relevant codebase section
 7. Present the plan for human review
 
 Save the plan to tasks/plan.md and task list to tasks/todo.md.
+
+## After approval
+
+The only next action is invoking `/build` — never implement a task
+directly from here, even if the plan-mode exit prompt itself says
+something like "you can start coding now." That's the tool's own generic
+wording, not permission to skip the dispatch/review/verdict layer `/build`
+provides. If the user's next message isn't `/build`, ask before writing
+any code.
