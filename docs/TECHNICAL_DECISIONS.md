@@ -90,3 +90,80 @@ and makes the override the exception, not the rule.
 Update `dotfiles/claude/CLAUDE.md`'s skills list and this repo's
 `README.md` together when agents change — `dotfiles-sync`'s checklist
 covers both.
+
+## Executor concurrency: sequential only, no parallel writers
+
+**Decision.** `/build` originally capped concurrent `executor`
+workstreams at 2 (see the cost-gate history above). A second review
+caught that the cap didn't address a real correctness risk: `executor`
+has `Edit`/`Write`/`Bash` and commits, so two of them running at once
+write into the *same* checkout — a git-index race (`.git/index.lock`
+contention, or one agent's `git add` scooping up the other's
+uncommitted edit) that exists regardless of whether their file scopes
+overlap. Non-overlapping scope prevents a content conflict, not a git-
+state race. Fixed by capping executor dispatch at strictly 1-at-a-time:
+finish (or resume-to-completion on) one workstream's current task before
+the next workstream's first dispatch, full stop, even when two
+workstreams are independent enough to otherwise parallelize. This
+folds the executor half of the earlier cost gate into a correctness
+rule instead of a cost rule — sequential dispatch caps spend as a side
+effect, but the reason for it is the shared checkout, not the token
+meter.
+
+**Rejected — keep 2 concurrent, add `isolation: worktree`.** The `Agent`
+tool supports per-invocation git-worktree isolation, which would let two
+executors write safely in parallel with an explicit merge/cherry-pick
+step back into the main checkout. Rejected for now: it's real
+parallelism at the cost of real complexity (a merge step that itself
+needs to succeed cleanly), and this repo's own stated priority is
+predictable spend over shaved wall-clock minutes — the same reasoning
+that produced the original batch cap. Revisit if `/build` runs start
+actually being bottlenecked on wall-clock time with genuinely
+independent workstreams; the mechanism to reach for is documented in
+`build.md`, not re-invented from scratch.
+
+## Reviewer batch cap: no high-risk exception
+
+**Decision.** The review fan-out's "never more than 2 reviewers at once"
+cap originally had an exception: a diff already flagged high-risk could
+run the full specialist fan-out concurrently, "since it's earning the
+cost." That exception directly contradicted this repo's own README,
+which stated the cap as "regardless of how many are eligible" with no
+carve-out — a real drift between what two files claimed about the same
+rule (rule 6 territory). Fixed by removing the exception: the cap holds
+unconditionally, including for high-risk diffs that trigger every
+specialist — those diffs get all the same reviewers, just in sequential
+batches of 2 instead of all at once. A high-risk diff earns more
+distinct review perspectives, not a faster concurrent token burn.
+
+## Reviewer trigger matrix: one file, not two copies
+
+**Decision.** `build.md` claimed its reviewer trigger conditions "must
+match `review.md` exactly," but `review.md` never defined conditions for
+`infra-reviewer` or `llm-integration-reviewer` at all — there was
+nothing for `build.md`'s copy to match, and `llm-integration-reviewer`
+wasn't wired into either command's routing despite existing specifically
+for LLM-call-site review, which is the majority of this machine's actual
+project work. Fixed by moving the trigger matrix into
+`dotfiles/claude/references/reviewer-triggers.md` as the single source,
+with both commands reading it instead of each keeping its own copy, and
+adding `llm-integration-reviewer`'s trigger (diff touches an LLM API call
+site: new/changed prompt, model call, tool definition, or model output
+feeding a record write or downstream action).
+
+## `/review`: thin wrapper over `code-reviewer`, not a second rubric
+
+**Decision.** `/review` invoked the `code-review-and-quality` skill
+directly — a 320-line five-axis framework loaded fresh into context on
+every call — duplicating the same five-axis rubric the much smaller
+`code-reviewer` agent already implements (the one `/build` dispatches).
+Two rubrics for the same review is a rule-6 case, not two legitimately
+different reviews. Fixed by making `/review` dispatch `code-reviewer`
+directly, plus specialist fan-out per the trigger matrix above — the
+same pattern `/build` already uses for its review step, so there's one
+five-axis rubric in the repo, not two.
+
+**Rejected — delete `code-review-and-quality` entirely.** The skill is
+still referenced by `git-workflow-and-versioning` (splitting-strategy
+detail for large diffs) and `references/definition-of-done.md`. Kept as
+a reference; only `/review`'s direct invocation of it was removed.

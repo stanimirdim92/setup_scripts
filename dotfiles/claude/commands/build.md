@@ -34,12 +34,25 @@ through all five, not five fresh spawns each re-paying that cost.
   earlier task; a fresh spawn would throw that away and re-pay the
   discovery cost for no reason.
 - **A task in a genuinely independent workstream:** dispatch a new,
-  separate `executor`.
+  separate `executor` — but not at the same time as another one (below).
 
-Workstreams that don't share files *can* run concurrently; workstreams
-that touch overlapping files run one at a time, in dependency order —
-never two executors (including a resume racing a fresh dispatch)
-writing to the same file concurrently.
+**Executors never run concurrently, even across independent
+workstreams.** `executor` has `Edit`/`Write`/`Bash` and commits — two of
+them running at once write into the *same* checkout, and that races
+regardless of whether their file scopes overlap: a `git add`/`commit`
+from one can pick up the other's uncommitted edit mid-flight, or the two
+just contend on `.git/index.lock`. Non-overlapping file scope prevents a
+content conflict, not a git-state race. So dispatch workstreams
+strictly one at a time — finish (or resume-to-completion on) one
+workstream's current task before the next workstream's first dispatch,
+even when two are independent enough to otherwise run in parallel. This
+is the same "predictable spend over shaved wall-clock minutes" call as
+the batch cap below, applied to a correctness risk instead of a cost
+one. (Genuine parallel implementation is possible via `isolation:
+worktree` on the `Agent` tool plus an explicit merge step back into the
+main checkout — not used here; sequential dispatch is simpler and this
+repo doesn't need the wall-clock win badly enough to earn that
+complexity.)
 
 **Model tier per workstream, when the default isn't right.** `executor`'s
 frontmatter now defaults to `claude-sonnet-5` — routine implementation
@@ -58,45 +71,28 @@ agents concurrently for a few minutes (worse when any of them are
 Opus-tier, e.g. a security- or architecturally-ambiguous workstream
 bumped up per the model-tier note above) can spend as much of that
 budget as hours of solo conversation, and *asking* before firing them
-doesn't cap the spend if the answer is yes. So cap actual concurrency
-instead of just confirming it:
-
-- Never run more than **2** `executor` workstreams active at once,
-  regardless of how many are eligible to run in parallel. With 5
-  independent workstreams, that's dispatch 2, wait for both to report
-  back, dispatch the next 2, then the last 1 — not all 5 at once.
-- This cap applies even after the user says go ahead on a larger batch —
-  it isn't a one-time confirmation that then lifts the ceiling, it's the
-  ceiling itself.
-- If a workstream's dependency graph forces sequencing anyway (overlapping
-  files), that ordering already keeps concurrency low — the cap only
-  bites when 3+ workstreams are actually independent and would otherwise
-  all fire together.
+doesn't cap the spend if the answer is yes. Executors are already capped
+at 1-at-a-time above (a correctness fix that also caps their spend as a
+side effect); the same "cap actual concurrency, don't just confirm it"
+reasoning applies below to review fan-out, which has no git-race concern
+and so can run 2-wide.
 
 ## 3. Fan out review, independently
 
 Once every dispatched `executor` has reported back, fan out against the
-resulting diff. Each reviewer's trigger condition must match `review.md`
-exactly — don't let this command and `/review` disagree about when a
-reviewer runs (rule 6: pick one condition, don't let two commands each
-invent their own):
+resulting diff. Trigger conditions live in one place —
+`dotfiles/claude/references/reviewer-triggers.md` — read it before
+deciding which reviewers run; `/review` points at the same file, so
+don't let this command's copy of the logic drift from it (rule 6: pick
+one condition, don't let two commands each invent their own).
 
-- `code-reviewer` — always
-- `security-reviewer` — only if the diff touches `nginx/`, `mysql`/
-  `database/`, `redis/`, or `php/fpm/` config
-- `infra-reviewer` — only if the diff touches `nginx/`, `database/`,
-  `redis/`, `php/fpm/`, `linux/etc/`, or a Dockerfile
-- `distributed-systems-reviewer` — only if the diff touches a cross-
-  process/network/queue boundary: an RPC or HTTP call between services, a
-  queue producer/consumer, a scheduled job, or a background worker
-
-**Same batch cap applies here.** Never run more than **2** reviewers at
-once, same reasoning as the executor cap above — if 3 or more triggers
-match, dispatch 2, wait for both to report back, then dispatch the rest.
-Exception: a diff already flagged high-risk (e.g. touches a shared
-production pipeline) can run the full fan-out concurrently since it's
-earning the cost — say so explicitly when that's why, rather than
-silently defaulting to the full fan-out either way.
+**Batch cap, no exceptions.** Never run more than **2** reviewers at
+once — full stop, including a high-risk diff that triggers every
+specialist. If 3+ triggers match, dispatch 2, wait for both to report
+back, then dispatch the rest in the next batch of 2. A high-risk diff
+earns more distinct review perspectives, not a faster concurrent burn —
+sequential batching still gets every reviewer to run, just not all at
+once.
 
 Give each reviewer the diff plus a one-line goal and the task's
 acceptance criteria — not the full spec, not `tasks/plan.md`, not each
@@ -112,7 +108,8 @@ Report each reviewer's findings under its own heading — Correctness/
 Readability/Architecture/Security/Performance from `code-reviewer`,
 security findings from `security-reviewer`, infra findings from
 `infra-reviewer` if it ran, cross-boundary reliability findings from
-`distributed-systems-reviewer` if it ran. **Don't blend them into one
+`distributed-systems-reviewer` if it ran, LLM-call-site findings from
+`llm-integration-reviewer` if it ran. **Don't blend them into one
 ranked list.**
 Reporting them separately is deliberate: it stops one axis's silence from
 reading as another axis's clearance, and stops a loud axis from burying a

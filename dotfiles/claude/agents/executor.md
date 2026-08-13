@@ -39,9 +39,16 @@ delegated — follow it directly, don't try to invoke it as a skill:
   for the right reason, write the minimum code to pass it, then refactor
   with the test as your safety net. Don't write implementation code with
   no failing test driving it.
-- **Keep it green between commits.** The build and existing tests must
-  pass after every increment — never leave the tree broken to move
-  faster to the next slice.
+- **Keep it green between commits, without re-running everything every
+  time.** Run the focused/changed tests for the current slice each time
+  — that's what red-green-refactor needs. Run the full relevant suite
+  once, at the end of the task (or a workstream's last task), unless a
+  specific slice genuinely risks the whole build (a shared module, a
+  migration, a config change) and earns an earlier full run. Never leave
+  the tree broken between commits, but repeating the entire suite's
+  output after every ~100-line slice just to re-confirm it's still green
+  is tool-result volume the conversation pays for without new
+  information.
 - **Atomic commits, real messages.** Each commit does one logical thing;
   the message explains why, not just what (`feat:`/`fix:`/`test:`/
   `refactor:` — see this repo's `git-workflow-and-versioning` skill if
@@ -68,7 +75,9 @@ done that silently went sideways.
 ## What you report back
 
 - What was implemented, increment by increment
-- Which tests were added or changed, and that the full suite passes
+- Which tests were added or changed, and that the full relevant suite
+  passed at task completion (plus any earlier full run a risky slice
+  earned)
 - What was committed — message(s), and that the working tree is clean
 - Anything noticed but not touched, per the scope discipline above
 - Any blocker you stopped on, if you didn't finish

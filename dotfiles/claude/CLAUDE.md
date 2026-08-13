@@ -69,11 +69,15 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
 - `dotfiles-sync` (meta) — add/edit/relink a file in that repo.
 - `fastapi` — FastAPI conventions.
 - SDLC skills, most aliased by a same-named command: `spec-driven-development`
-  (`/spec`), `planning-and-task-breakdown` (`/plan`), `code-review-and-quality`
-  (`/review`), `git-workflow-and-versioning`, `incremental-implementation`
-  (`/build`, alongside `executor` below). `/test` and debugging route to the
-  `superpowers` plugin's own skills instead of a vendored copy — see
-  "Superpowers overlap" below.
+  (`/spec`), `planning-and-task-breakdown` (`/plan`), `git-workflow-and-versioning`,
+  `incremental-implementation` (`/build`, alongside `executor` below).
+  `code-review-and-quality` is no longer `/review`'s entry point — `/review`
+  dispatches the `code-reviewer` agent directly now, same as `/build`'s
+  review step; the skill is kept only as a reference for its
+  large-diff-splitting-strategy content, linked from `git-workflow-and-
+  versioning` and `references/definition-of-done.md`. `/test` and debugging
+  route to the `superpowers` plugin's own skills instead of a vendored copy
+  — see "Superpowers overlap" below.
 - `ticket-breakdown-and-delegation` — extends `planning-and-task-breakdown`
   with sizing per assignee's level when a ticket splits across more than
   one person, not just by scope.

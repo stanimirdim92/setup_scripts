@@ -8,7 +8,16 @@ Read the existing spec (SPEC.md or equivalent) and the relevant codebase section
 
 1. Enter plan mode — read only, no code changes
 2. Identify the dependency graph between components
-3. Flag any 2+ tasks that are independent (no shared state, no sequential dependency) using the `superpowers:dispatching-parallel-agents` skill's independence test — these are what `/build` can dispatch concurrently
+3. Assign every task a **workstream**: tasks sharing files, a subsystem,
+   or a dependency chain share one, so `/build` can resume one executor
+   across them instead of a fresh spawn per task. Default to a single
+   workstream for ordinary feature work. Use `superpowers:
+   dispatching-parallel-agents`'s independence test only to check
+   whether a second workstream is genuinely independent — "parallelizable"
+   is eligibility, not a mandate; `/build` runs executors one at a time
+   regardless (see its own dispatch step), so a second workstream should
+   exist because the tasks truly don't belong together, not because
+   splitting them is *possible*
 4. Slice work vertically (one complete path per task, not horizontal layers)
 5. Write tasks with acceptance criteria and verification steps
 6. Add checkpoints between phases

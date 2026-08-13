@@ -2,22 +2,38 @@
 description: Conduct a five-axis code review — correctness, readability, architecture, security, performance
 ---
 
-Invoke the `code-review-and-quality` skill.
+Thin orchestrator, same pattern as `/build`'s review step — one rubric,
+not two. Dispatch the `code-reviewer` agent instead of re-running its
+five-axis framework inline via the `code-review-and-quality` skill.
 
-Review the current changes (staged or recent commits) across all five axes:
+## 1. Scope the diff
 
-1. **Correctness** — Does it match the spec? Edge cases handled? Tests adequate?
-2. **Readability** — Clear names? Straightforward logic? Well-organized?
-3. **Architecture** — Follows existing patterns? Clean boundaries? Right abstraction level?
-4. **Security** — Input validated? Secrets safe? Auth checked? For changes touching nginx/mysql/redis/php-fpm config, also run the `security-reviewer` agent.
-5. **Performance** — No N+1 queries? No unbounded ops?
+Work out the diff to review (staged changes, recent commits, or whatever
+the user pointed at) plus a one-line goal and the acceptance criteria
+that apply, if there's a spec or task to draw them from. If neither
+exists and the diff's purpose genuinely isn't inferable, say so —
+`code-reviewer`'s own rule 2 already expects this input and will do the
+same rather than guess.
 
-For changes that cross a process/network/queue boundary (an RPC or HTTP
-call between services, a queue producer/consumer, a scheduled job, a
-background worker), also run the `distributed-systems-reviewer` agent —
-these five axes don't cover timeouts, idempotent retries, backoff,
-circuit breakers, backpressure, or checkpointing, and that's a different
-class of bug than the ones above.
+## 2. Dispatch code-reviewer
 
-Categorize findings as Critical, Important, or Suggestion.
-Output a structured review with specific file:line references and fix recommendations.
+Send `code-reviewer` the diff plus the goal/acceptance criteria — not
+the full spec or plan. Let it run its own five-axis rubric (correctness,
+readability, architecture, security, performance); don't re-derive that
+framework here in the command.
+
+## 3. Specialists, by trigger
+
+Check the diff against `dotfiles/claude/references/reviewer-triggers.md`
+(the same file `/build` uses) and dispatch any specialist whose
+condition matches — `security-reviewer`, `infra-reviewer`,
+`distributed-systems-reviewer`, `llm-integration-reviewer`. Give each the
+same goal/acceptance-criteria/diff, not each other's output; each axis
+reviews blind to the others.
+
+## 4. Report
+
+Report each reviewer's findings under its own heading, categorized
+Critical/Important/Suggestion. Don't blend axes or reviewers into one
+ranked list — a quiet-but-real finding from one axis shouldn't get
+buried under a louder one from another.
