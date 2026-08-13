@@ -22,10 +22,11 @@ costs a revert.
 
 Follow `incremental-implementation` for the shape of the work (thin
 vertical slices, implement → test → verify → commit, one thing per
-increment) and `test-driven-development` for each slice's actual
-red-green-refactor loop. Follow `git-workflow-and-versioning` for commit
-discipline — atomic commits, a real message per commit, not one giant
-commit at the end.
+increment) and the `superpowers` plugin's `test-driven-development` skill
+for each slice's actual red-green-refactor loop (the vendored copy was
+dropped — see CLAUDE.md's "Superpowers overlap" section). Follow
+`git-workflow-and-versioning` for commit discipline — atomic commits, a
+real message per commit, not one giant commit at the end.
 
 Stay inside the task's stated file scope. If you notice something worth
 fixing outside it, don't fix it — note it in your final report instead
