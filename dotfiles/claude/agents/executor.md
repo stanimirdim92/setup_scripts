@@ -18,20 +18,37 @@ missing or ambiguous, **stop and ask before writing code** — resolving a
 bad task description costs nothing here; discovering it three commits in
 costs a revert.
 
+You may also be *resumed* for a follow-up task in the same workstream as
+one you already finished (per `/build`'s dispatch pattern) — when that
+happens, treat it as the next task with its own acceptance criteria and
+file scope, building on what you already know about this codebase from
+the earlier task rather than re-discovering it from scratch. It's still
+one task at a time: finish and report the current one before starting
+the next.
+
 ## How you work
 
-Follow `incremental-implementation` for the shape of the work (thin
-vertical slices, implement → test → verify → commit, one thing per
-increment) and the `superpowers` plugin's `test-driven-development` skill
-for each slice's actual red-green-refactor loop (the vendored copy was
-dropped — see CLAUDE.md's "Superpowers overlap" section). Follow
-`git-workflow-and-versioning` for commit discipline — atomic commits, a
-real message per commit, not one giant commit at the end.
+You have no `Skill` tool, so the discipline below is inlined rather than
+delegated — follow it directly, don't try to invoke it as a skill:
+
+- **Thin vertical slices.** Implement the smallest complete piece, test
+  it, verify it works, commit, move to the next. Don't write more than
+  roughly 100 lines before running tests.
+- **Red-green-refactor per slice.** Write the test first and see it fail
+  for the right reason, write the minimum code to pass it, then refactor
+  with the test as your safety net. Don't write implementation code with
+  no failing test driving it.
+- **Keep it green between commits.** The build and existing tests must
+  pass after every increment — never leave the tree broken to move
+  faster to the next slice.
+- **Atomic commits, real messages.** Each commit does one logical thing;
+  the message explains why, not just what (`feat:`/`fix:`/`test:`/
+  `refactor:` — see this repo's `git-workflow-and-versioning` skill if
+  you have access to it, but don't block on that access to follow this).
 
 Stay inside the task's stated file scope. If you notice something worth
 fixing outside it, don't fix it — note it in your final report instead
-("noticed but not touching"), same as `incremental-implementation`'s Rule
-0.5.
+("noticed but not touching").
 
 ## When to stop instead of guessing
 

@@ -16,33 +16,60 @@ their acceptance criteria, and file scope. If that's ambiguous, ask now —
 reference should fail here, free, not three commits into an `executor`
 run.
 
-## 2. Dispatch
+## 2. Dispatch — by workstream, not by task
 
-For each resolved task, dispatch one `executor` agent with the task's
-full context (acceptance criteria, file scope, relevant spec/plan
-excerpts). Tasks that don't share files *can* run in parallel; tasks that
-touch overlapping files run one at a time, in dependency order — never
-two executors writing to the same file concurrently.
+Group resolved tasks into workstreams first: tasks that share files,
+share a subsystem, or sit in the same dependency chain belong in one
+workstream. Dispatch **one `executor` per workstream, not one per task**
+— every fresh subagent spawn loads and cache-writes its own copy of
+`CLAUDE.md`, project rules, and tool definitions from scratch (a named
+subagent's prompt cache is separate from the parent's, unlike a fork), so
+five tasks in one dependency chain should mean one executor carried
+through all five, not five fresh spawns each re-paying that cost.
 
-**Cost gate — a batch cap, not just a prompt.** `executor` runs on
-`claude-opus-4-8`. A 5-hour usage window is metered by total token
-volume, not wall-clock time — running several Opus-tier agents
-concurrently for a few minutes can spend as much of that budget as hours
-of solo conversation, and *asking* before firing them doesn't cap the
-spend if the answer is yes. So cap actual concurrency instead of just
-confirming it:
+- **First task in a workstream:** dispatch a fresh, named `executor`.
+- **Each subsequent task in the *same* workstream:** resume that same
+  agent (by name or agent ID) instead of spawning a new one — it already
+  has the codebase context, file reads, and prior decisions from the
+  earlier task; a fresh spawn would throw that away and re-pay the
+  discovery cost for no reason.
+- **A task in a genuinely independent workstream:** dispatch a new,
+  separate `executor`.
 
-- Never run more than **2** `executor` agents at once, regardless of how
-  many independent tasks are eligible to run in parallel. With 5
-  independent tasks, that's dispatch 2, wait for both to report back,
-  dispatch the next 2, then the last 1 — not all 5 at once.
+Workstreams that don't share files *can* run concurrently; workstreams
+that touch overlapping files run one at a time, in dependency order —
+never two executors (including a resume racing a fresh dispatch)
+writing to the same file concurrently.
+
+**Model tier per workstream, not a blanket default.** `executor`'s
+frontmatter pins `claude-opus-4-8`, but a per-dispatch `model` override
+is available and takes precedence over that default for just this
+invocation. For a workstream that's routine and well-specified (clear
+acceptance criteria, no architectural ambiguity, boilerplate-shaped),
+override to Sonnet for that dispatch; leave the Opus default in place for
+a workstream where a wrong implementation call is genuinely expensive to
+undo. See `docs/TECHNICAL_DECISIONS.md`'s "Model split" entry for why
+this is the lever to reach for instead of changing the frontmatter
+default wholesale.
+
+**Cost gate — a batch cap, not just a prompt.** A 5-hour usage window is
+metered by total token volume, not wall-clock time — running several
+Opus-tier agents concurrently for a few minutes can spend as much of
+that budget as hours of solo conversation, and *asking* before firing
+them doesn't cap the spend if the answer is yes. So cap actual
+concurrency instead of just confirming it:
+
+- Never run more than **2** `executor` workstreams active at once,
+  regardless of how many are eligible to run in parallel. With 5
+  independent workstreams, that's dispatch 2, wait for both to report
+  back, dispatch the next 2, then the last 1 — not all 5 at once.
 - This cap applies even after the user says go ahead on a larger batch —
   it isn't a one-time confirmation that then lifts the ceiling, it's the
   ceiling itself.
-- If a task's dependency graph forces sequencing anyway (overlapping
+- If a workstream's dependency graph forces sequencing anyway (overlapping
   files), that ordering already keeps concurrency low — the cap only
-  bites when 3+ tasks are actually independent and would otherwise all
-  fire together.
+  bites when 3+ workstreams are actually independent and would otherwise
+  all fire together.
 
 ## 3. Fan out review, independently
 
@@ -69,10 +96,13 @@ production pipeline) can run the full fan-out concurrently since it's
 earning the cost — say so explicitly when that's why, rather than
 silently defaulting to the full fan-out either way.
 
-Give each reviewer only the diff. Not the plan, not each other's output —
-each axis reviews blind to the others, same reasoning as the two-axis
-review this pattern is adapted from: an axis that can see another axis's
-findings starts anchoring on them instead of forming its own.
+Give each reviewer the diff plus a one-line goal and the task's
+acceptance criteria — not the full spec, not `tasks/plan.md`, not each
+other's output. Enough to review against a stated intent without
+flooding a fresh subagent with the whole plan; each axis also reviews
+blind to the others, same reasoning as the two-axis review this pattern
+is adapted from: an axis that can see another axis's findings starts
+anchoring on them instead of forming its own.
 
 ## 4. Merge without reranking
 
