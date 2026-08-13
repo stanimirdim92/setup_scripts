@@ -80,7 +80,9 @@ If none of these are connected, work standalone from whatever diff, PR URL, or f
 - Is data from external sources (APIs, logs, user content, config files) treated as untrusted and validated at system boundaries before use in logic or rendering?
 - Are dependencies from trusted sources with no known vulnerabilities? (`npm audit` or equivalent)
 
-For deeper triage of supply-chain risk and vuln severity, see the `security-and-hardening` skill if available — this skill covers structural review, that one covers security verdicts.
+For deeper triage of supply-chain risk and vuln severity, see the
+`security-and-hardening` skill if available, or `../../references/security-checklist.md`
+in this repo — this skill covers structural review, those cover security verdicts.
 
 ### 5. Performance
 
@@ -91,7 +93,9 @@ For deeper triage of supply-chain risk and vuln severity, see the `security-and-
 - Unbounded loops, unconstrained data fetching, or resource leaks?
 - Any synchronous operations that should be async? Unnecessary re-renders in UI components?
 
-For deeper profiling and optimization technique, see the `performance-optimization` skill if available.
+For deeper profiling and optimization technique, see the
+`performance-optimization` skill if available, or
+`../../references/performance-checklist.md` in this repo.
 
 ## Structural Remedies
 
@@ -312,5 +316,5 @@ Different models have different blind spots — this catches what a single model
 
 ## See Also
 
-- `security-and-hardening` skill (if available) — vulnerability triage, supply-chain risk
-- `performance-optimization` skill (if available) — profiling and optimization technique
+- `security-and-hardening` skill (if available) — vulnerability triage, supply-chain risk; `../../references/security-checklist.md` covers the same ground in this repo
+- `performance-optimization` skill (if available) — profiling and optimization technique; `../../references/performance-checklist.md` covers the same ground in this repo

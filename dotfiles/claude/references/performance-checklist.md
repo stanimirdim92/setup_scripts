@@ -1,6 +1,6 @@
 # Performance Checklist
 
-Quick reference checklist for web application performance. Use alongside the `performance-optimization` skill.
+Quick reference checklist for web application performance. Use alongside the `performance-optimization` skill if available — not currently vendored in this repo, so this checklist stands on its own here.
 
 ## Table of Contents
 

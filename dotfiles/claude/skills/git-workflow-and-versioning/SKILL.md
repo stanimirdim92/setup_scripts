@@ -281,7 +281,7 @@ For anything with consumers, version `MAJOR.MINOR.PATCH` and let the number carr
   PATCH  bug fix, backward-compatible — safe to upgrade
 ```
 
-The number is a promise, so make the code match it. A "patch" that changes behavior consumers relied on is a major change wearing a disguise (Hyrum's Law — see the `api-and-interface-design` skill). When unsure whether a change is breaking, assume it is; a surprise major is far cheaper than a broken consumer.
+The number is a promise, so make the code match it. A "patch" that changes behavior consumers relied on is a major change wearing a disguise (Hyrum's Law — see the `api-and-interface-design` skill if available; not currently vendored in this repo). When unsure whether a change is breaking, assume it is; a surprise major is far cheaper than a broken consumer.
 
 ### Tag the release, and let the tag be the source of truth
 
@@ -308,7 +308,7 @@ A changelog is not `git log`. It's the curated, consumer-facing answer to "what 
 - `GET /v1/tasks/all` — use the paginated `GET /v1/tasks` (removal in 2.0)
 ```
 
-Write the entry in the same change that makes the change, while the impact is fresh — not reconstructed from commit archaeology at release time. Breaking changes get a migration note and a deprecation window (follow the `deprecation-and-migration` skill); shipping the actual release is the `shipping-and-launch` skill's job — this section is the versioning contract that feeds it.
+Write the entry in the same change that makes the change, while the impact is fresh — not reconstructed from commit archaeology at release time. Breaking changes get a migration note and a deprecation window (follow the `deprecation-and-migration` skill if available); shipping the actual release is the `shipping-and-launch` skill's job if available — neither is currently vendored in this repo; this section is the versioning contract that feeds them.
 
 ## Common Rationalizations
 

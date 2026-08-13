@@ -166,7 +166,7 @@ Break the plan into discrete, implementable tasks:
 
 ### Phase 4: Implement
 
-Execute tasks one at a time following `skills/incremental-implementation/SKILL.md` (`incremental-implementation`) and the `superpowers` plugin's `test-driven-development` skill (the vendored copy was dropped — see CLAUDE.md's "Superpowers overlap" section). Use `skills/context-engineering/SKILL.md` (`context-engineering`) to load the right spec sections and source files at each step rather than flooding the agent with the entire spec.
+Execute tasks one at a time following `skills/incremental-implementation/SKILL.md` (`incremental-implementation`) and the `superpowers` plugin's `test-driven-development` skill (the vendored copy was dropped — see CLAUDE.md's "Superpowers overlap" section). Use the `context-engineering` skill if available to load the right spec sections and source files at each step rather than flooding the agent with the entire spec — that skill isn't currently vendored in this repo, so absent it, just load the relevant spec sections and files by hand at each step.
 
 ## Keeping the Spec Alive
 
