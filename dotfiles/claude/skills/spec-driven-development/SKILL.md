@@ -41,8 +41,8 @@ Start with a high-level vision. Ask the human clarifying questions until require
 ASSUMPTIONS I'M MAKING:
 1. This is a web application (not native mobile)
 2. Authentication uses session-based cookies (not JWT)
-3. The database is PostgreSQL (based on existing Prisma schema)
-4. We're targeting modern browsers only (no IE11)
+3. The database is PostgreSQL or MySQL
+4. We're targeting modern browsers only
 → Correct me now or I'll proceed with these.
 ```
 
@@ -54,17 +54,16 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
 
 2. **Commands** — Full executable commands with flags, not just tool names.
    ```
-   Build: npm run build
-   Test: npm test -- --coverage
-   Lint: npm run lint --fix
-   Dev: npm run dev
+   Build: yarn run build
+   Lint: yarn run lint --fix
+   Dev: yarn run dev
    ```
 
 3. **Project Structure** — Where source code lives, where tests go, where docs belong.
    ```
-   src/           → Application source code
-   src/components → React components
-   src/lib        → Shared utilities
+   app/           → framework source code
+   resources/components → React components
+   Modules/        → App modules 
    tests/         → Unit and integration tests
    e2e/           → End-to-end tests
    docs/          → Documentation
@@ -166,7 +165,7 @@ Break the plan into discrete, implementable tasks:
 
 ### Phase 4: Implement
 
-Execute tasks one at a time following `skills/incremental-implementation/SKILL.md` (`incremental-implementation`) and the `superpowers` plugin's `test-driven-development` skill (the vendored copy was dropped — see CLAUDE.md's "Superpowers overlap" section). Use the `context-engineering` skill if available to load the right spec sections and source files at each step rather than flooding the agent with the entire spec — that skill isn't currently vendored in this repo, so absent it, just load the relevant spec sections and files by hand at each step.
+Execute tasks one at a time following `skills/incremental-implementation/SKILL.md` (`incremental-implementation`) and the `superpowers` plugin's `test-driven-development` skill. Use the `context-engineering` skill if available to load the right spec sections and source files at each step rather than flooding the agent with the entire spec — that skill isn't currently vendored in this repo, so absent it, just load the relevant spec sections and files by hand at each step.
 
 ## Keeping the Spec Alive
 
