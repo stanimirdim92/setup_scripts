@@ -106,15 +106,21 @@ a vendored copy; `/spec` and `/plan` each open with a compositional
 `superpowers` step before their own vendored skill runs. Full reasoning
 and rejected alternatives: `docs/TECHNICAL_DECISIONS.md`.
 
-## Model split: Sonnet orchestrator, Opus subagents
+## Model split: Sonnet orchestrator, tiered subagents
 
-Every dispatched agent pins `model: claude-opus-4-8` explicitly in its
-own frontmatter — never the floating `opus` alias, never left unset
-(which silently falls back to whatever the orchestrator is running on).
-Full reasoning, rejected alternatives, and the open question about
-per-task model overrides for routine work: `docs/TECHNICAL_DECISIONS.md`.
-Update that doc, this list, and README's together when agents change —
-`dotfiles-sync`'s checklist covers all three.
+Every dispatched agent pins a specific `model:` version explicitly in its
+own frontmatter — never the floating `opus`/`sonnet` alias, never left
+unset (which silently falls back to whatever the orchestrator is
+running on). `executor` and `code-reviewer` (dispatched on every
+`/build` run) pin `claude-sonnet-5`; `security-reviewer`,
+`distributed-systems-reviewer`, `infra-reviewer`,
+`llm-integration-reviewer`, and `unblock-triage` pin `claude-opus-4-8`. A
+per-invocation `model` override can still bump a specific workstream or
+review up to Opus when it's architecturally ambiguous or high-stakes —
+see `build.md`'s "Model tier per workstream" note. Full reasoning and
+rejected alternatives: `docs/TECHNICAL_DECISIONS.md`. Update that doc,
+this list, and README's together when agents change — `dotfiles-sync`'s
+checklist covers all three.
 
 ## Ideas, decisions, and memory
 

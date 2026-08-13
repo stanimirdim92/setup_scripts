@@ -41,23 +41,25 @@ that touch overlapping files run one at a time, in dependency order —
 never two executors (including a resume racing a fresh dispatch)
 writing to the same file concurrently.
 
-**Model tier per workstream, not a blanket default.** `executor`'s
-frontmatter pins `claude-opus-4-8`, but a per-dispatch `model` override
-is available and takes precedence over that default for just this
-invocation. For a workstream that's routine and well-specified (clear
-acceptance criteria, no architectural ambiguity, boilerplate-shaped),
-override to Sonnet for that dispatch; leave the Opus default in place for
-a workstream where a wrong implementation call is genuinely expensive to
-undo. See `docs/TECHNICAL_DECISIONS.md`'s "Model split" entry for why
-this is the lever to reach for instead of changing the frontmatter
-default wholesale.
+**Model tier per workstream, when the default isn't right.** `executor`'s
+frontmatter now defaults to `claude-sonnet-5` — routine implementation
+doesn't need Opus-tier reasoning by default. A per-dispatch `model`
+override is still available and takes precedence over the frontmatter
+default for just that invocation: reach for it to bump a specific
+workstream *up* to Opus when it's architecturally ambiguous or a wrong
+implementation call would be genuinely expensive to undo, rather than
+running everything at the higher tier "just in case." See
+`docs/TECHNICAL_DECISIONS.md`'s "Model split" entry for the full
+reasoning.
 
 **Cost gate — a batch cap, not just a prompt.** A 5-hour usage window is
 metered by total token volume, not wall-clock time — running several
-Opus-tier agents concurrently for a few minutes can spend as much of
-that budget as hours of solo conversation, and *asking* before firing
-them doesn't cap the spend if the answer is yes. So cap actual
-concurrency instead of just confirming it:
+agents concurrently for a few minutes (worse when any of them are
+Opus-tier, e.g. a security- or architecturally-ambiguous workstream
+bumped up per the model-tier note above) can spend as much of that
+budget as hours of solo conversation, and *asking* before firing them
+doesn't cap the spend if the answer is yes. So cap actual concurrency
+instead of just confirming it:
 
 - Never run more than **2** `executor` workstreams active at once,
   regardless of how many are eligible to run in parallel. With 5
