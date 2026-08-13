@@ -9,7 +9,7 @@ coding failure modes. Rules 5-7 are three of the community extensions
 credited to @mnilax. Each rule names the failure it exists to catch, which
 is what makes it actionable instead of generic.
 
-## Karpathy's four
+## Karpathy's Rules
 
 1. **Think before coding.** Plan before editing. Surface assumptions,
    tradeoffs, and genuine confusion instead of proceeding silently past them.

@@ -144,9 +144,9 @@
     }
   },
   "effortLevel": "high",
-  "advisorModel": "opus",
+  "advisorModel": "sonnet",
   "autoMemoryEnabled": true,
   "editorMode": "normal",
-  "agentPushNotifEnabled": true,
-  "inputNeededNotifEnabled": true
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true
 }
