@@ -47,6 +47,21 @@ Don't apply this to a small repo that doesn't need it — six files for a
 project with one contributor and no history worth recording is the same
 mistake as one file trying to hold everything.
 
+## Session defaults
+
+- **Caveman mode is on by default, every session** — don't wait for
+  "/caveman" or "use caveman" to turn it on. Terse chat responses, full
+  technical accuracy kept. Persists until "stop caveman"/"normal mode" is
+  said. Per the `caveman` skill's own Boundaries section, this never
+  touches what actually gets written — code, commits, docs, and
+  third-party messages always stay normal prose regardless of mode.
+- **Run `/compact` mid-session, not only at the end.** Don't wait for
+  auto-compact or a natural stopping point — once a chunk of resolved
+  work (a finished sub-task, a long tool-output trail) doesn't need to
+  stay verbatim, compact it out. Keeps the cached prefix smaller and
+  cache reads cheaper on every subsequent call (rule 5's reasoning,
+  applied to context size instead of tool choice).
+
 ## Skills this machine ships
 
 Skills/agents/commands symlinked from the `setup_scripts` dotfiles repo —
