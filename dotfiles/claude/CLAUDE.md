@@ -27,8 +27,6 @@ is what makes it actionable instead of generic.
    verifiable, then loop until it's confirmed — not until it looks right.
    *Catches: declaring success without running anything.*
 
-## Kept extensions
-
 5. **Use the model only for judgment calls.** Reserve LLM calls for
    classification, extraction, and drafting. Deterministic operations get
    plain code.
@@ -50,7 +48,7 @@ mistake as one file trying to hold everything.
 ## Session defaults
 
 - **Caveman mode is on by default, every session** — don't wait for
-  "/caveman" or "use caveman" to turn it on. Terse chat responses, full
+  "/caveman lite" or "use caveman lite" to turn it on. Terse chat responses, full
   technical accuracy kept. Persists until "stop caveman"/"normal mode" is
   said. Per the `caveman` skill's own Boundaries section, this never
   touches what actually gets written — code, commits, docs, and
@@ -103,14 +101,8 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
 
 ## Superpowers overlap
 
-Two vendored skills collided by name/job with skills the `superpowers`
-marketplace plugin already ships: `test-driven-development` and
-`debugging-and-error-recovery`, against superpowers' own
-`test-driven-development` and `systematic-debugging`. Running both meant
-ambiguity over which one actually fires on a given trigger — rule 6
-territory: pick one, don't blend them.
 
-**Decision:** dropped the vendored copies. `/test` and any debugging work
+ `/test` and any debugging work
 now go through the `superpowers` plugin's `test-driven-development` and
 `systematic-debugging` skills. `/spec` and `/plan` also now open with a
 `superpowers` step instead of jumping straight to the vendored one:
@@ -127,7 +119,7 @@ tasks `/build` can dispatch concurrently.
 clearly better, so they weren't swapped in — only the two actual
 name/job collisions and the two compositional additions above were made.
 
-## Model split: Sonnet orchestrator, Opus subagents
+## Model split: Sonnet 5 orchestrator, Opus 4.8 subagents
 
 The main session (the one drafting specs and plans with you) runs on
 whatever `settings.json`'s `model` key says — currently the floating
@@ -190,8 +182,7 @@ reality; those are the ones worth rereading.
   alternative that was seriously considered, not just the one that won.
 - A rejection needs a reason concrete enough to stop the same alternative
   from being re-proposed with no new information — "didn't like it"
-  doesn't qualify, a measurement or a specific broken assumption does
-  (rule 14).
+  doesn't qualify, a measurement or a specific broken assumption does.
 - Cross-reference the other docs instead of re-explaining them inline —
   "reconciliation is still open, see `docs/IDEAS.md`" instead of
   restating what's already recorded there. Two explanations of one fact
