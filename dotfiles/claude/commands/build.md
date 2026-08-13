@@ -20,23 +20,46 @@ run.
 
 For each resolved task, dispatch one `executor` agent with the task's
 full context (acceptance criteria, file scope, relevant spec/plan
-excerpts). Tasks that don't share files can run in parallel, one
-`executor` per task; tasks that touch overlapping files run one at a
-time, in dependency order — never two executors writing to the same file
-concurrently.
+excerpts). Tasks that don't share files *can* run in parallel; tasks that
+touch overlapping files run one at a time, in dependency order — never
+two executors writing to the same file concurrently.
+
+**Cost gate — parallel is a choice, not the default.** `executor` runs on
+`claude-opus-4-8`. A 5-hour usage window is metered by total token
+volume, not wall-clock time — running several Opus-tier agents
+concurrently for a few minutes can spend as much of that budget as hours
+of solo conversation. So:
+
+- 1-2 independent tasks: dispatch in parallel without asking, that's
+  cheap enough to default on.
+- 3+ independent tasks eligible to run at once: state the count and ask
+  once before firing them all concurrently, unless the user already said
+  to move fast / parallelize for this batch. Sequential is the fallback,
+  not a lesser option — same tasks, same result, smaller burst of spend.
 
 ## 3. Fan out review, independently
 
-Once every dispatched `executor` has reported back, fan out in parallel
-against the resulting diff:
+Once every dispatched `executor` has reported back, fan out against the
+resulting diff. Each reviewer's trigger condition must match `review.md`
+exactly — don't let this command and `/review` disagree about when a
+reviewer runs (rule 6: pick one condition, don't let two commands each
+invent their own):
 
 - `code-reviewer` — always
-- `security-reviewer` — always
+- `security-reviewer` — only if the diff touches `nginx/`, `mysql`/
+  `database/`, `redis/`, or `php/fpm/` config
 - `infra-reviewer` — only if the diff touches `nginx/`, `database/`,
   `redis/`, `php/fpm/`, `linux/etc/`, or a Dockerfile
 - `distributed-systems-reviewer` — only if the diff touches a cross-
   process/network/queue boundary: an RPC or HTTP call between services, a
   queue producer/consumer, a scheduled job, or a background worker
+
+**Same cost gate applies here.** If the diff's triggers mean 3 or more
+reviewers would fire, name them and confirm before dispatching all of
+them concurrently, unless the diff was already flagged high-risk (e.g.
+touches a shared production pipeline) — in that case the full fan-out is
+earning its cost and doesn't need to pause first, but say so explicitly
+rather than silently defaulting to it.
 
 Give each reviewer only the diff. Not the plan, not each other's output —
 each axis reviews blind to the others, same reasoning as the two-axis

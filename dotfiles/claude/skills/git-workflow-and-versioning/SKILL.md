@@ -241,6 +241,26 @@ Automate this with git hooks:
 }
 ```
 
+## Pushing
+
+Commit freely — commits are local and cheap to undo. Pushing is not: it
+publishes the change to whatever's watching the remote (CI, collaborators,
+deploy hooks). The confirmation bar depends on the surface, because the
+risk does:
+
+- **Local IDE session** — edits haven't left the machine yet, so ask
+  before every push, state what's about to go out and to which branch,
+  and wait for an explicit go-ahead.
+- **Claude app / Claude Code on the web** — push without asking; that
+  surface is fine publishing on its own.
+
+Force-pushing to main/master always asks, on either surface — it's the
+harder-to-undo case regardless of where the session is running.
+`dotfiles/claude/hooks/warn-force-push.sh` enforces this split
+mechanically, keyed on `$CLAUDE_CODE_REMOTE` — a hook, not just an
+instruction, because rule 5 says deterministic operations get plain code,
+not a model remembering which surface it's on.
+
 ## Handling Generated Files
 
 - **Commit generated files** only if the project expects them (e.g., `package-lock.json`, Prisma migrations)
