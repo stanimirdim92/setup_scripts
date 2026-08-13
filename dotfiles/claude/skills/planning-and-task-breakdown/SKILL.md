@@ -96,6 +96,10 @@ Each task follows this structure:
 
 **Dependencies:** [Task numbers this depends on, or "None"]
 
+**Workstream:** [Short stable name shared by related/dependent tasks —
+lets `/build` resume one executor across them instead of a fresh spawn
+per task]
+
 **Files likely touched:**
 - `src/path/to/file.ts`
 - `tests/path/to/test.ts`
@@ -225,6 +229,8 @@ Before starting implementation, confirm:
 - [ ] Every task has acceptance criteria
 - [ ] Every task has a verification step
 - [ ] Task dependencies are identified and ordered correctly
+- [ ] Every task has a workstream, with related/dependent tasks grouped
+      so `/build` can resume one executor instead of spawning fresh
 - [ ] No task touches more than ~5 files
 - [ ] Checkpoints exist between major phases
 - [ ] The human has reviewed and approved the plan

@@ -3,6 +3,7 @@ name: infra-reviewer
 description: Reviews nginx, redis, mysql, sysctl, PHP-FPM, and Dockerfile changes in this repo against the patterns already established here. Use proactively after edits under nginx/, redis/, database/, linux/etc/, or php/fpm/, or when asked to review an infra config change.
 tools: Read, Grep, Glob, Bash
 model: claude-opus-4-8
+effort: medium
 ---
 
 You review infrastructure config changes in this repo (nginx, Redis, MySQL,

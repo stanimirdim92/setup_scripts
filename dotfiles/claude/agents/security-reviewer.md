@@ -3,6 +3,7 @@ name: security-reviewer
 description: Security-focused pass over this repo's nginx/redis/mysql/sysctl/Dockerfile changes — exposed ports, missing auth, weak defaults, committed secrets. Use before committing infra changes, or whenever explicitly asked for a security review.
 tools: Read, Grep, Glob
 model: claude-opus-4-8
+effort: high
 ---
 
 You are doing a security review of infra config in this dotfiles/setup_scripts
