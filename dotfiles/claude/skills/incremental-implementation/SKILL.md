@@ -198,7 +198,7 @@ Be explicit about what's in scope and what's NOT in scope for each increment.
 
 ## Increment Checklist
 
-After each increment, verify with the repository's own commands (see the test-driven-development skill's Discover the Stack First section):
+After each increment, verify with the repository's own commands (check the repo's actual test/build/lint commands directly — don't assume a stack):
 
 - [ ] The change does one thing and does it completely
 - [ ] All existing tests still pass (the repository's test command: `npm test`, `./gradlew test`, `pytest`, ...)

@@ -56,10 +56,11 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
 - `dotfiles-sync` (meta) — add/edit/relink a file in that repo.
 - `fastapi` — FastAPI conventions.
 - SDLC skills, most aliased by a same-named command: `spec-driven-development`
-  (`/spec`), `planning-and-task-breakdown` (`/plan`), `test-driven-development`
-  (`/test`), `code-review-and-quality` (`/review`),
-  `debugging-and-error-recovery`, `git-workflow-and-versioning`,
-  `incremental-implementation` (`/build`, alongside `executor` below).
+  (`/spec`), `planning-and-task-breakdown` (`/plan`), `code-review-and-quality`
+  (`/review`), `git-workflow-and-versioning`, `incremental-implementation`
+  (`/build`, alongside `executor` below). `/test` and debugging route to the
+  `superpowers` plugin's own skills instead of a vendored copy — see
+  "Superpowers overlap" below.
 - `ticket-breakdown-and-delegation` — extends `planning-and-task-breakdown`
   with sizing per assignee's level when a ticket splits across more than
   one person, not just by scope.
@@ -84,6 +85,32 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
   `code-reviewer` (five-axis review), first-party `executor` (dispatched
   by `/build` to implement one planned task end-to-end; never invokes
   another agent — review and the go/no-go call stay with the orchestrator).
+
+## Superpowers overlap
+
+Two vendored skills collided by name/job with skills the `superpowers`
+marketplace plugin already ships: `test-driven-development` and
+`debugging-and-error-recovery`, against superpowers' own
+`test-driven-development` and `systematic-debugging`. Running both meant
+ambiguity over which one actually fires on a given trigger — rule 6
+territory: pick one, don't blend them.
+
+**Decision:** dropped the vendored copies. `/test` and any debugging work
+now go through the `superpowers` plugin's `test-driven-development` and
+`systematic-debugging` skills. `/spec` and `/plan` also now open with a
+`superpowers` step instead of jumping straight to the vendored one:
+`brainstorming`'s spike/bounded/architectural classification (with its own
+approval gate) runs before `spec-driven-development` writes anything, and
+`dispatching-parallel-agents`'s independence test runs once
+`planning-and-task-breakdown` has the dependency graph, to flag which
+tasks `/build` can dispatch concurrently.
+
+**Rejected — swapping in more of superpowers.** `writing-plans`,
+`requesting-code-review`/`receiving-code-review`, and
+`finishing-a-development-branch` cover the same ground as
+`planning-and-task-breakdown` and `code-review-and-quality` without being
+clearly better, so they weren't swapped in — only the two actual
+name/job collisions and the two compositional additions above were made.
 
 ## Model split: Sonnet orchestrator, Opus subagents
 
