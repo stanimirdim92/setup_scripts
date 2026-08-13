@@ -24,18 +24,25 @@ excerpts). Tasks that don't share files *can* run in parallel; tasks that
 touch overlapping files run one at a time, in dependency order — never
 two executors writing to the same file concurrently.
 
-**Cost gate — parallel is a choice, not the default.** `executor` runs on
+**Cost gate — a batch cap, not just a prompt.** `executor` runs on
 `claude-opus-4-8`. A 5-hour usage window is metered by total token
 volume, not wall-clock time — running several Opus-tier agents
 concurrently for a few minutes can spend as much of that budget as hours
-of solo conversation. So:
+of solo conversation, and *asking* before firing them doesn't cap the
+spend if the answer is yes. So cap actual concurrency instead of just
+confirming it:
 
-- 1-2 independent tasks: dispatch in parallel without asking, that's
-  cheap enough to default on.
-- 3+ independent tasks eligible to run at once: state the count and ask
-  once before firing them all concurrently, unless the user already said
-  to move fast / parallelize for this batch. Sequential is the fallback,
-  not a lesser option — same tasks, same result, smaller burst of spend.
+- Never run more than **2** `executor` agents at once, regardless of how
+  many independent tasks are eligible to run in parallel. With 5
+  independent tasks, that's dispatch 2, wait for both to report back,
+  dispatch the next 2, then the last 1 — not all 5 at once.
+- This cap applies even after the user says go ahead on a larger batch —
+  it isn't a one-time confirmation that then lifts the ceiling, it's the
+  ceiling itself.
+- If a task's dependency graph forces sequencing anyway (overlapping
+  files), that ordering already keeps concurrency low — the cap only
+  bites when 3+ tasks are actually independent and would otherwise all
+  fire together.
 
 ## 3. Fan out review, independently
 
@@ -54,12 +61,13 @@ invent their own):
   process/network/queue boundary: an RPC or HTTP call between services, a
   queue producer/consumer, a scheduled job, or a background worker
 
-**Same cost gate applies here.** If the diff's triggers mean 3 or more
-reviewers would fire, name them and confirm before dispatching all of
-them concurrently, unless the diff was already flagged high-risk (e.g.
-touches a shared production pipeline) — in that case the full fan-out is
-earning its cost and doesn't need to pause first, but say so explicitly
-rather than silently defaulting to it.
+**Same batch cap applies here.** Never run more than **2** reviewers at
+once, same reasoning as the executor cap above — if 3 or more triggers
+match, dispatch 2, wait for both to report back, then dispatch the rest.
+Exception: a diff already flagged high-risk (e.g. touches a shared
+production pipeline) can run the full fan-out concurrently since it's
+earning the cost — say so explicitly when that's why, rather than
+silently defaulting to the full fan-out either way.
 
 Give each reviewer only the diff. Not the plan, not each other's output —
 each axis reviews blind to the others, same reasoning as the two-axis
