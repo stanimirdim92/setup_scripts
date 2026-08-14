@@ -41,10 +41,6 @@ is what makes it actionable instead of generic.
    explicitly. Never let "I couldn't check this" read as "this works".
    *Catches: silent gaps the reader assumes were covered.*
 
-Don't apply this to a small repo that doesn't need it — six files for a
-project with one contributor and no history worth recording is the same
-mistake as one file trying to hold everything.
-
 ## Session defaults
 
 - **Caveman mode is on by default, every session** — don't wait for
