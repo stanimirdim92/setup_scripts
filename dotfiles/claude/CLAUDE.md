@@ -4,12 +4,10 @@ Applies to every project unless a project's own CLAUDE.md/AGENTS.md says
 otherwise — project files win on anything specific (versions, commands,
 paths, package choices).
 
-Rules 1-4 are Andrej Karpathy's, from his January 2026 post on recurring LLM
-coding failure modes. Rules 5-7 are three of the community extensions
-credited to @mnilax. Each rule names the failure it exists to catch, which
+Each rule names the failure it exists to catch, which
 is what makes it actionable instead of generic.
 
-## Karpathy's four
+## Rules
 
 1. **Think before coding.** Plan before editing. Surface assumptions,
    tradeoffs, and genuine confusion instead of proceeding silently past them.
@@ -40,10 +38,6 @@ is what makes it actionable instead of generic.
 7. **Fail loud.** Surface uncertainty, skipped steps, and unverified claims
    explicitly. Never let "I couldn't check this" read as "this works".
    *Catches: silent gaps the reader assumes were covered.*
-
-Don't apply this to a small repo that doesn't need it — six files for a
-project with one contributor and no history worth recording is the same
-mistake as one file trying to hold everything.
 
 ## Session defaults
 
