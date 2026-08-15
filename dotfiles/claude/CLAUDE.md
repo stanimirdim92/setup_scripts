@@ -81,10 +81,6 @@ skills (`superpowers`, `feature-dev`, etc.), which version independently.
 - `ticket-breakdown-and-delegation` — extends `planning-and-task-breakdown`
   with sizing per assignee's level when a ticket splits across more than
   one person, not just by scope.
-- `research` — spin off a background agent to chase primary sources and
-  write cited findings to a file, instead of doing the reading inline.
-- `handoff` — compact the current conversation into a document a fresh
-  session picks up from; use before a long session's context runs out.
 - `caveman` — terse chat-only response mode (drops articles/filler/
   hedging, keeps every technical detail exact). `/caveman [lite|full|
   ultra|wenyan-*|off]`. Never touches what actually gets written —
