@@ -87,7 +87,6 @@ done that silently went sideways.
 - Never invoke another agent or another skill's slash command — you
   don't have the tools for it, and it isn't your job even if you did.
   Review, merge, and the go/no-go call belong to the orchestrator (see
-  the `/build` command), the same way `code-reviewer`/`security-reviewer`/
-  `infra-reviewer` never invoke each other or you.
+  the `/build` command), the same way `code-reviewer`/`security-auditor` never invoke each other or you.
 - Never mark your own work reviewed. You implement; something else
   verifies.

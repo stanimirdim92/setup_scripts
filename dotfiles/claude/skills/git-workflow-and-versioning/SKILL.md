@@ -249,14 +249,13 @@ deploy hooks). The confirmation bar depends on the surface, because the
 risk does:
 
 - **Local IDE session** — edits haven't left the machine yet, so ask
-  before every push, state what's about to go out and to which branch,
-  and wait for an explicit go-ahead.
+  before every commit and push and wait for an explicit go-ahead.
 - **Claude app / Claude Code on the web** — push without asking; that
   surface is fine publishing on its own.
 
-Force-pushing to main/master always asks, on either surface — it's the
+Never do Force-pushing to main/master always asks, on either surface — it's the
 harder-to-undo case regardless of where the session is running.
-`dotfiles/claude/hooks/warn-force-push.sh` enforces this split
+`hooks/warn-force-push.sh` enforces this split
 mechanically, keyed on `$CLAUDE_CODE_REMOTE` — a hook, not just an
 instruction, because rule 5 says deterministic operations get plain code,
 not a model remembering which surface it's on.
@@ -328,7 +327,7 @@ A changelog is not `git log`. It's the curated, consumer-facing answer to "what 
 - `GET /v1/tasks/all` — use the paginated `GET /v1/tasks` (removal in 2.0)
 ```
 
-Write the entry in the same change that makes the change, while the impact is fresh — not reconstructed from commit archaeology at release time. Breaking changes get a migration note and a deprecation window (follow the `deprecation-and-migration` skill if available); shipping the actual release is the `shipping-and-launch` skill's job if available — neither is currently vendored in this repo; this section is the versioning contract that feeds them.
+Write the entry in the same change that makes the change, while the impact is fresh — not reconstructed from commit archaeology at release time. Breaking changes get a migration note and a deprecation window (follow the `deprecation-and-migration` skill); shipping the actual release is the `shipping-and-launch` skill's job if available; this section is the versioning contract that feeds them.
 
 ## Common Rationalizations
 

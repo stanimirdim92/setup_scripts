@@ -81,7 +81,7 @@ and so can run 2-wide.
 
 Once every dispatched `executor` has reported back, fan out against the
 resulting diff. Trigger conditions live in one place —
-`dotfiles/claude/references/reviewer-triggers.md` — read it before
+`references/reviewer-triggers.md` — read it before
 deciding which reviewers run; `/review` points at the same file, so
 don't let this command's copy of the logic drift from it (rule 6: pick
 one condition, don't let two commands each invent their own).
@@ -106,8 +106,7 @@ anchoring on them instead of forming its own.
 
 Report each reviewer's findings under its own heading — Correctness/
 Readability/Architecture/Security/Performance from `code-reviewer`,
-security findings from `security-reviewer`, infra findings from
-`infra-reviewer` if it ran, cross-boundary reliability findings from
+security findings from `security-auditor`, cross-boundary reliability findings from
 `distributed-systems-reviewer` if it ran, LLM-call-site findings from
 `llm-integration-reviewer` if it ran. **Don't blend them into one
 ranked list.**

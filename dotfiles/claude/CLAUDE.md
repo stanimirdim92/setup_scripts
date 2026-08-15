@@ -54,67 +54,24 @@ is what makes it actionable instead of generic.
   cache reads cheaper on every subsequent call (rule 5's reasoning,
   applied to context size instead of tool choice).
 
-## Skills this machine ships
+## Project Structure
 
-Skills/agents/commands symlinked from the `setup_scripts` dotfiles repo —
-its README.md has the authoritative list. Excludes marketplace-plugin
-skills (`superpowers`, `feature-dev`, etc.), which version independently.
-
-- `dotfiles-sync` (meta) — add/edit/relink a file in that repo.
-- `fastapi` — FastAPI conventions.
-- SDLC skills, most aliased by a same-named command: `spec-driven-development`
-  (`/spec`), `planning-and-task-breakdown` (`/plan`), `git-workflow-and-versioning`,
-  `incremental-implementation` (`/build`, alongside `executor` below).
-  `code-review-and-quality` is no longer `/review`'s entry point — `/review`
-  dispatches the `code-reviewer` agent directly now, same as `/build`'s
-  review step; the skill is kept only as a reference for its
-  large-diff-splitting-strategy content, linked from `git-workflow-and-
-  versioning` and `references/definition-of-done.md`. `/test` and debugging
-  route to the `superpowers` plugin's own skills instead of a vendored copy
-  — see "Superpowers overlap" below.
-- `ticket-breakdown-and-delegation` — extends `planning-and-task-breakdown`
-  with sizing per assignee's level when a ticket splits across more than
-  one person, not just by scope.
-- `caveman` — terse chat-only response mode (drops articles/filler/
-  hedging, keeps every technical detail exact). `/caveman [lite|full|
-  ultra|wenyan-*|off]`. Never touches what actually gets written —
-  code, commits, docs, and third-party messages stay normal prose
-  regardless of mode; see its own SKILL.md's Boundaries section.
-- Subagents: `infra-reviewer`, `security-reviewer`,
-  `distributed-systems-reviewer` (timeouts, idempotent retries, backoff,
-  circuit breakers, backpressure, checkpointing — for anything crossing a
-  process/network/queue boundary), `llm-integration-reviewer` (cost/timeout
-  ceilings, output validation before a model response is trusted, malformed-
-  output handling, fallback path, prompt-injection surface — for anything
-  calling a model), `unblock-triage` (given a batch of blocked PRs/tickets,
-  sorts which need this person's own judgment call vs. which can be
-  delegated, ranked by blocking radius) (all first-party), vendored
-  `code-reviewer` (five-axis review), first-party `executor` (dispatched
-  by `/build` to implement one planned task end-to-end; never invokes
-  another agent — review and the go/no-go call stay with the orchestrator).
-
-## Superpowers overlap
-
-`/test` and debugging route to the `superpowers` plugin's own skills, not
-a vendored copy; `/spec` and `/plan` each open with a compositional
-`superpowers` step before their own vendored skill runs. Full reasoning
-and rejected alternatives: `docs/TECHNICAL_DECISIONS.md`.
+```
+skills/       → Core skills (SKILL.md per directory)
+agents/       → Reusable agent personas
+hooks/        → Session lifecycle hooks
+.claude/commands/ → Slash commands (/spec, /plan, /build, /test, /review)
+references/   → Supplementary checklists (testing, performance, security, accessibility, observability)
+evals/        → Skill eval cases + framework (see evals/README.md)
+docs/         → Setup guides for different tools
+```
 
 ## Model split: Sonnet orchestrator, tiered subagents
 
 Every dispatched agent pins a specific `model:` version explicitly in its
-own frontmatter — never the floating `opus`/`sonnet` alias, never left
-unset (which silently falls back to whatever the orchestrator is
-running on). `executor` and `code-reviewer` (dispatched on every
-`/build` run) pin `claude-sonnet-5`; `security-reviewer`,
-`distributed-systems-reviewer`, `infra-reviewer`,
-`llm-integration-reviewer`, and `unblock-triage` pin `claude-opus-4-8`. A
-per-invocation `model` override can still bump a specific workstream or
+own frontmatter. A per-invocation `model` override can still bump a specific workstream or
 review up to Opus when it's architecturally ambiguous or high-stakes —
-see `build.md`'s "Model tier per workstream" note. Full reasoning and
-rejected alternatives: `docs/TECHNICAL_DECISIONS.md`. Update that doc,
-this list, and README's together when agents change — `dotfiles-sync`'s
-checklist covers all three.
+see `commands/build.md`'s "Model tier per workstream" note.
 
 ## Ideas, decisions, and memory
 
@@ -123,4 +80,4 @@ and-mostly-built choices in `docs/TECHNICAL_DECISIONS.md`, and durable
 project state in `docs/MEMORY.md` — distinct from auto-memory (this
 machine only) and episodic memory (searched across every project). Full
 practice, format, and the difference between the three memory systems:
-`dotfiles/claude/references/documentation-practices.md`.
+`references/documentation-practices.md`.

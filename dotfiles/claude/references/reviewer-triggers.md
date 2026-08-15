@@ -9,10 +9,7 @@ pattern") is for. Edit this file when a trigger changes; don't patch
 
 - **`code-reviewer`** — always. Five-axis review: correctness,
   readability, architecture, security, performance.
-- **`security-reviewer`** — diff touches `nginx/`, `mysql/`/`database/`,
-  `redis/`, or `php/fpm/` config.
-- **`infra-reviewer`** — diff touches `nginx/`, `database/`, `redis/`,
-  `php/fpm/`, `linux/etc/`, or a Dockerfile.
+- **`security-auditor`** — diff touches input handling, infra, configs, secrets, 3rd party integrations, auth.
 - **`distributed-systems-reviewer`** — diff crosses a process/network/
   queue boundary: an RPC or HTTP call between services, a queue
   producer/consumer, a scheduled job, or a background worker.

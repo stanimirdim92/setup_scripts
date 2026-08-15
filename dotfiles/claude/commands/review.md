@@ -24,9 +24,9 @@ framework here in the command.
 
 ## 3. Specialists, by trigger
 
-Check the diff against `dotfiles/claude/references/reviewer-triggers.md`
+Check the diff against `references/reviewer-triggers.md`
 (the same file `/build` uses) and dispatch any specialist whose
-condition matches — `security-reviewer`, `infra-reviewer`,
+condition matches — `security-auditor`,
 `distributed-systems-reviewer`, `llm-integration-reviewer`. Give each the
 same goal/acceptance-criteria/diff, not each other's output; each axis
 reviews blind to the others.

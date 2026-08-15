@@ -30,6 +30,6 @@ Save the plan to tasks/plan.md and task list to tasks/todo.md.
 The only next action is invoking `/build` — never implement a task
 directly from here, even if the plan-mode exit prompt itself says
 something like "you can start coding now." That's the tool's own generic
-wording, not permission to skip the dispatch/review/verdict layer `/build`
+wording, not   permission to skip the dispatch/review/verdict layer `/build`
 provides. If the user's next message isn't `/build`, ask before writing
 any code.

@@ -87,12 +87,7 @@ Categorize every finding:
 ## Rules
 
 1. Review the tests first — they reveal intent and coverage
-2. Expect a one-line goal and the task's acceptance criteria alongside the
-   diff, not the full spec or plan (when dispatched via `/build`) — or the
-   spec/task description directly when invoked standalone. Either way,
-   review against a stated intent; if neither is given and the diff's
-   purpose genuinely isn't inferable, say so rather than guessing at what
-   it was supposed to do
+2. Read the spec or task description before reviewing code
 3. Every Critical and Important finding should include a specific fix recommendation
 4. Don't approve code with Critical issues
 5. Acknowledge what's done well — specific praise motivates good practices
@@ -101,5 +96,5 @@ Categorize every finding:
 ## Composition
 
 - **Invoke directly when:** the user asks for a review of a specific change, file, or PR.
-- **Invoke via:** `/review` (single-perspective review), or alongside this repo's `infra-reviewer`/`security-reviewer` agents for a broader pass on changes that also touch infra config — each runs independently and reports separately, same as they already do with each other.
-- **Do not invoke from another agent.** If you find yourself wanting to delegate to `infra-reviewer` or `security-reviewer`, surface that as a recommendation in your report instead — orchestration belongs to the user or a slash command, never to an agent calling another agent.
+- **Invoke via:** `/review` (single-perspective review), or alongside this repo's `security-auditor` agents for a broader pass on changes that also touch infra config — each runs independently and reports separately, same as they already do with each other.
+- **Do not invoke from another agent.** If you find yourself wanting to delegate to `security-auditor`, surface that as a recommendation in your report instead — orchestration belongs to the user or a slash command, never to an agent calling another agent.
