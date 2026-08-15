@@ -61,7 +61,7 @@ skills/       → Core skills (SKILL.md per directory)
 agents/       → Reusable agent personas
 hooks/        → Session lifecycle hooks
 commands/     → Slash commands (/spec, /plan, /build, /test, /review)
-references/   → Supplementary checklists (definition-of-done, security, reviewer-triggers, documentation-practices)
+references/   → Supplementary checklists (definition-of-done, security-checklist, reviewer-triggers, documentation-practices)
 docs/         → Setup guides for different tools
 ```
 
