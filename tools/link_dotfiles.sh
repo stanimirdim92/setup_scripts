@@ -27,6 +27,7 @@ link() {
 }
 
 link "$DOTFILES/claude/CLAUDE.md"              "$HOME/.claude/CLAUDE.md"
+link "$DOTFILES/claude/AGENTS.md"              "$HOME/.claude/AGENTS.md"
 link "$DOTFILES/claude/settings.json"          "$HOME/.claude/settings.json"
 link "$DOTFILES/claude/remote-settings.json"   "$HOME/.claude/remote-settings.json"
 
