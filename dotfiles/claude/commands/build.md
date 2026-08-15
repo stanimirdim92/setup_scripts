@@ -37,7 +37,7 @@ through all five, not five fresh spawns each re-paying that cost.
   separate `executor` — but not at the same time as another one (below).
 
 **Executors never run concurrently, even across independent
-workstreams.** `executor` has `Edit`/`Write`/`Bash` and commits — two of
+workstreams.** `executor` has `Edit`/`Write`/`Bash`/`Grep` and commits — two of
 them running at once write into the *same* checkout, and that races
 regardless of whether their file scopes overlap: a `git add`/`commit`
 from one can pick up the other's uncommitted edit mid-flight, or the two
@@ -61,9 +61,7 @@ override is still available and takes precedence over the frontmatter
 default for just that invocation: reach for it to bump a specific
 workstream *up* to Opus when it's architecturally ambiguous or a wrong
 implementation call would be genuinely expensive to undo, rather than
-running everything at the higher tier "just in case." See
-`docs/TECHNICAL_DECISIONS.md`'s "Model split" entry for the full
-reasoning.
+running everything at the higher tier "just in case."
 
 **Cost gate — a batch cap, not just a prompt.** A 5-hour usage window is
 metered by total token volume, not wall-clock time — running several
