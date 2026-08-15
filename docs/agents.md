@@ -6,7 +6,6 @@ Specialist personas that play a single role with a single perspective. Each pers
 |---------|------|----------|
 | [code-reviewer](../agents/code-reviewer.md) | Senior Staff Engineer | Five-axis review before merge |
 | [security-auditor](../agents/security-auditor.md) | Security Engineer | Vulnerability detection, OWASP-style audit |
-| [test-engineer](../agents/test-engineer.md) | QA Engineer | Test strategy, coverage analysis, Prove-It pattern |
 
 ## How personas relate to skills and commands
 
@@ -16,7 +15,7 @@ Three layers, each with a distinct job:
 |-------|-----------|---------|------------------|
 | **Skill** | A workflow with steps and exit criteria | `code-review-and-quality` | The *how* — invoked from inside a persona or command |
 | **Persona** | A role with a perspective and an output format | `code-reviewer` | The *who* — adopts a viewpoint, produces a report |
-| **Command** | A user-facing entry point | `/review`, `/ship` | The *when* — composes personas and skills |
+| **Command** | A user-facing entry point | `/review`, `/build` | The *when* — composes personas and skills |
 
 The user (or a slash command) is the orchestrator. **Personas do not call other personas.** Skills are mandatory hops inside a persona's workflow.
 
@@ -27,20 +26,19 @@ Pick this when you want one perspective on the current change and the user is in
 
 - "Review this PR" → invoke `code-reviewer` directly
 - "Are there security issues in `auth.ts`?" → invoke `security-auditor` directly
-- "What tests are missing for the checkout flow?" → invoke `test-engineer` directly
 
 ### Slash command (single persona behind it)
 Pick this when there's a repeatable workflow you'd otherwise re-explain every time.
 
-- `/review` → wraps `code-reviewer` with the project's review skill
-- `/test` → wraps `superpowers:test-driven-development` with TDD skill
+- `/review` → wraps `code-reviewer` (plus specialist fan-out per `references/reviewer-triggers.md`) with the project's review skill
+- `/test` → wraps `superpowers:test-driven-development` with the TDD skill
 
 ### Slash command (orchestrator — fan-out)
-Pick this only when **independent** investigations can run in parallel and produce reports that a single agent then merges.
+Pick this only when **independent** investigations can run against the same diff and produce reports that a single agent then merges.
 
-- `/ship` → fans out to `code-reviewer` + `security-auditor` + `/test` in parallel, then synthesizes their reports into a go/no-go decision
+- `/build` → dispatches `executor` per workstream (sequential — see `commands/build.md`), then fans out review: `code-reviewer` always, plus `security-auditor` / `distributed-systems-reviewer` / `llm-integration-reviewer` per trigger, capped at 2 reviewers running at once (never all of them concurrently, even on a diff that trips every trigger)
 
-This is the only orchestration pattern this repo endorses. See [references/orchestration-patterns.md](../references/orchestration-patterns.md) for the full pattern catalog and anti-patterns.
+This is the only orchestration pattern this repo has built. See `commands/build.md`'s "Fan out review, independently" section for the actual dispatch and batching rules — don't re-derive them here.
 
 ## Decision matrix
 
@@ -48,30 +46,35 @@ This is the only orchestration pattern this repo endorses. See [references/orche
 Is the work a single perspective on a single artifact?
 ├── Yes → Direct persona invocation
 └── No  → Are the sub-tasks independent (no shared mutable state, no ordering)?
-         ├── Yes → Slash command with parallel fan-out (e.g. /ship)
+         ├── Yes → Slash command with fan-out (/build's review step)
          └── No  → Sequential slash commands run by the user (/spec → /plan → /build → /test → /review)
 ```
 
 ## Worked example: valid orchestration
 
-`/ship` is the canonical fan-out orchestrator in this repo:
+`/build`'s review step, once every dispatched `executor` has reported back:
 
 ```
-/ship
-  ├── (parallel) code-reviewer    → review report
-  ├── (parallel) security-auditor → audit report
-  └── (parallel) test-engineer    → coverage report
+/build (review step)
+  ├── code-reviewer      → review report          (always runs)
+  ├── security-auditor   → audit report            (if a trigger matched)
+  └── distributed-systems-reviewer → reliability report (if a trigger matched)
                   ↓
-        merge phase (main agent)
+     batched 2-at-a-time, not all at once
                   ↓
-        go/no-go decision + rollback plan
+        merge phase (main agent) — each axis reported under its own
+        heading, never blended into one ranked list
+                  ↓
+        go/no-go decision
 ```
 
 Why this works:
-- Each sub-agent operates on the same diff but produces a **different perspective**
-- They have no dependencies on each other → genuine parallelism, real wall-clock savings
+- Each reviewer operates on the same diff but produces a **different perspective**
+- They have no dependencies on each other, and review blind to each other's output — an axis that can see another's findings starts anchoring on them
 - Each runs in a fresh context window → main session stays uncluttered
 - The merge step is small and benefits from full context, so it stays in the main agent
+
+Why it's capped at 2, not fully parallel: `references/reviewer-triggers.md` can match 3+ specialists on a high-risk diff, but this repo's own cost-gate decision (see `docs/TECHNICAL_DECISIONS.md`) treats predictable spend as worth more than a few saved wall-clock minutes — a high-risk diff earns every reviewer's pass, just in sequential batches of 2, not a faster concurrent burn.
 
 ## Worked example: invalid orchestration (do not build this)
 
@@ -91,7 +94,7 @@ Why this fails:
 - Pure routing layer with no domain value
 - Adds two paraphrasing hops → information loss + 2× token cost
 - The user already knows they want a review; let them call `/review` directly
-- Replicates work that slash commands and `AGENTS.md` intent-mapping already do
+- Replicates work that slash commands already do
 
 ## Rules for personas
 
@@ -102,19 +105,19 @@ Why this fails:
 
 ## Claude Code interop
 
-The personas in this repo are designed to work as Claude Code subagents and as Agent Teams teammates without modification:
+The personas in this repo are designed to work as Claude Code subagents without modification:
 
-- **As subagents:** auto-discovered when this plugin is enabled (no path config needed). Use the Agent tool with `subagent_type: code-reviewer` (or `security-auditor`, `test-engineer`). `/ship` is the canonical example.
-- **As Agent Teams teammates** (experimental, requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`): reference the same persona name when spawning a teammate. The persona's body is **appended to** the teammate's system prompt as additional instructions (not a replacement), so your persona text sits on top of the team-coordination instructions the lead installs (SendMessage, task-list tools, etc.).
+- **As subagents:** auto-discovered when this plugin is enabled (no path config needed). Use the Agent tool with `subagent_type: code-reviewer` (or `security-auditor`, `distributed-systems-reviewer`, `llm-integration-reviewer`). `/build`'s review-fan-out step is the working example.
+- **As Agent Teams teammates** (experimental, requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`): reference the same persona name when spawning a teammate. The persona's body is **appended to** the teammate's system prompt as additional instructions (not a replacement), so your persona text sits on top of the team-coordination instructions the lead installs (SendMessage, task-list tools, etc.). Not currently used by any command in this repo — noted here as a platform capability, not an active pattern.
 
-Subagents only report results back to the main agent. Agent Teams let teammates message each other directly. Use subagents when reports are enough; use Agent Teams when sub-agents need to challenge each other's findings (e.g. competing-hypothesis debugging). See [references/orchestration-patterns.md](../references/orchestration-patterns.md) for the full mapping.
+Subagents only report results back to the main agent. Agent Teams let teammates message each other directly. This repo's own fan-out (`/build`'s review step) only needs the subagent shape — each reviewer reports back independently and the orchestrator merges, no teammate-to-teammate messaging required.
 
 Plugin agents do not support `hooks`, `mcpServers`, or `permissionMode` frontmatter — those fields are silently ignored. Avoid relying on them when authoring new personas here.
 
 ## Adding a new persona
 
-1. Create `agents/<role>.md` with the same frontmatter format used by existing personas.
+1. Create `agents/<role>.md` with the same frontmatter format used by existing personas (`name`, `description`, `tools`, `model`, `effort`).
 2. Define the role, scope, output format, and rules.
 3. Add a **Composition** block at the bottom (Invoke directly when / Invoke via / Do not invoke from another persona).
 4. Add the persona to the table at the top of this file.
-5. If the persona enables a new orchestration pattern, document it in `references/orchestration-patterns.md` rather than inventing the pattern in the persona file itself.
+5. If the persona enables a new orchestration pattern, document it in this file's "When to use each" / "Worked example" sections — don't invent a pattern inside the persona file itself, and don't reference a pattern-catalog file that doesn't exist yet.

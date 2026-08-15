@@ -168,6 +168,31 @@ still referenced by `git-workflow-and-versioning` (splitting-strategy
 detail for large diffs) and `references/definition-of-done.md`. Kept as
 a reference; only `/review`'s direct invocation of it was removed.
 
+## docs/agents.md: trimmed to match what's actually built
+
+**Decision.** `docs/agents.md` (added by the direct-edit refactor) described
+a `/ship` fan-out command, a `test-engineer` persona, and a
+`references/orchestration-patterns.md` catalog — none of which exist in
+this repo. Confirmed with the user: trim the doc rather than build the
+missing pieces. Rewrote it to describe `/build`'s actual review-fan-out
+step (the one real orchestration pattern this repo has) instead of an
+aspirational one, and dropped every link to files that don't exist.
+
+**Rejected — build out `/ship` + `test-engineer` + orchestration-patterns.md.**
+Would have made the doc true, but `/ship` would duplicate `/build`'s
+existing fan-out (same job: dispatch, then review multiple perspectives,
+merge a verdict) — a second command for the same pattern is rule-6
+territory, not a genuine gap.
+
+**`fastapi` skill removal — confirmed intentional,** no restore.
+
+**`code-reviewer.md` rule 2 — reapplied the earlier fix.** The refactor's
+edit had reverted rule 2 to "Read the spec or task description before
+reviewing code," which contradicts `/build`/`/review`'s own instruction to
+hand reviewers the diff plus a one-line goal and acceptance criteria, not
+the full spec (see `references/reviewer-triggers.md`). Confirmed with the
+user: reapply the corrected wording rather than keep the reverted one.
+
 ## Matt Pocock's skills: removed, committing to the addyosmani SDLC shape
 
 **Decision.** `research` and `handoff` (`MATTPOCOCK_SKILLS_LICENSE`) are
@@ -202,12 +227,13 @@ the tier the two agents it replaces already carried — the merge shipped
 without frontmatter the first time, which this repo's own "every agent
 pins a model" rule (see "Model split" above) doesn't allow.
 
-**Open, not yet resolved:** `infra-reviewer`'s job also included
-pattern-*consistency* review (does this Dockerfile/nginx config match what
-this repo already established), not just security. `security-auditor`'s
-Infrastructure section only covers the security half. Whether that
-consistency check needs a home somewhere else, or was deliberately dropped,
-hasn't been settled — flagged to the user rather than assumed either way.
+**Resolved.** `infra-reviewer`'s job also included pattern-*consistency*
+review (does this Dockerfile/nginx config match what this repo already
+established), not just security — `security-auditor`'s Infrastructure
+section only covers the security half. Confirmed with the user: leave it
+dropped. `code-reviewer`'s Architecture axis ("does this follow existing
+patterns") is generic enough to cover infra files too; no dedicated
+consistency check is being reintroduced.
 
 ## New vendored skills: `deprecation-and-migration`, `security-and-hardening`
 
