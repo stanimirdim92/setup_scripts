@@ -94,8 +94,7 @@ in this repo — this skill covers structural review, those cover security verdi
 - Any synchronous operations that should be async? Unnecessary re-renders in UI components?
 
 For deeper profiling and optimization technique, see the
-`performance-optimization` skill if available, or
-`../../references/performance-checklist.md` in this repo.
+`performance-optimization` skill if available.
 
 ## Structural Remedies
 
@@ -317,4 +316,4 @@ Different models have different blind spots — this catches what a single model
 ## See Also
 
 - `security-and-hardening` skill (if available) — vulnerability triage, supply-chain risk; `../../references/security-checklist.md` covers the same ground in this repo
-- `performance-optimization` skill (if available) — profiling and optimization technique; `../../references/performance-checklist.md` covers the same ground in this repo
+- `performance-optimization` skill (if available) — profiling and optimization technique
