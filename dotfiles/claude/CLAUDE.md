@@ -60,9 +60,8 @@ is what makes it actionable instead of generic.
 skills/       → Core skills (SKILL.md per directory)
 agents/       → Reusable agent personas
 hooks/        → Session lifecycle hooks
-.claude/commands/ → Slash commands (/spec, /plan, /build, /test, /review)
-references/   → Supplementary checklists (testing, performance, security, accessibility, observability)
-evals/        → Skill eval cases + framework (see evals/README.md)
+commands/     → Slash commands (/spec, /plan, /build, /test, /review)
+references/   → Supplementary checklists (definition-of-done, security, reviewer-triggers, documentation-practices)
 docs/         → Setup guides for different tools
 ```
 

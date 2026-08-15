@@ -253,7 +253,7 @@ risk does:
 - **Claude app / Claude Code on the web** — push without asking; that
   surface is fine publishing on its own.
 
-Never do Force-pushing to main/master always asks, on either surface — it's the
+Force-pushing to main/master always asks, on either surface — it's the
 harder-to-undo case regardless of where the session is running.
 `hooks/warn-force-push.sh` enforces this split
 mechanically, keyed on `$CLAUDE_CODE_REMOTE` — a hook, not just an

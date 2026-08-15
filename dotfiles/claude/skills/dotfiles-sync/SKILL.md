@@ -23,11 +23,11 @@ description: How to add, edit, or relink files in this dotfiles/setup_scripts re
      holds secrets, or is runtime state (matches existing exclusions:
      `.credentials.json`, `~/.claude.json` MCP entries, `installed_plugins.json`,
      session/log directories).
-   - If the new file is a skill, agent, or command, also add it to the
-     "Skills this machine ships" list in `dotfiles/claude/CLAUDE.md` —
-     that's the shortlist an agent actually reads mid-session; treat the
-     README and CLAUDE.md edits as one change, not two, or the two lists
-     drift apart the first time only one gets updated.
+   - If the new file is a skill, agent, or command, fold it into the
+     relevant "Synced" bullet's prose list too (e.g. the `agents/` or
+     `skills/` line enumerates what's inside, not just the directory path)
+     — `CLAUDE.md` no longer keeps a separate skills-list section, so
+     README's own bullets are the one place this needs to stay current.
 4. Re-run `./tools/link_dotfiles.sh` and read its output: `ok <dest>` means
    already correct, `linked <dest> -> <src>` means newly linked, `backup
    <dest> -> <dest>.bak` means something real was in the way — check the

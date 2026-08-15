@@ -188,6 +188,48 @@ match this team's actual shape of work: tickets (e.g. LD-329) arrive
 already fully authored in Jira, DoD and all, before Claude ever sees
 them. There's nothing here for those skills to do.
 
+## Infra + security reviewers merged into `security-auditor`
+
+**Decision.** `infra-reviewer` (nginx/redis/mysql/sysctl/PHP-FPM/Dockerfile
+pattern review) and `security-reviewer` (security pass over the same infra
+surface) are replaced by a single `security-auditor` agent — one persona
+covering input handling, auth, data protection, infra security, third-party
+integrations, and LLM/OWASP-LLM-Top-10 findings. `reviewer-triggers.md` and
+`build.md`/`review.md`/`code-reviewer.md`'s Composition blocks now point at
+`security-auditor` alone. Filled in `tools: Read, Grep, Glob, Bash` and
+`model: claude-opus-4-8` / `effort: high` on the new agent file, matching
+the tier the two agents it replaces already carried — the merge shipped
+without frontmatter the first time, which this repo's own "every agent
+pins a model" rule (see "Model split" above) doesn't allow.
+
+**Open, not yet resolved:** `infra-reviewer`'s job also included
+pattern-*consistency* review (does this Dockerfile/nginx config match what
+this repo already established), not just security. `security-auditor`'s
+Infrastructure section only covers the security half. Whether that
+consistency check needs a home somewhere else, or was deliberately dropped,
+hasn't been settled — flagged to the user rather than assumed either way.
+
+## New vendored skills: `deprecation-and-migration`, `security-and-hardening`
+
+**Decision.** Both added from `addyosmani/agent-skills`, filling references
+that previously said "if available — not currently vendored in this repo":
+`git-workflow-and-versioning`'s breaking-change/deprecation-window note now
+points at a real `deprecation-and-migration` skill, and
+`references/security-checklist.md` / `code-review-and-quality`'s
+dependency-audit section now point at a real `security-and-hardening`
+skill instead of a dangling one.
+
+## Plugin set: dropped `feature-dev`, added four `@claude-plugins-official`
+
+**Decision.** `feature-dev@claude-plugins-official` removed from
+`settings.json` — it ships its own `code-explorer`/`code-architect`/
+`code-reviewer` agents running a 7-phase pipeline that duplicated this
+repo's own `/spec` → `/plan` → `/build` → `/review`, one of the two
+"active router" collisions raised via `addyosmani/agent-skills`'
+`docs/comparison.md`. Added `security-guidance`, `typescript-lsp`,
+`code-simplifier` (referenced by `references/definition-of-done.md`'s
+Quality section), and `playwright`.
+
 **Rejected — keep `domain-modeling` and/or `improve-codebase-architecture`
 as standalone cherry-picks.** Floated as low-risk additive skills (no
 tracker dependency, nothing here plays either role today) while

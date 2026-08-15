@@ -96,7 +96,7 @@ Does the change fit the system's design?
 
 ### 5. Performance
 
-For detailed profiling and optimization, see `performance-optimization`. Does the change introduce performance problems?
+Does the change introduce performance problems?
 
 - Any N+1 query patterns?
 - Unnecessary memory allocations or large objects created in hot paths?
