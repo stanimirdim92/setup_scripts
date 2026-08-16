@@ -23,7 +23,7 @@ Read the existing spec (SPEC.md or equivalent) and the relevant codebase section
 6. Add checkpoints between phases
 7. Present the plan for human review
 
-Save the plan to tasks/plan.md and task list to tasks/todo.md.
+Save the plan to tasks/[TICKET_NUMBER]-plan.md and task list to tasks/[TICKET_NUMBER]-todo.md.
 
 ## After approval
 

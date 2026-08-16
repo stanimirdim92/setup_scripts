@@ -19,7 +19,7 @@ pattern") is for. Edit this file when a trigger changes; don't patch
   triggers a downstream action.
 
 Give every reviewer that runs the diff plus a one-line goal and the
-acceptance criteria that apply — not the full spec, not `tasks/plan.md`,
+acceptance criteria that apply — not the full spec, not `tasks/[TICKET_NUMBER]-plan.md`,
 not another reviewer's output. Each axis/specialist reviews blind to the
 others; an axis that can see another's findings starts anchoring on them
 instead of forming its own.

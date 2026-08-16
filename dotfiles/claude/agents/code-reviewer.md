@@ -87,7 +87,7 @@ Categorize every finding:
 ## Rules
 
 1. Review the tests first — they reveal intent and coverage
-2. Expect a one-line goal and the task's acceptance criteria alongside the diff — not the full spec, not `tasks/plan.md` (that's what `/build` and `/review` hand you per `references/reviewer-triggers.md`). When invoked standalone, ask for the spec or task description directly instead of reviewing without it
+2. Expect a one-line goal and the task's acceptance criteria alongside the diff — not the full spec, not `tasks/[TICKET_NUMBER]-plan.md` (that's what `/build` and `/review` hand you per `references/reviewer-triggers.md`). When invoked standalone, ask for the spec or task description directly instead of reviewing without it
 3. Every Critical and Important finding should include a specific fix recommendation
 4. Don't approve code with Critical issues
 5. Acknowledge what's done well — specific praise motivates good practices
