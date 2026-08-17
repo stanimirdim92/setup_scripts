@@ -6,6 +6,9 @@ Specialist personas that play a single role with a single perspective. Each pers
 |---------|------|----------|
 | [code-reviewer](../agents/code-reviewer.md) | Senior Staff Engineer | Five-axis review before merge |
 | [security-auditor](../agents/security-auditor.md) | Security Engineer | Vulnerability detection, OWASP-style audit |
+| [ai-engineer](../agents/ai-engineer.md) | AI Engineer | Production LLM applications, RAG systems, agent architectures |
+| [prompt-engineer](../agents/prompt-engineer.md) | Prompt Engineer | Advanced prompting techniques, model-specific optimization |
+| [vector-database-engineer](../agents/vector-database-engineer.md) | Vector Database Engineer | Vector search, embedding strategy, semantic retrieval |
 
 ## How personas relate to skills and commands
 
@@ -36,7 +39,7 @@ Pick this when there's a repeatable workflow you'd otherwise re-explain every ti
 ### Slash command (orchestrator — fan-out)
 Pick this only when **independent** investigations can run against the same diff and produce reports that a single agent then merges.
 
-- `/build` → dispatches `executor` per workstream (sequential — see `commands/build.md`), then fans out review: `code-reviewer` always, plus `security-auditor` / `distributed-systems-reviewer` / `llm-integration-reviewer` per trigger, capped at 2 reviewers running at once (never all of them concurrently, even on a diff that trips every trigger)
+- `/build` → dispatches `executor` per workstream (sequential — see `commands/build.md`), then fans out review: `code-reviewer` always, plus `security-auditor` / `distributed-systems-reviewer` per trigger, capped at 2 reviewers running at once (never all of them concurrently, even on a diff that trips every trigger)
 
 This is the only orchestration pattern this repo has built. See `commands/build.md`'s "Fan out review, independently" section for the actual dispatch and batching rules — don't re-derive them here.
 
@@ -107,7 +110,7 @@ Why this fails:
 
 The personas in this repo are designed to work as Claude Code subagents without modification:
 
-- **As subagents:** auto-discovered when this plugin is enabled (no path config needed). Use the Agent tool with `subagent_type: code-reviewer` (or `security-auditor`, `distributed-systems-reviewer`, `llm-integration-reviewer`). `/build`'s review-fan-out step is the working example.
+- **As subagents:** auto-discovered when this plugin is enabled (no path config needed). Use the Agent tool with `subagent_type: code-reviewer` (or `security-auditor`, `distributed-systems-reviewer`). `/build`'s review-fan-out step is the working example.
 - **As Agent Teams teammates** (experimental, requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`): reference the same persona name when spawning a teammate. The persona's body is **appended to** the teammate's system prompt as additional instructions (not a replacement), so your persona text sits on top of the team-coordination instructions the lead installs (SendMessage, task-list tools, etc.). Not currently used by any command in this repo — noted here as a platform capability, not an active pattern.
 
 Subagents only report results back to the main agent. Agent Teams let teammates message each other directly. This repo's own fan-out (`/build`'s review step) only needs the subagent shape — each reviewer reports back independently and the orchestrator merges, no teammate-to-teammate messaging required.

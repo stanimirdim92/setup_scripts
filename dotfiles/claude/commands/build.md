@@ -105,8 +105,7 @@ anchoring on them instead of forming its own.
 Report each reviewer's findings under its own heading — Correctness/
 Readability/Architecture/Security/Performance from `code-reviewer`,
 security findings from `security-auditor`, cross-boundary reliability findings from
-`distributed-systems-reviewer` if it ran, LLM-call-site findings from
-`llm-integration-reviewer` if it ran. **Don't blend them into one
+`distributed-systems-reviewer` if it ran. **Don't blend them into one
 ranked list.**
 Reporting them separately is deliberate: it stops one axis's silence from
 reading as another axis's clearance, and stops a loud axis from burying a

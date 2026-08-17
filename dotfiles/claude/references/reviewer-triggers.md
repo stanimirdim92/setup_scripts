@@ -13,10 +13,6 @@ pattern") is for. Edit this file when a trigger changes; don't patch
 - **`distributed-systems-reviewer`** — diff crosses a process/network/
   queue boundary: an RPC or HTTP call between services, a queue
   producer/consumer, a scheduled job, or a background worker.
-- **`llm-integration-reviewer`** — diff touches a call site to an LLM
-  API: a new or changed prompt, model call, or tool definition, or
-  anywhere a model's output gets validated, written to a record, or
-  triggers a downstream action.
 
 Give every reviewer that runs the diff plus a one-line goal and the
 acceptance criteria that apply — not the full spec, not `tasks/[TICKET_NUMBER]-plan.md`,
