@@ -78,40 +78,8 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
    - **Ask first:** Database schema changes, adding dependencies, changing CI config
    - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
 
-**Spec template:**
-
-```markdown
-# Spec: [Project/Feature Name]
-
-## Objective
-[What we're building and why. User stories or acceptance criteria.]
-
-## Tech Stack
-[Framework, language, key dependencies with versions]
-
-## Commands
-[Build, test, lint, dev — full commands]
-
-## Project Structure
-[Directory layout with descriptions]
-
-## Code Style
-[Example snippet + key conventions]
-
-## Testing Strategy
-[Framework, test locations, coverage requirements, test levels]
-
-## Boundaries
-- Always: [...]
-- Ask first: [...]
-- Never: [...]
-
-## Success Criteria
-[How we'll know this is done — specific, testable conditions]
-
-## Open Questions
-[Anything unresolved that needs human input]
-```
+**Spec template:** see `../../references/templates/spec.md` (canonical —
+fill in every section).
 
 **Reframe instructions as success criteria.** When receiving vague requirements, translate them into concrete conditions:
 
@@ -153,15 +121,9 @@ Break the plan into discrete, implementable tasks:
 - Tasks are ordered by dependency, not by perceived importance
 - No task should require changing more than ~5 files
 
-> Follow `planning-and-task-breakdown` for the full task-sizing and dependency-ordering mechanics; it is the canonical source. The template below is a lightweight inline form; if they ever diverge, `planning-and-task-breakdown` takes precedence.
+> Follow `planning-and-task-breakdown` for the full task-sizing and dependency-ordering mechanics; it is the canonical source.
 
-**Task template:**
-```markdown
-- [ ] Task: [Description]
-  - Acceptance: [What must be true when done]
-  - Verify: [How to confirm — test command, build, manual check]
-  - Files: [Which files will be touched]
-```
+**Task template:** see `../../references/templates/task.md` (canonical).
 
 ### Phase 4: Implement
 
