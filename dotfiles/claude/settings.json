@@ -93,6 +93,7 @@
       "Read(~/.git-credentials)",
       "Read(~/.docker/config.json)"
     ],
+    "defaultMode": "auto",
     "enableAllProjectMcpServers": true
   },
   "model": "sonnet",
@@ -149,9 +150,10 @@
       }
     }
   },
-  "effortLevel": "high",
+  "effortLevel": "medium",
   "advisorModel": "sonnet",
   "autoMemoryEnabled": true,
+  "theme": "dark-ansi",
   "editorMode": "normal",
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true

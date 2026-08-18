@@ -287,6 +287,4 @@ Remember: The best prompt is one that consistently produces the desired output w
   dispatch this agent; reach for this agent directly for open-ended prompt
   design instead.
 - **Do not invoke from another agent.** This is a builder persona, not part
-  of the `/build`/`/review` reviewer fan-out — see
-  `docs/TECHNICAL_DECISIONS.md`'s entry on replacing
-  `llm-integration-reviewer`.
+  of the `/build`/`/review` reviewer fan-out.

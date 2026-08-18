@@ -169,6 +169,4 @@ Expert AI engineer specializing in LLM application development, RAG systems, and
   the narrower workflow they cover, or this agent for open-ended LLM
   application work.
 - **Do not invoke from another agent.** This is a builder persona, not part
-  of the `/build`/`/review` reviewer fan-out — see
-  `docs/TECHNICAL_DECISIONS.md`'s entry on replacing
-  `llm-integration-reviewer`.
+  of the `/build`/`/review` reviewer fan-out.

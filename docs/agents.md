@@ -77,7 +77,7 @@ Why this works:
 - Each runs in a fresh context window → main session stays uncluttered
 - The merge step is small and benefits from full context, so it stays in the main agent
 
-Why it's capped at 2, not fully parallel: `references/reviewer-triggers.md` can match 3+ specialists on a high-risk diff, but this repo's own cost-gate decision (see `docs/TECHNICAL_DECISIONS.md`) treats predictable spend as worth more than a few saved wall-clock minutes — a high-risk diff earns every reviewer's pass, just in sequential batches of 2, not a faster concurrent burn.
+Why it's capped at 2, not fully parallel: `references/reviewer-triggers.md` can match 3+ specialists on a high-risk diff, but this repo's own cost-gate decision (see `docs/adr/0004-reviewer-batch-cap-no-high-risk-exception.md`) treats predictable spend as worth more than a few saved wall-clock minutes — a high-risk diff earns every reviewer's pass, just in sequential batches of 2, not a faster concurrent burn.
 
 ## Worked example: invalid orchestration (do not build this)
 

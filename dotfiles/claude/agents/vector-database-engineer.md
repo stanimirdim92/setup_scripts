@@ -129,5 +129,4 @@ Specializes in designing and implementing production-grade vector search systems
   are available standalone too.
 - **Do not invoke from another agent.** This is a builder persona, not part
   of the `/build`/`/review` reviewer fan-out — see
-  `docs/TECHNICAL_DECISIONS.md`'s entry on replacing
-  `llm-integration-reviewer`.
+  `docs/adr/0012-replaced-llm-integration-reviewer-with-builder-trio.md`.

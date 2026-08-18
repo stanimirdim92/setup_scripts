@@ -36,7 +36,7 @@ memory and stops getting rediscovered from scratch every few sessions.
   prune, not silently removed — the correction is worth as much as the
   original entry.
 
-**`docs/TECHNICAL_DECISIONS.md`** is for what *was* decided — why the
+**`docs/adr/*.md`** is for what *was* decided — why the
 system is built the way it is right now. Each entry states the decision,
 the reasoning, and everything seriously considered and rejected along the
 way, including — especially — choices reversed after contact with
@@ -53,10 +53,15 @@ reality; those are the ones worth rereading.
   drift apart; rule 6 again, applied to documentation instead of code.
 - The difference from `docs/IDEAS.md` in one line: ideas are unjudged and
   unbuilt; decisions are judged and (mostly) built. An idea that ships
-  moves out of `IDEAS.md`; a decision that gets reversed stays in
-  `TECHNICAL_DECISIONS.md` as a rejected entry on the *new* decision, not
+  moves out of `docs/IDEAS.md`; a decision that gets reversed stays in
+  `docs/adr/*.md` as a rejected entry on the *new* decision, not
   a deletion of the old one — the reversal is exactly the part worth
   keeping.
+- This is a per-project convention, not unique to this repo. The
+  `adr-recording` skill applies it in any project — numbering, the
+  Decision/Rejected shape, index maintenance, and the no-silent-overwrite
+  rule for reversals — so it doesn't have to be re-explained from scratch
+  each time.
 
 ## Memory: three systems, not one
 

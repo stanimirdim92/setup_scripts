@@ -75,7 +75,7 @@ see `commands/build.md`'s "Model tier per workstream" note.
 ## Ideas, decisions, and memory
 
 This machine's sessions keep undecided ideas in `docs/IDEAS.md`, decided-
-and-mostly-built choices in `docs/TECHNICAL_DECISIONS.md`, and durable
+and-mostly-built choices in `docs/adr/*.md`, and durable
 project state in `docs/MEMORY.md` — distinct from auto-memory (this
 machine only) and episodic memory (searched across every project). Full
 practice, format, and the difference between the three memory systems:
