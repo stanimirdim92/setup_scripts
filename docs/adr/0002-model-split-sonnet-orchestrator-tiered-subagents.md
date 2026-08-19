@@ -3,7 +3,7 @@
 **Decision (original).** The main session (the one drafting specs and
 plans with you) runs on whatever `settings.json`'s `model` key says —
 currently the floating `sonnet` alias. Every dispatched agent originally
-pinned `model: claude-opus-4-8` explicitly in its own frontmatter — a
+pinned `model: claude-opus-5` explicitly in its own frontmatter — a
 specific version, not the floating `opus` alias — deliberately the
 opposite of the cheap-workers/expensive-orchestrator split that's the
 default instinct: the orchestrator is a conversation, the subagents are
@@ -39,7 +39,7 @@ call would be genuinely expensive to undo — reach for it rather than
 running everything at the higher tier "just in case."
 
 `security-reviewer`, `distributed-systems-reviewer`, `infra-reviewer`, and `unblock-triage` were **not** part of this
-decision and still pin `model: claude-opus-4-8` — the question asked and
+decision and still pin `model: claude-opus-5` — the question asked and
 answered was scoped to `executor`/`code-reviewer` specifically, since
 those are the two dispatched unconditionally on every `/build` run. Their
 tier is a separate call, revisit it separately if it comes up.

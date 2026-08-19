@@ -42,7 +42,7 @@ feels obvious.
 
 Invoke `/spec` next. The pipeline from there:
 
-- `/spec` turns the restated requirements into `SPEC.md`, gets it approved.
+- `/spec` turns the restated requirements into `docs/specs/[TICKET]-SPEC.md`, gets it approved.
 - `/spec`'s downstream is `/plan` — reads the spec, produces
   `tasks/[TICKET]-plan.md` + `tasks/[TICKET]-todo.md`, gets the plan approved.
 - `/plan`'s only next action after approval is `/build` — never implement

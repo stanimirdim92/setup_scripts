@@ -7,7 +7,7 @@ covering input handling, auth, data protection, infra security, third-party
 integrations, and LLM/OWASP-LLM-Top-10 findings. `reviewer-triggers.md` and
 `build.md`/`review.md`/`code-reviewer.md`'s Composition blocks now point at
 `security-auditor` alone. Filled in `tools: Read, Grep, Glob, Bash` and
-`model: claude-opus-4-8` / `effort: high` on the new agent file, matching
+`model: claude-opus-5` / `effort: high` on the new agent file, matching
 the tier the two agents it replaces already carried — the merge shipped
 without frontmatter the first time, which this repo's own "every agent
 pins a model" rule (see `0002-model-split-sonnet-orchestrator-tiered-subagents.md`)

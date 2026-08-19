@@ -1,6 +1,6 @@
 ---
 name: executor
-description: Executes one already-planned task end-to-end — implements, tests, verifies, commits — then reports back with what changed and what it noticed but didn't touch. Use to dispatch a single task from tasks/[TICKET_NUMBER]-todo.md (or an equivalently scoped task description) for full implementation. Never reviews its own work and never invokes another agent — the orchestrator handles review and merge separately.
+description: Executes one already-planned task end-to-end — implements, tests, verifies, commits — then reports back with what changed and what it noticed but didn't touch. Use to dispatch a single task from docs/tasks/[TICKET]-todo.md (or an equivalently scoped task description) for full implementation. Never reviews its own work and never invokes another agent — the orchestrator handles review and merge separately.
 tools: Read, Edit, Write, Bash, Grep, Glob
 model: claude-sonnet-5
 effort: medium

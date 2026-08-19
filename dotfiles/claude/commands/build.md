@@ -1,6 +1,6 @@
 ---
 description: Dispatch execution for one or more planned tasks, then fan out review and merge a go/no-go verdict
-argument-hint: "[task number(s) from tasks/[TICKET_NUMBER]-todo.md, or a task description]"
+argument-hint: "[task number(s) from docs/tasks/[TICKET]-todo.md, or a task description]"
 ---
 
 Invoke the `incremental-implementation` skill's discipline via dispatched
@@ -9,7 +9,7 @@ not a replacement for it.
 
 ## 1. Resolve before dispatching anything
 
-Read `tasks/[TICKET_NUMBER]-todo.md` (or `tasks/[TICKET_NUMBER]-plan.md`, or take the task description
+Read `docs/tasks/[TICKET]-todo.md` (or `docs/tasks/[TICKET]-plan.md`, or take the task description
 given as an argument) and pin down exactly which task(s) are in scope,
 their acceptance criteria, and file scope. If that's ambiguous, ask now —
 **don't dispatch and find out inside a running executor.** A bad task
@@ -93,7 +93,7 @@ sequential batching still gets every reviewer to run, just not all at
 once.
 
 Give each reviewer the diff plus a one-line goal and the task's
-acceptance criteria — not the full spec, not `tasks/[TICKET_NUMBER]-plan.md`, not each
+acceptance criteria — not the full spec, not `docs/tasks/[TICKET]-plan.md`, not each
 other's output. Enough to review against a stated intent without
 flooding a fresh subagent with the whole plan; each axis also reviews
 blind to the others, same reasoning as the two-axis review this pattern

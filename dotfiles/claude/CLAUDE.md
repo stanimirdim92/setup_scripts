@@ -30,7 +30,7 @@ is what makes it actionable instead of generic.
    plain code.
    *Catches: paying latency and nondeterminism for work `if`/`else` would do.*
 
-6. **Surface conflicts, don't average them.** When two patterns in the
+6. **Surface conflicts don't average them.** When two patterns in the
    codebase contradict each other, pick one and say why. Never blend them
    into a third thing that matches neither.
    *Catches: inventing a novel pattern nobody chose.*
