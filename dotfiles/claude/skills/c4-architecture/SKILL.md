@@ -261,3 +261,17 @@ C4-Documentation/
   or relationships that aren't backed by something read from the codebase or
   its docs; classify an external API/service/queue as a `person`; skip the
   validate/inspect loop and hand-wave DSL correctness.
+
+## Success Criteria
+
+- [ ] Every element/relationship in `workspace.dsl` traces to something
+      actually read (file, config, manifest line, test) — none invented
+- [ ] `validate` passes clean and `inspect` reports zero structural
+      violations, or remaining violations were shown to the user (3-pass cap)
+- [ ] People and external software systems are in the right category — no
+      external API/service/queue modeled as a `person`
+- [ ] Containers reflect actual runtime/process boundaries, not deployment
+      topology (no replica counts or load balancers folded into the model)
+- [ ] Output matches what was scoped in Step 1 — no unrequested Component,
+      Deployment, or Dynamic views, no Code-level detail at any depth
+- [ ] Every requested view exported (Mermaid, or PlantUML if asked)
