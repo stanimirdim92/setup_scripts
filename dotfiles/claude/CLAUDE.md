@@ -1,43 +1,112 @@
 # Global working rules
 
-Applies to every project unless a project's own CLAUDE.md/AGENTS.md says
-otherwise — project files win on anything specific (versions, commands,
-paths, package choices).
+These are defaults for every project.
 
-Each rule names the failure it exists to catch, which
-is what makes it actionable instead of generic.
+Project-local instructions override these rules only for their project scope
+when they are more specific. Do not combine conflicting rules into a new
+hybrid. Surface the conflict and follow the more specific project rule.
+
+Project files define versions, commands, paths, architecture, dependencies,
+and repository-specific conventions.
 
 ## Rules
 
-1. **Think before coding.** Plan before editing. Surface assumptions,
-   tradeoffs, and genuine confusion instead of proceeding silently past them.
-   *Catches: confidently building the wrong thing.*
+## 1. Think Before Coding
 
-2. **Simplicity first.** Smallest change that works. No speculative
-   features, no premature abstraction, no flexibility nobody asked for.
-   *Catches: a 200-line solution to a 20-line problem.*
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
 
-3. **Surgical changes.** Touch only what the task names. Don't refactor
-   working code just because you happened to read it.
-   *Catches: unrelated diffs that make review impossible.*
+Ask only when ambiguity materially changes:
+- external behavior or API contracts
+- data/schema changes
+- security or permissions
+- destructive/irreversible actions
+- architecture with multiple materially different options
 
-4. **Goal-driven execution.** Define "done" up front as something
-   verifiable, then loop until it's confirmed — not until it looks right.
-   *Catches: declaring success without running anything.*
+Before implementing:
+- For non-trivial work, plan before editing.
+- Skip formal planning for obvious, localized changes.
+- If a simpler approach exists, say so. Push back when warranted.
+- If multiple interpretations materially affect the outcome, surface them.
+- If ambiguity does not materially affect the outcome, state the assumption and proceed.
+- Stop and ask only when the ambiguity meets the criteria above.
+- *Catches: confidently building the wrong thing.*
 
-5. **Use the model only for judgment calls.** Reserve LLM calls for
-   classification, extraction, and drafting. Deterministic operations get
-   plain code.
-   *Catches: paying latency and nondeterminism for work `if`/`else` would do.*
+## 2. Simplicity First
 
-6. **Surface conflicts don't average them.** When two patterns in the
-   codebase contradict each other, pick one and say why. Never blend them
-   into a third thing that matches neither.
-   *Catches: inventing a novel pattern nobody chose.*
+**Minimum code that solves the problem. Nothing speculative.**
 
-7. **Fail loud.** Surface uncertainty, skipped steps, and unverified claims
-   explicitly. Never let "I couldn't check this" read as "this works".
-   *Catches: silent gaps the reader assumes were covered.*
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+- *Catches: a 200-line solution to a 20-line problem.*
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- If a requested change requires broad refactoring, surface why before expanding scope. Do not expand scope silently.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+*Catches: unrelated diffs that make review impossible.*
+
+The test: Every changed line should trace directly to the user's request.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals and use the cheapest meaningful
+verification:
+
+- behavior change → targeted test
+- bug → reproduce first; add a regression test when practical
+- refactor → existing tests before and after
+- config/build change → validate, lint, or build
+- docs → verify referenced commands, paths, and examples
+- *Catches: declaring success without running anything.*
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+## 5. Deterministic Before Probabilistic
+
+Use plain code when the same result can be expressed deterministically
+with reasonable complexity.
+
+Use LLMs only when the task genuinely requires semantic judgment,
+interpretation, extraction, classification, ranking, or generation.
+
+Never use an LLM for formatting, arithmetic, routing known values,
+validation expressible as rules, or other deterministic transformations.
+- *Catches: paying latency and nondeterminism for work `if`/`else` would do.*
+
+## 6. Surface Conflicts, Don't Average Them
+
+When two patterns in the codebase contradict each other, pick one and say why. Never blend them
+into a third thing that matches neither.
+- *Catches: inventing a novel pattern nobody chose.*
+
+## 7. Fail Loud
+
+Surface uncertainty, skipped steps, and unverified claims explicitly. Never let "I couldn't check this" read as "this works".
+- *Catches: silent gaps the reader assumes were covered.*
 
 ## Session defaults
 
@@ -47,36 +116,61 @@ is what makes it actionable instead of generic.
   said. Per the `caveman` skill's own Boundaries section, this never
   touches what actually gets written — code, commits, docs, and
   third-party messages always stay normal prose regardless of mode.
-- **Run `/compact` mid-session, not only at the end.** Don't wait for
-  auto-compact or a natural stopping point — once a chunk of resolved
-  work (a finished sub-task, a long tool-output trail) doesn't need to
-  stay verbatim, compact it out. Keeps the cached prefix smaller and
-  cache reads cheaper on every subsequent call (rule 5's reasoning,
-  applied to context size instead of tool choice).
+
+## Context discipline
+
+Keep tool output and resolved investigation out of active reasoning once it is no longer necessary.
+
+Before a natural context boundary, ensure durable information is recorded
+in the appropriate project document.
+
+### Compact instructions
+
+When compacting, preserve:
+- current goal and success criteria
+- explicit user decisions
+- architectural decisions made this session
+- changed files and why
+- test/verification results
+- unresolved blockers and remaining work
+
+Drop:
+- raw tool output
+- rejected hypotheses
+- superseded plans
+- investigation already reduced to conclusions
 
 ## Project Structure
 
 ```
-skills/       → Core skills (SKILL.md per directory)
-agents/       → Reusable agent personas
-hooks/        → Session lifecycle hooks
-commands/     → Slash commands (/spec, /plan, /build, /test, /review)
-references/   → Supplementary checklists (definition-of-done, security-checklist, reviewer-triggers, documentation-practices) and templates/ (canonical spec/plan/task document shapes)
-docs/         → Setup guides for different tools
+skills/<skill>/ → Core skills (SKILL.md per directory)
+agents/         → Reusable agent personas
+hooks/          → Session lifecycle hooks
+commands/       → Slash commands (/spec, /plan, /build, /test, /review)
+references/     → Supplementary checklists (definition-of-done, security-checklist, reviewer-triggers, documentation-practices) and templates/ (canonical spec/plan/task document shapes)
+docs/           → Setup guides for different tools
 ```
 
-## Model split: Sonnet orchestrator, tiered subagents
+## Model policy
 
-Every dispatched agent pins a specific `model:` version explicitly in its
-own frontmatter. A per-invocation `model` override can still bump a specific workstream or
-review up to Opus when it's architecturally ambiguous or high-stakes —
-see `commands/build.md`'s "Model tier per workstream" note.
-
+Agent definitions own their default `model:` selection.
+Per-invocation overrides are reserved for work that genuinely needs a
+different tier — see `commands/build.md`'s "Model tier per workstream" note.
+    
 ## Ideas, decisions, and memory
 
-This machine's sessions keep undecided ideas in `docs/IDEAS.md`, decided-
-and-mostly-built choices in `docs/adr/*.md`, and durable
-project state in `docs/MEMORY.md` — distinct from auto-memory (this
-machine only) and episodic memory (searched across every project). Full
-practice, format, and the difference between the three memory systems:
-`references/documentation-practices.md`.
+`docs/IDEAS.md`
+- unresolved possibilities only
+- remove an idea once accepted or rejected
+
+`docs/adr/*.md`
+- decisions with architectural consequences
+- capture context, decision, alternatives, and consequences
+- create only after a decision is actually made
+
+`docs/MEMORY.md`
+- current durable project facts needed by future sessions
+- store conclusions, not investigation logs
+- update when implementation changes the project's durable state
+
+Full practice, format, and the difference between the three memory systems: `references/documentation-practices.md`.
