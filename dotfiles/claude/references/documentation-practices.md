@@ -105,3 +105,12 @@ limit" error, or Claude re-asking things it should already know.
 - To check size or trim by hand: run `/memory` in a session in that repo,
   pick the auto-memory folder, and edit `MEMORY.md` and its topic files
   directly (plain markdown) — or ask Claude to do the trim for you.
+
+**Moving a project to a different machine:** auto-memory doesn't come with
+it — by design, not by bug (see the table above). `autoMemoryDirectory`
+only accepts an absolute path, so it can't be pointed at something inside
+the repo and expected to travel with a clone. Don't fight this. Instead,
+while trimming auto-memory, promote any entry that would actually be
+missed on a new machine into `docs/MEMORY.md` (committed, travels with the
+repo) and delete it from auto-memory once promoted — same
+graduate-or-reject discipline `docs/IDEAS.md` uses.
