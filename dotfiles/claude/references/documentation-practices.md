@@ -85,3 +85,23 @@ would be a problem, it belongs in `docs/MEMORY.md`; if it's "have I hit
 this before, somewhere else," reach for episodic memory (the
 `episodic-memory` plugin — ask it to search past conversations rather than
 re-deriving something you already worked out).
+
+Don't relocate auto-memory's folder into the repo (`docs/memory/`,
+`./memory/`, `.claude/memory/`) to "organize" it — that just commits
+machine-local scratch into git, the exact thing this table exists to
+prevent. It stays at its default path, untouched.
+
+**Keeping auto-memory's `MEMORY.md` small:** Claude Code only loads the
+first 200 lines / 25KB of it at session start; past that, content silently
+never loads. Symptoms of a bloated one: the "memory index is over its read
+limit" error, or Claude re-asking things it should already know.
+- `MEMORY.md` itself stays an *index* — one line per fact, e.g.
+  `- Build fails on M1 with mixed npm+yarn lockfiles → debugging.md#node-arch`.
+- Move anything longer than a line into a topic file in the same
+  `memory/` directory (`debugging.md`, `api-conventions.md`, ...). Topic
+  files aren't loaded at startup — Claude opens them on demand — so
+  nothing is lost by moving detail out, only by leaving it inline.
+- Drop or merge stale entries instead of letting them accumulate.
+- To check size or trim by hand: run `/memory` in a session in that repo,
+  pick the auto-memory folder, and edit `MEMORY.md` and its topic files
+  directly (plain markdown) — or ask Claude to do the trim for you.
