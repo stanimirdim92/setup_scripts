@@ -44,5 +44,12 @@ else
   claude mcp add --transport http context7 https://mcp.context7.com/mcp --scope user
 fi
 
+echo "==> Structurizr MCP server (user scope, all projects)"
+# Official hosted instance — DSL validate/parse/inspect plus Mermaid and
+# PlantUML export tools. No auth needed for these; server workspace CRUD
+# tools require self-hosting instead, not used here.
+claude mcp add --transport http structurizr https://mcp.structurizr.com/mcp \
+  --scope user
+
 echo
 echo "Done. Run 'claude mcp list' and confirm each server shows Connected."
