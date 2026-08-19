@@ -8,8 +8,7 @@ argument-hint: "[target directory or repo, defaults to repo root] [--components]
 
 Inspired by Seth Hobson's `c4-architecture` plugin
 (github.com/wshobson/agents, `claude-code-workflows` marketplace — the
-same source already vendored here as `llm-application-dev`; an earlier
-version of this note misattributed it to `amoustakas/claude-code-plugins`),
+same source already vendored here as `llm-application-dev`),
 rewritten around the official
 [Structurizr MCP server](https://docs.structurizr.com/ai/mcp) rather than
 hand-written Markdown per level. Structurizr is the reference implementation

@@ -1,10 +1,3 @@
-# Install for terminal
-
-https://github.com/ajeetdsouza/zoxide
-https://starship.rs/
-https://ghostty.org/docs
-    sudo apt install fzf ripgrep
-
 # AI tool dotfiles (Claude Code / Codex)
 
 `dotfiles/` holds the syncable config from `~/.claude` and `~/.codex`. On a
