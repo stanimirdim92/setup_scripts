@@ -165,7 +165,8 @@ different tier — see `commands/build.md`'s "Model tier per workstream" note.
 
 `docs/adr/*.md`
 - decisions with architectural consequences
-- capture context, decision, alternatives, and consequences
+- capture the decision and its reasoning, plus every alternative seriously
+  rejected (Decision/Rejected format — see `references/documentation-practices.md`)
 - create only after a decision is actually made
 
 `docs/MEMORY.md`
