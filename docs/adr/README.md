@@ -26,6 +26,7 @@ that explanation here, just the index.
 | [0016](0016-c4-architecture-rewritten-around-structurizr-mcp.md) | `c4-architecture` rewritten around Structurizr MCP, DSL instead of Markdown | Accepted |
 | [0017](0017-c4-architecture-people-vs-external-systems-plus-opt-in-deployment-dynamic.md) | `c4-architecture`: fixed people/external-system terminology, added opt-in Deployment/Dynamic views | Accepted |
 | [0018](0018-llm-application-dev-switched-to-installed-plugin.md) | `llm-application-dev` switched from vendored files to an installed plugin | Accepted |
+| [0019](0019-adr-recording-compared-against-adr-github-vercel-ecc.md) | `adr-recording` compared against adr.github.io, vercel/ai, and ECC's ADR skills | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

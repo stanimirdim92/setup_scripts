@@ -23,6 +23,17 @@ reversed decision stays on the record instead of being edited away.
 - Someone will plausibly ask "why is this built this way" later, in a
   session that doesn't have this conversation's context.
 
+**Proactive triggers** — suggest recording one even if nobody asked:
+- About to add a new dependency, plugin, or external service
+- About to establish a pattern other files/agents will be expected to
+  follow
+- About to do something that contradicts an existing ADR — that's either
+  a new decision superseding it, or a mistake; find out which before
+  proceeding
+- Catching yourself about to write a multi-sentence "why" comment in code
+  or a skill/config file — that reasoning belongs in an ADR with a link
+  back, not buried in a comment nobody greps for
+
 **When NOT to use:**
 - Only one reasonable option existed — that's not a decision, it's the
   obvious move, and doesn't need a record.
@@ -55,6 +66,17 @@ reversed decision stays on the record instead of being edited away.
      re-proposed with no new information — a measurement, a specific
      broken assumption, or a direct instruction from whoever owns the
      call. "Didn't like it" doesn't qualify.
+   - `**Revisit if.**` — optional, only when a concrete future condition
+     would actually change the call (a library hitting a stated limit, a
+     team crossing a size threshold, a dependency reaching end-of-life).
+     Skip it when no such condition exists — don't manufacture one just
+     to fill the section.
+   - If the decision constrains specific files, a pattern, or an
+     interface others must follow, name the affected paths in the
+     Decision paragraph and, where practical, leave a one-line pointer at
+     that code/config site back to this file (`# See docs/adr/NNNN-*.md`
+     or the project's comment syntax) — the ADR should be discoverable
+     from the code it governs, not just from the index.
 5. **Update `docs/adr/README.md`** (create it if this is the first
    decision in the project) with one row: number, link, one-line title,
    status. Keep the README to the index table plus a short pointer to
@@ -69,13 +91,38 @@ reversed decision stays on the record instead of being edited away.
    old decision being wrong in hindsight is exactly the part worth
    keeping — it's evidence for whoever reads it next, not an error to
    erase.
-7. **Splitting an existing running decisions doc into per-decision
+7. **Decision became moot with nothing replacing it** (the feature it
+   governed was removed, the dependency it picked was dropped entirely) —
+   that's `Deprecated`, not `Superseded by NNNN`: there's no new decision
+   to link to, just an old one that no longer applies. Mark the index row
+   `Deprecated` and say why in a one-line note on that row; don't leave it
+   reading `Accepted` when nobody would actually follow it today.
+8. **Splitting an existing running decisions doc into per-decision
    files?** Record that as its own decision (per step 6 — it likely
    reverses whatever earlier choice kept decisions in one file), and
    repoint every reference to the old location (other docs, code
    comments, other ADRs' cross-references) at the new specific file that
    now holds each decision, not a generic directory pointer. Grep for the
    old filename across the repo before considering the split done.
+
+## Consulting Existing Decisions
+
+Before proposing something that touches architecture, config, or tooling —
+not just before writing a new ADR — check whether it's already settled:
+
+1. Open `docs/adr/README.md` and scan titles/status for anything adjacent.
+2. Read the full file for any real match, `Rejected` blocks included — a
+   rejected alternative with no new information behind it is still
+   rejected.
+3. If the current ask matches a `Rejected` block with nothing new to
+   justify revisiting it, say so plainly instead of re-litigating from
+   scratch.
+4. If it genuinely reverses or narrows an `Accepted` entry, that's step 6
+   above, not a silent contradiction.
+5. If someone asks "why is this built this way," this is the same lookup
+   — open the index, find the row, answer from that file's `Decision`
+   (and `Rejected` blocks if they asked about an alternative), don't
+   reconstruct the reasoning from memory or guess at it.
 
 ## Format Reference
 
@@ -89,6 +136,9 @@ narrative — not split into separate "what" and "why" sections.>
 block re-proposal.>
 
 **Rejected — *(another alternative, if any).*** <Why it lost.>
+
+**Revisit if.** <Optional — a concrete future condition that would
+actually change this call. Omit the block entirely when none exists.>
 ```
 
 ## Common Rationalizations
@@ -111,6 +161,11 @@ block re-proposal.>
 - A `docs/adr/` directory with files but no `README.md` index.
 - A rejection reason that's a feeling ("didn't like it," "seemed risky")
   instead of a concrete, checkable fact.
+- A decision marked `Accepted` in the index that nothing actually follows
+  anymore, with no `Deprecated`/`Superseded` update — a stale status is as
+  misleading as an edited-away decision.
+- A `Revisit if` block that restates the Decision instead of naming an
+  actual future condition — that's padding, not a trigger.
 
 ## Verification
 
@@ -121,3 +176,9 @@ block re-proposal.>
 - [ ] `docs/adr/README.md` has a row linking the new file
 - [ ] If this reverses a prior decision: the old file is untouched, and
       its index row says `Superseded by NNNN`
+- [ ] If this decision is now moot with nothing replacing it: index row
+      says `Deprecated`, not left as `Accepted` or wrongly marked
+      `Superseded`
+- [ ] Checked `docs/adr/README.md` for an existing match before writing a
+      new file — not a duplicate or a silent contradiction of a
+      `Rejected` block
