@@ -6,9 +6,6 @@ Specialist personas that play a single role with a single perspective. Each pers
 |---------|------|----------|
 | [code-reviewer](../agents/code-reviewer.md) | Senior Staff Engineer | Five-axis review before merge |
 | [security-auditor](../agents/security-auditor.md) | Security Engineer | Vulnerability detection, OWASP-style audit |
-| [ai-engineer](../agents/ai-engineer.md) | AI Engineer | Production LLM applications, RAG systems, agent architectures |
-| [prompt-engineer](../agents/prompt-engineer.md) | Prompt Engineer | Advanced prompting techniques, model-specific optimization |
-| [vector-database-engineer](../agents/vector-database-engineer.md) | Vector Database Engineer | Vector search, embedding strategy, semantic retrieval |
 
 ## How personas relate to skills and commands
 

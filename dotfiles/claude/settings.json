@@ -128,7 +128,8 @@
     "typescript-lsp@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
-    "qdrant-skills@knowledge-work-plugins": true
+    "qdrant-skills@knowledge-work-plugins": true,
+    "llm-application-dev@claude-code-workflows": true
   },
   "extraKnownMarketplaces": {
     "phpstorm-marketplace": {
@@ -147,6 +148,12 @@
       "source": {
         "source": "github",
         "repo": "anthropics/knowledge-work-plugins"
+      }
+    },
+    "claude-code-workflows": {
+      "source": {
+        "source": "github",
+        "repo": "wshobson/agents"
       }
     }
   },
