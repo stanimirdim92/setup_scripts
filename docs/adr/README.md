@@ -24,6 +24,7 @@ that explanation here, just the index.
 | [0014](0014-extracted-spec-plan-task-templates.md) | Extracted spec/plan/task templates to `references/templates/` | Superseded by [0015](0015-adopted-docs-adr-split-technical-decisions.md) (its `docs/adr/*.md` rejection) |
 | [0015](0015-adopted-docs-adr-split-technical-decisions.md) | Adopted `docs/adr/*.md`, split `TECHNICAL_DECISIONS.md` | Accepted |
 | [0016](0016-c4-architecture-rewritten-around-structurizr-mcp.md) | `c4-architecture` rewritten around Structurizr MCP, DSL instead of Markdown | Accepted |
+| [0017](0017-c4-architecture-people-vs-external-systems-plus-opt-in-deployment-dynamic.md) | `c4-architecture`: fixed people/external-system terminology, added opt-in Deployment/Dynamic views | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and
