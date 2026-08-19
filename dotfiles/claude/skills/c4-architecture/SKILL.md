@@ -1,110 +1,193 @@
 ---
 name: c4-architecture
-description: Generates C4 model architecture documentation (Context, Container, Component, Code) for a codebase via bottom-up analysis across four coordinated subagents. Use when asked to document, diagram, or explain a system's architecture, onboard someone to a codebase, or produce Context/Container/Component/Code-level views. Independent of the spec/plan/build SDLC chain — this documents what already exists, it doesn't plan new work.
+description: Generates a C4 model architecture workspace (Context, Container, and optionally Component/Code) for a codebase by inspecting it directly and writing Structurizr DSL, validated and rendered through the Structurizr MCP server. Use when asked to document, diagram, or explain a system's architecture, onboard someone to a codebase, or produce Context/Container/Component-level views. Independent of the spec/plan/build SDLC chain — this documents what already exists, it doesn't plan new work.
 argument-hint: "[target directory or repo — defaults to the current repo root]"
 ---
 
 # C4 Architecture Documentation
 
 Inspired by the community `c4-architecture` Claude Code plugin
-(github.com/amoustakas/claude-code-plugins) — rewritten from scratch as this skill plus
-four house-tiered subagents (`c4-code`, `c4-component`, `c4-container`, `c4-context`)
-rather than vendored verbatim, to match this repo's own agent/skill conventions.
+(github.com/amoustakas/claude-code-plugins), rewritten around the official
+[Structurizr MCP server](https://docs.structurizr.com/ai/mcp) rather than
+hand-written Markdown per level. Structurizr is the reference implementation
+of C4: it understands the model's structural rules (components live inside
+containers, containers live inside software systems, a person is never an
+external system) and enforces them on the DSL you write, instead of Claude
+having to police them by convention across a pile of separate documents.
 
 ## Overview
 
-The [C4 model](https://c4model.com/diagrams) describes a system at four zoom levels:
+The [C4 model](https://c4model.com/diagrams) describes a system at up to four
+zoom levels:
 
-1. **Context** — the system as one box, its users, and the external systems around it.
-2. **Container** — the deployable units (services, apps, databases) inside that box.
-3. **Component** — the logical groupings of code inside each container.
-4. **Code** — the actual functions, classes, and signatures inside each component.
+1. **Context** — the system as one box, its users, and the external systems
+   around it.
+2. **Container** — the deployable units (services, apps, databases, queues)
+   inside that box.
+3. **Component** — the logical groupings of code inside a container.
+4. **Code** — functions, classes, and signatures inside a component.
 
-This skill builds all four bottom-up: read the code first, then synthesize upward
-through Component and Container to the stakeholder-facing Context view. Each level's
-documentation is only as good as the level below it, so nothing above Code is written
-before the Code level backing it exists.
+Per the model's own guidance, most teams only need Context and Container —
+**these are the default**. Component is opt-in depth; Code is out of scope
+for this skill entirely (Structurizr's DSL doesn't model it either — that
+level is better served by reading the code directly when someone asks a
+code-level question, not by a standing diagram).
 
-Per the model's own guidance, most teams only need Context and Container — Component
-and Code are opt-in depth, not a default. Treat Phase 1/2 below as something to scope
-deliberately, not run reflexively on a whole large repo.
+This skill produces one artifact, not one file per level: a single
+Structurizr DSL workspace, which the MCP server validates and renders into
+whatever views are needed.
 
 ## When to Use
 
 - "Document/diagram the architecture of \<project\>"
 - Onboarding someone to an unfamiliar codebase
 - Producing a system context or container diagram for a design doc or ticket
-- Any request for a C4-model view, at any single level or all four
+- Any request for a C4-model view, at Context, Container, or Component depth
 
-Not for: planning new work (that's `spec-driven-development` → `planning-and-task-breakdown`
-→ `incremental-implementation`). This skill documents an existing system; it doesn't
-decide what to build next.
+Not for: planning new work (that's `spec-driven-development` →
+`planning-and-task-breakdown` → `incremental-implementation`). This skill
+documents an existing system; it doesn't decide what to build next. Also not
+for function/class-level ("Code" level) questions — read the source directly
+for those instead of maintaining a diagram that will drift the next commit.
 
 ## Prerequisites
 
-The target codebase must actually be readable in this session. If it's a different
-repo than the one the session is currently scoped to, attach and clone it first
-(`add_repo`, then clone) — the same requirement as any other cross-repo task in this
-environment. Don't guess at a codebase's architecture from its name or README alone.
+- The target codebase must actually be readable in this session. If it's a
+  different repo than the one the session is currently scoped to, attach and
+  clone it first (`add_repo`, then clone) — don't guess at a codebase's
+  architecture from its name or README alone.
+- The Structurizr MCP server must be registered (`dotfiles/claude/mcp/setup.sh`
+  adds it, user scope, one time per machine). If its tools aren't visible yet,
+  `ToolSearch` for `"structurizr"` — it's an HTTP MCP server, no local process
+  to start. If it's genuinely not registered, say so and point at
+  `mcp/setup.sh` rather than falling back to hand-validating DSL yourself.
 
-## The Four Phases (bottom-up)
+## Workflow
 
-### Phase 1 — Code
+### 1. Scope
 
-- Enumerate subdirectories (`Glob`), excluding non-code directories (`node_modules`,
-  `.git`, `vendor`, `build`, `dist`, and the like).
-- Sort deepest-first.
-- Dispatch `c4-code` once per directory, in that order.
-- **Cost note**: this is one subagent call per subdirectory. For a large repo, that's a
-  lot of calls on the cheap tier but still real cost — scope to a subdirectory the user
-  actually asked about, or skip straight to Phase 3/4 if Code/Component depth isn't
-  actually wanted (see Overview).
+Ask first before sweeping a large or unfamiliar repo: which subdirectory (or
+the whole thing), and Context+Container only, or Component too. Default to
+Context+Container on an unscoped "document the architecture" request.
 
-### Phase 2 — Component
+### 2. Discover
 
-- Once every `c4-code-*.md` exists, dispatch `c4-component` once per identified
-  component (grouping is `c4-component`'s own judgment call, not decided here).
-- Dispatch `c4-component` one more time for the master index, after every
-  per-component doc exists.
+Inspect the repo directly — no subagent fan-out:
 
-### Phase 3 — Container
+- `Glob`/`Grep` for entrypoints, routing/controller layers, and per-language
+  project manifests to find the deployable units.
+- Deployment definitions (Dockerfiles, compose files, k8s manifests, IaC,
+  CI/CD configs) to confirm what actually ships as a separate container
+  versus what's just a source directory.
+- Config/env files and client libraries (DB drivers, queue clients, HTTP
+  clients to named external hosts) for containers' relationships and the
+  external systems/APIs/databases around the system.
+- README, requirements docs, and tests for personas (human and programmatic)
+  and what the system is actually for — tests reveal intended behavior even
+  when nothing else documents it.
+- If Component depth was requested: within each container, group files by
+  actual code structure (module/package/layer boundaries the codebase
+  already uses), not an invented grouping.
 
-- Search the repo for deployment definitions (Dockerfiles, k8s manifests, compose
-  files, IaC, CI/CD configs).
-- Dispatch `c4-container` once, handing it every `c4-component-*.md` plus the
-  deployment definitions found.
+Every element and relationship you write into the DSL must trace back to
+something actually read — a file, a config value, a deployment manifest line,
+a test. Note inferred-vs-stated explicitly where documentation is thin (e.g.
+"inferred from `docker-compose.yml`" vs. "stated in README") rather than
+blending the two silently.
 
-### Phase 4 — Context
+### 3. Draft the DSL
 
-- Dispatch `c4-context` once, handing it `c4-container.md`, `c4-component.md`, and
-  whatever system documentation exists (README, requirements, tests).
+Write `C4-Documentation/workspace.dsl`:
+
+```
+workspace "System Name" "One-sentence description" {
+
+    model {
+        user = person "User" "Primary human persona"
+        otherSystem = softwareSystem "External System" "What it provides" "External" {
+            tags "External"
+        }
+
+        system = softwareSystem "System Name" "What it does" {
+            webapp = container "Web Application" "Serves the UI/API" "Technology"
+            database = container "Database" "Stores X" "PostgreSQL" {
+                tags "Database"
+            }
+
+            webapp -> database "Reads from and writes to" "SQL"
+        }
+
+        user -> system "Uses"
+        system -> otherSystem "Calls" "HTTPS/API"
+    }
+
+    views {
+        systemContext system "SystemContext" {
+            include *
+            autoLayout
+        }
+        container system "Containers" {
+            include *
+            autoLayout
+        }
+        # component view(s) here only if Component depth was scoped in
+
+        styles {
+            element "Database" {
+                shape cylinder
+            }
+            element "External" {
+                background #999999
+                color #ffffff
+            }
+        }
+    }
+
+}
+```
+
+Containers nest inside their software system; components (if in scope) nest
+inside their container. Never declare a component at container scope or a
+container outside any software system — that's exactly the structural error
+Structurizr's inspection step below exists to catch, but don't rely on it to
+catch mistakes you could avoid by following the nesting rules going in.
+
+### 4. Validate and inspect (loop)
+
+1. Call the Structurizr MCP's DSL validate tool on the draft.
+2. If it parses, call the inspect tool for structural/semantic violations.
+3. Fix each reported issue in the DSL and re-run both steps.
+4. Repeat until clean, capped at 3 fix passes. If issues remain after 3
+   passes, stop and show the user the remaining violations plus your draft —
+   don't keep guessing at a fix silently.
+
+### 5. Export views
+
+Once validated, call the MCP's export tool(s) for the views defined in
+`views {}` — Mermaid for inline rendering, PlantUML if the user asked for it
+specifically. Write each exported view alongside the DSL.
 
 ## Output
 
 ```
 C4-Documentation/
-├── c4-code-*.md         # one per directory (Phase 1)
-├── c4-component-*.md    # one per component (Phase 2)
-├── c4-component.md      # master component index (Phase 2)
-├── c4-container.md      # all containers (Phase 3)
-├── c4-context.md        # system context (Phase 4)
-└── apis/
-    └── *-api.yaml       # OpenAPI 3.1+ per container (Phase 3)
+├── workspace.dsl              # the model — source of truth
+├── context.mmd                # System Context view, exported (Mermaid)
+├── container.mmd              # Container view, exported (Mermaid)
+└── component-<name>.mmd       # only if Component depth was scoped in
 ```
 
 ## Boundaries
 
-- **Always**: bottom-up order — never dispatch a synthesis phase before the phase
-  below it is complete; every code-level claim backed by a real `file:line`, never
-  invented.
-- **Ask first**: before running the full Phase 1/2 sweep on a large or unfamiliar repo
-  — confirm scope (which subdirectory, which containers) rather than defaulting to
-  "the whole repo" and burning a call per directory.
-- **Never**: fabricate endpoints, deployment units, personas, or dependencies that
-  aren't backed by something actually read from the codebase or its docs.
-
-## Composition
-
-This skill is the one place allowed to dispatch all four C4 agents in sequence — the
-agents themselves never call each other, same rule as every other agent in this repo
-(see `code-reviewer.md`'s Composition section for the precedent).
+- **Always**: every element/relationship backed by something actually read
+  from the codebase, its config, or its docs — never invented; run the
+  validate/inspect loop before treating the DSL as done; nest containers
+  inside their software system and components inside their container, never
+  at the wrong scope.
+- **Ask first**: before sweeping a large or unfamiliar repo — confirm scope
+  (subdirectory, Context+Container vs. +Component) rather than defaulting to
+  the whole repo at full depth; before Code-level detail (out of scope by
+  default — see Overview).
+- **Never**: fabricate endpoints, deployment units, personas, or dependencies
+  that aren't backed by something read from the codebase or its docs; skip
+  the validate/inspect loop and hand-wave DSL correctness.
