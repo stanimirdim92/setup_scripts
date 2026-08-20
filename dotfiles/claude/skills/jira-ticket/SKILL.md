@@ -34,6 +34,16 @@ For Atlassian MCP:
   comments, links, parent, and other relevant fields.
 - Prefer markdown-formatted content when supported.
 
+After fetching the ticket:
+
+- Check for direct subtasks/child issues.
+- Query direct children explicitly when needed (e.g.
+  `parent = [TICKET] ORDER BY key ASC`) rather than assuming the main issue
+  response includes them.
+- Fetch at least each child's key, summary, status, and issue type.
+- If a child issue materially adds requirements or constraints not present on
+  the parent, read its relevant content too.
+
 If no Jira integration is available, say so plainly and ask the user to paste:
 
 - description
@@ -66,8 +76,16 @@ Read:
 - description
 - acceptance criteria / Definition of Done
 - relevant comments
+- direct subtasks/child issues
 - parent or linked issues when they materially affect the ticket
 - attachments explicitly referenced as requirements
+
+For subtasks/child issues:
+
+- always include their key, title, and status in the intake
+- read their details when they materially refine, constrain, or decompose the parent scope
+- do not recursively traverse grandchildren unless they materially affect the
+  requested work
 
 Do not fetch unrelated Jira context.
 
@@ -125,8 +143,12 @@ Use this structure:
 
 **Status:** [status]
 
-**Requirements**
+**Subtasks / Child Issues**
+- [KEY] — [Title] — [Status]
 - ...
+- None. <!-- if none -->
+
+**Requirements**
 - ...
 
 **Acceptance Criteria**
@@ -170,6 +192,7 @@ Preserve:
 - contextual information as context
 - repository-resolvable unknowns as questions for `/spec`
 - true product ambiguities or unavailable authoritative references as blockers
+- direct subtasks/child issues and their status
 
 Do not make `/spec` refetch Jira information already collected during intake.
 
