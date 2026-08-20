@@ -30,9 +30,13 @@ For Atlassian MCP:
 
 - Resolve the accessible Atlassian resource/cloud ID if not already known.
 - Reuse the resolved cloud ID for the session.
-- Fetch the Jira issue including status, description, acceptance criteria,
-  comments, links, parent, and other relevant fields.
+- Fetch the Jira issue including status, issue type, priority, assignee,
+  description, acceptance criteria, comments, links, parent, and other relevant
+  fields.
 - Prefer markdown-formatted content when supported.
+
+Always use the freshly fetched Jira state. Do not rely on status, assignee,
+priority, or ticket content remembered from earlier conversation.
 
 After fetching the ticket:
 
@@ -73,6 +77,9 @@ Read:
 
 - summary/title
 - status
+- issue type
+- priority
+- assignee
 - description
 - acceptance criteria / Definition of Done
 - relevant comments
@@ -83,9 +90,17 @@ Read:
 For subtasks/child issues:
 
 - always include their key, title, and status in the intake
-- read their details when they materially refine, constrain, or decompose the parent scope
+- read their details when they materially refine, constrain, or decompose the
+  parent scope
 - do not recursively traverse grandchildren unless they materially affect the
   requested work
+
+For parent/linked issues:
+
+- preserve the relationship type (parent, blocks, is blocked by, relates to,
+  duplicates, etc.)
+- include their key, title, and status
+- read their details only when they materially affect the ticket
 
 Do not fetch unrelated Jira context.
 
@@ -141,18 +156,26 @@ Use this structure:
 
 ### [TICKET] — [Title]
 
-**Status:** [status]
+**Status:** [status]  
+**Type:** [issue type]  
+**Priority:** [priority]  
+**Assignee:** [assignee or Unassigned]
 
 **Subtasks / Child Issues**
 - [KEY] — [Title] — [Status]
-- ...
+- None. <!-- if none -->
+
+**Related Issues**
+- Parent: [KEY] — [Title] — [Status]
+- Blocked by: [KEY] — [Title] — [Status]
+- Blocks: [KEY] — [Title] — [Status]
+- Related: [KEY] — [Title] — [Status]
 - None. <!-- if none -->
 
 **Requirements**
 - ...
 
 **Acceptance Criteria**
-- ...
 - ...
 - Not specified in Jira. <!-- if none -->
 
@@ -174,6 +197,9 @@ Use this structure:
 
 **Next action:** `/spec`
 
+Only include relationship labels that actually exist. Do not invent Jira
+relationships.
+
 ## 6. Handoff
 
 For implementation or fix work, the expected pipeline is:
@@ -193,6 +219,7 @@ Preserve:
 - repository-resolvable unknowns as questions for `/spec`
 - true product ambiguities or unavailable authoritative references as blockers
 - direct subtasks/child issues and their status
+- parent/linked issues with relationship type and status
 
 Do not make `/spec` refetch Jira information already collected during intake.
 

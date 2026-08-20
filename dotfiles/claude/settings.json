@@ -109,10 +109,6 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/warn-force-push.sh"
-          },
-          {
-            "type": "command",
-            "command": "$HOME/.claude/hooks/warn-php-quality-tools.sh"
           }
         ]
       }
@@ -163,5 +159,6 @@
   "theme": "dark-ansi",
   "editorMode": "normal",
   "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true
+  "agentPushNotifEnabled": true,
+  "preferredNotifChannel": "terminal_bell"
 }
