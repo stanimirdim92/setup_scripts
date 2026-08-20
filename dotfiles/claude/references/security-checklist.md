@@ -1,205 +1,388 @@
 # Security Checklist
 
-Quick reference for web application security. Use alongside the `security-and-hardening` skill.
+Quick reference for web application and AI/agent security. Use this as a practical review checklist; use [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/) and the linked references when deeper verification is required.
+
+> Keep this file principle-focused. Version-specific commands and fast-changing ecosystem details belong in `references/`.
 
 ## Table of Contents
 
 - [Threat Modeling (Start Here)](#threat-modeling-start-here)
-- [Pre-Commit Checks](#pre-commit-checks)
+- [Pre-Commit & Secrets](#pre-commit--secrets)
 - [Authentication](#authentication)
 - [Authorization](#authorization)
+- [API Security](#api-security)
 - [Input Validation](#input-validation)
-- [Security Headers](#security-headers)
-- [CORS Configuration](#cors-configuration)
-- [Data Protection](#data-protection)
-- [Dependency Security](#dependency-security)
+- [File Handling](#file-handling)
+- [Browser Security](#browser-security)
+- [Data Protection & Privacy](#data-protection--privacy)
+- [Secrets & Key Management](#secrets--key-management)
+- [Dependency & Supply-Chain Security](#dependency--supply-chain-security)
+- [Infrastructure & Deployment](#infrastructure--deployment)
+- [Logging & Monitoring](#logging--monitoring)
+- [Security Testing](#security-testing)
+- [Failure & Exceptional Conditions](#failure--exceptional-conditions)
 - [AI / LLM Security](#ai--llm-security)
-- [Error Handling](#error-handling)
-- [OWASP Top 10 Quick Reference](#owasp-top-10-quick-reference)
-- [OWASP Top 10 for LLMs Quick Reference](#owasp-top-10-for-llms-quick-reference)
+- [RAG / Retrieval Security](#rag--retrieval-security)
+- [Agent & Tool Security](#agent--tool-security)
+- [Agent Memory](#agent-memory)
+- [Incident Readiness](#incident-readiness)
+- [OWASP Top 10:2025 Quick Reference](#owasp-top-102025-quick-reference)
+- [OWASP Top 10 for LLM Applications:2025](#owasp-top-10-for-llm-applications2025)
 
 ## Threat Modeling (Start Here)
 
 Before reaching for controls, spend five minutes thinking like an attacker:
 
-- [ ] Trust boundaries mapped (requests, uploads, webhooks, third-party APIs, LLM output)
-- [ ] Assets named (credentials, PII, payment data, admin actions, money movement)
-- [ ] STRIDE run per boundary (Spoofing, Tampering, Repudiation, Info disclosure, DoS, Elevation)
+- [ ] Trust boundaries mapped (requests, uploads, webhooks, queues, third-party APIs, LLM output, tool calls)
+- [ ] Assets named (credentials, PII, payment data, tenant data, admin actions, money movement)
+- [ ] STRIDE run per boundary (Spoofing, Tampering, Repudiation, Information disclosure, DoS, Elevation of privilege)
 - [ ] Abuse cases written next to use cases ("how would I misuse this?")
+- [ ] High-impact actions identified (delete, publish, send, charge, transfer, deploy, change permissions)
+- [ ] Failure behavior defined: which checks must fail closed?
 
-## Pre-Commit Checks
+## Pre-Commit & Secrets
 
-- [ ] No secrets in code (`git diff --cached | grep -i "password\|secret\|api_key\|token"`)
-- [ ] `.gitignore` covers: `.env`, `.env.local`, `*.pem`, `*.key`
-- [ ] `.env.example` uses placeholder values (not real secrets)
+- [ ] No secrets in staged changes; automated secret scanning used where possible (for example Gitleaks or TruffleHog)
+- [ ] `.gitignore` covers local secret/config files such as `.env`, `.env.local`, `*.pem`, `*.key`
+- [ ] `.env.example` contains placeholders only
+- [ ] Generated artifacts, fixtures, logs, and test snapshots contain no real credentials or sensitive production data
+- [ ] Security-sensitive configuration changes receive explicit review
 
 ## Authentication
 
-- [ ] Passwords hashed with bcrypt (≥12 rounds), scrypt, or argon2
-- [ ] Session cookies: `httpOnly`, `secure`, `sameSite: 'lax'`
-- [ ] Session expiration configured (reasonable max-age)
-- [ ] Rate limiting on login endpoint (≤10 attempts per 15 minutes)
-- [ ] Password reset tokens: time-limited (≤1 hour), single-use
-- [ ] Account lockout after repeated failures (optional, with notification)
-- [ ] MFA supported for sensitive operations (optional but recommended)
+- [ ] Passwords hashed with Argon2id (preferred); scrypt acceptable; bcrypt retained only where required/legacy
+- [ ] Session cookies use `httpOnly`, `secure`, and an appropriate `sameSite` policy
+- [ ] Session lifetime and idle timeout are bounded
+- [ ] Session ID rotated after authentication and privilege changes
+- [ ] Sessions invalidated on logout and security-sensitive account changes
+- [ ] Login/reset/recovery endpoints rate-limited
+- [ ] Password-reset tokens are random, single-use, and time-limited
+- [ ] Authentication responses do not enable username/email enumeration
+- [ ] MFA required for privileged or high-impact access where appropriate
+- [ ] JWTs validate allowed algorithm, signature, expiration, issuer, and audience
+- [ ] JWT signing keys can be rotated and revoked
 
 ## Authorization
 
 - [ ] Every protected endpoint checks authentication
-- [ ] Every resource access checks ownership/role (prevents IDOR)
-- [ ] Admin endpoints require admin role verification
-- [ ] API keys scoped to minimum necessary permissions
-- [ ] JWT tokens validated (signature, expiration, issuer)
+- [ ] Every resource access checks ownership/tenant/role (prevents BOLA/IDOR)
+- [ ] Authorization enforced server-side, never inferred from UI visibility
+- [ ] Admin/privileged operations require explicit role/capability checks
+- [ ] API keys and service identities use least-privilege scopes
+- [ ] Cross-tenant access is denied by default
+- [ ] Authorization is re-checked at execution time for queued/background/high-impact actions
+- [ ] Database-level controls such as RLS are used as defense in depth where appropriate
+
+## API Security
+
+- [ ] Object-level authorization checked for every client-supplied resource identifier
+- [ ] Property-level authorization enforced; prevent over-posting/mass assignment
+- [ ] Function-level authorization enforced independently of routes/UI
+- [ ] Request and response schemas explicitly defined and validated
+- [ ] API responses expose only explicitly intended fields
+- [ ] Pagination, filtering, and maximum result sizes bounded
+- [ ] Request-body and upload-size limits enforced
+- [ ] Expensive endpoints have rate, concurrency, timeout, and cost limits
+- [ ] Idempotency used for retried state-changing operations where appropriate
+- [ ] Third-party API responses treated as untrusted input
+- [ ] API inventory/version ownership maintained; deprecated endpoints removed
+- [ ] Sensitive business flows protected against automation/abuse, not only raw request volume
+
+### Webhooks
+
+- [ ] Webhook signature/MAC verified against the raw request body
+- [ ] Timestamp/nonce or provider replay mechanism checked
+- [ ] Duplicate events handled idempotently
+- [ ] Webhook secrets independently rotatable
+- [ ] Event authorization/business rules applied after authenticity verification
+- [ ] Unknown event types rejected safely
 
 ## Input Validation
 
-- [ ] All user input validated at system boundaries (API routes, form handlers)
-- [ ] Validation uses allowlists (not denylists)
-- [ ] String lengths constrained (min/max)
-- [ ] Numeric ranges validated
-- [ ] Email, URL, and date formats validated with proper libraries
-- [ ] File uploads: type restricted, size limited, content verified
-- [ ] SQL queries parameterized (no string concatenation)
-- [ ] HTML output encoded (use framework auto-escaping)
-- [ ] URLs validated before redirect (prevent open redirect)
-- [ ] Server-side URL fetches allowlisted; private/reserved IPs blocked (prevent SSRF)
+- [ ] All untrusted input validated at system boundaries
+- [ ] Validation prefers allowlists and structured schemas over denylists
+- [ ] String lengths and numeric ranges bounded
+- [ ] Email, URL, date, UUID, enum, and identifier formats validated with appropriate libraries
+- [ ] SQL uses parameters/bindings; no query construction by string concatenation
+- [ ] HTML output encoded; framework auto-escaping kept enabled
+- [ ] Redirect destinations validated to prevent open redirects
+- [ ] Server-side URL fetches validate scheme/host and block private, loopback, link-local, metadata, and reserved ranges unless explicitly required
+- [ ] Deserialized/decoded data treated as untrusted after parsing
 
-## Security Headers
+## File Handling
 
-```
+- [ ] Extension, declared MIME type, and file signature/magic bytes validated
+- [ ] Maximum file size enforced before expensive parsing
+- [ ] Uploaded filename never used directly as a filesystem path
+- [ ] Server-side filenames/IDs generated independently from user input
+- [ ] Path traversal prevented
+- [ ] Uploaded files stored outside the web root where practical
+- [ ] Archive expansion, decompression ratio, recursion depth, and total extracted size bounded
+- [ ] Parser CPU/memory/time limits enforced
+- [ ] Dangerous active content rejected or sanitized where applicable
+- [ ] Malware scanning used where the threat model requires it
+- [ ] Downloads use safe `Content-Type` and `Content-Disposition`
+
+## Browser Security
+
+### Security Headers
+
+Baseline — adapt CSP and permissions to the application:
+
+```http
 Content-Security-Policy: default-src 'self'; script-src 'self'
 Strict-Transport-Security: max-age=31536000; includeSubDomains
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
-X-XSS-Protection: 0  (disabled, rely on CSP)
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: camera=(), microphone=(), geolocation=()
 ```
 
-## CORS Configuration
+- [ ] CSP avoids unsafe inline/eval allowances unless there is a reviewed reason
+- [ ] HSTS enabled only after HTTPS is correctly deployed across intended subdomains
+- [ ] Sensitive responses use appropriate cache controls
+
+### CORS
+
+- [ ] Explicit trusted origins configured
+- [ ] `Access-Control-Allow-Credentials` used only when required
+- [ ] Allowed methods and headers minimized
+- [ ] Origin reflection avoided unless strict validation is implemented
+- [ ] Wildcard origin never combined with credentialed browser access
 
 ```typescript
-// Restrictive (recommended)
 cors({
   origin: ['https://yourdomain.com', 'https://app.yourdomain.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 })
-
-// NEVER use in production:
-cors({ origin: '*' })  // Allows any origin
 ```
 
-## Data Protection
+### CSRF
 
-- [ ] Sensitive fields excluded from API responses (`passwordHash`, `resetToken`, etc.)
-- [ ] Sensitive data not logged (passwords, tokens, full CC numbers)
-- [ ] PII encrypted at rest (if required by regulation)
-- [ ] HTTPS for all external communication
+- [ ] Cookie-authenticated state-changing requests protected against CSRF
+- [ ] `SameSite` is defense in depth, not the only control when the threat model requires anti-CSRF tokens/origin checks
+
+## Data Protection & Privacy
+
+- [ ] Sensitive fields excluded from API responses
+- [ ] Sensitive data not logged (passwords, tokens, full payment data, unnecessary PII)
+- [ ] TLS/HTTPS used for external communication
+- [ ] Sensitive data encrypted at rest where required by policy/regulation/threat model
 - [ ] Database backups encrypted
+- [ ] Data classified (for example public/internal/confidential/restricted)
+- [ ] Collect only data actually required
+- [ ] Retention periods defined and enforced
+- [ ] User/tenant deletion removes associated data where required
+- [ ] Backup retention follows the same lifecycle policy
+- [ ] Backup restoration periodically tested
+- [ ] Encryption keys managed separately from encrypted data
 
-## Dependency Security
+## Secrets & Key Management
 
-First locate the **installation boundary**. If the package is matched by a parent `workspaces` declaration, use that workspace root; otherwise use the nearest project root that owns both its manifest and dependency graph. At that boundary, corroborate `packageManager` (when present), the lockfile, and CI commands. Stop if they disagree or competing manager lockfiles exist there. A nested project is independent only when it is outside the parent workspace; independent subprojects may legitimately use different managers.
+- [ ] Secrets stored in a secret manager or protected deployment environment
+- [ ] Separate credentials per environment
+- [ ] Separate service identities/credentials where blast-radius reduction matters
+- [ ] Credentials scoped to minimum necessary permissions
+- [ ] Secrets never committed, logged, returned, embedded in images/artifacts, or placed in LLM context
+- [ ] Secrets/API keys can be rotated and revoked
+- [ ] Compromised-credential response procedure documented
+- [ ] Production secrets unavailable to development/test environments
+- [ ] Signing/encryption keys have ownership and rotation policy
 
-| Manager/version signal | Frozen/immutable CI install | Known-advisory audit |
-|---|---|---|
-| npm (`package-lock.json` or `npm-shrinkwrap.json`) | `npm ci` | `npm audit` |
-| pnpm | `pnpm install --frozen-lockfile` | `pnpm audit` |
-| Yarn 2+ | `yarn install --immutable` | `yarn npm audit -A -R` |
-| Yarn 1 | `yarn install --frozen-lockfile` | `yarn audit` |
+## Dependency & Supply-Chain Security
 
-For an unlisted manager or version, consult its official documentation; do not substitute another manager's commands or newer defaults.
+- [ ] Exactly one authoritative lockfile per project/workspace installation boundary
+- [ ] CI uses frozen/immutable dependency installation and never silently rewrites the lockfile
+- [ ] Dependency lifecycle/install scripts blocked or explicitly reviewed before first execution
+- [ ] Known-vulnerability audit runs in CI
+- [ ] Critical/high findings triaged for reachability; deferrals have owner/reason/review date
+- [ ] Forced automatic remediation that changes dependency ranges is not applied blindly
+- [ ] New dependencies reviewed for ownership, maintenance, release history, provenance, transitive graph, and typosquatting
+- [ ] Registry signatures/provenance verified where supported
+- [ ] Build/CI dependencies and third-party actions pinned appropriately
+- [ ] Base container images pinned/scanned and updated deliberately
+- [ ] SBOM generated for production artifacts where required/useful
 
-### Install-Script Gate
+See [`./supply-chain.md`](./supply-chain.md) for package-manager-specific install-script policy and commands.
 
-Never discover dependency lifecycle scripts by first executing an ordinary install on a client whose defaults have not been verified.
+## Infrastructure & Deployment
 
-1. Bootstrap with dependency scripts disabled, or with a documented default-deny policy plus fail-closed enforcement.
-2. Inspect the exact script source and package version before approval.
-3. Record the narrowest native allow/deny policy at the installation boundary and commit it.
-4. Run a clean frozen/immutable install with that policy and verify the required packages still build.
+- [ ] Production debug/development modes disabled
+- [ ] Services run as non-root where practical
+- [ ] Containers drop unnecessary Linux capabilities
+- [ ] Container/root filesystem read-only where practical
+- [ ] Only required ports/services exposed
+- [ ] Internal services not publicly reachable without a reason
+- [ ] Inbound and outbound network access follows least privilege
+- [ ] Application, migration, and administrative database roles separated where practical
+- [ ] Production IAM/service accounts follow least privilege
+- [ ] Base images and OS packages patched/scanned
+- [ ] Images/artifacts immutable and preferably signed/provenanced
+- [ ] Secrets never baked into container images/layers
+- [ ] Production startup fails when mandatory secure configuration is missing
+- [ ] Default credentials/demo endpoints/sample admin accounts removed
 
-**Point-in-time snapshot:** Package-manager defaults and command names change quickly. Verify this matrix against the pinned client's current official documentation before relying on it.
+## Logging & Monitoring
 
-| Manager version | Native policy |
-|---|---|
-| npm without verified granular approvals | Bootstrap with `npm ci --ignore-scripts`, or persist `ignore-scripts=true` when project-wide blocking is intended. Keep scripts disabled or deliberately upgrade before allowing any reviewed dependency script. |
-| npm 11.18.x (verified on 11.18.0) | Unreviewed dependency scripts run with a warning by default. Enforce `strict-allow-scripts=true` before a normal install, then use the workspace-unaware `npm install-scripts ls` from the installation boundary; keep approvals version-pinned and denials name-wide. |
-| npm 12.x (verified on 12.0.1) | Unreviewed dependency scripts are skipped by default; `strict-allow-scripts=true` makes their presence fail the install before execution. Use the same `npm install-scripts` review and approval flow. |
-| pnpm 11+ | Use `pnpm approve-builds` and commit `allowBuilds` decisions; `strictDepBuilds` defaults to `true`, so unreviewed builds fail. |
-| pnpm 10.26–10.x | Configure `allowBuilds` explicitly, or use `pnpm approve-builds` with the legacy `onlyBuiltDependencies` / `ignoredBuiltDependencies` lists. Set `strictDepBuilds: true`; its v10 default is `false`. |
-| pnpm 10.1–10.25 | `pnpm approve-builds` records the legacy lists; enable `strictDepBuilds` where supported (10.3+). |
-| Older or unknown pnpm | Bootstrap with `pnpm install --frozen-lockfile --ignore-scripts`. Keep scripts disabled unless the pinned version documents an enforceable policy. |
-| Yarn 4.14+ | Dependency postinstalls are disabled by default. Grant only required exceptions with top-level `dependenciesMeta.<package>.built: true`. |
-| Yarn 2–4.13 | Set `enableScripts: false` in `.yarnrc.yml`, then grant only required exceptions with top-level `dependenciesMeta.<package>.built: true`; do not enable scripts globally. |
-| Yarn 1 | Bootstrap with `yarn install --ignore-scripts`; keep scripts disabled unless each required exception is reviewed under the pinned client's documented workflow. |
+- [ ] Authentication failures and important authentication events logged
+- [ ] Authorization failures logged without leaking sensitive data
+- [ ] Privileged/admin operations logged
+- [ ] Credential/API-key creation, rotation, and revocation logged
+- [ ] Destructive/high-impact operations logged
+- [ ] Security-relevant configuration changes logged
+- [ ] Logs contain request/correlation IDs where useful
+- [ ] Logs never contain passwords, auth tokens, secrets, or unnecessary sensitive payloads
+- [ ] Security events generate alerts where appropriate
+- [ ] Logs protected from unauthorized modification/deletion
+- [ ] Log retention and access policy defined
+- [ ] Agent tool calls, approvals, and high-impact actions are auditable
 
-Authoritative checks: [npm install-scripts](https://docs.npmjs.com/cli/v11/commands/npm-install-scripts/), [install policy](https://docs.npmjs.com/cli/v11/commands/npm-install/), and [CLI releases](https://github.com/npm/cli/releases); [pnpm approve-builds](https://pnpm.io/cli/approve-builds) and [build settings](https://pnpm.io/settings#allowbuilds); [Yarn security](https://yarnpkg.com/features/security) and [manifest](https://yarnpkg.com/configuration/manifest#dependenciesMeta).
+## Security Testing
 
-**Supply-chain hygiene** (advisory audits do not catch newly malicious packages):
-- [ ] Exactly one authoritative lockfile per project/workspace root is committed and CI never rewrites it
-- [ ] Critical/high findings are triaged for reachability; deferrals have a reason and review date
-- [ ] Forced audit remediation (`npm audit fix --force` or equivalent) is never automatic; remediation diffs and changelogs are reviewed
-- [ ] Registry signatures/provenance are verified where the manager supports it
-- [ ] Dependency lifecycle scripts are blocked before first execution and approved only through the pinned manager's native policy
-- [ ] New dependencies are reviewed for ownership, maintenance, release age, provenance, transitive graph, and typosquatting
+- [ ] Authorization tests include cross-user and cross-tenant negative cases
+- [ ] Security-sensitive behavior has explicit "must not be able to" tests
+- [ ] Secret scanning runs in CI
+- [ ] Dependency vulnerability scanning runs in CI
+- [ ] SAST runs on relevant code changes
+- [ ] Container images scanned when containers are shipped
+- [ ] IaC scanned when infrastructure-as-code is used
+- [ ] DAST used for externally exposed applications where appropriate
+- [ ] Complex parsers/input handlers fuzzed where risk justifies it
+- [ ] High/critical findings block release unless explicitly risk-accepted
+- [ ] Security regression tests added after security incidents/bugs
+
+## Failure & Exceptional Conditions
+
+- [ ] Security checks fail closed, not open
+- [ ] Transactions roll back on partial failure where consistency/security requires it
+- [ ] Locks, temporary credentials, files, connections, and leases released/expired safely
+- [ ] Timeouts configured for network and external-service calls
+- [ ] Retries bounded and use backoff/jitter where appropriate
+- [ ] Retries do not duplicate irreversible operations
+- [ ] Partial failures cannot bypass authorization, validation, or accounting
+- [ ] Missing mandatory configuration causes startup failure rather than insecure fallback
+- [ ] Unexpected exceptions return generic external errors and useful internal diagnostics
+- [ ] Resource exhaustion/queue saturation has defined behavior
+
+Example external error:
+
+```json
+{
+  "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Something went wrong"
+  }
+}
+```
+
+Never expose raw stack traces, SQL, internal paths, credentials, or provider internals to untrusted clients.
 
 ## AI / LLM Security
 
 For any feature that calls an LLM (chatbots, summarizers, agents, RAG):
 
-- [ ] Model output treated as untrusted — never into `eval`/SQL/shell/`innerHTML`/file paths
-- [ ] Prompt injection assumed; permissions enforced in code, not in the system prompt
-- [ ] Secrets, cross-tenant data, and full system prompts kept out of the context window
-- [ ] Tool/agent permissions scoped; destructive or irreversible actions require confirmation
-- [ ] Token, rate, and recursion/loop limits set (bound consumption)
+- [ ] Model output treated as untrusted data
+- [ ] Prompt injection assumed; authorization and business rules enforced outside the model
+- [ ] Indirect prompt injection assumed from documents, websites, emails, tool output, retrieved content, and other agents
+- [ ] Secrets, cross-tenant data, and unnecessary system/developer instructions kept out of model context
+- [ ] Structured model output validated against a strict schema before use
+- [ ] Model-produced SQL, shell, URLs, HTML, code, paths, and identifiers validated/sandboxed before execution/use
+- [ ] Safety/security controls remain effective if the model ignores instructions
+- [ ] Token, request-rate, execution-time, tool-call, recursion, and monetary budgets enforced
+- [ ] Model/provider fallback does not silently weaken required security or data-handling guarantees
+- [ ] Sensitive prompts/completions have explicit retention/logging policy
 
-## Error Handling
+## RAG / Retrieval Security
 
-```typescript
-// Production: generic error, no internals
-res.status(500).json({
-  error: { code: 'INTERNAL_ERROR', message: 'Something went wrong' }
-});
+- [ ] Authorization applied before or during retrieval, not after generation
+- [ ] Tenant/user/document scope enforced by application/database controls
+- [ ] Vector stores/embedding namespaces cannot leak cross-tenant data
+- [ ] Retrieved documents treated as untrusted data/instructions
+- [ ] Document provenance/source metadata retained
+- [ ] Documents validated before indexing
+- [ ] Poisoned/malicious documents can be quarantined, deleted, and re-indexed
+- [ ] Retrieval filters cannot be overridden by model-generated text alone
+- [ ] Citations/provenance included where correctness or auditability matters
+- [ ] Embedding/index deletion is included in tenant/user data-deletion workflows where required
 
-// NEVER in production:
-res.status(500).json({
-  error: err.message,
-  stack: err.stack,         // Exposes internals
-  query: err.sql,           // Exposes database details
-});
-```
+## Agent & Tool Security
 
-## OWASP Top 10 Quick Reference
+- [ ] Tool arguments validated independently of model output
+- [ ] Tool authorization checked at execution time
+- [ ] Tools expose minimum required capabilities and data
+- [ ] High-impact/destructive/irreversible actions require deterministic policy checks and/or human approval
+- [ ] Agent-generated shell/code runs only in an appropriately isolated sandbox
+- [ ] Browser/network-enabled agents have restricted egress where practical
+- [ ] Tool/API credentials are scoped per tool/service, not shared broadly
+- [ ] Agent loops have hard termination conditions
+- [ ] Tool-call count, wall-clock time, concurrency, and monetary spend bounded
+- [ ] Untrusted tool output cannot automatically redefine agent policy/permissions
+- [ ] Agent-to-agent messages treated as untrusted unless authenticated/authorized by the application
+- [ ] High-impact actions produce an audit trail linking user/request, model decision, tool call, and result
 
-| # | Vulnerability | Prevention |
+See [`./ai-security.md`](./ai-security.md) for additional AI/agent guidance.
+
+## Agent Memory
+
+- [ ] Memory scoped per user/tenant/session
+- [ ] Transient untrusted input cannot become trusted long-term memory without policy/validation
+- [ ] Memory writes validated and auditable where important
+- [ ] Sensitive information excluded from persistent memory unless explicitly required/protected
+- [ ] Memory has retention/expiration/deletion behavior
+- [ ] Retrieved memory is treated as untrusted context, not authorization or policy
+
+## Incident Readiness
+
+- [ ] Security owner/on-call escalation path defined
+- [ ] Credential compromise procedure covers revoke/rotate/redeploy as needed
+- [ ] Ability to disable affected API keys, integrations, tools, agents, or endpoints quickly
+- [ ] Audit/log data sufficient to determine affected users/tenants/actions
+- [ ] Backup/restore and critical recovery paths tested
+- [ ] Vulnerability disclosure/contact path defined where appropriate
+- [ ] Post-incident actions include regression tests and control updates
+
+## OWASP Top 10:2025 Quick Reference
+
+See [OWASP Top 10:2025](https://owasp.org/Top10/2025/).
+
+| ID | Risk | Primary checks in this file |
 |---|---|---|
-| 1 | Broken Access Control | Auth checks on every endpoint, ownership verification |
-| 2 | Cryptographic Failures | HTTPS, strong hashing, no secrets in code |
-| 3 | Injection | Parameterized queries, input validation |
-| 4 | Insecure Design | Threat modeling, spec-driven development |
-| 5 | Security Misconfiguration | Security headers, minimal permissions, audit deps |
-| 6 | Vulnerable Components | The ecosystem's dependency audit (`npm audit`, `pip-audit`, ...), keep deps updated, minimal deps |
-| 7 | Auth Failures | Strong passwords, rate limiting, session management |
-| 8 | Data Integrity Failures | Verify updates/dependencies, signed artifacts |
-| 9 | Logging Failures | Log security events, don't log secrets |
-| 10 | SSRF | Validate/allowlist URLs, restrict outbound requests |
+| A01 | Broken Access Control | Authorization, API Security, CSRF, tenant isolation |
+| A02 | Security Misconfiguration | Browser Security, Infrastructure & Deployment, fail-secure defaults |
+| A03 | Software Supply Chain Failures | Dependency & Supply-Chain Security, CI security |
+| A04 | Cryptographic Failures | Authentication, Data Protection, Secrets & Key Management |
+| A05 | Injection | Input Validation, File Handling, AI output validation |
+| A06 | Insecure Design | Threat Modeling, abuse cases, architecture/security boundaries |
+| A07 | Authentication Failures | Authentication, session management, MFA, rate limits |
+| A08 | Software or Data Integrity Failures | Supply chain, provenance/signing, webhook authenticity, untrusted data |
+| A09 | Security Logging and Alerting Failures | Logging & Monitoring, audit trails, alerts |
+| A10 | Mishandling of Exceptional Conditions | Failure & Exceptional Conditions, fail-closed behavior |
 
-## OWASP Top 10 for LLMs Quick Reference
+## OWASP Top 10 for LLM Applications:2025
 
-For apps with LLM features. See the [OWASP GenAI Security Project](https://genai.owasp.org/llm-top-10/).
+See the [OWASP GenAI Security Project](https://genai.owasp.org/llm-top-10/).
 
-| ID | Risk | Prevention |
+| ID | Risk | Prevention focus |
 |---|---|---|
-| LLM01 | Prompt Injection | Don't trust the system prompt as a boundary; enforce permissions in code |
-| LLM02 | Sensitive Information Disclosure | Keep secrets/PII out of prompts; filter outputs |
-| LLM03 | Supply Chain | Vet models, datasets, and plugins like any dependency |
-| LLM04 | Data and Model Poisoning | Use trusted model sources, verify integrity; vet fine-tuning and RAG data |
-| LLM05 | Improper Output Handling | Treat model output as untrusted; validate, parameterize, encode |
-| LLM06 | Excessive Agency | Scope tool permissions; confirm destructive actions |
-| LLM07 | System Prompt Leakage | Assume the system prompt can leak; put no secrets in it |
-| LLM08 | Vector and Embedding Weaknesses | Partition RAG embeddings per tenant; validate documents before indexing |
-| LLM09 | Misinformation | Ground answers with citations; validate critical claims; keep a human in the loop |
-| LLM10 | Unbounded Consumption | Cap tokens, request rate, and loop/recursion depth |
+| LLM01 | Prompt Injection | Treat instructions/content as untrusted; enforce permissions outside prompts |
+| LLM02 | Sensitive Information Disclosure | Minimize context, protect secrets/PII, control logging/retention |
+| LLM03 | Supply Chain | Vet models, datasets, plugins/tools, packages, and providers |
+| LLM04 | Data and Model Poisoning | Validate provenance; control ingestion/fine-tuning/RAG data |
+| LLM05 | Improper Output Handling | Validate, parameterize, encode, sandbox |
+| LLM06 | Excessive Agency | Least-privilege tools, approvals, deterministic policy, bounded autonomy |
+| LLM07 | System Prompt Leakage | Assume prompts can leak; never store secrets/security boundaries only in prompts |
+| LLM08 | Vector and Embedding Weaknesses | Tenant isolation, document validation, scoped retrieval/deletion |
+| LLM09 | Misinformation | Ground important claims, provenance/citations, verification/human review where needed |
+| LLM10 | Unbounded Consumption | Cap tokens, rates, loops, tools, concurrency, time, and spend |
+
+## References
+
+- [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/)
+- [OWASP Top 10:2025](https://owasp.org/Top10/2025/)
+- [OWASP API Security Top 10](https://owasp.org/API-Security/)
+- [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/)
+- [OWASP GenAI Security Project](https://genai.owasp.org/)
+- See [AI / Agent Security](./ai-security.md) for deeper guidance.
+- See [Supply Chain Security](./supply-chain.md) for package-manager-specific guidance.

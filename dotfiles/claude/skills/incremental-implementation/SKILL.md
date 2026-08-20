@@ -12,7 +12,7 @@ Build in thin vertical slices — implement one piece, test it, verify it, then 
 ## When to Use
 
 - Implementing any multi-file change
-- Building a new feature from a task breakdown
+- Building a new feature end-to-end from a task breakdown
 - Refactoring existing code
 - Any time you're tempted to write more than ~100 lines before testing
 
@@ -38,7 +38,7 @@ For each slice:
 1. **Implement** the smallest complete piece of functionality
 2. **Test** — run the test suite (or write a test if none exists)
 3. **Verify** — confirm the slice works as expected (tests pass, build succeeds, manual check)
-4. **Commit** -- save your progress with a descriptive message (see `git-workflow-and-versioning` for atomic commit guidance)
+4. **Commit** — save your progress with a descriptive message (see `git-workflow-and-versioning` for atomic commit guidance)
 5. **Move to the next slice** — carry forward, don't restart
 
 ## Slicing Strategies
@@ -95,8 +95,8 @@ Before writing any code, ask: "What is the simplest thing that could work?"
 After writing code, review it against these checks:
 - Can this be done in fewer lines?
 - Are these abstractions earning their complexity?
-- Would a staff engineer look at this and say "why didn't you just..."?
-- Am I building for hypothetical future requirements, or the current task?
+- Would a staff engineer look at this and say "why didn't you just...", "this was over engineered..."?
+- Am I building for hypothetical future requirements or the current task?
 
 ```
 SIMPLICITY CHECK:
@@ -110,7 +110,9 @@ SIMPLICITY CHECK:
 ✓ Three form components
 ```
 
-Three similar lines of code is better than a premature abstraction. Implement the naive, obviously-correct version first. Optimize only after correctness is proven with tests.
+Three similar lines of code are better than a premature abstraction. 
+Implement the naive, obviously correct version first. 
+Optimize only after correctness is proven with tests.
 
 ### Rule 0.5: Scope Discipline
 

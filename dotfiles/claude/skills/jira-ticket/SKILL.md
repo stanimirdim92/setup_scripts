@@ -1,69 +1,199 @@
 ---
 name: jira-ticket
-description: "Intake ONLY for a Jira ticket (e.g. LD-123). Use whenever the user provides a Jira ticket key or asks to work a ticket. Does not recon, plan, implement, test, or deliver — hands off to /spec, which hands off to /plan, which hands off to /build. Never continue past intake from inside this skill."
+description: "Jira ticket intake only. Use when the user asks to work on a Jira ticket. Fetch the ticket, extract its requirements and relevant context, surface true blockers, then return /spec as the next action. A Jira key used only as context or an example does not trigger this skill. Never invoke /spec automatically."
 ---
 
-# Jira Ticket — Intake
+# Jira Ticket — Intake Only
 
-This skill covers intake only. Fetch the ticket, read it, restate it, surface
-ambiguity — then stop and hand off. Recon, planning, implementation, testing,
-quality gates, and delivery are `/spec`'s, `/plan`'s, and `/build`'s jobs, not
-this skill's — do not execute those phases from here even if the next step
-feels obvious.
+Fetch and understand the Jira ticket, then prepare the handoff to `/spec`.
 
-## Phase 1 — Intake
+Do not inspect the repository, plan, implement, test, or review from this skill.
 
-1. Resolve the ticket key, in order:
-   - If the user gave an exact key (e.g. `LD-123`), use it directly.
-   - If the user described the ticket instead of naming it (e.g. "my next
-     high-priority bug", "the ticket about X"), and a `jira` CLI or the
-     Atlassian MCP's JQL search is available, run a JQL search to find
-     candidates and confirm the match with the user before fetching — don't
-     guess which ticket they mean.
-2. Fetch the ticket, in order:
-   - Prefer a `jira` CLI if this environment has one configured — check for
-     it before reaching for MCP.
-   - Otherwise use the Atlassian/Jira MCP tools if configured (in Claude
-     Code: `getAccessibleAtlassianResources` to resolve the cloud ID — cache
-     it for the session — then `getJiraIssue` with `comment` in fields and
-     `responseContentFormat: "markdown"`).
-   - If neither is available, say so plainly and ask the user to paste the
-     full ticket (description, acceptance criteria, comments).
-   - If a fetch is attempted but fails, distinguish "not configured" from
-     "configured but the fetch failed" (auth, permissions, wrong cloud ID,
-     ticket not found) — surface the actual failure, don't silently fall
-     back to asking the user to paste it as if nothing was configured.
-3. Read description, acceptance criteria, comments, and linked issues (fetch
-   linked/parent issues if they add context).
-4. Restate the ticket as a concrete requirements list. If anything is ambiguous or
-   contradicts the codebase, ask the user now.
+## 1. Intake
 
-## Handoff
+Resolve the ticket:
 
-Invoke `/spec` next. The pipeline from there:
+- Exact key or Jira URL → use it directly.
+- Description without a key → search Jira and use the clear match.
+- If multiple plausible matches exist, ask the user.
+- Never guess between ambiguous candidates.
 
-- `/spec` turns the restated requirements into `docs/specs/[TICKET]-SPEC.md`, gets it approved.
-- `/spec`'s downstream is `/plan` — reads the spec, produces
-  `tasks/[TICKET]-plan.md` + `tasks/[TICKET]-todo.md`, gets the plan approved.
-- `/plan`'s only next action after approval is `/build` — never implement
-  directly from `/plan` either (see `/plan`'s own "After approval" note).
-- `/build` dispatches `executor` subagents per workstream, fans out
-  independent review, and renders a GO/NO-GO verdict.
+## 2. Fetch the ticket
 
-Do not implement, recon, or plan from inside this skill — that shortcuts the
-dispatch/review/verdict layer `/build` provides.
+Prefer Jira access in this order:
 
-## Project conventions for later phases
+1. A configured `jira` CLI, if available.
+2. Configured Atlassian/Jira MCP tools.
+3. User-provided ticket contents.
 
-Not this skill's job to apply these, but `/spec`, `/plan`, and `/build`'s
-dispatched executors need them, and they're project-specific — this skill is
-global, so don't assume any single project's answer. Check the current
-project's own `CLAUDE.md`/`AGENTS.md` and any project-local architecture skill
-(e.g. a `module-architecture`-style skill) for:
+For Atlassian MCP:
 
-- Module/directory layout and layering rules.
-- Branch naming convention (match existing branch names in `git log`/`git branch -a`).
-- Commit message convention (match existing commits in `git log`).
-- Whether Jira is read-only for this project (never push, open a PR, or post a
-  Jira comment without explicit user confirmation — offer a drafted
-  done-comment and post it only if approved, unless the project says otherwise).
+- Resolve the accessible Atlassian resource/cloud ID if not already known.
+- Reuse the resolved cloud ID for the session.
+- Fetch the Jira issue including status, description, acceptance criteria,
+  comments, links, parent, and other relevant fields.
+- Prefer markdown-formatted content when supported.
+
+If no Jira integration is available, say so plainly and ask the user to paste:
+
+- description
+- acceptance criteria
+- relevant comments
+- linked/parent issue context if needed
+
+### Fetch failures
+
+If Jira access exists but fetching fails, report the actual failure.
+
+Distinguish between:
+
+- integration not configured
+- authentication failure
+- insufficient permissions
+- invalid/wrong cloud or site
+- ticket not found
+- tool/API failure
+
+Do not silently treat a failed configured integration as if Jira were not
+configured.
+
+## 3. Read the ticket
+
+Read:
+
+- summary/title
+- status
+- description
+- acceptance criteria / Definition of Done
+- relevant comments
+- parent or linked issues when they materially affect the ticket
+- attachments explicitly referenced as requirements
+
+Do not fetch unrelated Jira context.
+
+## 4. Restate what the ticket requires
+
+Translate the Jira content into a concrete requirements list.
+
+Preserve distinctions between:
+
+- explicit requirements
+- acceptance criteria
+- constraints
+- open questions
+- relevant context
+
+Do not invent missing requirements.
+
+## Sparse Tickets
+
+Jira does not need to contain a full technical specification.
+
+If implementation details are missing but can reasonably be discovered from
+the repository, existing behavior, tests, or architecture, record them as
+questions for `/spec` rather than asking the user.
+
+Examples:
+
+- which module owns the behavior
+- current DB/API shape
+- existing implementation pattern
+- whether a migration is needed
+- which tests cover it
+
+Only stop for clarification when the missing information is a real product,
+business, security, permissions, or externally observable behavior decision
+that `/spec` cannot safely infer.
+
+Do not ask the user to answer repository questions.
+
+## Required References
+
+If the ticket explicitly depends on an attachment or linked specification
+(e.g. "use this prompt verbatim"), read it before handoff when possible.
+
+If an authoritative required reference cannot be retrieved, name the missing
+item and stop instead of pretending intake is complete.
+
+## 5. Output
+
+Return a concise Jira intake summary.
+
+Use this structure:
+
+### [TICKET] — [Title]
+
+**Status:** [status]
+
+**Requirements**
+- ...
+- ...
+
+**Acceptance Criteria**
+- ...
+- ...
+- Not specified in Jira. <!-- if none -->
+
+**Constraints**
+- ...
+- None explicitly specified. <!-- if none -->
+
+**Relevant Context**
+- ...
+- None. <!-- if none -->
+
+**Questions for `/spec`**
+- ...
+- None. <!-- if repository recon is not needed -->
+
+**Blockers**
+- ...
+- None. <!-- if no true blocker exists -->
+
+**Next action:** `/spec`
+
+## 6. Handoff
+
+For implementation or fix work, the expected pipeline is:
+
+`/jira-ticket` → `/spec` → `/plan` → `/build`
+
+Never skip phases.
+
+This skill does **not** invoke `/spec` automatically.
+
+The intake summary above is the handoff payload for `/spec`.
+
+Preserve:
+
+- explicit Jira requirements as requirements
+- contextual information as context
+- repository-resolvable unknowns as questions for `/spec`
+- true product ambiguities or unavailable authoritative references as blockers
+
+Do not make `/spec` refetch Jira information already collected during intake.
+
+After producing the summary, return `/spec` as the next action and stop.
+
+## Hard Stop
+
+Once the ticket has been restated and any intake-level ambiguity has been
+surfaced:
+
+**STOP.**
+
+Do not:
+
+- invoke `/spec`, `/plan`, or `/build`
+- inspect the repository
+- perform recon
+- propose architecture
+- produce an implementation plan
+- modify files
+- execute commands for implementation
+- run tests
+- review implementation
+- commit, push, or open a PR
+- update Jira
+
+Return `/spec` as the next action instead.

@@ -158,7 +158,7 @@
     }
   },
   "effortLevel": "medium",
-  "advisorModel": "sonnet",
+  "advisorModel": "opus",
   "autoMemoryEnabled": true,
   "theme": "dark-ansi",
   "editorMode": "normal",
