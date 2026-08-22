@@ -1,10 +1,9 @@
 ---
 description: Start spec-driven development — write a structured specification before writing code
+argument-hint: "[ticket or feature description]"
 ---
 
-First invoke the `superpowers:brainstorming` skill to classify the request (spike / bounded / architectural) and get explicit approval on direction — don't formalize a spec on an idea nobody's signed off on yet.
-
-Once that's approved, invoke the `skills/spec-driven-development` skill.
+Invoke `skills/spec-driven-development`.
 
 Begin by understanding what the user wants to build. Ask clarifying questions about:
 1. The objective and target users
