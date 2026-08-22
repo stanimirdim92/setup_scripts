@@ -3,7 +3,7 @@ description: QA engineer specialized in TDD - test strategy, test writing, and c
   Use for designing test suites, writing tests for existing code, or evaluating test quality.
 ---
 
-Invoke the `superpowers:test-driven-development` skill.
+Invoke `skills/test-driven-development`.
 
 ### Test at the Right Level
 

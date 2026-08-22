@@ -209,8 +209,7 @@ The spec is a living document, not a one-time artifact:
 - Do not silently resolve material ambiguity.
 - Do not produce one spec for independently shippable capabilities.
 - Do not repeat repository-wide conventions in a feature spec.
-- Planning slices tasks within a spec. By then the oversized artifact already exists — module boundaries and dependency direction must be decided before the spec is written, not after.
-- 
+
 ## Verification
 
 Before considering the specification ready for implementation, confirm:
