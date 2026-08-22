@@ -129,8 +129,8 @@ explicitly rather than assuming it's fine or assuming it's broken.
 - **Invoke directly when:** the user asks specifically for a reliability/
   consistency review of code crossing a process, network, or queue
   boundary.
-- **Invoke via:** `/build`'s review fan-out (conditional, per
-  `references/reviewer-triggers.md`) or `/review`, alongside `code-reviewer`
+- **Invoke via:** `/review`'s dispatch step (conditional, per
+  `references/reviewer-triggers.md`), alongside `code-reviewer`
   (and `security-auditor` when also triggered) — each runs independently
   and reports separately.
 - **Do not invoke from another agent.** Orchestration belongs to the user

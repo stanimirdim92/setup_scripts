@@ -3,9 +3,6 @@ description: Independently verify built work against acceptance criteria, regres
 argument-hint: "[task number(s), ticket, commit range, or feature description]"
 ---
 
-Invoke `skills/test-driven-development` for test-quality and test-level
-discipline.
-
 `/test` is the independent **VERIFY** gate after `/build`.
 
 It does not replace the tests written during implementation. `/build` uses TDD

@@ -111,5 +111,5 @@ Map findings to the OWASP Top 10 for LLM Applications where relevant.
 ## Composition
 
 - **Invoke directly when:** the user wants a security-focused pass on a specific change, file, or system component.
-- **Invoke via:** `/build`'s review fan-out step, when the diff matches a trigger in `references/reviewer-triggers.md` (batched alongside `code-reviewer`, capped at 2 concurrent reviewers — see `commands/build.md`), or `/review` for a one-off pass outside `/build`.
+- **Invoke via:** `/review`'s dispatch step, when the diff matches a trigger in `references/reviewer-triggers.md` (batched alongside `code-reviewer`, capped at 2 concurrent reviewers — see `commands/review.md`).
 - **Do not invoke from another persona.** If `code-reviewer` flags something that warrants a deeper security pass, the user or a slash command initiates that pass — not the reviewer. See [docs/agents.md](../../../docs/agents.md).

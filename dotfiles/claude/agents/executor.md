@@ -165,7 +165,9 @@ Keep the report factual and concise.
 - Never silently change the plan, task boundaries, or workstream structure.
 - Never expand into unrelated cleanup while implementing the task.
 
-Review, integration, orchestration, and the final verdict belong to `/build`.
+Implementation orchestration and integration belong to `/build`. Independent
+verification belongs to `/test`. Review and the final GO/NO-GO verdict
+belong to `/review`.
 
 ## Composition
 
@@ -175,5 +177,7 @@ Review, integration, orchestration, and the final verdict belong to `/build`.
   that workstream's later tasks rather than spawned fresh per task.
   Execution is strictly sequential — never two workstreams' executors
   running concurrently, even when their file scopes don't overlap.
-- **Do not invoke another agent.** Review, integration, orchestration, and
-  the final GO/NO-GO verdict belong to `/build`, never to this agent.
+- **Do not invoke another agent.** Implementation orchestration and
+  integration belong to `/build`; independent verification belongs to
+  `/test`; review and the final GO/NO-GO verdict belong to `/review` —
+  never to this agent.

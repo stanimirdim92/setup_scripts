@@ -1,11 +1,12 @@
 # Reviewer trigger matrix
 
-Single source of truth for which reviewer runs on a given diff. `/build`
-and `/review` both point here instead of each defining their own copy —
-the two commands drifting out of sync on this exact question is what
-rule 6 ("surface conflicts, don't let two things each invent their own
-pattern") is for. Edit this file when a trigger changes; don't patch
-`build.md` or `review.md`'s own copy of the condition.
+Single source of truth for which reviewers `/review` dispatches for a
+given diff (per `docs/adr/0020-build-test-review-pipeline-split.md`,
+`/build` no longer dispatches reviewers itself). Edit this file when a
+trigger changes; don't duplicate trigger logic in `review.md` or in an
+individual reviewer agent's own file — that drift is exactly what rule 6
+("surface conflicts, don't let two things each invent their own
+pattern") is for.
 
 - **`code-reviewer`** — always. Five-axis review: correctness,
   readability, architecture, security, performance.
