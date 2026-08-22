@@ -9,149 +9,240 @@ not a replacement for it.
 
 ## 1. Resolve before dispatching anything
 
-Read `docs/tasks/[TICKET]-todo.md` (or `docs/tasks/[TICKET]-plan.md`, or take the task description
-given as an argument) and pin down exactly which task(s) are in scope,
-their acceptance criteria, and file scope. If that's ambiguous, ask now —
-**don't dispatch and find out inside a running executor.** A bad task
-reference should fail here, free, not three commits into an `executor`
-run.
+Read `docs/tasks/[TICKET]-todo.md` and, when needed,
+`docs/tasks/[TICKET]-plan.md`.
 
-## 2. Dispatch — by workstream, not by task
+Resolve exactly which task(s) are in scope, including:
 
-Group resolved tasks into workstreams first: tasks that share files,
-share a subsystem, or sit in the same dependency chain belong in one
-workstream. Dispatch **one `executor` per workstream, not one per task**
-— every fresh subagent spawn loads and cache-writes its own copy of
-`CLAUDE.md`, project rules, and tool definitions from scratch (a named
-subagent's prompt cache is separate from the parent's, unlike a fork), so
-five tasks in one dependency chain should mean one executor carried
-through all five, not five fresh spawns each re-paying that cost.
+- acceptance criteria
+- dependencies
+- workstream
+- likely file/area scope
+- verification steps
 
-- **First task in a workstream:** dispatch a fresh, named `executor`.
-- **Each subsequent task in the *same* workstream:** resume that same
-  agent (by name or agent ID) instead of spawning a new one — it already
-  has the codebase context, file reads, and prior decisions from the
-  earlier task; a fresh spawn would throw that away and re-pay the
-  discovery cost for no reason.
-- **A task in a genuinely independent workstream:** dispatch a new,
-  separate `executor` — but not at the same time as another one (below).
+If a task reference is ambiguous, resolve it before dispatching an executor.
 
-**Executors never run concurrently, even across independent
-workstreams.** `executor` has `Edit`/`Write`/`Bash`/`Grep` and commits — two of
-them running at once write into the *same* checkout, and that races
-regardless of whether their file scopes overlap: a `git add`/`commit`
-from one can pick up the other's uncommitted edit mid-flight, or the two
-just contend on `.git/index.lock`. Non-overlapping file scope prevents a
-content conflict, not a git-state race. So dispatch workstreams
-strictly one at a time — finish (or resume-to-completion on) one
-workstream's current task before the next workstream's first dispatch,
-even when two are independent enough to otherwise run in parallel. This
-is the same "predictable spend over shaved wall-clock minutes" call as
-the batch cap below, applied to a correctness risk instead of a cost
-one. (Genuine parallel implementation is possible via `isolation:
-worktree` on the `Agent` tool plus an explicit merge step back into the
-main checkout — not used here; sequential dispatch is simpler and this
-repo doesn't need the wall-clock win badly enough to earn that
-complexity.)
+Do not discover task scope inside a running executor.
 
-**Model tier per workstream, when the default isn't right.** `executor`'s
-frontmatter now defaults to `claude-sonnet-5` — routine implementation
-doesn't need Opus-tier reasoning by default. A per-dispatch `model`
-override is still available and takes precedence over the frontmatter
-default for just that invocation: reach for it to bump a specific
-workstream *up* to Opus when it's architecturally ambiguous or a wrong
-implementation call would be genuinely expensive to undo, rather than
-running everything at the higher tier "just in case."
+### Workstream source of truth
 
-**Cost gate — a batch cap, not just a prompt.** A 5-hour usage window is
-metered by total token volume, not wall-clock time — running several
-agents concurrently for a few minutes (worse when any of them are
-Opus-tier, e.g. a security- or architecturally-ambiguous workstream
-bumped up per the model-tier note above) can spend as much of that
-budget as hours of solo conversation, and *asking* before firing them
-doesn't cap the spend if the answer is yes. Executors are already capped
-at 1-at-a-time above (a correctness fix that also caps their spend as a
-side effect); the same "cap actual concurrency, don't just confirm it"
-reasoning applies below to review fan-out, which has no git-race concern
-and so can run 2-wide.
+Honor the workstream assignments produced by `/plan`.
 
-## 3. Fan out review, independently
+Do not silently regroup planned tasks during `/build`.
 
-Once every dispatched `executor` has reported back, fan out against the
-resulting diff. Trigger conditions live in one place —
-`references/reviewer-triggers.md` — read it before
-deciding which reviewers run; `/review` points at the same file, so
-don't let this command's copy of the logic drift from it (rule 6: pick
-one condition, don't let two commands each invent their own).
+If:
 
-**Batch cap, no exceptions.** Never run more than **2** reviewers at
-once — full stop, including a high-risk diff that triggers every
-specialist. If 3+ triggers match, dispatch 2, wait for both to report
-back, then dispatch the rest in the next batch of 2. A high-risk diff
-earns more distinct review perspectives, not a faster concurrent burn —
-sequential batching still gets every reviewer to run, just not all at
-once.
+- a legacy or ad-hoc task has no workstream, infer one using the planning rules;
+- a recorded workstream appears unsafe, contradictory, or inconsistent with
+  task dependencies, stop and surface the discrepancy before dispatching.
 
-Give each reviewer the diff plus a one-line goal and the task's
-acceptance criteria — not the full spec, not `docs/tasks/[TICKET]-plan.md`, not each
-other's output. Enough to review against a stated intent without
-flooding a fresh subagent with the whole plan; each axis also reviews
-blind to the others, same reasoning as the two-axis review this pattern
-is adapted from: an axis that can see another axis's findings starts
-anchoring on them instead of forming its own.
+`/plan` owns workstream classification. `/build` consumes and validates it.
 
-## 4. Merge without reranking
+## 2. Dispatch by workstream
 
-Report each reviewer's findings under its own heading — Correctness/
-Readability/Architecture/Security/Performance from `code-reviewer`,
-security findings from `security-auditor`, cross-boundary reliability findings from
-`distributed-systems-reviewer` if it ran. **Don't blend them into one
-ranked list.**
-Reporting them separately is deliberate: it stops one axis's silence from
-reading as another axis's clearance, and stops a loud axis from burying a
-quiet but real finding from a different one.
+Dispatch **one executor per workstream, not one executor per task**.
 
-## 5. Verdict
+Tasks in the same workstream share implementation context and should reuse the
+same executor whenever possible.
 
-**GO** or **NO-GO**, stated explicitly:
+### Within a workstream
 
-- Any Critical finding from any reviewer → default **NO-GO**. The user
-  can override explicitly; don't talk yourself into overriding it.
-- No Critical findings, some Required/Important findings → your call,
-  but say what's outstanding either way.
-- Clean across every reviewer that ran → **GO**. The work is already
-  committed per-increment by the executor(s); there's nothing left to
-  land.
+- First selected task → dispatch a fresh, named `executor`.
+- Subsequent selected tasks in the same workstream → resume that same executor
+  by name or agent ID.
+- Execute dependent tasks in dependency order.
+- Do not spawn a fresh executor merely because the task number changed.
 
-On **NO-GO**, list exactly what has to change and hand it back — either a
-fresh `executor` dispatch scoped to just the fix, or handle it directly if
-it's small enough that spinning up another agent would cost more than it
-saves.
+Reusing the executor preserves codebase context, prior file reads, implementation
+decisions, and task-local knowledge instead of repaying discovery cost for every
+task.
 
-## 6. Retro (only after GO)
+### Across workstreams
 
-Once the work has actually landed, ask one question: **is there anything
-about how this run went that should change next time?** Don't force an
-answer — "nothing" is a complete answer, same as `code-review-and-quality`
-never manufacturing a finding to justify the review.
+A genuinely independent workstream gets a separate executor.
 
-If the answer names something, sort it before recording it:
+For now, implementation executors run **sequentially**, even across independent
+workstreams.
 
-- **About `/build` itself, `executor`, or the review fan-out** — a real
-  process gap (wrong dispatch order, a reviewer that should've run and
-  didn't, a step that should exist and doesn't). This belongs in the
-  dotfiles repo (`stanimirdim92/setup_scripts`), not in whatever project
-  you were just working in — state the exact change and which file it
-  belongs in (usually `dotfiles/claude/commands/build.md` or
-  `dotfiles/claude/agents/executor.md`), and apply it directly if this
-  session already has that repo open; otherwise hand the user the
-  specific edit to carry over.
-- **About this project specifically** — a convention, a gotcha, a "why we
-  do it this way" that the next session here needs and wouldn't otherwise
-  know. This belongs in *this* project's `docs/MEMORY.md`, per
-  `CLAUDE.md`'s memory section — read it first, update it last, and don't
-  let it silently rot into auto-memory instead where the next machine
-  won't see it.
+Multiple writing executors must never operate concurrently against the same git
+checkout. `Edit`, `Write`, `Bash`, staging, and commits share mutable repository
+state; non-overlapping source files do not eliminate working-tree or git-index
+races.
 
-One or the other, not both by default — a retro finding is usually about
-the process or about this codebase, rarely genuinely both at once.
+Finish the active executor step before dispatching or resuming another
+workstream.
+
+### Future parallel execution
+
+Independent, dependency-ready workstreams may run concurrently only when each
+executor is isolated in its own git worktree/branch.
+
+When parallel implementation is enabled:
+
+- one active executor per worktree;
+- one workstream per executor;
+- only dependency-ready, genuinely independent workstreams may overlap;
+- tasks inside one workstream remain sequential and reuse the same executor;
+- never run multiple writing executors against the same checkout;
+- integration remains sequential even when implementation is parallel.
+
+Parallel execution does not imply parallel integration.
+
+After parallel workstreams complete:
+
+1. verify each workstream independently;
+2. integrate completed workstreams one at a time in dependency order;
+3. resolve integration conflicts before integrating the next workstream;
+4. run affected tests after each integration;
+5. run combined verification after all selected workstreams are integrated.
+
+If integration invalidates a completed workstream's assumptions, resume that
+workstream's existing executor instead of spawning a fresh one when practical.
+
+### Model tier
+
+Use the executor's configured default model for routine implementation.
+
+Override the model only when a workstream is architecturally ambiguous, unusually
+high-risk, or an incorrect implementation decision would be expensive to undo.
+
+Keep model defaults in the executor definition; `/build` owns only the override
+policy.
+
+### Cost gate
+
+Concurrency is a spend decision, not just a wall-clock decision.
+
+Current implementation cap:
+
+- writing executors: **1 active at a time**
+- reviewers: **maximum 2 active at a time**
+
+If isolated parallel implementation is enabled later, start with a maximum of
+**2 active implementation executors** unless the user explicitly requests a
+higher cap.
+
+## 3. Verify executor results before review
+
+Before reviewer fan-out, ensure every selected task/workstream has completed its
+task-level verification.
+
+For sequential execution, review the resulting integrated checkout.
+
+For future parallel execution, do not issue a final verdict from isolated
+worktree results alone. First integrate all selected workstreams and run combined
+verification.
+
+No final GO is possible until:
+
+- all selected workstreams are integrated;
+- combined verification passes;
+- reviewers evaluate the integrated result.
+
+## 4. Fan out review independently
+
+Once implementation is integrated and verified, review the resulting diff.
+
+Trigger conditions live in:
+
+`references/reviewer-triggers.md`
+
+Read that file before deciding which reviewers run.
+
+`/review` uses the same trigger source. Do not duplicate reviewer-trigger logic
+inside `/build`.
+
+### Reviewer concurrency
+
+Never run more than **2 reviewers concurrently**.
+
+If 3 or more reviewer triggers match:
+
+1. dispatch up to 2;
+2. wait for both;
+3. dispatch the next batch.
+
+A high-risk diff earns more review perspectives, not unlimited concurrency.
+
+### Reviewer context
+
+Give each reviewer:
+
+- the integrated diff;
+- a one-line goal;
+- the relevant task acceptance criteria.
+
+Do **not** give reviewers:
+
+- the full spec unless specifically necessary;
+- the full implementation plan;
+- other reviewers' findings.
+
+Reviewers should form independent judgments without unnecessary context or
+anchoring.
+
+## 5. Report findings without reranking
+
+Report each reviewer's findings under its own heading.
+
+Examples:
+
+- Correctness / Readability / Architecture / Security / Performance from
+  `code-reviewer`
+- security findings from `security-auditor`
+- cross-boundary reliability findings from
+  `distributed-systems-reviewer`
+
+Do not blend all findings into one newly ranked list.
+
+Keeping review axes separate prevents one reviewer's silence from being mistaken
+for another reviewer's clearance and prevents a loud category from burying a
+quieter but important finding.
+
+## 6. Verdict
+
+State one explicit verdict:
+
+**GO** or **NO-GO**
+
+Rules:
+
+- Any Critical finding from any reviewer → default **NO-GO**.
+- No Critical findings, but Required/Important findings remain → decide whether
+  they block the selected scope and state what remains outstanding.
+- Clean across all reviewers that ran → **GO**.
+
+A **GO** requires:
+
+- selected implementation complete;
+- selected workstreams integrated;
+- combined verification green;
+- review completed against the integrated diff.
+
+On **NO-GO**, list exactly what must change.
+
+For fixes:
+
+- resume the relevant existing executor/workstream when the fix belongs to its
+  context;
+- dispatch a fresh executor only when the fix is genuinely separate;
+- handle a very small localized fix directly only when spawning an executor
+  would cost more context than it saves.
+
+After fixes, rerun the affected verification and any review needed to support a
+new verdict.
+
+## 7. Retro after GO
+
+After GO, ask whether the run revealed a reusable lesson.
+
+If yes:
+
+- **Harness/process lesson** → update the relevant rule in the dotfiles/setup
+  repository, such as `/build`, executor behavior, or reviewer orchestration.
+- **Project-specific lesson** → update the project's `docs/MEMORY.md`.
+
+Record nothing when there is no reusable lesson.
+
+Do not duplicate the same lesson into both places unless it genuinely applies to
+both.
