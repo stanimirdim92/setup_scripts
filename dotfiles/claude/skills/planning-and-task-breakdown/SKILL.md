@@ -54,7 +54,17 @@ Database schema
 
 Implementation order follows the dependency graph bottom-up: build foundations first.
 
-### Step 3: Slice Vertically
+A dependency graph answers:
+
+> What must exist before this can work?
+
+It does not answer:
+
+> Which architectural layer deserves its own task?
+
+### Step 3: Slice by Behavior
+
+Prefer vertical tasks that leave behind independently verifiable behavior.
 
 Instead of building all the database, then all the API, then all the UI — build one complete feature path at a time:
 
@@ -76,12 +86,53 @@ Task 4: User can view task list (query + API + UI for list view)
 
 Each vertical slice delivers working, testable functionality.
 
-### Step 4: Write Tasks
+### Step 4: Assign Workstreams
 
-Each task follows the structure in `../../references/templates/task.md`
-(canonical).
+Every task belongs to a workstream.
 
-### Step 5: Order and Checkpoint
+Default to **one workstream** for ordinary feature work.
+
+Keep tasks in the same workstream when they:
+
+- Share files or mutable state
+- Belong to the same subsystem
+- Form a dependency chain
+- Share important implementation context
+- Benefit from retaining decisions and codebase knowledge across tasks
+
+Create another workstream only when the work is genuinely independent:
+
+- No shared files or mutable state
+- No unfinished dependency between the tasks
+- Materially separate subsystem or implementation context
+
+"Could be done in parallel" is not enough reason to create another workstream.
+
+Workstreams primarily exist so `/build` can reuse one executor's context across
+related tasks rather than spawning a fresh executor for every task.
+
+`/build` owns execution order and concurrency. Planning only classifies the
+work.
+
+### Step 5: Write Tasks
+
+Each task follows `../../references/templates/task.md`.
+
+Every task must have:
+
+- One coherent outcome
+- Explicit acceptance criteria
+- A verification step
+- Dependencies
+- A workstream
+- Likely affected files or areas when useful
+
+File count is context, not a sizing rule.
+
+A task touching a migration, model, request, service, controller, route,
+component, and feature test may still be one coherent behavioral slice.
+
+### Step 6: Order and Checkpoint
 
 Arrange tasks so that:
 
@@ -102,15 +153,18 @@ Add explicit checkpoints:
 
 ## Task Sizing Guidelines
 
-| Size | Files | Scope | Example |
-|------|-------|-------|---------|
-| **XS** | 1 | Single function or config change | Add a validation rule |
-| **S** | 1-2 | One component or endpoint | Add a new API endpoint |
-| **M** | 3-5 | One feature slice | User registration flow |
-| **L** | 5-8 | Multi-component feature | Search with filtering and pagination |
-| **XL** | 8+ | **Too large — break it down further** | — |
+Use size as a planning heuristic, not a hard file-count gate.
 
-If a task is L or larger, it should be broken into smaller tasks. An agent performs best on S and M tasks.
+| Size | Typical Files | Scope |
+|---|---:|---|
+| XS | 1 | Localized change |
+| S | 1-2 | One small behavior/component |
+| M | 3-5 | One focused implementation session |
+| L | 5-8 | Likely >1 focused session — consider splitting |
+| XL | 8+ | Usually too broad — split unless highly cohesive |
+
+Prefer S/M tasks. Split when the work cannot reasonably be implemented,
+tested, and verified in one focused session.
 
 **When to break a task down further:**
 - It would take more than one focused session (roughly 2+ hours of agent work)
@@ -120,14 +174,32 @@ If a task is L or larger, it should be broken into smaller tasks. An agent perfo
 
 ## Output Files
 
-- **Plan document:** Save the implementation plan to `docs/tasks/[TICKET]-plan.md`.
-- **Task list:** Save the checklist-style task list to `docs/tasks/[TICKET]-todo.md`.
+Default outputs:
 
-Create the `tasks/` directory if it does not exist. These paths are the convention expected by the `/build` command and other downstream tooling.
+- Plan: `docs/tasks/[TICKET]-plan.md`
+- Task list: `docs/tasks/[TICKET]-todo.md`
+
+Create `docs/tasks/` if needed.
+
+Projects may designate an external task tracker instead of the default todo
+file, but the plan should still preserve task dependencies and workstream
+assignments.
+
+## Guardrails
+
+- Do not implement while planning
+- Do not create tasks solely around architectural layers
+- Do not split tasks based on an arbitrary file-count limit
+- Do not manufacture multiple workstreams for possible parallelism
+- Do not duplicate repository-wide conventions already documented elsewhere
+- Do not copy the spec into the plan
+- Do not hide unresolved technical risks inside implementation tasks
+- Do not treat "parallelizable" as "should run in parallel"
+
 
 ## Plan Document Template
 
-See `../../references/templates/plan.md` (canonical).
+Use `../../references/templates/plan.md`.
 
 ## Parallelization Opportunities
 
@@ -157,17 +229,27 @@ When multiple agents or sessions are available:
 
 ## Verification
 
-Before starting implementation, confirm:
+Before the plan is ready for `/build`, confirm:
 
-- [ ] Every task has acceptance criteria
+- [ ] Every task maps to required behavior or a justified foundation
+- [ ] Every task has explicit acceptance criteria
 - [ ] Every task has a verification step
-- [ ] Task dependencies are identified and ordered correctly
-- [ ] Every task has a workstream, with related/dependent tasks grouped
-      so `/build` can resume one executor instead of spawning fresh
-- [ ] No task touches more than ~5 files
-- [ ] Checkpoints exist between major phases
+- [ ] Dependencies are explicit and correctly ordered
+- [ ] Every task has a workstream
+- [ ] Related or dependent tasks share a workstream
+- [ ] Additional workstreams are genuinely independent
+- [ ] Task boundaries follow coherent behavior rather than arbitrary file counts
+- [ ] High-risk decisions are addressed early enough to fail fast
+- [ ] Checkpoints exist where they materially reduce risk
+- [ ] The plan does not unnecessarily duplicate the spec
+- [ ] The plan contains no production implementation
 - [ ] The human has reviewed and approved the plan
 
 ## See Also
 
-Acceptance criteria are per-task and answer "did we build the right thing?". They sit on top of the project-wide Definition of Done, the standing bar every task clears before it counts as done. See `../../references/definition-of-done.md`.
+Acceptance criteria are per-task and answer:
+
+> Did this increment deliver the intended behavior?
+
+Project-wide completion standards remain defined in
+`../../references/definition-of-done.md`.
