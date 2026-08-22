@@ -103,12 +103,42 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
    docs/          → Documentation
    ```
 
-4. **Code Style** — One real code snippet showing your style beats three paragraphs describing it. Include naming conventions, formatting rules, and examples of good output.
+4. **Implementation Guidance** — Capture feature-specific technical decisions,
+   existing repository patterns to reuse, and minimal reference snippets for
+   non-obvious mechanics.
+
+### Decisions
+
+Decisions that `/plan` should preserve.
+
+Examples:
+- Single-primary contact must be enforced at the database layer.
+- Primary-changing operations must be transactional.
+
+### Existing Patterns
+
+Existing code or components the implementation should mirror.
+
+Examples:
+- Backend: follow the existing repository → builder → service pattern.
+- Frontend: mirror `Tags.tsx` CRUD/error-handling behavior.
+
+### Reference Snippets
+
+Include code only when it communicates a non-obvious decision more precisely
+than prose. Keep snippets minimal; do not reproduce complete implementations.
+
+```sql
+primary_flag_key BIGINT UNSIGNED
+GENERATED ALWAYS AS (
+    IF(is_primary = 1, advertiser_id, NULL)
+) VIRTUAL
+```
 
 5. **Testing Strategy** — What framework, where tests live, coverage expectations, which test levels for which concerns.
 
 6. **Boundaries** — Three-tier system:
-   - **Always do:** Run tests before commits, follow naming conventions, validate inputs
+   - **Always do:** Run tests    before commits, follow naming conventions, validate inputs
    - **Ask first:** Database schema changes, adding dependencies, changing CI config
    - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
 
@@ -152,7 +182,6 @@ Break the plan into discrete, implementable tasks:
 - Each task has explicit acceptance criteria
 - Each task includes a verification step (test, build, manual check)
 - Tasks are ordered by dependency, not by perceived importance
-- No task should require changing more than ~5 files
 
 > Follow `planning-and-task-breakdown` for the full task-sizing and dependency-ordering mechanics; it is the canonical source. The template below is a lightweight inline form; if they ever diverge, `planning-and-task-breakdown` takes precedence.
 
@@ -171,31 +200,20 @@ The spec is a living document, not a one-time artifact:
 - **Commit the spec** — The spec belongs in version control alongside the code.
 - **Reference the spec in PRs** — Link back to the spec section that each PR implements.
 
-## Common Rationalizations
+## Guardrails
 
-| Rationalization | Reality |
-|---|---|
-| "This is simple, I don't need a spec" | Simple tasks don't need *long* specs, but they still need acceptance criteria. A two-line spec is fine. |
-| "I'll write the spec after I code it" | That's documentation, not specification. The spec's value is in forcing clarity *before* code. |
-| "The spec will slow us down" | A 15-minute spec prevents hours of rework. Waterfall in 15 minutes beats debugging in 15 hours. |
-| "Requirements will change anyway" | That's why the spec is a living document. An outdated spec is still better than no spec. |
-| "The user knows what they want" | Even clear requests have implicit assumptions. The spec surfaces those assumptions. |
-| "It's one big feature; splitting it is overhead" | If acceptance criteria cluster into independently testable groups, a monolithic spec forces every downstream task to reason over the whole contract. A ten-line capability map is the cheap alternative. |
-| "I'll decompose during planning" | Planning slices tasks within a spec. By then the oversized artifact already exists — module boundaries and dependency direction must be decided before the spec is written, not after. |
-
-## Red Flags
-
-- Starting to write code without any written requirements
-- Asking "should I just start building?" before clarifying what "done" means
-- Implementing features not mentioned in any spec or task list
-- Making architectural decisions without documenting them
-- Skipping the spec because "it's obvious what to build"
-- One spec whose requirements span several independently testable capabilities
-- Module boundaries or build order decided implicitly during implementation because no capability map was approved up front
-
+- Do not implement the feature during specification.
+- Code snippets are allowed only when they capture a non-obvious technical
+  decision or existing pattern that materially helps planning.
+- Prefer minimal snippets over complete classes or CRUD implementations.
+- Do not silently resolve material ambiguity.
+- Do not produce one spec for independently shippable capabilities.
+- Do not repeat repository-wide conventions in a feature spec.
+- Planning slices tasks within a spec. By then the oversized artifact already exists — module boundaries and dependency direction must be decided before the spec is written, not after.
+- 
 ## Verification
 
-Before proceeding to implementation, confirm:
+Before considering the specification ready for implementation, confirm:
 
 - [ ] The spec covers all six core areas
 - [ ] The human has reviewed and approved the spec
