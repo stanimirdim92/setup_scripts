@@ -123,3 +123,15 @@ message on this queue stalls every message behind it"). If a mechanism
 looks present but you can't tell if it's *correct* (e.g. an idempotency
 key exists but you can't verify the store-and-check is atomic), say that
 explicitly rather than assuming it's fine or assuming it's broken.
+
+## Composition
+
+- **Invoke directly when:** the user asks specifically for a reliability/
+  consistency review of code crossing a process, network, or queue
+  boundary.
+- **Invoke via:** `/build`'s review fan-out (conditional, per
+  `references/reviewer-triggers.md`) or `/review`, alongside `code-reviewer`
+  (and `security-auditor` when also triggered) — each runs independently
+  and reports separately.
+- **Do not invoke from another agent.** Orchestration belongs to the user
+  or a slash command, never to an agent calling another agent.

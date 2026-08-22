@@ -376,7 +376,10 @@ This separation ensures the test is written without knowledge of the fix, making
 
 ## See Also
 
-For JavaScript/TypeScript testing patterns illustrating these principles — Jest, React Testing Library, Supertest, Playwright — see `../../references/testing-patterns.md`. The principles transfer to any ecosystem; the syntax and tools there are JS/TS-specific.
+The principles above transfer to any ecosystem; a JS/TS-specific reference
+(Jest, React Testing Library, Supertest, Playwright) isn't currently
+vendored in this repo — apply the same principles with whatever
+test framework the project already uses.
 
 ## Common Rationalizations
 

@@ -166,3 +166,14 @@ Keep the report factual and concise.
 - Never expand into unrelated cleanup while implementing the task.
 
 Review, integration, orchestration, and the final verdict belong to `/build`.
+
+## Composition
+
+- **Invoke directly when:** never — this agent is dispatched only by
+  `/build`, not invoked ad hoc from a user request.
+- **Invoke via:** `/build`, one instance per workstream, resumed across
+  that workstream's later tasks rather than spawned fresh per task.
+  Execution is strictly sequential — never two workstreams' executors
+  running concurrently, even when their file scopes don't overlap.
+- **Do not invoke another agent.** Review, integration, orchestration, and
+  the final GO/NO-GO verdict belong to `/build`, never to this agent.

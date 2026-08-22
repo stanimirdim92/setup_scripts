@@ -1,5 +1,6 @@
 ---
 description: Break work into small verifiable tasks with acceptance criteria and dependency ordering
+argument-hint: "[ticket or feature description]"
 ---
 
 Invoke the `planning-and-task-breakdown` skill.

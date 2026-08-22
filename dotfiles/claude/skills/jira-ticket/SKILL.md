@@ -162,7 +162,7 @@ Use this structure:
 **Assignee:** [assignee or Unassigned]
 
 **Subtasks / Child Issues**
-- [KEY] — [Title] — [Status]
+- [KEY] — [Type] — [Title] — [Status]
 - None. <!-- if none -->
 
 **Related Issues**

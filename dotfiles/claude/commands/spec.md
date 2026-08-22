@@ -5,7 +5,7 @@ argument-hint: "[ticket or feature description]"
 
 Invoke `skills/spec-driven-development`.
 
-Begin by understanding what the user wants to build. Ask clarifying questions about:
+Begin by understanding what the user wants to build. If a `jira-ticket` intake summary already answered some of this, don't re-ask it — confirm what's already known and ask only what's still open. Otherwise ask clarifying questions about:
 1. The objective and target users
 2. Core features and acceptance criteria
 3. Tech stack preferences and constraints
