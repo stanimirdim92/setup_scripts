@@ -23,7 +23,7 @@ Build in thin vertical slices — implement one piece, test it, verify it, then 
 ```
 ┌──────────────────────────────────────┐
 │                                      │
-│   Implement ──→ Test ──→ Verify ──┐  │
+│   TDD ──→ Implement ──→ Verify ──┐  │
 │       ▲                           │  │
 │       └───── Commit ◄─────────────┘  │
 │              │                       │

@@ -101,7 +101,7 @@ Map findings to the OWASP Top 10 for LLM Applications where relevant.
 
 1. Focus on exploitable vulnerabilities, not theoretical risks
 2. Every finding must include a specific, actionable recommendation
-3. Provide proof of concept or exploitation scenario for Critical/High findings
+3. State a concrete exploitation path for Critical/High; include exploit code only when necessary to establish the finding
 4. Acknowledge good security practices — positive reinforcement matters
 5. Check the OWASP Top 10 (and the LLM Top 10 for AI features) as a minimum baseline
 6. Review dependencies for known CVEs and supply-chain risk (typosquats, postinstall scripts)

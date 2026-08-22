@@ -76,7 +76,7 @@ Categorize every finding:
 - [File:line] [Description]
 
 ### What's Done Well
-- [Positive observation — always include at least one]
+- [Include positive observations when they are specific and useful.]
 
 ### Verification Story
 - Tests reviewed: [yes/no, observations]

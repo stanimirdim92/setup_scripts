@@ -3,9 +3,10 @@ description: Dispatch execution for one or more planned tasks, then fan out revi
 argument-hint: "[task number(s) from docs/tasks/[TICKET]-todo.md, or a task description]"
 ---
 
-Invoke the `incremental-implementation` skill's discipline via dispatched
-`executor` agents — this command is the orchestration layer around it,
-not a replacement for it.
+
+Dispatch `executor` agents for implementation.
+The executor owns incremental/TDD execution discipline;
+`/build` owns orchestration only.
 
 ## 1. Resolve before dispatching anything
 
@@ -246,3 +247,13 @@ Record nothing when there is no reusable lesson.
 
 Do not duplicate the same lesson into both places unless it genuinely applies to
 both.
+
+For every executor dispatch/resume provide:
+- task
+- acceptance criteria
+- dependencies
+- workstream
+- expected scope
+- verification
+- is_last_selected_task_in_workstream: yes/no
+- workstream verification command, when applicable
