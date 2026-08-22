@@ -1,12 +1,12 @@
 ---
-description: Dispatch execution for one or more planned tasks, then fan out review and merge a go/no-go verdict
+description: Dispatch execution for one or more planned tasks by workstream
 argument-hint: "[task number(s) from docs/tasks/[TICKET]-todo.md, or a task description]"
 ---
 
-
 Dispatch `executor` agents for implementation.
-The executor owns incremental/TDD execution discipline;
-`/build` owns orchestration only.
+
+The executor owns incremental/TDD execution discipline.
+`/build` owns implementation orchestration only.
 
 ## 1. Resolve before dispatching anything
 
@@ -46,6 +46,19 @@ Dispatch **one executor per workstream, not one executor per task**.
 Tasks in the same workstream share implementation context and should reuse the
 same executor whenever possible.
 
+### Executor input contract
+
+For every executor dispatch or resume provide:
+
+- task
+- acceptance criteria
+- dependencies
+- workstream
+- expected scope
+- verification
+- `is_last_selected_task_in_workstream: yes|no`
+- workstream verification command, when applicable
+
 ### Within a workstream
 
 - First selected task → dispatch a fresh, named `executor`.
@@ -54,9 +67,9 @@ same executor whenever possible.
 - Execute dependent tasks in dependency order.
 - Do not spawn a fresh executor merely because the task number changed.
 
-Reusing the executor preserves codebase context, prior file reads, implementation
-decisions, and task-local knowledge instead of repaying discovery cost for every
-task.
+Reusing the executor preserves codebase context, prior file reads,
+implementation decisions, and task-local knowledge instead of repaying
+discovery cost for every task.
 
 ### Across workstreams
 
@@ -95,7 +108,8 @@ After parallel workstreams complete:
 2. integrate completed workstreams one at a time in dependency order;
 3. resolve integration conflicts before integrating the next workstream;
 4. run affected tests after each integration;
-5. run combined verification after all selected workstreams are integrated.
+5. run combined task/workstream verification after all selected workstreams are
+   integrated.
 
 If integration invalidates a completed workstream's assumptions, resume that
 workstream's existing executor instead of spawning a fresh one when practical.
@@ -104,8 +118,9 @@ workstream's existing executor instead of spawning a fresh one when practical.
 
 Use the executor's configured default model for routine implementation.
 
-Override the model only when a workstream is architecturally ambiguous, unusually
-high-risk, or an incorrect implementation decision would be expensive to undo.
+Override the model only when a workstream is architecturally ambiguous,
+unusually high-risk, or an incorrect implementation decision would be expensive
+to undo.
 
 Keep model defaults in the executor definition; `/build` owns only the override
 policy.
@@ -117,143 +132,44 @@ Concurrency is a spend decision, not just a wall-clock decision.
 Current implementation cap:
 
 - writing executors: **1 active at a time**
-- reviewers: **maximum 2 active at a time**
 
 If isolated parallel implementation is enabled later, start with a maximum of
 **2 active implementation executors** unless the user explicitly requests a
 higher cap.
 
-## 3. Verify executor results before review
+## 3. Build completion gate
 
-Before reviewer fan-out, ensure every selected task/workstream has completed its
-task-level verification.
+Before `/build` completes, ensure every selected task/workstream has completed
+its executor-level verification.
 
-For sequential execution, review the resulting integrated checkout.
+For sequential execution, verify the resulting integrated checkout.
 
-For future parallel execution, do not issue a final verdict from isolated
-worktree results alone. First integrate all selected workstreams and run combined
-verification.
+For future parallel execution, first integrate all selected workstreams and run
+combined task/workstream verification.
 
-No final GO is possible until:
+`/build` is complete when:
 
+- all selected tasks are implemented;
 - all selected workstreams are integrated;
-- combined verification passes;
-- reviewers evaluate the integrated result.
+- executor-required verification is green;
+- commits are complete;
+- the working tree is in the expected clean state.
 
-## 4. Fan out review independently
+Then stop and report:
 
-Once implementation is integrated and verified, review the resulting diff.
+**BUILD COMPLETE**
 
-Trigger conditions live in:
+Include:
 
-`references/reviewer-triggers.md`
+- tasks completed
+- workstreams completed
+- commits created
+- verification run
+- anything noticed but not touched
+- any remaining blocker
 
-Read that file before deciding which reviewers run.
+Do not perform the independent VERIFY phase here.
+Do not dispatch code reviewers here.
+Do not issue GO/NO-GO here.
 
-`/review` uses the same trigger source. Do not duplicate reviewer-trigger logic
-inside `/build`.
-
-### Reviewer concurrency
-
-Never run more than **2 reviewers concurrently**.
-
-If 3 or more reviewer triggers match:
-
-1. dispatch up to 2;
-2. wait for both;
-3. dispatch the next batch.
-
-A high-risk diff earns more review perspectives, not unlimited concurrency.
-
-### Reviewer context
-
-Give each reviewer:
-
-- the integrated diff;
-- a one-line goal;
-- the relevant task acceptance criteria.
-
-Do **not** give reviewers:
-
-- the full spec unless specifically necessary;
-- the full implementation plan;
-- other reviewers' findings.
-
-Reviewers should form independent judgments without unnecessary context or
-anchoring.
-
-## 5. Report findings without reranking
-
-Report each reviewer's findings under its own heading.
-
-Examples:
-
-- Correctness / Readability / Architecture / Security / Performance from
-  `code-reviewer`
-- security findings from `security-auditor`
-- cross-boundary reliability findings from
-  `distributed-systems-reviewer`
-
-Do not blend all findings into one newly ranked list.
-
-Keeping review axes separate prevents one reviewer's silence from being mistaken
-for another reviewer's clearance and prevents a loud category from burying a
-quieter but important finding.
-
-## 6. Verdict
-
-State one explicit verdict:
-
-**GO** or **NO-GO**
-
-Rules:
-
-- Any Critical finding from any reviewer → default **NO-GO**.
-- No Critical findings, but Required/Important findings remain → decide whether
-  they block the selected scope and state what remains outstanding.
-- Clean across all reviewers that ran → **GO**.
-
-A **GO** requires:
-
-- selected implementation complete;
-- selected workstreams integrated;
-- combined verification green;
-- review completed against the integrated diff.
-
-On **NO-GO**, list exactly what must change.
-
-For fixes:
-
-- resume the relevant existing executor/workstream when the fix belongs to its
-  context;
-- dispatch a fresh executor only when the fix is genuinely separate;
-- handle a very small localized fix directly only when spawning an executor
-  would cost more context than it saves.
-
-After fixes, rerun the affected verification and any review needed to support a
-new verdict.
-
-## 7. Retro after GO
-
-After GO, ask whether the run revealed a reusable lesson.
-
-If yes:
-
-- **Harness/process lesson** → update the relevant rule in the dotfiles/setup
-  repository, such as `/build`, executor behavior, or reviewer orchestration.
-- **Project-specific lesson** → update the project's `docs/MEMORY.md`.
-
-Record nothing when there is no reusable lesson.
-
-Do not duplicate the same lesson into both places unless it genuinely applies to
-both.
-
-For every executor dispatch/resume provide:
-- task
-- acceptance criteria
-- dependencies
-- workstream
-- expected scope
-- verification
-- is_last_selected_task_in_workstream: yes/no
-- workstream verification command, when applicable
+The next workflow stage is `/test`.

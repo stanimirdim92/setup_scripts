@@ -1,251 +1,265 @@
 ---
 name: incremental-implementation
-description: Delivers changes incrementally. Use when implementing any feature or change that touches more than one file. Use when you're about to write a large amount of code at once, or when a task feels too big to land in one step.
+description: Delivers changes in small, verifiable increments. Use when implementing multi-file features, refactors, or tasks that need safe slicing and commit boundaries.
 ---
 
 # Incremental Implementation
 
 ## Overview
 
-Build in thin vertical slices — implement one piece, test it, verify it, then expand. Avoid implementing an entire feature in one pass. Each increment should leave the system in a working, testable state. This is the execution discipline that makes large features manageable.
+Build in small, coherent slices.
+
+Each increment should leave the repository in a valid state and be small enough
+to understand, verify, and commit independently.
+
+This skill owns:
+
+- slice boundaries
+- scope discipline
+- keeping the repository green
+- verification cadence
+- commit cadence
+
+`test-driven-development` owns the implementation loop **inside behavioral
+slices**.
 
 ## When to Use
 
-- Implementing any multi-file change
-- Building a new feature end-to-end from a task breakdown
-- Refactoring existing code
-- Any time you're tempted to write more than ~100 lines before testing
+Use when:
 
-**When NOT to use:** Single-file, single-function changes where the scope is already minimal.
+- implementing a multi-file change
+- building a feature from a task breakdown
+- refactoring existing code
+- a task is too large to implement safely in one pass
+- risk or dependency order makes incremental landing valuable
 
-## The Increment Cycle
+**When NOT to use:** Obvious, localized changes whose implementation and
+verification are already minimal.
 
+## Increment Cycle
+
+### Behavioral slice
+
+Use TDD inside each behavioral slice:
+
+```text
+RED
+ ↓
+Implement minimum behavior
+ ↓
+GREEN
+ ↓
+Refactor
+ ↓
+Verify increment
+ ↓
+Commit
+ ↓
+Next slice
 ```
-┌──────────────────────────────────────┐
-│                                      │
-│   TDD ──→ Implement ──→ Verify ──┐  │
-│       ▲                           │  │
-│       └───── Commit ◄─────────────┘  │
-│              │                       │
-│              ▼                       │
-│          Next slice                  │
-│                                      │
-└──────────────────────────────────────┘
+
+1. **RED** — write or identify the test for the intended behavior and verify it
+   fails for the expected reason.
+2. **Implement** — write the minimum production code needed to satisfy the test.
+3. **GREEN** — run the focused test and verify it passes.
+4. **Refactor** — improve structure while keeping the test green.
+5. **Verify** — run the broader checks earned by the slice.
+6. **Commit** — save the coherent, verified increment.
+7. Move to the next slice.
+
+Do not reinterpret this as "implement first, test later."
+
+For detailed test selection and Red-Green-Refactor rules, follow
+`test-driven-development`.
+
+### Non-behavioral slice
+
+For documentation, static configuration, generated artifacts, or another change
+where TDD does not apply:
+
+```text
+Implement
+ ↓
+Verify
+ ↓
+Commit
+ ↓
+Next slice
 ```
 
-For each slice:
-
-1. **Implement** the smallest complete piece of functionality
-2. **Test** — run the test suite (or write a test if none exists)
-3. **Verify** — confirm the slice works as expected (tests pass, build succeeds, manual check)
-4. **Commit** — save your progress with a descriptive message (see `git-workflow-and-versioning` for atomic commit guidance)
-5. **Move to the next slice** — carry forward, don't restart
+Use the repository's appropriate validation for that artifact.
 
 ## Slicing Strategies
 
-### Vertical Slices (Preferred)
+### Vertical slices
 
-Build one complete path through the stack:
+Prefer a complete behavior over arbitrary architectural layers.
 
-```
-Slice 1: Create a task (DB + API + basic UI)
-    → Tests pass, user can create a task via the UI
+Example:
 
-Slice 2: List tasks (query + API + UI)
-    → Tests pass, user can see their tasks
-
-Slice 3: Edit a task (update + API + UI)
-    → Tests pass, user can modify tasks
-
-Slice 4: Delete a task (delete + API + UI + confirmation)
-    → Tests pass, full CRUD complete
+```text
+Slice 1: User can create a task
+Slice 2: User can list tasks
+Slice 3: User can edit a task
+Slice 4: User can delete a task
 ```
 
-Each slice delivers working end-to-end functionality.
+A slice may cross schema, backend, API, UI, and tests when that is the smallest
+coherent behavior.
 
-### Contract-First Slicing
+### Foundation first when genuinely shared
 
-When backend and frontend need to develop in parallel:
+A shared foundation may be its own increment when several later slices depend on
+it.
 
+Examples:
+
+- schema invariant
+- shared API contract
+- reusable migration primitive
+- common type/interface required by independent consumers
+
+Do not manufacture a foundation task merely to keep layers separate.
+
+### Contract-first
+
+When independent consumers need a shared contract:
+
+```text
+Contract
+  ↓
+Backend implementation
+Frontend implementation
+  ↓
+Integration
 ```
-Slice 0: Define the API contract (types, interfaces, OpenAPI spec)
-Slice 1a: Implement backend against the contract + API tests
-Slice 1b: Implement frontend against mock data matching the contract
-Slice 2: Integrate and test end-to-end
-```
 
-### Risk-First Slicing
+Define the contract before treating dependent implementations as independent.
 
-Tackle the riskiest or most uncertain piece first:
+### Risk-first
 
-```
-Slice 1: Prove the WebSocket connection works (highest risk)
-Slice 2: Build real-time task updates on the proven connection
-Slice 3: Add offline support and reconnection
-```
+Validate expensive uncertainty early.
 
-If Slice 1 fails, you discover it before investing in Slices 2 and 3.
+Examples:
+
+- external API feasibility
+- migration safety
+- concurrency invariant
+- framework limitation
+- performance-sensitive query shape
+
+Fail before building low-risk dependent work.
 
 ## Implementation Rules
 
-### Rule 0: Simplicity First
+### Simplicity first
 
-Before writing any code, ask: "What is the simplest thing that could work?"
+Implement the simplest design that satisfies the current task.
 
-After writing code, review it against these checks:
-- Can this be done in fewer lines?
-- Are these abstractions earning their complexity?
-- Would a staff engineer look at this and say "why didn't you just...", "this was over engineered..."?
-- Am I building for hypothetical future requirements or the current task?
+Avoid:
 
-```
-SIMPLICITY CHECK:
-✗ Generic EventBus with middleware pipeline for one notification
-✓ Simple function call
+- speculative abstractions
+- generic frameworks for one use
+- configuration systems for a fixed behavior
+- future-proofing with no current requirement
 
-✗ Abstract factory pattern for two similar components
-✓ Two straightforward components with shared utilities
+Prefer clear duplication over premature abstraction when the shared concept is
+not yet stable.
 
-✗ Config-driven form builder for three forms
-✓ Three form components
-```
+### Scope discipline
 
-Three similar lines of code are better than a premature abstraction. 
-Implement the naive, obviously correct version first. 
-Optimize only after correctness is proven with tests.
+Implement only what the current task requires.
 
-### Rule 0.5: Scope Discipline
+Do not opportunistically:
 
-Touch only what the task requires.
+- clean unrelated code
+- modernize nearby syntax
+- refactor unrelated modules
+- add unrequested features
+- remove code you do not understand
 
-Do NOT:
-- "Clean up" code adjacent to your change
-- Refactor imports in files you're not modifying
-- Remove comments you don't fully understand
-- Add features not in the spec because they "seem useful"
-- Modernize syntax in files you're only reading
+If nearby work is worth doing, report it separately.
 
-If you notice something worth improving outside your task scope, note it — don't fix it:
+### One logical increment at a time
 
-```
-NOTICED BUT NOT TOUCHING:
-- src/utils/format.ts has an unused import (unrelated to this task)
-- The auth middleware could use better error messages (separate task)
-→ Want me to create tasks for these?
-```
+Each increment should represent one coherent responsibility.
 
-### Rule 1: One Thing at a Time
+Separate unrelated:
 
-Each increment changes one logical thing. Don't mix concerns:
+- behavior changes
+- refactors
+- dependency changes
+- formatting-only changes
+- tooling/configuration changes
 
-**Bad:** One commit that adds a new component, refactors an existing one, and updates the build config.
+Small cleanup directly required by the behavior may stay with it.
 
-**Good:** Three separate commits — one for each change.
+### Keep the repository valid
 
-### Rule 2: Keep It Compilable
+Do not knowingly leave the repository broken between committed increments.
 
-After each increment, the project must build and existing tests must pass. Don't leave the codebase in a broken state between slices.
+Run focused verification during the slice.
 
-### Rule 3: Feature Flags for Incomplete Features
+Run broader verification when the increment affects shared or risky surfaces
+such as:
 
-If a feature isn't ready for users but you need to merge increments:
+- schema/migrations
+- shared libraries
+- configuration
+- public contracts
+- cross-service boundaries
 
-```typescript
-// Feature flag for work-in-progress
-const ENABLE_TASK_SHARING = process.env.FEATURE_TASK_SHARING === 'true';
+Do not repeatedly run an unchanged successful command for reassurance.
 
-if (ENABLE_TASK_SHARING) {
-  // New sharing UI
-}
-```
+### Feature flags only when deployment exposure requires them
 
-This lets you merge small increments to the main branch without exposing incomplete work.
+Use a feature flag when an incomplete increment may be merged/deployed and could
+otherwise become visible or active before the complete feature is ready.
 
-### Rule 4: Safe Defaults
+Do not introduce feature-flag infrastructure merely because local implementation
+is incomplete.
 
-New code should default to safe, conservative behavior:
+### Safe defaults
 
-```typescript
-// Safe: disabled by default, opt-in
-export function createTask(data: TaskInput, options?: { notify?: boolean }) {
-  const shouldNotify = options?.notify ?? false;
-  // ...
-}
-```
+Where behavior is optional or potentially risky, prefer conservative defaults
+that preserve existing behavior unless the approved requirements say otherwise.
 
-### Rule 5: Rollback-Friendly
+### Rollback-friendly increments
 
-Each increment should be independently revertable:
+Prefer additive and independently revertible changes.
 
-- Additive changes (new files, new functions) are easy to revert
-- Modifications to existing code should be minimal and focused
-- Database migrations should have corresponding rollback migrations
-- Avoid deleting something in one commit and replacing it in the same commit — separate them
+For risky migrations or compatibility changes, use the repository's established
+migration/deprecation strategy.
 
-## Working with Agents
+Do not assume every database migration can or should be reversed mechanically;
+follow the project's real migration policy and production constraints.
 
-When directing an agent to implement incrementally:
+## Working with agents
 
-```
-"Let's implement Task 3 from the plan.
+When delegating an increment, provide:
 
-Start with just the database schema change and the API endpoint.
-Don't touch the UI yet — we'll do that in the next increment.
+- the behavior/outcome
+- acceptance criteria
+- dependencies
+- expected scope
+- verification
+- whether broader workstream verification is required at completion
 
-After implementing, run the repository's test and build commands to
-verify nothing is broken."
-```
-
-Be explicit about what's in scope and what's NOT in scope for each increment.
-
-## Increment Checklist
-
-After each increment, verify with the repository's own commands (check the repo's actual test/build/lint commands directly — don't assume a stack):
-
-- [ ] The change does one thing and does it completely
-- [ ] All existing tests still pass (the repository's test command: `npm test`, `./gradlew test`, `pytest`, ...)
-- [ ] The build succeeds (the repository's build command)
-- [ ] Type checking passes, where the stack has one (`npx tsc --noEmit`, `mypy`, ...)
-- [ ] Linting passes (the repository's lint command)
-- [ ] The new functionality works as expected
-- [ ] The change is committed with a descriptive message
-
-**Note:** Run each verification command after a change that could affect it. After a successful run, don't repeat the same command unless the code has changed since — re-running on unchanged code adds no information.
-
-## Common Rationalizations
-
-| Rationalization | Reality |
-|---|---|
-| "I'll test it all at the end" | Bugs compound. A bug in Slice 1 makes Slices 2-5 wrong. Test each slice. |
-| "It's faster to do it all at once" | It *feels* faster until something breaks and you can't find which of 500 changed lines caused it. |
-| "These changes are too small to commit separately" | Small commits are free. Large commits hide bugs and make rollbacks painful. |
-| "I'll add the feature flag later" | If the feature isn't complete, it shouldn't be user-visible. Add the flag now. |
-| "This refactor is small enough to include" | Refactors mixed with features make both harder to review and debug. Separate them. |
-| "Let me run the build command again just to be sure" | After a successful run, repeating the same command adds nothing unless the code has changed since. Run it again after subsequent edits, not as reassurance. |
-
-## Red Flags
-
-- More than 100 lines of code written without running tests
-- Multiple unrelated changes in a single increment
-- "Let me just quickly add this too" scope expansion
-- Skipping the test/verify step to move faster
-- Build or tests broken between increments
-- Large uncommitted changes accumulating
-- Building abstractions before the third use case demands it
-- Touching files outside the task scope "while I'm here"
-- Creating new utility files for one-time operations
-- Running the same build/test command twice in a row without any intervening code change
+Do not ask an implementation agent to rediscover a plan that already exists.
 
 ## Verification
 
-After completing all increments for a task:
+Before considering an implementation task complete:
 
-- [ ] Each increment was individually tested and committed
-- [ ] The full test suite passes
-- [ ] The build is clean
-- [ ] The feature works end-to-end as specified
-- [ ] No uncommitted changes remain
+- [ ] Every behavioral slice followed the required TDD loop
+- [ ] Every increment had appropriate focused verification
+- [ ] Risky/shared changes received broader verification when warranted
+- [ ] Commits represent coherent logical increments
+- [ ] No unrelated scope expansion was silently included
+- [ ] The final task/workstream verification passed
+- [ ] The working tree is in the expected state
 
 ## See Also
 
-Per-increment verification is the local check. Before declaring a task done, apply the project-wide Definition of Done as the final gate, the standing bar every increment clears regardless of the task. See `../../references/definition-of-done.md`.
+- `test-driven-development` — RED/GREEN/REFACTOR and test-quality methodology
+- `../../references/definition-of-done.md` — project-wide completion standards
