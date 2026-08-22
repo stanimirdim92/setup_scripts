@@ -12,7 +12,7 @@ At that boundary, corroborate:
 
 1. `packageManager` / toolchain metadata when present.
 2. The committed lockfile.
-3. CI install commands.
+3. CI installs commands.
 
 Stop if they disagree or if competing package-manager lockfiles exist at the same installation boundary. A nested project is independent only when it is outside the parent workspace; independent subprojects may legitimately use different package managers.
 
