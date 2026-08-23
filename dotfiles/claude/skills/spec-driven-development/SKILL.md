@@ -227,6 +227,58 @@ Example:
     - **Ask first:** Database schema changes, adding dependencies, changing CI config
     - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
 
+### Specification Closure
+
+Before presenting a spec for approval, perform an internal-consistency pass across
+the entire document. Compare the objective, requirements, data model,
+implementation guidance, testing strategy, boundaries, success criteria, and
+open questions. The same behavior must not be described differently in two
+sections.
+
+At minimum, reconcile:
+
+- cardinality and state invariants against empty, populated, and final-deletion
+  states;
+- pagination, ordering, filtering, validation, authorization, and error
+  semantics wherever they appear;
+- implementation guidance against every acceptance criterion and planned test;
+- newly confirmed decisions against older assumptions or wording;
+- schema fields against their observable lifecycle behavior.
+
+Do not call a spec ready while a material contradiction or unresolved choice
+remains. Surface the conflict, update the spec after the decision, and rerun the
+closure pass.
+
+### Prove Invariant Mechanisms
+
+Naming a transaction, lock, constraint, retry, or "last write wins" policy is not
+proof that an invariant holds. For every cross-row, cross-resource, or concurrent
+invariant, explain why the chosen mechanism covers every transition and writer.
+
+The proof must identify:
+
+- the precise invariant, including zero/empty-state semantics;
+- every operation that can establish, transfer, violate, or release it;
+- the common serialization point or persistence constraint;
+- how the mechanism works when no child/entity row exists yet;
+- what the application guarantees and what infrastructure guarantees;
+- the verification evidence, including a lower-level constraint test when
+  infrastructure participates in correctness.
+
+If the mechanism cannot be shown to serialize or reject all conflicting writes,
+the invariant design is unresolved. A transaction alone does not imply a common
+lock or uniqueness guarantee.
+
+### Define Data Lifecycle Semantics
+
+When the schema or existing model contains a deletion marker, soft-delete
+timestamp, tombstone, archival flag, status, or equivalent lifecycle field, the
+spec must define what "delete" means. State whether deletion is hard, soft,
+archival, or another transition, and define how deleted records affect reads,
+uniqueness, relationships, restoration, invariant calculations, retention, and
+tests. Do not propose a deletion marker while leaving deletion behavior as an
+implementation detail.
+
 **Spec template:** see `../../references/templates/spec.md`.
 
 **Reframe instructions as success criteria.** When receiving vague requirements, translate them into concrete conditions:
@@ -303,6 +355,10 @@ The spec is a living document, not a one-time artifact:
   When introducing one, state the reason/tradeoff and do not present it as an
   existing convention.
 - Ticket/domain wording does not automatically determine code identifiers. Derive naming from the owning module and closest repository precedents.
+- Do not approve a spec until its objective, requirements, implementation
+  guidance, tests, success criteria, and lifecycle semantics agree.
+- Do not claim an invariant is concurrency-safe without a mechanism proof that
+  covers every writer and the empty-state transition.
 
 ## Verification
 
@@ -315,3 +371,6 @@ Before considering the specification ready for implementation, confirm:
 - [ ] The spec is saved to a file in the repository
 - [ ] If the request bundles several independently testable capabilities, a capability map (module ids, dependency direction, build order) was approved before any module spec was written
 - [ ] Every module spec traces to a module id in the approved map
+- [ ] An internal-consistency pass found no contradictory behavior across sections
+- [ ] Every important invariant has precise empty-state semantics, complete state transitions, layer ownership, and a mechanism proof
+- [ ] Any deletion marker or soft-delete field has explicit deletion, read, restoration, uniqueness, retention, and invariant semantics

@@ -25,6 +25,15 @@ skip a section because it "doesn't apply," write "N/A" and why instead.
 ## Testing Strategy
 [Framework, test locations, coverage requirements, test levels]
 
+## Invariants and Mechanism Proof
+[Precise invariant including empty state; transitions/writers; enforcement layer;
+serialization/constraint mechanism; why it covers every transition; evidence.]
+
+## Data Lifecycle
+[Hard/soft/archive semantics; read visibility; uniqueness/relationships;
+restoration/retention; effect on invariants and tests. Use N/A and why when no
+lifecycle state exists.]
+
 ## Boundaries
 - Always: [...]
 - Ask first: [...]

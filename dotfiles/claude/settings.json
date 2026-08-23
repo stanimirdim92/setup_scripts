@@ -153,6 +153,14 @@
       }
     }
   },
+  "statusLine": {
+    "type": "command",
+    "command": "$HOME/.claude/statusline.sh"
+  },
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "$HOME/.claude/subagent-statusline.sh"
+  },
   "effortLevel": "medium",
   "advisorModel": "opus",
   "autoMemoryEnabled": true,

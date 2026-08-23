@@ -85,3 +85,6 @@ use_memories = true
 
 [sandbox_workspace_write]
 network_access = false
+
+[projects."/home/stanimir/Documents/Codex/2026-08-23/referenced-chatgpt-conversation-this-is-an"]
+trust_level = "trusted"

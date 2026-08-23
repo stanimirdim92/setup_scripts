@@ -36,7 +36,7 @@ per that skill's Output Files convention.
 
 ### Checkpoint: Complete
 - [ ] All acceptance criteria met
-- [ ] Ready for review
+- [ ] Ready for /test
 
 ## Risks and Mitigations
 | Risk | Impact | Mitigation |

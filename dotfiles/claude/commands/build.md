@@ -91,7 +91,13 @@ discovery cost for every task.
 
 ### Across workstreams
 
-A genuinely independent workstream gets a separate executor.
+A genuinely independent workstream gets a separate executor. A workstream
+separated across a stable contract boundary also gets its own executor when the
+plan records materially different implementation context, an explicit upstream
+dependency, and a named contract checkpoint.
+
+Do not dispatch a contract-dependent workstream until its checkpoint passes.
+Keeping a separate executor does not erase dependency ordering.
 
 For now, implementation executors run **sequentially**, even across independent
 workstreams.
@@ -113,7 +119,9 @@ When parallel implementation is enabled:
 
 - one active executor per worktree;
 - one workstream per executor;
-- only dependency-ready, genuinely independent workstreams may overlap;
+- only dependency-ready workstreams with no remaining unfinished dependency may
+  overlap; a contract-separated workstream becomes eligible only after its named
+  contract checkpoint passes;
 - tasks inside one workstream remain sequential and reuse the same executor;
 - never run multiple writing executors against the same checkout;
 - integration remains sequential even when implementation is parallel.

@@ -30,6 +30,12 @@ Before making implementation decisions, operate in read-only mode.
 - Inspect the closest repository precedents and affected code.
 - Resolve implementation constraints, dependencies, risks, and unknowns.
 
+Before decomposing work, reconcile the proposed plan against the approved spec.
+Build a compact trace from each planned behavior and acceptance criterion back
+to its spec source. If the repository makes an approved spec decision infeasible
+or reveals a contradiction, stop and report a `SPEC CONFLICT`; do not silently
+rewrite the requirement in the plan.
+
 Common project instruction sources include:
 
 - `CLAUDE.md`
@@ -67,6 +73,25 @@ Examples:
 - Generated-column uniqueness guard — approved spec decision; new repository pattern.
 
 Do not annotate obvious or trivial decisions merely for traceability.
+
+### Preserve the approved behavioral contract
+
+The plan may refine implementation detail, but it may not silently change the
+approved feature contract.
+
+- Do not contradict, omit, weaken, or reinterpret an approved requirement.
+- Do not strengthen acceptance criteria or invent validation, uniqueness,
+  authorization, lifecycle, pagination, performance, or error behavior merely
+  because it seems desirable or conventional.
+- Additional implementation checks are allowed when they verify an approved
+  behavior without changing externally observable acceptance criteria.
+- A genuinely needed behavior not present in the spec is a proposed spec change,
+  not a planning assumption. Record the conflict and return to `/spec` for human
+  approval before continuing.
+
+Before approval, compare the plan and every task packet against the spec section
+by section. Every acceptance criterion must be equal to or directly derived from
+the approved spec.
 
 ### Step 2: Identify the Dependency Graph
 
@@ -169,11 +194,29 @@ Keep tasks in the same workstream when they:
 - Share important implementation context
 - Benefit from retaining decisions and codebase knowledge across tasks
 
-Create another workstream only when the work is genuinely independent:
+Create another workstream when the implementation context is materially
+different and either the work is genuinely independent or a stable contract
+forms a clean dependency boundary.
+
+Independent workstreams have:
 
 - No shared files or mutable state
 - No unfinished dependency between the tasks
 - Materially separate subsystem or implementation context
+
+Contract-separated workstreams may retain a dependency when all of the following
+are true:
+
+- upstream and downstream implementation contexts are materially different;
+- the shared contract is explicit, reviewable, and stable enough to consume;
+- the downstream workstream is ordered after a named contract checkpoint;
+- dependency ordering remains explicit in the plan and task packets;
+- `/build` must not treat the downstream work as dependency-ready before the
+  checkpoint passes.
+
+For example, backend API implementation and frontend consumption may use
+separate workstreams after an API-contract checkpoint. Separation does not erase
+the dependency or authorize premature parallel execution.
 
 "Could be done in parallel" is not enough reason to create another workstream.
 
@@ -285,6 +328,9 @@ assignments.
 - Every planned new layer or support artifact must come from the approved spec,
   an applicable project rule, repository precedent, or a clearly stated new
   technical decision.
+- Do not silently contradict, weaken, omit, or reinterpret approved spec behavior.
+- Do not strengthen or invent acceptance criteria during planning; return new
+  behavioral decisions to `/spec` for approval.
 
 
 ## Plan Document Template
@@ -301,11 +347,12 @@ writing by itself. `/build` owns the execution/concurrency policy.
 - **Parallel writing requires isolation:** each writing executor needs its own
   worktree/branch (or equivalent isolated checkout). Never infer safety merely
   from non-overlapping source files.
-- **Must be sequential:** dependency chains, shared mutable state, migrations
-  whose order matters, or work that must consume an unfinished contract.
+- **Must be sequential:** dependency chains within one implementation context,
+  shared mutable state, migrations whose order matters, or work that must consume
+  an unfinished contract.
 - **Needs coordination:** workstreams sharing an API/interface contract — define
-  and stabilize the contract first, then parallelize only the independent
-  consumers/implementations.
+  and stabilize the contract first, preserve an explicit dependency/checkpoint,
+  then parallelize only dependency-ready consumers/implementations.
 
 "Parallelizable" is planning metadata. It is not a command to spend concurrency.
 
@@ -338,13 +385,16 @@ Before the plan is ready for `/build`, confirm:
 - [ ] Every task has a workstream
 - [ ] Task-local context pointers are present when project rules, precedents,
       contracts, or invariants materially constrain implementation
-- [ ] Related or dependent tasks share a workstream
-- [ ] Additional workstreams are genuinely independent
+- [ ] Related tasks share a workstream unless a stable contract separates materially different implementation contexts
+- [ ] Contract-separated workstreams retain explicit dependencies and a contract checkpoint
 - [ ] Task boundaries follow coherent behavior rather than arbitrary file counts
 - [ ] High-risk decisions are addressed early enough to fail fast
 - [ ] Checkpoints exist where they materially reduce risk
 - [ ] The plan does not unnecessarily duplicate the spec
 - [ ] The plan contains no production implementation
+- [ ] Every planned behavior and acceptance criterion traces to the approved spec
+- [ ] The plan does not contradict, weaken, or strengthen the approved spec
+- [ ] The final handoff is `Ready for /test`, never `Ready for /review`
 - [ ] The human has reviewed and approved the plan
 
 ## See Also

@@ -29,6 +29,8 @@ link() {
 link "$DOTFILES/claude/CLAUDE.md"              "$HOME/.claude/CLAUDE.md"
 link "$DOTFILES/claude/AGENTS.md"              "$HOME/.claude/AGENTS.md"
 link "$DOTFILES/claude/settings.json"          "$HOME/.claude/settings.json"
+link "$DOTFILES/claude/statusline.sh"          "$HOME/.claude/statusline.sh"
+link "$DOTFILES/claude/subagent-statusline.sh" "$HOME/.claude/subagent-statusline.sh"
 link "$DOTFILES/claude/remote-settings.json"   "$HOME/.claude/remote-settings.json"
 
 # Linked as whole directories (not per-file) so new agents/skills/hooks don't

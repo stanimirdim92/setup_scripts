@@ -13,6 +13,11 @@ Begin by understanding what the user wants to build. If a `jira-ticket` intake s
 
 Then generate a structured spec covering all six core areas: objective, commands, project structure, code style, testing strategy, and boundaries.
 
+Before asking for approval, run the skill's specification-closure gate. Reconcile
+all sections, prove any cross-row/resource concurrency mechanism, and define
+deletion semantics whenever a deletion marker or soft-delete field exists. Do
+not present a materially contradictory or lifecycle-ambiguous spec as complete.
+
 If the request bundles several independently testable capabilities, first propose a capability map (module ids, dependency direction, build order) per the skill's Phase 0 and get it approved, then spec each module in dependency order.
 
 Save the spec as docs/specs/[TICKET]-SPEC.md in the project root and confirm with the user before proceeding.
