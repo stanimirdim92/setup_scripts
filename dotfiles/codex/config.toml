@@ -60,6 +60,9 @@ enabled = true
 [plugins."template-creator@openai-primary-runtime"]
 enabled = true
 
+[plugins."chrome@openai-bundled"]
+enabled = true
+
 [features]
 js_repl = false
 

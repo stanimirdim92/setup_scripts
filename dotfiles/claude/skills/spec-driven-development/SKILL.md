@@ -58,7 +58,7 @@ Build order: identity → billing, notifications → reporting
 
 - **Stable module ids.** Kebab-case, chosen once, never renamed mid-initiative. Specs, plans, and downstream commands select work by these ids instead of guessing which spec is active.
 - **Dependency direction, no cycles.** Arrows point one way. If two modules each need the other, they are one module.
-- **Interfaces live at the boundary.** The map records that `billing` depends on `identity`; the contract between them belongs in the provider module's spec (see Hyrum's Law).
+- **Interfaces live at the boundary.** The map records that `billing` depends on `identity`; the contract between them belongs in the provider module's spec (see `api-and-interface-design` for designing it).
 
 **The map is gated like every phase.** The human reviews module boundaries, dependency direction, and build order before any module spec is written. Getting the map wrong is expensive; reviewing ten lines is not.
 
@@ -113,25 +113,38 @@ Look for:
 
 Use evidence in this order:
 
-1. Explicit project-local rules and user requirements.
-2. Existing patterns in the owning module or closest sibling feature.
-3. Existing repository-wide conventions.
-4. Framework conventions only when the repository provides no precedent.
+1. Explicit user requirements and approved feature-specific decisions.
+2. Applicable project-local rules.
+3. Existing patterns in the owning module or closest sibling feature.
+4. Existing repository-wide conventions.
+5. Framework conventions only when the repository provides no applicable precedent.
 
-Do not introduce a framework-conventional layer, file, helper, or abstraction
-merely because it is common practice.
+Repository precedent is a strong default, not a prohibition against deliberate
+change.
+
+When no precedent exists:
+
+- if an explicit user requirement or approved feature-specific decision requires
+  a new layer, file, pattern, or abstraction, include it and label it clearly as
+  a **new feature-specific decision**;
+- if no requirement or decision justifies it, do not invent it merely because it
+  is common framework practice;
+- if the evidence is mixed or the tradeoff is material and unresolved, surface
+  the choice instead of silently deciding.
 
 Examples:
 
-- Do not add a Factory unless the repository uses factories for comparable tests
-  or the feature specifically requires one.
-- Do not add a DTO/Data layer unless the relevant module already uses that
-  boundary or an explicit project rule requires it.
+- A Factory may be introduced when comparable tests use factories, the feature
+  needs reusable test/seed data, or it is an explicit feature decision.
+- A DTO/Data layer may be introduced when project rules require it, repository
+  precedent supports it, or an explicit feature decision accepts the additional
+  boundary/complexity for a concrete benefit.
 - Do not derive class/table names solely from ticket wording when sibling
   resources establish a different ownership/naming convention.
 
-If repository evidence is mixed or genuinely absent, record that uncertainty in
-the spec instead of silently choosing a new convention.
+Do not confuse **no precedent** with **forbidden**. New patterns are acceptable
+when they are intentional, justified, and identified as new rather than
+misrepresented as existing repository convention.
 
 **Write a spec document covering these six core areas:**
 
@@ -145,7 +158,6 @@ the spec instead of silently choosing a new convention.
    ```
 
 3. **Project Structure** — Where source code lives, where tests go, where docs belong.
-
 
 - Derive names and locations from repository evidence, especially sibling features in the owning module.
 
@@ -163,29 +175,8 @@ e2e/           → End-to-end tests
 docs/          → Documentation
 ```
 
-4. **Implementation Guidance** — Capture feature-specific technical decisions,
-   existing repository patterns to reuse, and minimal reference snippets for
-   non-obvious mechanics.
+4. **Code Style** — One real code snippet showing your style beats three paragraphs describing it. Include naming conventions, formatting rules, and examples of good output.
 
-### Existing Patterns
-
-Existing code or components the implementation should mirror.
-
-Examples:
-- Backend: follow the existing repository → builder → service pattern.
-- Frontend: mirror `Tags.tsx` CRUD/error-handling behavior.
-
-### Reference Snippets
-
-Include code only when it communicates a non-obvious decision more precisely
-than prose. Keep snippets minimal; do not reproduce complete implementations.
-
-```sql
-primary_flag_key BIGINT UNSIGNED
-GENERATED ALWAYS AS (
-    IF(is_primary = 1, advertiser_id, NULL)
-) VIRTUAL
-```
 
 5. **Testing Strategy** — Define how the feature will be proven correct.
 
@@ -196,7 +187,24 @@ Include:
 - validation, error, edge, and regression cases that materially affect correctness;
 - the appropriate test level for each concern (unit, integration/feature, E2E, persistence/DB, manual);
 - invariants that must be tested below the application layer when the database, queue, cache, or another infrastructure boundary enforces correctness;
+- the state transitions required to establish, preserve, transfer, or release important invariants;
 - any behavior that cannot reasonably be automated and therefore needs explicit manual verification.
+
+When a requirement defines an invariant, derive the transitions needed to keep it
+true instead of testing only the obvious CRUD operations. Check the transitions
+that apply, such as:
+
+- creation from an empty state;
+- creation when related state already exists;
+- updates that establish or transfer the invariant;
+- deletion of the entity currently satisfying the invariant;
+- deletion of the final remaining entity;
+- concurrent writes when the invariant spans multiple rows, resources, or processes.
+
+For each invariant, distinguish which layer guarantees which part of it. For
+example, a persistence constraint may guarantee **at most one**, while
+application behavior is still responsible for guaranteeing **at least one when
+applicable**.
 
 Prefer behavior-driven coverage over layer-driven coverage.
 
@@ -215,9 +223,9 @@ Example:
 - UI behavior with no existing automation precedent → explicit manual verification
 
 6. **Boundaries** — Three-tier system:
-   - **Always do:** Run tests before commits, follow naming conventions, validate inputs
-   - **Ask first:** Database schema changes, adding dependencies, changing CI config
-   - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
+    - **Always do:** Run tests before commits, follow naming conventions, validate inputs
+    - **Ask first:** Database schema changes, adding dependencies, changing CI config
+    - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
 
 **Spec template:** see `../../references/templates/spec.md`.
 
@@ -289,8 +297,11 @@ The spec is a living document, not a one-time artifact:
 - A 15-minute spec prevents hours of rework. Waterfall in 15 minutes beats debugging in 15 hours.
 - Do not invent repository conventions from framework conventions. Every
   proposed layer/file/pattern in Project Structure or Existing Patterns must be
-  backed by repository evidence, an explicit project rule, or clearly labeled
-  as a new feature-specific decision.
+  backed by repository evidence, an explicit project rule, an explicit user
+  requirement, or clearly labeled as a justified new feature-specific decision.
+- Absence of repository precedent does not forbid a deliberate new pattern.
+  When introducing one, state the reason/tradeoff and do not present it as an
+  existing convention.
 - Ticket/domain wording does not automatically determine code identifiers. Derive naming from the owning module and closest repository precedents.
 
 ## Verification
