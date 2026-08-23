@@ -10,7 +10,7 @@ description: How to add, edit, or relink files in this dotfiles/setup_scripts re
 2. Add a `link "$DOTFILES/<tool>/<name>" "$HOME/<dest>"` line in
    `tools/link_dotfiles.sh` — one call per file, or one call per directory if
    the whole directory should be symlinked as a unit (this is how `agents/`,
-   `skills/`, `commands/`, `hooks/`, and `references/` are linked: as
+   `skills/`, `commands/`, `hooks/`, `references/`, and `docs/` are linked: as
    directories, not per-file, so new files inside them don't need a script
    change). `references/` specifically must land as a **sibling** of
    `skills/` under `~/.claude/`, not nested inside it — vendored skills

@@ -45,6 +45,7 @@ link "$DOTFILES/claude/commands"               "$HOME/.claude/commands"
 # upstream repo's layout), which only resolves if this sits next to skills/
 # at the same ~/.claude/ level.
 link "$DOTFILES/claude/references"             "$HOME/.claude/references"
+link "$DOTFILES/claude/docs"                   "$HOME/.claude/docs"
 
 link "$DOTFILES/codex/config.toml"             "$HOME/.codex/config.toml"
 link "$DOTFILES/codex/rules/default.rules"     "$HOME/.codex/rules/default.rules"

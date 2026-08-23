@@ -1,125 +1,182 @@
 # Agent Personas
 
-Specialist personas that play a single role with a single perspective. Each persona is a Markdown file consumed as a system prompt by your harness (Claude Code, Cursor, Copilot, etc.).
+Specialist personas play one role with one perspective. Each persona is a
+Markdown system prompt consumed by the harness.
 
-| Persona                                                                   | Role | Best for |
-|---------------------------------------------------------------------------|------|----------|
-| [code-reviewer](../agents/code-reviewer.md)                               | Senior Staff Engineer | Five-axis review before merge |
-| [security-auditor](../agents/security-auditor.md)                         | Security Engineer | Vulnerability detection, OWASP-style audit |
-| [distributed-systems-reviewer](../agents/distributed-systems-reviewer.md) | Distributed Systems Engineer | Reliability/consistency review for anything crossing a process/network/queue boundary |
-| [executor](../agents/executor.md)                                         | Implementation Engineer | Executes one planned task end-to-end, resumable across a workstream's later tasks |
-| [unblock-triage](../agents/unblock-triage.md)                             | Tech Lead Triage | Sorting a batch of blocked items into needs-your-judgment vs. delegate |
+| Persona | Role | Best for |
+|---------|------|----------|
+| [code-reviewer](../agents/code-reviewer.md) | Senior Staff Engineer | Five-axis review before merge |
+| [security-auditor](../agents/security-auditor.md) | Security Engineer | Vulnerability detection and security audit |
+| [distributed-systems-reviewer](../agents/distributed-systems-reviewer.md) | Distributed Systems Engineer | Reliability/consistency review across process/network/queue boundaries |
+| [executor](../agents/executor.md) | Implementation Engineer | Executes one planned task end-to-end; resumable across a workstream |
+| [unblock-triage](../agents/unblock-triage.md) | Tech Lead Triage | Sorts a batch of blocked items by who actually needs to decide |
 
-## How personas relate to skills and commands
+## Layers
 
-Three layers, each with a distinct job:
+| Layer | What it owns | Example |
+|-------|--------------|---------|
+| **Skill** | Reusable methodology / the *how* | `planning-and-task-breakdown` |
+| **Persona** | Role, perspective, output contract / the *who* | `code-reviewer` |
+| **Command** | User-facing orchestration / the *when* | `/build`, `/review` |
 
-| Layer | What it is | Example | Composition role |
-|-------|-----------|---------|------------------|
-| **Skill** | A workflow with steps and exit criteria | `code-review-and-quality` | The *how* — invoked from inside a persona or command |
-| **Persona** | A role with a perspective and an output format | `code-reviewer` | The *who* — adopts a viewpoint, produces a report |
-| **Command** | A user-facing entry point | `/review`, `/build` | The *when* — composes personas and skills |
+Skills are not automatically mandatory hops inside every persona. Invoke a skill
+when the runtime/tooling supports it. A constrained persona may inline the
+required discipline instead; `executor` does this for incremental implementation
+and TDD because it intentionally has no `Skill` tool.
 
-The user (or a slash command) is the orchestrator. **Personas do not call other personas.** Skills are mandatory hops inside a persona's workflow.
+The user or a slash command is the orchestrator. **Personas do not call other
+personas.**
 
-## When to use each
+## Built orchestration patterns
 
-### Direct persona invocation
-Pick this when you want one perspective on the current change and the user is in the loop.
+This repo deliberately has two different orchestration shapes.
 
-- "Review this PR" → invoke `code-reviewer` directly
-- "Are there security issues in `auth`?" → invoke `security-auditor` directly
+### 1. `/build`: bounded writer orchestration
 
-### Slash command (single persona behind it)
-Pick this when there's a repeatable workflow you'd otherwise re-explain every time.
+`/build` dispatches one `executor` per workstream and resumes that executor for
+later tasks in the same workstream.
 
-- `/test` → the independent VERIFY gate after `/build`; runs/adds test coverage against acceptance criteria and reports VERIFY PASS or VERIFY FAIL — not a persona wrapper, `/build`'s dispatched `executor` already owns TDD execution discipline directly (see `agents/executor.md`)
+```text
+Task 1 ─┐
+Task 2 ─┼─ Workstream A → executor A → resume A → resume A
+Task 3 ─┘
 
-### Slash command (orchestrator — fan-out)
-Pick this only when **independent** investigations can run against the same diff and produce reports that a single agent then merges.
+Task 4 ─┐
+Task 5 ─┴─ Workstream B → executor B
+```
 
-- `/review` → the independent REVIEW gate after `/test`; dispatches `code-reviewer` always, plus `security-auditor` / `distributed-systems-reviewer` per `references/reviewer-triggers.md`, capped at 2 reviewers running at once (never all of them concurrently, even on a diff that trips every trigger), then issues the GO/NO-GO verdict
+Rules:
 
-This is the only orchestration pattern this repo has built. See `commands/review.md`'s dispatch/concurrency/verdict sections for the actual rules — don't re-derive them here. `/build` only implements (see `commands/build.md`) — it explicitly does not review, verify, or issue a verdict; those gates live downstream in `/test` and `/review`.
+- tasks inside a workstream are sequential;
+- related tasks reuse context instead of paying fresh discovery cost;
+- current policy allows only **one active writing executor** at a time;
+- multiple writers may overlap only with isolated worktrees/branches and
+  genuinely independent, dependency-ready workstreams;
+- integration is sequential even if implementation is later parallelized;
+- executor reports implementation + test/verification evidence, then stops;
+- `/build` does not independently VERIFY, review, or issue GO/NO-GO.
+
+Operational source of truth: `commands/build.md`.
+
+### 2. `/review`: independent read-only fan-out
+
+After `/test` reports VERIFY PASS, `/review` dispatches independent reviewers
+against the same integrated diff.
+
+```text
+/review
+  ├── code-reviewer                    (always)
+  ├── security-auditor                 (triggered)
+  └── distributed-systems-reviewer     (triggered)
+             ↓
+      max 2 concurrently
+             ↓
+     reports stay separate
+             ↓
+         GO / NO-GO
+```
+
+Reviewers do not see one another's output before forming their own judgment.
+`references/reviewer-triggers.md` is the single trigger matrix.
+
+Operational source of truth: `commands/review.md`.
+
+## Direct persona invocation
+
+Use direct invocation when the user wants one perspective on one artifact.
+
+- "Review this PR" → `code-reviewer`
+- "Security review this auth change" → `security-auditor`
+- "Check this worker for retry/idempotency problems" → `distributed-systems-reviewer`
+- Batch triage for a lead → `unblock-triage`
+
+`executor` is the exception: it is dispatched through `/build`, not used as a
+free-form coding assistant.
 
 ## Decision matrix
 
-```
-Is the work a single perspective on a single artifact?
-├── Yes → Direct persona invocation
-└── No  → Are the sub-tasks independent (no shared mutable state, no ordering)?
-         ├── Yes → Slash command with fan-out (/review's dispatch step)
-         └── No  → Sequential slash commands run by the user (/spec → /plan → /build → /test → /review)
-```
+```text
+Need implementation?
+├── Planned bounded task(s)
+│    └── /build → workstreams → executor/resume
+└── Not planned / ambiguous
+     └── /spec or /plan first
 
-## Worked example: valid orchestration
-
-`/review`'s dispatch step, once `/test` has reported VERIFY PASS:
-
-```
-/review (dispatch step)
-  ├── code-reviewer      → review report          (always runs)
-  ├── security-auditor   → audit report            (if a trigger matched)
-  └── distributed-systems-reviewer → reliability report (if a trigger matched)
-                  ↓
-     batched 2-at-a-time, not all at once
-                  ↓
-        merge phase (main agent) — each axis reported under its own
-        heading, never blended into one ranked list
-                  ↓
-        go/no-go decision
+Need independent judgment on an integrated change?
+├── One requested specialist perspective → invoke that reviewer directly
+└── Shipping review gate → /review fan-out after VERIFY PASS
 ```
 
-Why this works:
-- Each reviewer operates on the same diff but produces a **different perspective**
-- They have no dependencies on each other, and review blind to each other's output — an axis that can see another's findings starts anchoring on them
-- Each runs in a fresh context window → main session stays uncluttered
-- The merge step is small and benefits from full context, so it stays in the main agent
+Do not add a `meta-orchestrator` persona whose only job is deciding which persona
+to call. Routing belongs in commands; a routing-only persona adds context,
+latency, paraphrasing loss, and cost without domain value.
 
-Why it's capped at 2, not fully parallel: `references/reviewer-triggers.md` can match 3+ specialists on a high-risk diff, but this repo's own cost-gate decision (see `docs/adr/0004-reviewer-batch-cap-no-high-risk-exception.md`) treats predictable spend as worth more than a few saved wall-clock minutes — a high-risk diff earns every reviewer's pass, just in sequential batches of 2, not a faster concurrent burn. That cap and the trigger-matrix dispatch originated inside `/build`'s own review step; both moved to `/review` when the pipeline split implementation from verification/review (see `docs/adr/0020-build-test-review-pipeline-split.md`) — the rule itself didn't change, just which command enforces it.
+## Context discipline
 
-## Worked example: invalid orchestration (do not build this)
+A subagent should receive a **task packet**, not the parent conversation.
 
-A `meta-orchestrator` persona whose job is "decide which other persona to call":
+For implementation this normally means:
 
-```
-/work-on-pr → meta-orchestrator
-                  ↓ (decides "this needs a review")
-              code-reviewer
-                  ↓ (returns)
-              meta-orchestrator (paraphrases result)
-                  ↓
-              user
-```
+- outcome;
+- acceptance criteria;
+- dependencies/workstream;
+- expected scope;
+- verification;
+- applicable rule/module pointers;
+- one or two closest precedents;
+- relevant shared contract/invariant.
 
-Why this fails:
-- Pure routing layer with no domain value
-- Adds two paraphrasing hops → information loss + 2× token cost
-- The user already knows they want a review; let them call `/review` directly
-- Replicates work that slash commands already do
+Do not copy the full spec/plan into every executor. Reviewers get even less:
+integrated diff, one-line goal, and relevant acceptance criteria.
+
+See `skills/context-engineering/SKILL.md`.
+
+## Evidence and cost
+
+Agent completion is not evidence by itself.
+
+Implementation reports include exact verification commands and outcomes;
+unverified checks remain explicit. `/test` independently verifies acceptance
+criteria; `/review` independently judges the integrated diff.
+
+Use the configured model default for routine work. Override upward only when the
+specific workstream/review genuinely needs the reasoning tier.
+
+Track actual run signals defined in
+`references/agent-run-metrics.md`; never estimate unavailable
+token/cost/time data.
 
 ## Rules for personas
 
-1. A persona is a single role with a single output format. If you find yourself adding a second role, create a second persona.
-2. **Personas do not invoke other personas.** Composition is the job of slash commands or the user. On Claude Code this is also a hard platform constraint — *"subagents cannot spawn other subagents"* — so the rule is enforced for you.
-3. A persona may invoke skills (the *how*).
-4. Every persona file ends with a "Composition" block stating where it fits.
+1. One persona = one role and one output contract.
+2. Personas do not invoke other personas.
+3. A persona may invoke skills only when its runtime/tool set supports that.
+4. Constrained personas may inline required methodology when that constraint is
+   deliberate and documented.
+5. Every persona file ends with a Composition block describing where it fits.
+6. Writing personas should receive bounded scope and explicit verification.
+7. Read-only fan-out is easier to parallelize than writing; shared mutable state
+   changes the concurrency rule.
 
 ## Claude Code interop
 
-The personas in this repo are designed to work as Claude Code subagents without modification:
+These personas are compatible with Claude Code subagents.
 
-- **As subagents:** auto-discovered when this plugin is enabled (no path config needed). Use the Agent tool with `subagent_type: code-reviewer` (or `security-auditor`, `distributed-systems-reviewer`). `/review`'s dispatch step is the working example.
-- **As Agent Teams teammates** (experimental, requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`): reference the same persona name when spawning a teammate. The persona's body is **appended to** the teammate's system prompt as additional instructions (not a replacement), so your persona text sits on top of the team-coordination instructions the lead installs (SendMessage, task-list tools, etc.). Not currently used by any command in this repo — noted here as a platform capability, not an active pattern.
+- `/build` uses `executor` as a resumable implementation subagent.
+- `/review` uses reviewer subagents as independent read-only fan-out.
+- Subagents report back to the main agent; they do not spawn subagents.
+- Agent Teams can support teammate-to-teammate communication, but no current
+  command depends on that experimental capability.
+- Plugin-agent frontmatter should not rely on unsupported `hooks`, `mcpServers`,
+  or `permissionMode` behavior.
 
-Subagents only report results back to the main agent. Agent Teams let teammates message each other directly. This repo's own fan-out (`/review`'s dispatch step) only needs the subagent shape — each reviewer reports back independently and the orchestrator merges, no teammate-to-teammate messaging required.
+## Adding a persona
 
-Plugin agents do not support `hooks`, `mcpServers`, or `permissionMode` frontmatter — those fields are silently ignored. Avoid relying on them when authoring new personas here.
-
-## Adding a new persona
-
-1. Create `agents/<role>.md` with the same frontmatter format used by existing personas (`name`, `description`, `tools`, `model`, `effort`).
-2. Define the role, scope, output format, and rules.
-3. Add a **Composition** block at the bottom (Invoke directly when / Invoke via / Do not invoke from another persona).
-4. Add the persona to the table at the top of this file.
-5. If the persona enables a new orchestration pattern, document it in this file's "When to use each" / "Worked example" sections — don't invent a pattern inside the persona file itself, and don't reference a pattern-catalog file that doesn't exist yet.
+1. Create `agents/<role>.md` with `name`, `description`, `tools`, `model`, and
+   `effort`.
+2. Define one role, its scope, output contract, and stop conditions.
+3. Give it the minimum tools needed for that role.
+4. Add a Composition block.
+5. Add it to the table above.
+6. If it creates a new orchestration shape, document the command-level policy
+   here and record a durable architectural decision when warranted.
