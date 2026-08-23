@@ -81,6 +81,58 @@ ASSUMPTIONS I'M MAKING:
 
 Don't silently fill in ambiguous requirements. The spec's entire purpose is to surface misunderstandings *before* code gets written — assumptions are the most dangerous form of misunderstanding.
 
+### Repository Recon Before Specifying
+
+Before naming files, classes, tables, architectural layers, test helpers, or
+implementation patterns, discover and read the project's instruction sources
+that apply to the feature.
+
+Common locations include:
+
+- `CLAUDE.md`
+- `AGENTS.md`
+- `.ai/rules/*.md`
+- module-local instruction files
+- architecture/design documentation
+- repository contribution or development guides
+
+Do not assume these exact paths exist; discover the project's actual instruction
+sources.
+
+Then inspect the relevant repository area and closest sibling implementations.
+
+Look for:
+
+- sibling features solving a similar problem;
+- naming conventions for models, tables, services, repositories, controllers,
+  components, and tests;
+- the actual architectural chain used by the owning module;
+- existing test setup and fixture/factory conventions;
+- how data crosses boundaries such as Controller → Service;
+- existing registration/binding/routing patterns.
+
+Use evidence in this order:
+
+1. Explicit project-local rules and user requirements.
+2. Existing patterns in the owning module or closest sibling feature.
+3. Existing repository-wide conventions.
+4. Framework conventions only when the repository provides no precedent.
+
+Do not introduce a framework-conventional layer, file, helper, or abstraction
+merely because it is common practice.
+
+Examples:
+
+- Do not add a Factory unless the repository uses factories for comparable tests
+  or the feature specifically requires one.
+- Do not add a DTO/Data layer unless the relevant module already uses that
+  boundary or an explicit project rule requires it.
+- Do not derive class/table names solely from ticket wording when sibling
+  resources establish a different ownership/naming convention.
+
+If repository evidence is mixed or genuinely absent, record that uncertainty in
+the spec instead of silently choosing a new convention.
+
 **Write a spec document covering these six core areas:**
 
 1. **Objective** — What are we building and why? Who is the user? What does success look like?
@@ -93,27 +145,27 @@ Don't silently fill in ambiguous requirements. The spec's entire purpose is to s
    ```
 
 3. **Project Structure** — Where source code lives, where tests go, where docs belong.
-   ```
-   vendor/           → framework source code
-   resources/components → React components
-   Modules/       → App modules 
-   app/           → Default app code 
-   tests/         → Unit and integration tests for frontend and backend
-   e2e/           → End-to-end tests
-   docs/          → Documentation
-   ```
+
+
+- Derive names and locations from repository evidence, especially sibling features in the owning module.
+
+For each proposed new path, be able to answer:
+- What existing pattern supports this path/name?
+- Is this required by the feature, or merely a framework convention?
+
+```
+vendor/           → framework source code
+resources/components → React components
+Modules/<MODULE>/       → App modules 
+app/           → Default app code 
+tests/         → Unit and integration tests for frontend and backend
+e2e/           → End-to-end tests
+docs/          → Documentation
+```
 
 4. **Implementation Guidance** — Capture feature-specific technical decisions,
    existing repository patterns to reuse, and minimal reference snippets for
    non-obvious mechanics.
-
-### Decisions
-
-Decisions that `/plan` should preserve.
-
-Examples:
-- Single-primary contact must be enforced at the database layer.
-- Primary-changing operations must be transactional.
 
 ### Existing Patterns
 
@@ -135,10 +187,35 @@ GENERATED ALWAYS AS (
 ) VIRTUAL
 ```
 
-5. **Testing Strategy** — What framework, where tests live, coverage expectations, which test levels for which concerns.
+5. **Testing Strategy** — Define how the feature will be proven correct.
+
+Include:
+
+- the repository's existing test framework and test locations;
+- the important behaviors and acceptance criteria that require automated verification;
+- validation, error, edge, and regression cases that materially affect correctness;
+- the appropriate test level for each concern (unit, integration/feature, E2E, persistence/DB, manual);
+- invariants that must be tested below the application layer when the database, queue, cache, or another infrastructure boundary enforces correctness;
+- any behavior that cannot reasonably be automated and therefore needs explicit manual verification.
+
+Prefer behavior-driven coverage over layer-driven coverage.
+
+Do not require a unit test merely because a service/class exists, and do not
+introduce factories, mocks, test helpers, or a new testing framework unless
+repository precedent or the feature itself requires them.
+
+The strategy should make it possible for `/plan`, `/build`, and `/test` to
+answer: **what evidence proves this feature works?**
+Example:
+
+- invalid input → API/feature test
+- business rule spanning persistence → integration/feature test
+- DB uniqueness or constraint invariant → persistence-level test
+- critical user journey → E2E test
+- UI behavior with no existing automation precedent → explicit manual verification
 
 6. **Boundaries** — Three-tier system:
-   - **Always do:** Run tests    before commits, follow naming conventions, validate inputs
+   - **Always do:** Run tests before commits, follow naming conventions, validate inputs
    - **Ask first:** Database schema changes, adding dependencies, changing CI config
    - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
 
@@ -209,6 +286,12 @@ The spec is a living document, not a one-time artifact:
 - Do not silently resolve material ambiguity.
 - Do not produce one spec for independently shippable capabilities.
 - Do not repeat repository-wide conventions in a feature spec.
+- A 15-minute spec prevents hours of rework. Waterfall in 15 minutes beats debugging in 15 hours.
+- Do not invent repository conventions from framework conventions. Every
+  proposed layer/file/pattern in Project Structure or Existing Patterns must be
+  backed by repository evidence, an explicit project rule, or clearly labeled
+  as a new feature-specific decision.
+- Ticket/domain wording does not automatically determine code identifiers. Derive naming from the owning module and closest repository precedents.
 
 ## Verification
 

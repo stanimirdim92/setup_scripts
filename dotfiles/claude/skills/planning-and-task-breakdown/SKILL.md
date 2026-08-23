@@ -23,36 +23,71 @@ Decompose work into small, verifiable tasks with explicit acceptance criteria. G
 
 ### Step 1: Enter Plan Mode
 
-Before writing any code, operate in read-only mode:
+Before making implementation decisions, operate in read-only mode.
 
-- Read the spec and relevant codebase sections
-- Identify existing patterns and conventions
-- Map dependencies between components
-- Note risks and unknowns
+- Read the approved spec.
+- Discover and read project-local instruction sources relevant to the affected area.
+- Inspect the closest repository precedents and affected code.
+- Resolve implementation constraints, dependencies, risks, and unknowns.
+
+Common project instruction sources include:
+
+- `CLAUDE.md`
+- `AGENTS.md`
+- `.ai/rules/*.md`
+- module-local instruction files
+- architecture/design documentation
+- repository contribution/development guides
+
+Do not assume these exact paths exist; discover the project's actual instruction
+sources.
+
+Use evidence in this order:
+
+1. Approved spec decisions and explicit user instructions.
+2. Applicable project-local rules.
+3. Closest owning-module / sibling implementation precedent.
+4. Repository-wide conventions.
+5. Framework conventions only when the repository has no applicable precedent.
 
 **Do NOT write code during planning.** The output is a plan document saved to `docs/tasks/[TICKET]-plan.md` and a task list saved to `docs/tasks/[TICKET]-todo.md`, not implementation.
 
+### Decision provenance
+
+Do not make implementation-shaping decisions appear arbitrary.
+
+When a decision is materially constrained by the spec, a project rule, or a
+repository precedent, record that source briefly in the plan when it helps
+explain the decision.
+
+Examples:
+
+- Request/DTO boundary — required by an applicable project rule.
+- Parent resolution by UUID or id — mirrors `AdvertiserTagAssignmentController`.
+- Generated-column uniqueness guard — approved spec decision; new repository pattern.
+
+Do not annotate obvious or trivial decisions merely for traceability.
+
 ### Step 2: Identify the Dependency Graph
 
-Map what depends on what:
+Map implementation prerequisites, not architectural containment.
 
-```
-Database schema
-    │
-    ├── API models/types
-    │       │
-    │       ├── API endpoints
-    │       │       │
-    │       │       └── Frontend API client
-    │       │               │
-    │       │               └── UI components
-    │       │
-    │       └── Validation logic
-    │
-    └── Seed data / migrations
+A dependency exists when one piece of work cannot be implemented or verified
+correctly until another decision, contract, capability, or foundation exists.
+
+Example:
+
+```text
+Database invariant
+        ↓
+Contact persistence behavior
+        ↓
+Contact CRUD API contract
+        ↓
+Frontend CRUD flow
 ```
 
-Implementation order follows the dependency graph bottom-up: build foundations first.
+Implementation order follows the dependency graph: satisfy real prerequisites before dependent behavior.
 
 A dependency graph answers:
 
@@ -61,6 +96,17 @@ A dependency graph answers:
 It does not answer:
 
 > Which architectural layer deserves its own task?
+
+Do not create dependency edges merely because one class calls, injects,
+implements, or sits architecturally beside another.
+
+Examples:
+
+- A repository implementing a contract does not mean the contract depends on
+  the repository.
+- A factory is not a dependency unless planned verification genuinely requires it.
+- Controller, service, repository, builder, and model may all belong to one
+  behavioral slice.
 
 ### Step 3: Slice by Behavior
 
@@ -83,6 +129,16 @@ Task 2: User can log in (auth schema + API + UI for login)
 Task 3: User can create a task (task schema + API + UI for creation)
 Task 4: User can view task list (query + API + UI for list view)
 ```
+
+Before accepting a task boundary, ask:
+
+> Does this task produce behavior that can be meaningfully verified on its own?
+
+If the answer is only "these architectural files now exist," merge it into the
+behavioral task that consumes them unless it is a justified foundation.
+
+A foundation task is justified only when later behavioral tasks genuinely depend
+on it and it has meaningful independent verification.
 
 Each vertical slice delivers working, testable functionality.
 
@@ -136,19 +192,27 @@ component, and feature test may still be one coherent behavioral slice.
 
 Arrange tasks so that:
 
-1. Dependencies are satisfied (build foundation first)
-2. Each task leaves the system in a working state
-3. Verification checkpoints occur after every 2-3 tasks
-4. High-risk tasks are early (fail fast)
+1. Dependencies are satisfied.
+2. Each task leaves the system in a working state.
+3. Add checkpoints where they materially reduce implementation or integration risk.
+4. Put high-risk work early enough to fail fast.
 
-Add explicit checkpoints:
+Useful checkpoints include:
+
+- after a risky schema or external-contract decision;
+- before dependent work consumes a newly established contract;
+- after integrating multiple workstreams.
+
+Do not add a checkpoint or human approval merely because a fixed number of tasks
+has elapsed.
+
+Example:
 
 ```markdown
-## Checkpoint: After Tasks 1-3
+## Checkpoint: API contract established
 - [ ] All tests pass
 - [ ] Application builds without errors
-- [ ] Core user flow works end-to-end
-- [ ] Review with human before proceeding
+- [ ] The contract required by dependent work is stable enough to consume
 ```
 
 ## Task Sizing Guidelines
@@ -195,6 +259,12 @@ assignments.
 - Do not copy the spec into the plan
 - Do not hide unresolved technical risks inside implementation tasks
 - Do not treat "parallelizable" as "should run in parallel"
+- Do not introduce files, architectural layers, factories, DTOs, resources,
+  test helpers, or abstractions solely because they are common framework
+  conventions.
+- Every planned new layer or support artifact must come from the approved spec,
+  an applicable project rule, repository precedent, or a clearly stated new
+  technical decision.
 
 
 ## Plan Document Template
@@ -224,14 +294,14 @@ When multiple agents or sessions are available:
 - Tasks that say "implement the feature" without acceptance criteria
 - No verification steps in the plan
 - All tasks are XL-sized
-- No checkpoints between tasks
+- Risky boundaries or integration points with no checkpoint where one would materially reduce risk
 - Dependency order isn't considered
 
 ## Verification
 
 Before the plan is ready for `/build`, confirm:
 
-- [ ] Every task maps to required behavior or a justified foundation
+- [ ] No task exists solely because an architectural layer exists, unless it is a justified foundation with independent verification value.
 - [ ] Every task has explicit acceptance criteria
 - [ ] Every task has a verification step
 - [ ] Dependencies are explicit and correctly ordered
