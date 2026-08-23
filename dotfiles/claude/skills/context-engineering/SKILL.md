@@ -37,7 +37,16 @@ Structure context from the most persistent to the most transient:
 
 ### Level 1: Rules Files
 
-Create a rules file that persists across sessions. This is the highest-leverage context you can provide.
+Create a rules file that persists across sessions. This is the highest-leverage
+context you can provide.
+
+Keep persistent rules **small, stable, and navigational**. Put project-wide
+invariants and high-value defaults there, then point to deeper module rules,
+architecture docs, commands, or examples. Do not turn the always-loaded file
+into a copy of every feature spec, framework guide, or historical decision.
+
+A good rule file answers "where is the source of truth?" as often as it answers
+the rule directly.
 
 **CLAUDE.md** (for Claude Code):
 ```markdown
@@ -151,6 +160,29 @@ PATTERN TO FOLLOW:
 CONSTRAINT:
 - Must use the existing ValidationError class, not throw raw errors
 ```
+
+### The Agent Task Packet
+
+For a coding subagent, package the task instead of dumping the session.
+
+Include:
+
+- bounded outcome;
+- acceptance criteria;
+- dependencies and workstream;
+- expected file/area scope;
+- exact verification;
+- applicable rule/module-document pointers;
+- one or two closest precedent files;
+- a shared contract/invariant or risk when it materially constrains the task.
+
+Prefer file pointers to copied content. Do not include the full spec, full plan,
+other agents' transcripts, or broad repository documentation unless the task
+actually requires all of it.
+
+When later tasks remain in the same workstream, resume the same implementation
+agent when the harness supports it. Reuse valid context; refresh only files or
+rules whose current state may have changed.
 
 ### The Hierarchical Summary
 

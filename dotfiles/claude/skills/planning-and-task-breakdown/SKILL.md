@@ -142,6 +142,19 @@ on it and it has meaningful independent verification.
 
 Each vertical slice delivers working, testable functionality.
 
+### Carry invariants into the task boundary
+
+When the approved spec defines an invariant, do not leave it as background
+prose that the executor has to rediscover.
+
+Any task that can establish, transfer, violate, or release that invariant should
+carry the relevant transition in its acceptance criteria or verification. Also
+preserve which layer is responsible for enforcing it when that distinction is
+material.
+
+This keeps the task behavioral: "first entity establishes the invariant" is a
+better execution contract than "implement service methods."
+
 ### Step 4: Assign Workstreams
 
 Every task belongs to a workstream.
@@ -182,6 +195,13 @@ Every task must have:
 - Dependencies
 - A workstream
 - Likely affected files or areas when useful
+- Compact context pointers when useful: applicable project/module rules,
+  one or two closest precedents, and a shared contract/invariant that materially
+  constrains the task
+
+The task should be dispatchable without copying the full spec or full plan into
+an executor prompt. Prefer references to authoritative files over duplicated
+prose.
 
 File count is context, not a sizing rule.
 
@@ -273,11 +293,21 @@ Use `../../references/templates/plan.md`.
 
 ## Parallelization Opportunities
 
-When multiple agents or sessions are available:
+Planning may identify independent workstreams; it does not authorize simultaneous
+writing by itself. `/build` owns the execution/concurrency policy.
 
-- **Safe to parallelize:** Independent feature slices, tests for already-implemented features, documentation
-- **Must be sequential:** Database migrations, shared state changes, dependency chains
-- **Needs coordination:** Features that share an API contract (define the contract first, then parallelize)
+- **Potentially parallel:** genuinely independent, dependency-ready workstreams
+  with no shared mutable state.
+- **Parallel writing requires isolation:** each writing executor needs its own
+  worktree/branch (or equivalent isolated checkout). Never infer safety merely
+  from non-overlapping source files.
+- **Must be sequential:** dependency chains, shared mutable state, migrations
+  whose order matters, or work that must consume an unfinished contract.
+- **Needs coordination:** workstreams sharing an API/interface contract — define
+  and stabilize the contract first, then parallelize only the independent
+  consumers/implementations.
+
+"Parallelizable" is planning metadata. It is not a command to spend concurrency.
 
 ## Common Rationalizations
 
@@ -306,6 +336,8 @@ Before the plan is ready for `/build`, confirm:
 - [ ] Every task has a verification step
 - [ ] Dependencies are explicit and correctly ordered
 - [ ] Every task has a workstream
+- [ ] Task-local context pointers are present when project rules, precedents,
+      contracts, or invariants materially constrain implementation
 - [ ] Related or dependent tasks share a workstream
 - [ ] Additional workstreams are genuinely independent
 - [ ] Task boundaries follow coherent behavior rather than arbitrary file counts

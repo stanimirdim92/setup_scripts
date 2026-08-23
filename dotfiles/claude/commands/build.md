@@ -58,6 +58,24 @@ For every executor dispatch or resume provide:
 - verification
 - `is_last_selected_task_in_workstream: yes|no`
 - workstream verification command, when applicable
+- task-local context pointers when useful:
+  - applicable project/module rule files;
+  - one or two closest precedent files;
+  - shared contract or invariant the task must preserve.
+
+### Context packet discipline
+
+Give the executor the smallest packet that lets it start correctly.
+
+Prefer pointers to authoritative files over pasted copies. Do not dump the full
+spec, full plan, all project rules, another agent's transcript, or raw
+investigation output into every executor. The executor can read a referenced
+file when it actually needs it.
+
+A task packet should answer:
+
+> What outcome am I implementing, what proves it, what constrains it, and where
+> is the closest trustworthy precedent?
 
 ### Within a workstream
 
@@ -125,6 +143,26 @@ to undo.
 Keep model defaults in the executor definition; `/build` owns only the override
 policy.
 
+### Capability and permission discipline
+
+Do not broaden an executor's tools or permissions merely for convenience.
+
+If implementation genuinely requires a capability the executor does not have
+—for example, secret access, an external writing, a destructive operation, or a
+network integration requiring additional authority—surface that requirement at
+the orchestration boundary instead of teaching the executor to work around the
+restriction.
+
+### Retry discipline
+
+Do not use blind retries as progress.
+
+A retry should follow new evidence: a code/configuration change, a changed
+environmental condition, or a new hypothesis derived from the failure. If the
+same failure persists and there is no new evidence or materially different
+hypothesis, stop the loop and report the blocker rather than burning another
+agent turn.
+
 ### Cost gate
 
 Concurrency is a spend decision, not just a wall-clock decision.
@@ -164,9 +202,25 @@ Include:
 - tasks completed
 - workstreams completed
 - commits created
-- verification run
+- exact verification commands run and their outcomes
 - anything noticed but not touched
 - any remaining blocker
+
+Also include a compact **Run metrics** block using actual values only:
+
+- fresh executor dispatches
+- executor resumes
+- model-tier overrides
+- verification failures that caused implementation rework
+- human redirects/decisions during BUILD
+- directly required scope expansions
+- token/cost/duration only when the runtime exposes real measurements
+
+Never estimate missing usage or timing data.
+
+See `references/agent-run-metrics.md` for the measurement vocabulary. Do not
+create a per-project metrics file unless that project already designates one or
+the user asks for persistence.
 
 Do not perform the independent VERIFY phase here.
 Do not dispatch code reviewers here.

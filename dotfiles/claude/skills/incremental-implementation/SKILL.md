@@ -240,12 +240,18 @@ When delegating an increment, provide:
 
 - the behavior/outcome
 - acceptance criteria
-- dependencies
+- dependencies/workstream
 - expected scope
 - verification
 - whether broader workstream verification is required at completion
+- only the task-local rule/precedent/contract pointers that materially constrain it
 
 Do not ask an implementation agent to rediscover a plan that already exists.
+Do not compensate by dumping the whole plan/spec into every task either.
+
+When the orchestrator supports resumable agents, related tasks in one workstream
+should reuse the same implementation agent so already-paid discovery remains
+useful.
 
 ## Verification
 

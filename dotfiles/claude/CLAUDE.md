@@ -151,6 +151,29 @@ references/     → Supplementary checklists (definition-of-done, security-check
 docs/           → Setup guides for different tools
 ```
 
+## Agent orchestration defaults
+
+These are cross-project invariants; detailed dispatch policy lives in the
+commands that own it.
+
+- Delegate bounded outcomes with acceptance criteria and explicit verification,
+  not vague projects.
+- Slash commands/user orchestration compose agents. Agents do not delegate to
+  other agents.
+- Reuse the same implementation agent across related tasks in one workstream
+  when the harness supports resume.
+- Never run multiple writing agents concurrently against the same checkout.
+  Parallel writers require isolated worktrees/branches and genuinely independent
+  workstreams.
+- Keep subagent context selective: task-local rules, closest precedents, and
+  relevant contracts/invariants. Prefer pointers over copied full documents.
+- Completion claims require evidence: exact checks and outcomes; skipped checks
+  stay explicitly unverified.
+- Do not broaden tool permissions or seek secrets merely to avoid an orchestration
+  boundary. Surface capabilities that require approval.
+
+See `commands/build.md` and `docs/agents.md` for the operational shapes.
+
 ## Model policy
 
 Agent definitions own their default `model:` selection.

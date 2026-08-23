@@ -1,3 +1,4 @@
+sandbox_mode = "workspace-write"
   [mcp_servers.phpstorm]
     url = "http://127.0.0.1:64443/stream"
 
@@ -65,9 +66,10 @@ enabled = true
 
 [features]
 js_repl = false
+memories = true
 
 [desktop]
-conversationDetailMode = "STEPS_COMMANDS"
+conversationDetailMode = "STEPS_PROSE"
 ambient-suggestions-enabled = true
 preventSleepWhileRunning = false
 enabled-reasoning-efforts = ["low", "medium", "high", "xhigh", "ultra", "max"]
@@ -75,3 +77,11 @@ followUpQueueMode = "queue"
 sansFontSize = 16
 codeFontSize = 15
 appearanceDiffMarkerStyle = "color"
+usePointerCursors = true
+
+[memories]
+generate_memories = true
+use_memories = true
+
+[sandbox_workspace_write]
+network_access = false
