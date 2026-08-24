@@ -10,8 +10,7 @@ The executor owns incremental/TDD execution discipline.
 
 ## 1. Resolve before dispatching anything
 
-Read `docs/tasks/[TICKET]-todo.md` and, when needed,
-`docs/tasks/[TICKET]-plan.md`.
+Read `docs/tasks/[TICKET]-todo.md` and, when needed, `docs/tasks/[TICKET]-plan.md`.
 
 Resolve exactly which task(s) are in scope, including:
 
@@ -23,7 +22,7 @@ Resolve exactly which task(s) are in scope, including:
 
 If a task reference is ambiguous, resolve it before dispatching an executor.
 
-Do not discover task scope inside a running executor.
+Do not discover the task scope inside a running executor.
 
 ### Workstream source of truth
 
@@ -56,6 +55,7 @@ For every executor dispatch or resume provide:
 - workstream
 - expected scope
 - verification
+- required skills
 - `is_last_selected_task_in_workstream: yes|no`
 - workstream verification command, when applicable
 - task-local context pointers when useful:
@@ -76,6 +76,44 @@ A task packet should answer:
 
 > What outcome am I implementing, what proves it, what constrains it, and where
 > is the closest trustworthy precedent?
+
+### Skill selection
+
+`/build` selects skills; executors do not discover them autonomously.
+
+For every fresh executor, include:
+
+```text
+required_skills:
+  - executor-development-discipline
+```
+
+The executor definition preloads that baseline skill when a fresh executor is
+created, and the resumed executor retains it for later tasks in the same
+workstream. Keeping it in `required_skills` makes the packet's methodology
+explicit; do not paste the skill body into the packet or ask the executor to
+invoke the preloaded baseline again.
+
+Add a task-specific skill only when its methodology is materially required by
+the selected task. Current routing examples:
+
+- public API, interface, or shared-contract design → `api-and-interface-design`;
+- deprecation, compatibility transition, or migration →
+  `deprecation-and-migration`;
+- auth, permissions, secrets, untrusted input, or sensitive integration →
+  `security-and-hardening`.
+
+Pass the selected skill names in `required_skills`; the executor invokes only
+the additional task-specific selections before editing. Do not paste their contents.
+Do not load `incremental-implementation` or `test-driven-development` in addition
+to the baseline skill—the executor-specific discipline contains the bounded
+parts of those methodologies that BUILD needs without their broader
+orchestration guidance.
+
+If no specialized methodology is required, select only the baseline skill. If a
+task appears to require a skill outside the executor's role, stop at the
+orchestration boundary rather than delegating planning, review, release, or
+permission decisions to the executor.
 
 ### Within a workstream
 
@@ -177,11 +215,7 @@ Concurrency is a spend decision, not just a wall-clock decision.
 
 Current implementation cap:
 
-- writing executors: **1 active at a time**
-
-If isolated parallel implementation is enabled later, start with a maximum of
-**2 active implementation executors** unless the user explicitly requests a
-higher cap.
+- writing executors: **2 active at a time**
 
 ## 3. Build completion gate
 

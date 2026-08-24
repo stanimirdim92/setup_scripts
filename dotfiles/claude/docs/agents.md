@@ -18,19 +18,21 @@ Markdown system prompt consumed by the harness.
 |-------|--------------|---------|
 | **Skill** | Reusable methodology / the *how* | `planning-and-task-breakdown` |
 | **Persona** | Role, perspective, output contract / the *who* | `code-reviewer` |
-| **Command** | User-facing orchestration / the *when* | `/build`, `/review` |
+| **Command** | User-facing orchestration / the *when* | `/build`, `/review`, `/ship` |
 
 Skills are not automatically mandatory hops inside every persona. Invoke a skill
-when the runtime/tooling supports it. A constrained persona may inline the
-required discipline instead; `executor` does this for incremental implementation
-and TDD because it intentionally has no `Skill` tool.
+when the runtime/tooling supports it. `/build` explicitly selects a compact
+`executor-development-discipline` skill for every fresh executor; the executor
+definition preloads it at startup. `/build` adds only task-specific skills whose
+methodology is materially required. Executors do not discover skills
+autonomously.
 
 The user or a slash command is the orchestrator. **Personas do not call other
 personas.**
 
 ## Built orchestration patterns
 
-This repo deliberately has three different orchestration shapes.
+This repo deliberately has four different orchestration shapes.
 
 ### 1. `/build`: bounded writer orchestration
 
@@ -55,6 +57,9 @@ Rules:
   genuinely independent, dependency-ready workstreams;
 - integration is sequential even if implementation is later parallelized;
 - executor reports implementation + test/verification evidence, then stops;
+- a fresh executor starts with `executor-development-discipline` preloaded,
+  while a resumed executor reuses it and invokes only newly selected
+  task-specific skills;
 - `/build` does not independently VERIFY, review, or issue GO/NO-GO.
 
 Operational source of truth: `commands/build.md`.
@@ -73,7 +78,7 @@ packet to do the detailed inspection.
      ↓
    test-engineer → inspects, adds missing tests, runs verification
      ↓
-/test issues VERIFY PASS / VERIFY FAIL from the report
+/test issues VERIFY PASS / VERIFY FAIL / VERIFY BLOCKED from the report
 ```
 
 `test-engineer` does not decide the verdict; it reports coverage findings and
@@ -97,13 +102,45 @@ against the same integrated diff.
              ↓
      reports stay separate
              ↓
-         GO / NO-GO
+       findings only
 ```
 
 Reviewers do not see one another's output before forming their own judgment.
 `references/reviewer-triggers.md` is the single trigger matrix.
 
+`/review` stops at findings. The verdict belongs to `/ship`.
+
 Operational source of truth: `commands/review.md`.
+
+### 4. `/ship`: synthesis gate, no dispatch
+
+After `/review` reports, `/ship` is the only gate that issues a verdict. It
+dispatches nobody.
+
+```text
+/test evidence ─┐
+                ├─ /ship synthesizes → GO / NO-GO + rollback plan
+/review findings┘
+        +
+  uncovered axes (a11y, infrastructure, documentation)
+  verified directly in the main context
+```
+
+Rules:
+
+- no persona dispatch — a missing required reviewer is a `/review` gap, not a
+  second dispatch path;
+- unresolved Critical finding → default NO-GO, user-acceptable only explicitly;
+- no GO without a concrete rollback plan;
+- fixes return through `/build`, then re-enter `/test`;
+- release mechanics come from `skills/git-workflow-and-versioning`.
+
+This is why `/ship` is not upstream's `/ship`: upstream fans out
+`code-reviewer`/`security-auditor`/`test-engineer` in parallel, which here
+would be a second orchestration path to the personas `/test` and `/review`
+already own.
+
+Operational source of truth: `commands/ship.md`.
 
 ## Direct persona invocation
 
@@ -131,7 +168,10 @@ Need implementation?
 
 Need independent judgment on an integrated change?
 ├── One requested specialist perspective → invoke that reviewer directly
-└── Shipping review gate → /review fan-out after VERIFY PASS
+└── Review gate → /review fan-out after VERIFY PASS
+
+Need a go/no-go on shipping it?
+└── /ship after /review — synthesis only, no dispatch
 ```
 
 Do not add a `meta-orchestrator` persona whose only job is deciding which persona
@@ -165,7 +205,7 @@ Agent completion is not evidence by itself.
 Implementation reports include exact verification commands and outcomes;
 unverified checks remain explicit. `/test` dispatches `test-engineer` to
 independently verify acceptance criteria; `/review` independently judges the
-integrated diff.
+integrated diff; `/ship` issues the verdict from both.
 
 Use the configured model default for routine work. Override upward only when the
 specific workstream/review genuinely needs the reasoning tier.
@@ -179,8 +219,8 @@ token/cost/time data.
 1. One persona = one role and one output contract.
 2. Personas do not invoke other personas.
 3. A persona may invoke skills only when its runtime/tool set supports that.
-4. Constrained personas may inline required methodology when that constraint is
-   deliberate and documented.
+4. A command that dispatches a skill-capable persona selects the permitted
+   skills; the persona does not browse the catalog or broaden its own role.
 5. Every persona file ends with a Composition block describing where it fits.
 6. Writing personas should receive bounded scope and explicit verification.
 7. Read-only fan-out is easier to parallelize than writing; shared mutable state
@@ -193,6 +233,7 @@ These personas are compatible with Claude Code subagents.
 - `/build` uses `executor` as a resumable implementation subagent.
 - `/test` uses `test-engineer` as a bounded verifier subagent.
 - `/review` uses reviewer subagents as independent read-only fan-out.
+- `/ship` uses no subagents; it synthesizes the earlier gates' reports.
 - Subagents report back to the main agent; they do not spawn subagents.
 - Agent Teams can support teammate-to-teammate communication, but no current
   command depends on that experimental capability.

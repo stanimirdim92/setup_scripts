@@ -146,7 +146,7 @@ Drop:
 skills/<skill>/ → Core skills (SKILL.md per directory)
 agents/         → Reusable agent personas
 hooks/          → Session lifecycle hooks
-commands/       → Slash commands (/spec, /plan, /build, /test, /review)
+commands/       → Slash commands (/spec, /plan, /build, /test, /review, /ship)
 references/     → Supplementary checklists (definition-of-done, security-checklist, reviewer-triggers, documentation-practices) and templates/ (canonical spec/plan/task document shapes)
 docs/           → Setup guides for different tools
 ```

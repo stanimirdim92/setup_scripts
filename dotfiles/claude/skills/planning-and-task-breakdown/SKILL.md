@@ -394,7 +394,7 @@ Before the plan is ready for `/build`, confirm:
 - [ ] The plan contains no production implementation
 - [ ] Every planned behavior and acceptance criterion traces to the approved spec
 - [ ] The plan does not contradict, weaken, or strengthen the approved spec
-- [ ] The final handoff is `Ready for /test`, never `Ready for /review`
+- [ ] The final handoff MUST be `Ready for /build`
 - [ ] The human has reviewed and approved the plan
 
 ## See Also

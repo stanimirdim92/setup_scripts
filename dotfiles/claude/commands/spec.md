@@ -3,7 +3,7 @@ description: Start spec-driven development — write a structured specification 
 argument-hint: "[ticket or feature description]"
 ---
 
-Invoke `skills/spec-driven-development`.
+Invoke `../skills/spec-driven-development`.
 
 Begin by understanding what the user wants to build. If a `jira-ticket` intake summary already answered some of this, don't re-ask it — confirm what's already known and ask only what's still open. Otherwise ask clarifying questions about:
 1. The objective and target users

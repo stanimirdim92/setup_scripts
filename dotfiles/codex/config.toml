@@ -88,3 +88,6 @@ network_access = false
 
 [projects."/home/stanimir/Documents/Codex/2026-08-23/referenced-chatgpt-conversation-this-is-an"]
 trust_level = "trusted"
+
+[projects."/home/stanimir/Documents/Codex/2026-08-24/https-github-com-addyosmani-agent-skills"]
+trust_level = "trusted"

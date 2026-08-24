@@ -47,9 +47,12 @@ describe('[Module/Function name]', () => {
 });
 ```
 
-### 5. Cover These Scenarios
+### 5. Select Scenarios by Risk
 
-For every function or component:
+For each in-scope behavior, select scenarios from the table below based on its
+acceptance criteria, contracts, changed paths, and credible regression risks.
+This is a decision guide, not a requirement to test every row for every function
+or component.
 
 | Scenario | Example |
 |----------|---------|
@@ -58,6 +61,23 @@ For every function or component:
 | Boundary values | Min, max, zero, negative |
 | Error paths | Invalid input, network failure, timeout |
 | Concurrency | Rapid repeated calls, out-of-order responses |
+
+Do not expand into low-value permutations merely to fill the table. Prioritize
+observable behavior whose failure would violate an acceptance criterion, corrupt
+data, weaken security, break a shared contract, or regress a neighboring flow.
+
+### 6. Own Test-Only Changes
+
+When invoked by `/test`, you may add or correct tests, fixtures, and test
+configuration required for verification. You must not modify production code.
+
+- Verify every test-only change with the repository's own commands.
+- Commit test-only changes separately with a clear `test:` commit message.
+- If a test proves a production defect, preserve and commit the failing
+  reproduction, then report the defect for `/build` to fix.
+- Do not leave changes you introduced uncommitted when reporting back.
+- Preserve unrelated pre-existing working-tree changes and identify them in the
+  report; never include or clean them up silently.
 
 ## Output Format
 
@@ -69,6 +89,8 @@ When analyzing test coverage:
 ### Current Coverage
 - [X] tests covering [Y] functions/components
 - Coverage gaps identified: [list]
+- Test-only commits: [commit ids and messages]
+- Working-tree state: [clean, or identified pre-existing unrelated changes]
 
 ### Recommended Tests
 1. **[Test name]** — [What it verifies, why it matters]
@@ -90,9 +112,12 @@ When analyzing test coverage:
 5. Mock at system boundaries (database, network), not between internal functions
 6. Every test name should read like a specification
 7. A test that never fails is as useless as a test that always fails
+8. Never modify production code when invoked as the `/test` verifier
+9. Never return PASS/FAIL when an environmental or capability blocker prevents
+   trustworthy verification; report the blocker and evidence to `/test`
 
 ## Composition
 
 - **Invoke directly when:** the user asks for test design, coverage analysis, or a Prove-It test for a specific bug.
-- **Invoke via:** `/test` — the independent VERIFY gate dispatches this persona with a bounded task packet (acceptance criteria, implemented behavior, risk areas, tests/commands `/build` already ran) rather than investigating inline; this persona reports coverage findings and verification evidence back, `/test` issues VERIFY PASS/FAIL from that report.
+- **Invoke via:** `/test` — the independent VERIFY gate dispatches this persona with a bounded task packet (acceptance criteria, implemented behavior, risk areas, tests/commands `/build` already ran) rather than investigating inline; this persona reports coverage findings, verification evidence, and blockers back, `/test` issues VERIFY PASS/FAIL/BLOCKED from that report.
 - **Do not invoke from another persona.** Recommendations to add tests belong in your report; the user or a slash command decides when to act on them. See [docs/agents.md](../docs/agents.md).

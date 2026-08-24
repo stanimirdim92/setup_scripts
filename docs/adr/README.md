@@ -28,13 +28,15 @@ that explanation here, just the index.
 | [0018](0018-llm-application-dev-switched-to-installed-plugin.md) | `llm-application-dev` switched from vendored files to an installed plugin | Accepted |
 | [0019](0019-adr-recording-compared-against-adr-github-vercel-ecc.md) | `adr-recording` compared against adr.github.io, vercel/ai, and ECC's ADR skills | Accepted |
 | [0020](0020-build-test-review-pipeline-split.md) | `/build` → `/test` → `/review`: split implementation from verification and review | Accepted |
-| [0021](0021-reconcile-superpowers-overlap-with-current-sdlc.md) | Reconcile Superpowers overlap with the current SDLC | Accepted |
+| [0021](0021-reconcile-superpowers-overlap-with-current-sdlc.md) | Reconcile Superpowers overlap with the current SDLC | Partially superseded by [0029](0029-build-selects-executor-skills.md) |
 | [0022](0022-agent-execution-context-evidence-and-measurement.md) | Agent execution: bounded context, evidence, and measurement | Accepted |
 | [0023](0023-agents-doc-moved-to-synced-dotfiles-claude-docs.md) | `docs/agents.md` moved to `dotfiles/claude/docs/`, now synced | Accepted |
 | [0024](0024-vendored-test-engineer-persona-for-test-verify-gate.md) | Vendored `test-engineer` persona, `/test` now dispatches it instead of investigating inline | Accepted |
 | [0025](0025-security-auditor-provenance-corrected.md) | `security-auditor.md`'s provenance corrected: vendored from addyosmani/agent-skills, not written fresh | Accepted |
 | [0026](0026-security-auditor-reconciled-with-reference-docs.md) | `security-auditor.md` reconciled with `security-checklist.md`/`ai-security.md`/`supply-chain.md` | Accepted |
-| [0027](0027-vendored-shipping-and-launch-skill-no-ship-command.md) | Vendored `shipping-and-launch` skill, deliberately no `/ship` command | Accepted |
+| [0027](0027-vendored-shipping-and-launch-skill-no-ship-command.md) | Vendored `shipping-and-launch` skill, deliberately no `/ship` command | Partially superseded by [0028](0028-ship-command-as-synthesis-gate.md) (`/ship` added as a no-dispatch synthesis gate; skill stays deleted) |
+| [0028](0028-ship-command-as-synthesis-gate.md) | `/ship` added as a synthesis gate, reversing 0027 | Accepted |
+| [0029](0029-build-selects-executor-skills.md) | `/build` selects a compact execution skill for each executor | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

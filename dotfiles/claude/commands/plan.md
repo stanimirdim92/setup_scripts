@@ -21,13 +21,11 @@ Save:
 
 Present the result for human review.
 
-The plan's final implementation handoff must say `Ready for /test`. `/review`
-comes only after `/test` reports VERIFY PASS.
-
 ## After approval
 
 Stop. Do not implement from `/plan`.
 
 Implementation goes through `/build`.
 Independent verification goes through `/test`.
-Independent review and the final GO/NO-GO verdict go through `/review`.
+Independent review goes through `/review`.
+The final GO/NO-GO verdict goes through `/ship`.
