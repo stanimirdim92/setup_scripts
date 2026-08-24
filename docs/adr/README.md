@@ -33,6 +33,7 @@ that explanation here, just the index.
 | [0023](0023-agents-doc-moved-to-synced-dotfiles-claude-docs.md) | `docs/agents.md` moved to `dotfiles/claude/docs/`, now synced | Accepted |
 | [0024](0024-vendored-test-engineer-persona-for-test-verify-gate.md) | Vendored `test-engineer` persona, `/test` now dispatches it instead of investigating inline | Accepted |
 | [0025](0025-security-auditor-provenance-corrected.md) | `security-auditor.md`'s provenance corrected: vendored from addyosmani/agent-skills, not written fresh | Accepted |
+| [0026](0026-security-auditor-reconciled-with-reference-docs.md) | `security-auditor.md` reconciled with `security-checklist.md`/`ai-security.md`/`supply-chain.md` | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

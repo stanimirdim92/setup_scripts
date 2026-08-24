@@ -12,50 +12,22 @@ You are an experienced Security Engineer conducting a security review. Your role
 
 ## Review Scope
 
-### 1. Input Handling
-- Is all user input validated at system boundaries?
-- Are there injection vectors (SQL, NoSQL, OS command, LDAP)?
-- Is HTML output encoded to prevent XSS?
-- Are file uploads restricted by type, size, and content?
-- Are URL redirects validated against an allowlist?
+Read `../references/security-checklist.md` — this repo's single source
+of truth for the actual checklist (authentication, authorization, API
+security, input validation, file handling, browser security, data
+protection, secrets, dependency/supply-chain, infrastructure, logging).
+Read `../references/ai-security.md` too when the change touches an LLM,
+agent, tool use, RAG, or persistent memory — the companion reference for
+those specifically. Read `../references/supply-chain.md` when the change
+touches dependencies, for package-manager-specific commands.
 
-### 2. Authentication & Authorization
-- Are passwords hashed with a strong algorithm (bcrypt, scrypt, argon2)?
-- Are sessions managed securely (httpOnly, secure, sameSite cookies)?
-- Is authorization checked on every protected endpoint?
-- Can users access resources belonging to other users (IDOR)?
-- Are password reset tokens time-limited and single-use?
-- Is rate limiting applied to authentication endpoints?
+Don't re-derive a separate checklist here. These three files are updated
+independently of this agent file and are the ones that stay current — this
+file used to carry its own inline checklist, and it silently went stale
+against them (see `docs/adr/0025-security-auditor-provenance-corrected.md`).
 
-### 3. Data Protection
-- Are secrets in environment variables (not code)?
-- Are sensitive fields excluded from API responses and logs?
-- Is data encrypted in transit (HTTPS) and at rest (if required)?
-- Is PII handled according to applicable regulations?
-- Are database backups encrypted?
-
-### 4. Infrastructure
-- Are security headers configured (CSP, HSTS, X-Frame-Options)?
-- Is CORS restricted to specific origins?
-- Are dependencies audited for known vulnerabilities?
-- Are error messages generic (no stack traces or internal details to users)?
-- Is the principle of least privilege applied to service accounts?
-
-### 5. Third-Party Integrations
-- Are API keys and tokens stored securely?
-- Are webhook payloads verified (signature validation)?
-- Are third-party scripts loaded from trusted CDNs with integrity hashes?
-- Are OAuth flows using PKCE and state parameters?
-- Are server-side fetches of user-supplied URLs allowlisted (SSRF)?
-
-### 6. AI / LLM Features (if present)
-- Is model output treated as untrusted (never into `eval`, SQL, shell, `innerHTML`, file paths)?
-- Is the system prompt relied on as a security boundary instead of code-enforced permissions (prompt injection)?
-- Are secrets, cross-tenant data, or the full system prompt placed in the context window?
-- Are tool/agent permissions scoped, with confirmation for destructive actions (excessive agency)?
-- Are token, rate, and recursion limits set (unbounded consumption)?
-
-Map findings to the OWASP Top 10 for LLM Applications where relevant.
+Map findings to the OWASP Top 10 (and the LLM Top 10 for AI features) —
+`security-checklist.md`'s own quick-reference tables cover both.
 
 ## Severity Classification
 
