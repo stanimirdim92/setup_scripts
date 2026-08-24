@@ -31,6 +31,7 @@ that explanation here, just the index.
 | [0021](0021-reconcile-superpowers-overlap-with-current-sdlc.md) | Reconcile Superpowers overlap with the current SDLC | Accepted |
 | [0022](0022-agent-execution-context-evidence-and-measurement.md) | Agent execution: bounded context, evidence, and measurement | Accepted |
 | [0023](0023-agents-doc-moved-to-synced-dotfiles-claude-docs.md) | `docs/agents.md` moved to `dotfiles/claude/docs/`, now synced | Accepted |
+| [0024](0024-vendored-test-engineer-persona-for-test-verify-gate.md) | Vendored `test-engineer` persona, `/test` now dispatches it instead of investigating inline | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

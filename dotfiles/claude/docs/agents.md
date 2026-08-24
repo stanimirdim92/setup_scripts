@@ -9,6 +9,7 @@ Markdown system prompt consumed by the harness.
 | [security-auditor](../agents/security-auditor.md) | Security Engineer | Vulnerability detection and security audit |
 | [distributed-systems-reviewer](../agents/distributed-systems-reviewer.md) | Distributed Systems Engineer | Reliability/consistency review across process/network/queue boundaries |
 | [executor](../agents/executor.md) | Implementation Engineer | Executes one planned task end-to-end; resumable across a workstream |
+| [test-engineer](../agents/test-engineer.md) | QA Engineer | Test strategy, coverage analysis, Prove-It pattern for bugs |
 | [unblock-triage](../agents/unblock-triage.md) | Tech Lead Triage | Sorts a batch of blocked items by who actually needs to decide |
 
 ## Layers
@@ -29,7 +30,7 @@ personas.**
 
 ## Built orchestration patterns
 
-This repo deliberately has two different orchestration shapes.
+This repo deliberately has three different orchestration shapes.
 
 ### 1. `/build`: bounded writer orchestration
 
@@ -58,7 +59,30 @@ Rules:
 
 Operational source of truth: `commands/build.md`.
 
-### 2. `/review`: independent read-only fan-out
+### 2. `/test`: bounded verifier dispatch
+
+After `/build` completes, `/test` resolves verification scope itself (from
+task/spec docs and `/build`'s completion report, not by re-reading the
+implementation) and dispatches one `test-engineer` with a bounded task
+packet to do the detailed inspection.
+
+```text
+/build completes
+     ↓
+/test resolves scope (acceptance criteria, risk areas, tests already added)
+     ↓
+   test-engineer → inspects, adds missing tests, runs verification
+     ↓
+/test issues VERIFY PASS / VERIFY FAIL from the report
+```
+
+`test-engineer` does not decide the verdict; it reports coverage findings and
+verification evidence. A production defect found during verification goes
+back through `/build`, not fixed inline by `/test` or `test-engineer`.
+
+Operational source of truth: `commands/test.md`.
+
+### 3. `/review`: independent read-only fan-out
 
 After `/test` reports VERIFY PASS, `/review` dispatches independent reviewers
 against the same integrated diff.
@@ -88,10 +112,13 @@ Use direct invocation when the user wants one perspective on one artifact.
 - "Review this PR" → `code-reviewer`
 - "Security review this auth change" → `security-auditor`
 - "Check this worker for retry/idempotency problems" → `distributed-systems-reviewer`
+- "Design tests for this" / "what coverage is missing here?" → `test-engineer`
 - Batch triage for a lead → `unblock-triage`
 
 `executor` is the exception: it is dispatched through `/build`, not used as a
-free-form coding assistant.
+free-form coding assistant. `test-engineer` is dispatched through `/test` for
+the VERIFY gate, but also answers direct test-design/coverage-analysis
+requests outside that pipeline.
 
 ## Decision matrix
 
@@ -136,8 +163,9 @@ See `skills/context-engineering/SKILL.md`.
 Agent completion is not evidence by itself.
 
 Implementation reports include exact verification commands and outcomes;
-unverified checks remain explicit. `/test` independently verifies acceptance
-criteria; `/review` independently judges the integrated diff.
+unverified checks remain explicit. `/test` dispatches `test-engineer` to
+independently verify acceptance criteria; `/review` independently judges the
+integrated diff.
 
 Use the configured model default for routine work. Override upward only when the
 specific workstream/review genuinely needs the reasoning tier.
@@ -163,6 +191,7 @@ token/cost/time data.
 These personas are compatible with Claude Code subagents.
 
 - `/build` uses `executor` as a resumable implementation subagent.
+- `/test` uses `test-engineer` as a bounded verifier subagent.
 - `/review` uses reviewer subagents as independent read-only fan-out.
 - Subagents report back to the main agent; they do not spawn subagents.
 - Agent Teams can support teammate-to-teammate communication, but no current

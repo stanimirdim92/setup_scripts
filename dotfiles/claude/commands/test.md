@@ -7,7 +7,9 @@ argument-hint: "[task number(s), ticket, commit range, or feature description]"
 
 It does not replace the tests written during implementation. `/build` uses TDD
 as developer feedback; `/test` independently checks whether the completed work
-is actually correct and sufficiently covered.
+is actually correct and sufficiently covered. Dispatch `test-engineer` to do
+that investigation — `/test` owns scope resolution and the PASS/FAIL verdict,
+not the file-by-file inspection itself.
 
 ## 1. Resolve verification scope
 
@@ -20,48 +22,31 @@ Read the relevant task/spec context and determine:
 - verification commands already run
 - relevant regression surface
 
-Inspect the implementation and existing tests before adding new verification.
+Resolve this from the task/spec/plan documents and `/build`'s own completion
+report — not by re-reading the full implementation yourself. The detailed
+inspection belongs to the dispatched `test-engineer` in step 2.
 
-## 2. Verify at the right level
+## 2. Dispatch test-engineer
 
-Use the lowest test level that proves the behavior with sufficient confidence:
+Give `test-engineer` a bounded task packet: acceptance criteria, implemented
+behavior and relevant regression surface, and tests/commands `/build` already
+ran. Do not hand it the full spec or implementation plan — pointers, not the
+whole document.
 
-```text
-Pure logic, no I/O          → Unit
-Crosses a boundary          → Integration / feature
-Critical user flow          → E2E
-```
+`test-engineer` already knows to test at the lowest level that captures the
+behavior (its own "Test at the Right Level" rule) — `/test` doesn't need to
+restate that here. It inspects the implementation and existing tests, proves
+each acceptance criterion has verification evidence, adds missing tests
+where needed, checks edge/error cases and regression-sensitive neighboring
+behavior, and runs the repository's appropriate broader verification
+(focused regression suite, integration/feature tests, E2E for critical
+flows, build, type check, lint — using repository-defined commands, not
+guessed generic ones). It reports back test coverage findings and
+verification evidence; it does not decide the final verdict.
 
-Do not add E2E coverage when a lower-level test proves the same behavior.
+## 3. Failure handling
 
-Do not duplicate tests that already prove the acceptance criterion.
-
-## 3. Verify the acceptance criteria
-
-For every applicable acceptance criterion:
-
-- identify the test or verification that proves it;
-- run that verification;
-- add missing tests when the current suite does not adequately prove it;
-- check important edge/error cases;
-- check regression-sensitive neighboring behavior.
-
-Also run the repository's appropriate broader verification for the changed
-surface, such as:
-
-- focused regression suite
-- integration/feature tests
-- E2E for critical user flows
-- build
-- type check
-- lint
-
-Use repository-defined commands. Do not guess generic commands when the project
-already defines them.
-
-## 4. Failure handling
-
-If verification exposes a production-code bug:
+If `test-engineer`'s report surfaces a production-code bug:
 
 1. preserve or add the failing reproduction test;
 2. confirm it fails for the expected reason;
@@ -74,9 +59,9 @@ After `/build` fixes the defect, rerun the affected verification.
 
 If the failure is only in the test itself, fix the test and continue.
 
-## 5. Result
+## 4. Result
 
-Return one explicit verification result:
+From `test-engineer`'s report, return one explicit verification result:
 
 **VERIFY PASS** or **VERIFY FAIL**
 
