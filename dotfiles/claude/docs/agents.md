@@ -10,7 +10,6 @@ Markdown system prompt consumed by the harness.
 | [distributed-systems-reviewer](../agents/distributed-systems-reviewer.md) | Distributed Systems Engineer | Reliability/consistency review across process/network/queue boundaries |
 | [executor](../agents/executor.md) | Implementation Engineer | Executes one planned task end-to-end; resumable across a workstream |
 | [test-engineer](../agents/test-engineer.md) | QA Engineer | Test strategy, coverage analysis, Prove-It pattern for bugs |
-| [unblock-triage](../agents/unblock-triage.md) | Tech Lead Triage | Sorts a batch of blocked items by who actually needs to decide |
 
 ## Layers
 
@@ -150,7 +149,6 @@ Use direct invocation when the user wants one perspective on one artifact.
 - "Security review this auth change" → `security-auditor`
 - "Check this worker for retry/idempotency problems" → `distributed-systems-reviewer`
 - "Design tests for this" / "what coverage is missing here?" → `test-engineer`
-- Batch triage for a lead → `unblock-triage`
 
 `executor` is the exception: it is dispatched through `/build`, not used as a
 free-form coding assistant. `test-engineer` is dispatched through `/test` for

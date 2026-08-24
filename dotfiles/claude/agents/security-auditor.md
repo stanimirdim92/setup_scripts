@@ -83,5 +83,5 @@ Map findings to the OWASP Top 10 (and the LLM Top 10 for AI features) —
 ## Composition
 
 - **Invoke directly when:** the user wants a security-focused pass on a specific change, file, or system component.
-- **Invoke via:** `/review`'s dispatch step, when the diff matches a trigger in `references/reviewer-triggers.md` (batched alongside `code-reviewer` and `test-engineer`, capped at 2 concurrent reviewers — see `commands/review.md`).
+- **Invoke via:** `/review`'s dispatch step, when the diff matches a trigger in `references/reviewer-triggers.md` (batched alongside `code-reviewer`, and `distributed-systems-reviewer` when also triggered, capped at 2 concurrent reviewers — see `docs/adr/0004-reviewer-batch-cap-no-high-risk-exception.md`).
 - **Do not invoke from another persona.** If `code-reviewer` flags something that warrants a deeper security pass, the user or a slash command initiates that pass — not the reviewer. See [docs/agents.md](../docs/agents.md).
