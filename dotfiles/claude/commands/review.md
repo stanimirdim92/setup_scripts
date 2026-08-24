@@ -1,109 +1,38 @@
 ---
-description: Review a verified change across correctness, readability, architecture, security, performance, and triggered specialist risks
+description: Conduct a five-axis code review — correctness, readability, architecture, security, performance
 argument-hint: "[commit range, PR, diff, task, or feature]"
 ---
 
 `/review` is the independent **REVIEW** gate after `/test`.
 
-Review only work that has passed the VERIFY phase, unless the user explicitly
-asks for an earlier review.
+## 1. Scope the diff
 
-## 1. Scope the reviewed change
+Work out the diff to review (staged changes, recent commits, or whatever
+the user pointed at) plus a one-line goal and the acceptance criteria
+that apply, if there's a spec or task to draw them from. If neither
+exists and the diff's purpose genuinely isn't inferable, say so —
+`code-reviewer`'s own rule 2 already expects this input and will do the
+same rather than guess.
 
-Resolve:
+## 2. Dispatch code-reviewer
 
-- the integrated diff to review
-- a one-line goal
-- the relevant acceptance criteria
-- verification result/evidence from `/test`
+Send `code-reviewer` agent the diff plus the goal/acceptance criteria — not
+the full spec or plan. Let it run its own five-axis rubric (correctness,
+readability, architecture, security, performance); don't re-derive that
+framework here in the command.
 
-Do not load the full spec or plan unless a specific ambiguity requires it.
+## 3. Specialists, by trigger
 
-## 2. Dispatch reviewers
+Check the diff against `../references/reviewer-triggers.md`
+(the same file `/build` uses) and dispatch any specialist whose
+condition matches — `security-auditor`,
+`distributed-systems-reviewer`. Give each the
+same goal/acceptance-criteria/diff, not each other's output; each axis
+reviews blind to the others.
 
-Read `references/reviewer-triggers.md`.
+## 4. Report
 
-Dispatch:
-
-- `code-reviewer` always;
-- each specialist whose trigger matches.
-
-Give every reviewer:
-
-- the integrated diff;
-- the one-line goal;
-- relevant acceptance criteria.
-
-Do not give reviewers:
-
-- the full spec unless specifically necessary;
-- the full implementation plan;
-- another reviewer's output.
-
-Each reviewer should form an independent judgment.
-
-### Reviewer concurrency
-
-Never run more than **2 reviewers concurrently**.
-
-If 3 or more reviewers are required:
-
-1. dispatch up to 2;
-2. wait for both;
-3. dispatch the next batch.
-
-## 3. Report findings without reranking
-
-Report each reviewer's findings under its own heading.
-
-Do not blend reviewers into one newly ranked list.
-
-Preserve each specialist's own severity vocabulary. When deciding the final
-verdict, interpret findings by whether they block shipping rather than forcing
-all reviewers onto one severity scale.
-
-## 4. Verdict
-
-State one explicit verdict:
-
-**GO** or **NO-GO**
-
-Default policy:
-
-- any Critical/blocking finding → **NO-GO**;
-- an Important/High finding that must be fixed before release → **NO-GO**;
-- non-blocking suggestions/medium-low advisory findings may remain with an
-  explicit note;
-- clean review across all reviewers that ran → **GO**.
-
-A **GO** requires:
-
-- `/test` reported **VERIFY PASS**;
-- review ran against the integrated result;
-- no unresolved blocking finding remains.
-
-### NO-GO
-
-List exactly what must change.
-
-Implementation fixes go back through `/build`.
-
-After the fix:
-
-1. rerun the affected `/test` verification;
-2. rerun the review required to support a new verdict.
-
-### GO
-
-Report:
-
-- reviewers that ran
-- blocking findings: none
-- important non-blocking follow-ups, if any
-- verification status: PASS
-- verdict: GO
-
-`GO` means the change cleared the engineering gates.
-
-Actual merge/deploy/release remains the SHIP action and follows the repository's
-normal workflow.
+Report each reviewer's findings under its own heading, categorized
+Critical/Important/Suggestion. Don't blend axes or reviewers into one
+ranked list — a quiet-but-real finding from one axis shouldn't get
+buried under a louder one from another.

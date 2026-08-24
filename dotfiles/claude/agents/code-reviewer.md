@@ -97,4 +97,4 @@ Categorize every finding:
 
 - **Invoke directly when:** the user asks for a review of a specific change, file, or PR.
 - **Invoke via:** `/review` (single-perspective review), or alongside this repo's `security-auditor` agent for a broader pass on changes that also touch infra config — each runs independently and reports separately, same as they already do with each other.
-- **Do not invoke from another agent.** If you find yourself wanting to delegate to `security-auditor`, surface that as a recommendation in your report instead — orchestration belongs to the user or a slash command, never to an agent calling another agent.
+- **Do not invoke from another agent.** If you find yourself wanting to delegate to `security-auditor` or `test-engineer`, surface that as a recommendation in your report instead — orchestration belongs to the user or a slash command, never to an agent calling another agent.
