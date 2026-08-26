@@ -168,8 +168,11 @@ GO/NO-GO verdict belongs to `/ship`.
   A fresh executor starts with `executor-development-discipline` preloaded and
   invokes only the additional task-specific skills selected by `/build`; a
   resumed executor reuses skills already loaded for that workstream.
-  Execution is strictly sequential — never two workstreams' executors
-  running concurrently, even when their file scopes don't overlap.
+  Up to two workstreams' executors may run concurrently, but only when each
+  was dispatched with `isolation: worktree`. Two executors sharing one
+  checkout race on git state even when their file scopes don't overlap, so
+  without that isolation execution is strictly sequential. Integration is
+  sequential either way.
 - **Do not invoke another agent.** Implementation orchestration and
   integration belong to `/build`; independent verification belongs to
   `/test`; review belongs to `/review`; the final GO/NO-GO verdict belongs to

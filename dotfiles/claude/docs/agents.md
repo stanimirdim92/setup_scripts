@@ -47,14 +47,18 @@ Task 4 ─┐
 Task 5 ─┴─ Workstream B → executor B
 ```
 
+Workstreams A and B may run concurrently when each executor is dispatched with
+`isolation: worktree`; their branches merge back one at a time.
+
 Rules:
 
 - tasks inside a workstream are sequential;
 - related tasks reuse context instead of paying fresh discovery cost;
-- current policy allows only **one active writing executor** at a time;
-- multiple writers may overlap only with isolated worktrees/branches and
-  genuinely independent, dependency-ready workstreams;
-- integration is sequential even if implementation is later parallelized;
+- up to **2 concurrent writing executors**, and only when each is dispatched
+  with `isolation: worktree`; without that isolation the cap is 1, because two
+  writers in one checkout race on git state regardless of file scope;
+- concurrency requires genuinely independent, dependency-ready workstreams;
+- integration is always sequential, even when implementation is parallel;
 - executor reports implementation + test/verification evidence, then stops;
 - a fresh executor starts with `executor-development-discipline` preloaded,
   while a resumed executor reuses it and invokes only newly selected

@@ -10,7 +10,7 @@ that explanation here, just the index.
 |---|---|---|
 | [0001](0001-superpowers-overlap.md) | Superpowers overlap | Partially superseded by [0021](0021-reconcile-superpowers-overlap-with-current-sdlc.md) |
 | [0002](0002-model-split-sonnet-orchestrator-tiered-subagents.md) | Model split: Sonnet orchestrator, tiered subagents | Accepted |
-| [0003](0003-executor-concurrency-sequential-only.md) | Executor concurrency: sequential only, no parallel writers | Accepted |
+| [0003](0003-executor-concurrency-sequential-only.md) | Executor concurrency: sequential only, no parallel writers | Superseded by [0031](0031-parallel-executors-via-worktree-isolation.md) (2 concurrent with worktree isolation) |
 | [0004](0004-reviewer-batch-cap-no-high-risk-exception.md) | Reviewer batch cap: no high-risk exception | Accepted |
 | [0005](0005-reviewer-trigger-matrix-single-source.md) | Reviewer trigger matrix: one file, not two copies | Accepted |
 | [0006](0006-review-thin-wrapper-over-code-reviewer.md) | `/review`: thin wrapper over `code-reviewer`, not a second rubric | Accepted |
@@ -38,6 +38,7 @@ that explanation here, just the index.
 | [0028](0028-ship-command-as-synthesis-gate.md) | `/ship` added as a synthesis gate, reversing 0027 | Partially superseded by [0030](0030-ship-accessibility-axis-dropped.md) (accessibility axis dropped) |
 | [0029](0029-build-selects-executor-skills.md) | `/build` selects a compact execution skill for each executor | Accepted |
 | [0030](0030-ship-accessibility-axis-dropped.md) | `/ship`'s accessibility axis dropped rather than improvised | Accepted |
+| [0031](0031-parallel-executors-via-worktree-isolation.md) | Parallel executors enabled via worktree isolation, superseding 0003 | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

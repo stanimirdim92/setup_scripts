@@ -137,26 +137,28 @@ dependency, and a named contract checkpoint.
 Do not dispatch a contract-dependent workstream until its checkpoint passes.
 Keeping a separate executor does not erase dependency ordering.
 
-For now, implementation executors run **sequentially**, even across independent
-workstreams.
+Multiple writing executors must never operate concurrently against the **same**
+git checkout. `Edit`, `Write`, `Bash`, staging, and commits share mutable
+repository state; non-overlapping source files do not eliminate working-tree or
+git-index races (`.git/index.lock` contention, or one executor's `git add`
+scooping up another's uncommitted edit).
 
-Multiple writing executors must never operate concurrently against the same git
-checkout. `Edit`, `Write`, `Bash`, staging, and commits share mutable repository
-state; non-overlapping source files do not eliminate working-tree or git-index
-races.
+Isolation is what makes concurrency safe, so concurrency requires it. Dispatch a
+concurrent executor with `isolation: worktree`, which gives it its own git
+worktree and branch. Without worktree isolation, finish the active executor step
+before dispatching or resuming another workstream.
 
-Finish the active executor step before dispatching or resuming another
-workstream.
+### Parallel execution
 
-### Future parallel execution
+Independent, dependency-ready workstreams may run concurrently, each executor
+isolated in its own git worktree/branch.
 
-Independent, dependency-ready workstreams may run concurrently only when each
-executor is isolated in its own git worktree/branch.
+Rules for parallel implementation:
 
-When parallel implementation is enabled:
-
+- at most **2** concurrent executors (see Cost gate below);
 - one active executor per worktree;
 - one workstream per executor;
+- a resumed executor stays in the worktree it was created in;
 - only dependency-ready workstreams with no remaining unfinished dependency may
   overlap; a contract-separated workstream becomes eligible only after its named
   contract checkpoint passes;
@@ -215,7 +217,14 @@ Concurrency is a spend decision, not just a wall-clock decision.
 
 Current implementation cap:
 
-- writing executors: **2 active at a time**
+- writing executors: **2 active at a time**, and only with `isolation: worktree`
+  on each. Without worktree isolation the cap is 1 — the constraint there is
+  correctness, not spend.
+
+Parallelism here buys wall-clock, not tokens. Each isolated executor rediscovers
+some context the other already holds, so two concurrent workstreams cost more
+total tokens than the same two run sequentially. Choose it when a run is actually
+bottlenecked on elapsed time, not to reduce spend.
 
 ## 3. Build completion gate
 
@@ -224,8 +233,9 @@ its executor-level verification.
 
 For sequential execution, verify the resulting integrated checkout.
 
-For future parallel execution, first integrate all selected workstreams and run
-combined task/workstream verification.
+For parallel execution, first merge each worktree branch back in dependency
+order, then run combined task/workstream verification on the integrated
+checkout.
 
 `/build` is complete when:
 
