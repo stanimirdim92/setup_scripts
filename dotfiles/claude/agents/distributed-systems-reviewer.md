@@ -124,13 +124,25 @@ looks present but you can't tell if it's *correct* (e.g. an idempotency
 key exists but you can't verify the store-and-check is atomic), say that
 explicitly rather than assuming it's fine or assuming it's broken.
 
+Classify each finding with this native vocabulary and a stable id (`DIST-1`,
+`DIST-2`, ...):
+
+- **Critical** — a concrete path to data loss, duplicate irreversible effects,
+  or a broad production outage; blocks release.
+- **Important** — a reliability/consistency defect that must be addressed before
+  release but does not meet Critical impact.
+- **Suggestion** — non-blocking resilience improvement.
+
+`/review` preserves this native severity and maps it to the canonical release
+disposition defined in the command.
+
 ## Composition
 
 - **Invoke directly when:** the user asks specifically for a reliability/
   consistency review of code crossing a process, network, or queue
   boundary.
 - **Invoke via:** `/review`'s dispatch step (conditional, per
-  `references/reviewer-triggers.md`), alongside `code-reviewer`
+  `../references/reviewer-triggers.md`), alongside `code-reviewer`
   (and `security-auditor` when also triggered) — each runs independently
   and reports separately.
 - **Do not invoke from another agent.** Orchestration belongs to the user

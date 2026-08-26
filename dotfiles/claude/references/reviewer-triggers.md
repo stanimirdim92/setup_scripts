@@ -1,7 +1,7 @@
 # Reviewer trigger matrix
 
 Single source of truth for which reviewers `/review` dispatches for a
-given diff (per `docs/adr/0020-build-test-review-pipeline-split.md`,
+given diff (per `../../../docs/adr/0020-build-test-review-pipeline-split.md`,
 `/build` no longer dispatches reviewers itself). Edit this file when a
 trigger changes; don't duplicate trigger logic in `review.md` or in an
 individual reviewer agent's own file — that drift is exactly what rule 6

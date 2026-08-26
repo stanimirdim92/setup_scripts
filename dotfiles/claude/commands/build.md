@@ -201,6 +201,12 @@ network integration requiring additional authority—surface that requirement at
 the orchestration boundary instead of teaching the executor to work around the
 restriction.
 
+Invoking `/build` authorizes the selected executor to create scoped **local
+commits** for its approved task/workstream after required verification passes.
+It does not authorize push, tag, deploy, release, protected-branch mutation,
+history rewriting, or committing unrelated changes. Those remain separate user
+decisions and runtime permissions.
+
 ### Retry discipline
 
 Do not use blind retries as progress.
@@ -257,6 +263,8 @@ Include:
 - exact verification commands run and their outcomes
 - anything noticed but not touched
 - any remaining blocker
+- current branch and local commits created, so `/test` can inspect the resulting
+  checkout and diff
 
 Also include a compact **Run metrics** block using actual values only:
 
@@ -270,7 +278,7 @@ Also include a compact **Run metrics** block using actual values only:
 
 Never estimate missing usage or timing data.
 
-See `references/agent-run-metrics.md` for the measurement vocabulary. Do not
+See `../references/agent-run-metrics.md` for the measurement vocabulary. Do not
 create a per-project metrics file unless that project already designates one or
 the user asks for persistence.
 

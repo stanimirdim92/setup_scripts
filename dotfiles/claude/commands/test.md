@@ -13,7 +13,7 @@ PASS/FAIL/BLOCKED verdict, not the file-by-file inspection itself.
 
 ## 0. Testing methodology
 
-Invoke `skills/test-driven-development`. It owns the testing methodology this
+Invoke `../skills/test-driven-development`. It owns the testing methodology this
 gate uses:
 
 - the Prove-It Pattern, for every defect this gate finds;
@@ -31,6 +31,12 @@ code from tests. Where that implementation discipline and this gate's scope
 conflict, this section wins.
 
 ## 1. Resolve verification scope
+
+Read the selected task's spec/plan/todo artifacts, inspect the current branch's
+local commits and diff, and use `/build`'s handoff from the current conversation
+when available. The current checkout is the candidate; there is no separate run
+record or checkpoint. If its intended scope is ambiguous, report `VERIFY
+BLOCKED` rather than inventing one.
 
 Read the relevant task/spec context and determine:
 
@@ -55,7 +61,7 @@ whole document.
 `test-engineer` has no `Skill` tool (see `tools:` in its definition), so it
 cannot invoke `test-driven-development` itself. When a packet depends on that
 discipline, carry it as explicit constraints or a pointer to
-`skills/test-driven-development/SKILL.md` — never as an instruction to invoke
+`../skills/test-driven-development/SKILL.md` — never as an instruction to invoke
 the skill.
 
 `test-engineer` already knows to test at the lowest level that captures the
@@ -75,6 +81,10 @@ verification evidence; it does not decide the final verdict.
 `test-engineer` may add or correct tests, fixtures, and test configuration, but
 must not modify production code.
 
+Invoking `/test` authorizes scoped **local commits** only for passing test-only
+changes required by this verification. It does not authorize push, tag, deploy,
+release, protected-branch mutation, history rewriting, or unrelated changes.
+
 When `/test` changes test files:
 
 - run the relevant verification after the change;
@@ -83,10 +93,12 @@ When `/test` changes test files:
 - do not leave changes introduced by `/test` uncommitted when returning a final
   result.
 
-If a new test exposes a production defect, preserve and commit the failing
-reproduction test before returning the defect to `/build`. The failing commit is
-intentional evidence for the BUILD handoff; `/build` owns the production fix and
-restoring the affected verification to green.
+If a new test exposes a production defect, preserve the failing reproduction as
+an external patch/report artifact, then restore only the test changes introduced
+by `/test`. Do **not** commit it onto the candidate branch, create a pipeline
+branch/worktree for it, push it, merge it, or treat it as releasable. `/build`
+owns the production fix and restoring the affected verification to green; only
+after the reproduction passes may a test-only commit advance the candidate.
 
 Do not absorb a production fix into a "test-only" change. If a test requires a
 production-code change to pass, that is a BUILD handoff.
@@ -100,6 +112,9 @@ Prove-It Pattern up to the point of the fix:
 2. confirm it fails for the expected reason, not an incidental one;
 3. report the production defect clearly;
 4. return the fix to `/build`.
+
+Report the patch/report path when an external artifact was created. Clean only
+the test changes introduced by `/test`; never discard unrelated user work.
 
 Steps 5 onward of the pattern (implement, confirm green, run the suite) belong
 to `/build`, not here.
@@ -124,6 +139,11 @@ From `test-engineer`'s report, return one explicit verification result:
 
 **VERIFY PASS**, **VERIFY FAIL**, or **VERIFY BLOCKED**
 
+If `/test` creates a passing test-only commit, that current checkout becomes the
+candidate for REVIEW. A failing or blocked TEST may not advance the candidate
+branch. Include the current branch, local test commits, and Git diff/status in
+the handoff.
+
 ### VERIFY PASS
 
 Requires:
@@ -144,6 +164,7 @@ Report:
 - commands run and outcome
 - relevant coverage gaps intentionally left out, if any
 - final working-tree state
+- current branch, local test commits, and Git diff/status
 
 Then stop.
 
@@ -157,7 +178,7 @@ Report:
 - reproduction/test evidence
 - expected vs actual behavior
 - exact handoff scope for `/build`
-- failing reproduction commit
+- failing reproduction patch/report artifact, when one was created
 - final working-tree state
 
 Do not proceed to `/review` until verification passes.
@@ -179,3 +200,7 @@ Report:
 
 Do not proceed to `/review`, and do not return the issue to `/build` unless the
 blocker is itself caused by production code in the selected scope.
+
+Any production fix starts again at `/build`, then repeats `/test`, `/review`, and
+`/ship`. Earlier PASS evidence remains historical and does not authorize the new
+candidate.

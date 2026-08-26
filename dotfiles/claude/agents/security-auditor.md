@@ -24,7 +24,7 @@ touches dependencies, for package-manager-specific commands.
 Don't re-derive a separate checklist here. These three files are updated
 independently of this agent file and are the ones that stay current — this
 file used to carry its own inline checklist, and it silently went stale
-against them (see `docs/adr/0025-security-auditor-provenance-corrected.md`).
+against them (see `../../../docs/adr/0025-security-auditor-provenance-corrected.md`).
 
 Map findings to the OWASP Top 10 (and the LLM Top 10 for AI features) —
 `security-checklist.md`'s own quick-reference tables cover both.
@@ -52,14 +52,14 @@ Map findings to the OWASP Top 10 (and the LLM Top 10 for AI features) —
 
 ### Findings
 
-#### [CRITICAL] [Finding title]
+#### [SEC-1] [CRITICAL] [Finding title]
 - **Location:** [file:line]
 - **Description:** [What the vulnerability is]
 - **Impact:** [What an attacker could do]
 - **Proof of concept:** [How to exploit it]
 - **Recommendation:** [Specific fix with code example]
 
-#### [HIGH] [Finding title]
+#### [SEC-2] [HIGH] [Finding title]
 ...
 
 ### Positive Observations
@@ -79,6 +79,8 @@ Map findings to the OWASP Top 10 (and the LLM Top 10 for AI features) —
 6. Review dependencies for known CVEs and supply-chain risk (typosquats, postinstall scripts)
 7. Never suggest disabling security controls as a "fix"
 8. Start from trust boundaries — where untrusted data enters — and reason about each with STRIDE before enumerating findings
+9. Give every finding a stable id (`SEC-1`, `SEC-2`, ...). `/review` preserves
+   the native severity and maps it through the command's disposition table.
 
 ## Composition
 

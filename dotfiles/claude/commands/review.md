@@ -5,17 +5,26 @@ argument-hint: "[commit range, PR, diff, task, or feature]"
 
 `/review` is the independent **REVIEW** gate after `/test`.
 
-Invoke `skills/code-review-and-quality`. It owns the review methodology at
+Invoke `../skills/code-review-and-quality`. It owns the review methodology at
 command level: the five-axis rubric (correctness, readability, architecture,
-security, performance), the Critical/Important/Suggestion categorization, the
-"verify the verification" step, and the output template. `code-reviewer`
-applies that same rubric to the diff and reports; `/review` does not re-derive
-a second rubric of its own.
+security, performance), its native finding categorization, the "verify the
+verification" step, and the output template. `code-reviewer` applies the same
+five-axis rubric with its own native severity vocabulary; `/review` preserves
+each source vocabulary and adds the canonical release disposition instead of
+re-deriving a second rubric.
 
 `/review` reports findings. It does not issue the ship verdict — that belongs
 to `/ship`.
 
 ## 1. Scope the diff
+
+Require `/test`'s **VERIFY PASS** handoff from the current conversation. Inspect
+the current branch, local commits, and diff. If candidate code changed after
+that PASS, the scope is ambiguous, or the tree contains undeclared changes,
+return **REVIEW BLOCKED** and send the candidate back through `/test`.
+Standalone review may still be performed when directly requested, but it is not
+the pipeline REVIEW gate. No separate evidence record or SHA checkpoint is
+created.
 
 Work out the diff to review (staged changes, recent commits, or whatever
 the user pointed at) plus a one-line goal and the acceptance criteria
@@ -36,21 +45,44 @@ skill, and do not paste the skill into its packet.
 
 ## 3. Specialists, by trigger
 
-Check the diff against `../references/reviewer-triggers.md`
-(the same file `/build` uses) and dispatch any specialist whose
-condition matches — `security-auditor`,
+Check the diff against `../references/reviewer-triggers.md` and dispatch any
+specialist whose condition matches — `security-auditor`,
 `distributed-systems-reviewer`. Give each the
 same goal/acceptance-criteria/diff, not each other's output; each axis
 reviews blind to the others.
 
+Run no more than **2 reviewers concurrently**, with no exception for high-risk
+diffs. This is read-only fan-out; `test-engineer` is not part of REVIEW.
+
 ## 4. Report
 
-Report each reviewer's findings under its own heading, categorized
-Critical/Important/Suggestion, using the skill's Review Checklist shape for
-`code-reviewer`'s section. Don't blend axes or reviewers into one
-ranked list — a quiet-but-real finding from one axis shouldn't get
-buried under a louder one from another.
+Report each reviewer under its own heading and preserve its native severity.
+Then add one canonical release disposition:
+
+| Source | Native severity | Disposition |
+|---|---|---|
+| `code-review-and-quality` | Critical | BLOCKER |
+|  | Required | REQUIRED |
+|  | Optional, Consider, Nit, FYI | ADVISORY |
+| `code-reviewer` | Critical | BLOCKER |
+|  | Important | REQUIRED |
+|  | Suggestion | ADVISORY |
+| `security-auditor` | Critical, High | BLOCKER |
+|  | Medium | REQUIRED |
+|  | Low, Info | ADVISORY |
+| `distributed-systems-reviewer` | Critical | BLOCKER |
+|  | Important | REQUIRED |
+|  | Suggestion | ADVISORY |
+
+Every finding carries a stable id, source reviewer, native severity, canonical
+disposition, file/location, and resolution state. Report the required-reviewer
+list, explicit matched/not-matched decisions for both specialists, all reviewer
+results, and the current branch/diff scope reviewed. Don't blend axes or
+reviewers into one ranked list.
 
 Stop there. No GO/NO-GO here.
 
 The next workflow stage is `/ship`.
+
+Any candidate change after REVIEW invalidates that result. A fix must repeat
+`/build -> /test -> /review -> /ship`; re-testing without re-review is not enough.

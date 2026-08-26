@@ -78,6 +78,10 @@ Commit a logical increment only when its intended behavior works, its required
 focused verification is green, and the tree is in a valid state. Use meaningful
 messages that explain the change and follow the repository's commit convention.
 
+Invocation through `/build` authorizes these scoped local commits for the
+approved task. It does not authorize push, tag, deploy, release,
+protected-branch mutation, history rewriting, or unrelated changes.
+
 Do not include unrelated pre-existing changes. Report directly required
 neighboring changes as scope expansion through the executor's output contract.
 

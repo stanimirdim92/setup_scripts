@@ -69,6 +69,10 @@ The `executor-development-discipline` baseline is preloaded when this executor
 is created. It owns thin slices, Red-Green-Refactor, verification cadence,
 evidence-driven retries, and atomic commits. Do not invoke it again.
 
+The `/build` invocation authorizes scoped local commits for the approved task
+after its required verification passes. It never authorizes push, tag, deploy,
+release, protected-branch mutation, history rewriting, or unrelated changes.
+
 On the first task in a workstream, invoke every additional task-specific skill
 explicitly selected by `/build` before editing.
 
@@ -152,6 +156,8 @@ Keep the report factual and concise.
 - Never invoke a skill not explicitly selected by `/build`, or any slash command.
 - Never review your own work as a substitute for independent review.
 - Never decide GO/NO-GO.
+- Never push, tag, deploy, release, rewrite history, or mutate a protected branch
+  merely because `/build` authorized scoped local commits.
 - Never silently change the plan, task boundaries, or workstream structure.
 - Never expand into unrelated cleanup while implementing the task.
 

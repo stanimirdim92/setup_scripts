@@ -65,7 +65,7 @@ Rules:
   task-specific skills;
 - `/build` does not independently VERIFY, review, or issue GO/NO-GO.
 
-Operational source of truth: `commands/build.md`.
+Operational source of truth: `../commands/build.md`.
 
 ### 2. `/test`: bounded verifier dispatch
 
@@ -87,8 +87,12 @@ packet to do the detailed inspection.
 `test-engineer` does not decide the verdict; it reports coverage findings and
 verification evidence. A production defect found during verification goes
 back through `/build`, not fixed inline by `/test` or `test-engineer`.
+TEST consumes the planning files, current checkout, Git diff/history, and
+`/build`'s handoff when available. A passing test-only commit advances the
+current checkout; a failing reproduction stays outside the candidate branch as
+a patch/report artifact.
 
-Operational source of truth: `commands/test.md`.
+Operational source of truth: `../commands/test.md`.
 
 ### 3. `/review`: independent read-only fan-out
 
@@ -109,11 +113,16 @@ against the same integrated diff.
 ```
 
 Reviewers do not see one another's output before forming their own judgment.
-`references/reviewer-triggers.md` is the single trigger matrix.
+`../references/reviewer-triggers.md` is the single trigger matrix.
+
+REVIEW requires VERIFY PASS for the current candidate, preserves every native
+severity, adds the canonical `BLOCKER`/`REQUIRED`/`ADVISORY` disposition, and
+reports reviewer outcomes in its handoff. A later candidate change invalidates
+REVIEW.
 
 `/review` stops at findings. The verdict belongs to `/ship`.
 
-Operational source of truth: `commands/review.md`.
+Operational source of truth: `../commands/review.md`.
 
 ### 4. `/ship`: synthesis gate, no dispatch
 
@@ -133,17 +142,20 @@ Rules:
 
 - no persona dispatch — a missing required reviewer is a `/review` gap, not a
   second dispatch path;
-- unresolved Critical finding → default NO-GO, user-acceptable only explicitly;
+- unresolved canonical BLOCKER → NO-GO;
 - no GO without a concrete rollback plan;
-- fixes return through `/build`, then re-enter `/test`;
-- release mechanics come from `skills/git-workflow-and-versioning`.
+- fixes repeat `/build` → `/test` → `/review` → `/ship`;
+- missing gate results, an undetermined or changed candidate, missing required
+  reviewers, undeclared dirty state, and a missing rollback plan are non-waivable;
+- GO is a verdict, not authorization to tag, push, deploy, or release;
+- release mechanics come from `../skills/git-workflow-and-versioning`.
 
 This is why `/ship` is not upstream's `/ship`: upstream fans out
 `code-reviewer`/`security-auditor`/`test-engineer` in parallel, which here
 would be a second orchestration path to the personas `/test` and `/review`
 already own.
 
-Operational source of truth: `commands/ship.md`.
+Operational source of truth: `../commands/ship.md`.
 
 ## Direct persona invocation
 
@@ -198,7 +210,7 @@ For implementation this normally means:
 Do not copy the full spec/plan into every executor. Reviewers get even less:
 integrated diff, one-line goal, and relevant acceptance criteria.
 
-See `skills/context-engineering/SKILL.md`.
+See `../skills/context-engineering/SKILL.md`.
 
 ## Evidence and cost
 
@@ -213,7 +225,7 @@ Use the configured model default for routine work. Override upward only when the
 specific workstream/review genuinely needs the reasoning tier.
 
 Track actual run signals defined in
-`references/agent-run-metrics.md`; never estimate unavailable
+`../references/agent-run-metrics.md`; never estimate unavailable
 token/cost/time data.
 
 ## Rules for personas

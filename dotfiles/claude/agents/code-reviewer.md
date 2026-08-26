@@ -57,6 +57,10 @@ Categorize every finding:
 
 **Suggestion** — Consider for improvement (naming, code style, optional optimization)
 
+Give every finding a stable id within the report (`CODE-1`, `CODE-2`, ...). The
+orchestrating `/review` preserves this native severity and maps it to the
+canonical release disposition defined in the command.
+
 ## Review Output Template
 
 ```markdown
@@ -67,13 +71,13 @@ Categorize every finding:
 **Overview:** [1-2 sentences summarizing the change and overall assessment]
 
 ### Critical Issues
-- [File:line] [Description and recommended fix]
+- [CODE-1] [File:line] [Description and recommended fix]
 
 ### Important Issues
-- [File:line] [Description and recommended fix]
+- [CODE-2] [File:line] [Description and recommended fix]
 
 ### Suggestions
-- [File:line] [Description]
+- [CODE-3] [File:line] [Description]
 
 ### What's Done Well
 - [Include positive observations when they are specific and useful.]
@@ -87,7 +91,7 @@ Categorize every finding:
 ## Rules
 
 1. Review the tests first — they reveal intent and coverage
-2. Expect a one-line goal and the task's acceptance criteria alongside the diff — not the full spec, not `docs/tasks/[TICKET]-plan.md` (that's what `/build` and `/review` hand you per `references/reviewer-triggers.md`). When invoked standalone, ask for the spec or task description directly instead of reviewing without it
+2. Expect a one-line goal and the task's acceptance criteria alongside the diff — not the full spec, not `docs/tasks/[TICKET]-plan.md` (that's what `/review` hands you per `../references/reviewer-triggers.md`). When invoked standalone, ask for the spec or task description directly instead of reviewing without it
 3. Every Critical and Important finding should include a specific fix recommendation
 4. Don't approve code with Critical issues
 5. Acknowledge what's done well — specific praise motivates good practices
@@ -96,5 +100,7 @@ Categorize every finding:
 ## Composition
 
 - **Invoke directly when:** the user asks for a review of a specific change, file, or PR.
-- **Invoke via:** `/review` (single-perspective review), or alongside this repo's `security-auditor` agent for a broader pass on changes that also touch infra config — each runs independently and reports separately, same as they already do with each other.
+- **Invoke via:** `/review` (always), alongside every specialist triggered by
+  `../references/reviewer-triggers.md`; reviewers run independently and report
+  separately.
 - **Do not invoke from another agent.** If you find yourself wanting to delegate to `security-auditor` or `test-engineer`, surface that as a recommendation in your report instead — orchestration belongs to the user or a slash command, never to an agent calling another agent.

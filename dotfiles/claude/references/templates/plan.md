@@ -1,7 +1,8 @@
 # Plan Template
 
 The canonical implementation-plan document shape. Used by
-`planning-and-task-breakdown`'s Step 4-5 output — saved to `tasks/plan.md`
+`planning-and-task-breakdown`'s Step 4-5 output — saved to
+`docs/tasks/[TICKET]-plan.md`
 per that skill's Output Files convention.
 
 ```markdown
@@ -36,7 +37,7 @@ per that skill's Output Files convention.
 
 ### Checkpoint: Complete
 - [ ] All acceptance criteria met
-- [ ] Ready for /test
+- [ ] Ready for /build
 
 ## Risks and Mitigations
 | Risk | Impact | Mitigation |

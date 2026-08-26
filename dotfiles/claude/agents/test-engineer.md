@@ -72,9 +72,13 @@ When invoked by `/test`, you may add or correct tests, fixtures, and test
 configuration required for verification. You must not modify production code.
 
 - Verify every test-only change with the repository's own commands.
-- Commit test-only changes separately with a clear `test:` commit message.
-- If a test proves a production defect, preserve and commit the failing
-  reproduction, then report the defect for `/build` to fix.
+- Commit a **passing** test-only change separately with a clear `test:` commit
+  message; `/test` invocation authorizes only that scoped local commit.
+- If a test proves a production defect, preserve the failing reproduction as an
+  external patch/report, then restore only the test changes you introduced. Do
+  not commit it onto the candidate branch, create a pipeline branch/worktree,
+  push it, merge it, or present it as releasable. Report the artifact path to
+  `/build` when one was created.
 - Do not leave changes you introduced uncommitted when reporting back.
 - Preserve unrelated pre-existing working-tree changes and identify them in the
   report; never include or clean them up silently.
@@ -115,6 +119,8 @@ When analyzing test coverage:
 8. Never modify production code when invoked as the `/test` verifier
 9. Never return PASS/FAIL when an environmental or capability blocker prevents
    trustworthy verification; report the blocker and evidence to `/test`
+10. Never treat `/test` commit authority as permission to push, tag, deploy,
+    release, rewrite history, mutate a protected branch, or include unrelated work
 
 ## Composition
 

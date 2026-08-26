@@ -21,15 +21,18 @@ Write a structured specification before writing any code. The spec is the shared
 
 ## The Gated Workflow
 
-Spec-driven development has four phases, preceded by a scope check (Phase 0) that activates only when one request bundles several independently testable capabilities. Do not advance to the next phase until the current one is validated.
+The harness has six user-invoked stages:
 
+```text
+DEFINE       PLAN       BUILD       VERIFY       REVIEW       SHIP
+/spec   ->   /plan  ->  /build  ->  /test   ->   /review  ->  /ship
 ```
-SPECIFY ──→ PLAN ──→ TASKS ──→ IMPLEMENT
-   │          │        │          │
-   ▼          ▼        ▼          ▼
- Human      Human    Human      Human
- reviews    reviews  reviews    reviews
-```
+
+This skill owns the capability scope check (Phase 0) and DEFINE/specification
+only. `/plan` owns the implementation plan and task breakdown, `/build` owns TDD
+implementation, `/test` owns independent verification, `/review` owns code
+quality findings, and `/ship` owns the release-readiness verdict. Do not advance
+or execute a downstream stage from this skill.
 
 ### Phase 0: Scope Check
 
@@ -62,7 +65,12 @@ Build order: identity → billing, notifications → reporting
 
 **The map is gated like every phase.** The human reviews module boundaries, dependency direction, and build order before any module spec is written. Getting the map wrong is expensive; reviewing ten lines is not.
 
-**Then recurse per module.** Run Specify → Plan → Tasks → Implement for each module in dependency order. Each module gets its own spec, scoped to that module's objective, boundaries, and success criteria. Save the approved map at the project root and each module's spec alongside it, named by module id (`SPEC-identity.md`, `SPEC-billing.md`) — the map, not filename guessing, is the index of what exists.
+**Then recurse per module.** Specify each module in dependency order. Each module
+gets its own spec, scoped to that module's objective, boundaries, and success
+criteria. Save the approved map at the project root and each module's spec
+alongside it, named by module id (`SPEC-identity.md`, `SPEC-billing.md`) — the map,
+not filename guessing, is the index of what exists. After specification approval,
+hand the module to `/plan`; do not plan or implement it inside this skill.
 
 ### Phase 1: Specify
 
@@ -295,38 +303,17 @@ REFRAMED SUCCESS CRITERIA:
 
 This lets you loop, retry, and problem-solve toward a clear goal rather than guessing what "faster" means.
 
-### Phase 2: Plan
+### Handoff after specification
 
-With the validated spec, generate a technical implementation plan:
+After the human approves the closed specification, stop. Planning and task
+decomposition belong to `/plan`, which invokes `planning-and-task-breakdown` and
+writes the canonical plan/todo artifacts. Do not execute that methodology inside
+this skill.
 
-1. Identify the major components and their dependencies
-2. Determine the implementation order (what must be built first)
-3. Note risks and mitigation strategies
-4. Identify what can be built in parallel vs. what must be sequential
-5. Define verification checkpoints between phases
-
-> Follow `planning-and-task-breakdown` for the dependency-graph mapping and vertical-slicing mechanics behind these steps; it is the canonical source. The bullets above are a lightweight summary; if they ever diverge, `planning-and-task-breakdown` takes precedence.
->
-> **Output convention:** Save the plan to `docs/tasks/[TICKET]-plan.md` and record the task list in the task list target defined by `planning-and-task-breakdown` (default `docs/tasks/[TICKET]-todo.md`; projects may designate an external tracker instead). Create `tasks/` if it does not exist. Downstream commands (`/build`, etc.) expect these defaults.
-
-The plan should be reviewable: the human should be able to read it and say "yes, that's the right approach" or "no, change X."
-
-### Phase 3: Tasks
-
-Break the plan into discrete, implementable tasks:
-
-- Each task should be completable in a single focused session
-- Each task has explicit acceptance criteria
-- Each task includes a verification step (test, build, manual check)
-- Tasks are ordered by dependency, not by perceived importance
-
-> Follow `planning-and-task-breakdown` for the full task-sizing and dependency-ordering mechanics; it is the canonical source. The template below is a lightweight inline form; if they ever diverge, `planning-and-task-breakdown` takes precedence.
-
-**Task template:** see `../../references/templates/task.md`.
-
-### Phase 4: Implement
-
-Execute tasks one at a time following `skills/incremental-implementation/SKILL.md` (`incremental-implementation`) and `skills/test-driven-development/SKILL.md` (`test-driven-development`). Use `skills/context-engineering/SKILL.md` (`context-engineering`) to load the right spec sections and source files at each step rather than flooding the agent with the entire spec.
+After the human approves the plan, implementation belongs to `/build`. `/build`
+selects executor skills and dispatches workstreams; the user then invokes
+`/test`, `/review`, and `/ship` sequentially. Do not write production code,
+dispatch executors, or run implementation phases from `/spec`.
 
 ## Keeping the Spec Alive
 

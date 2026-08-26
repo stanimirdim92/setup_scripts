@@ -261,6 +261,14 @@ Ask before every commit and push.
 
 Wait for explicit approval.
 
+Exception: explicit invocation of this harness's `/build` or `/test` command is
+advance authorization for the scoped local commits those commands define.
+`/build` authorizes verified implementation commits; `/test` authorizes only
+passing test-only commits. That exception never authorizes push, tag, deploy,
+release, protected-branch mutation, history rewriting, or unrelated changes.
+An intentionally failing reproduction must follow `/test`'s external
+patch/report policy and must not enter the candidate.
+
 ### Claude app / Claude Code on the web
 
 Commits and normal pushes may proceed without asking when the surrounding
