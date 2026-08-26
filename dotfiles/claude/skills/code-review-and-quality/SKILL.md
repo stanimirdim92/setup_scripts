@@ -198,15 +198,19 @@ For each file changed:
 
 Label every comment with its severity so the author knows what's required vs optional:
 
-| Prefix | Meaning | Author Action |
-|--------|---------|---------------|
-| *(no prefix)* | Required change | Must address before merge |
-| **Critical:** | Blocks merge | Security vulnerability, data loss, broken functionality |
-| **Nit:** | Minor, optional | Author may ignore — formatting, style preferences |
-| **Optional:** / **Consider:** | Suggestion | Worth considering but not required |
-| **FYI** | Informational only | No action needed — context for future reference |
+| Label | Meaning | Author Action |
+|-------|---------|---------------|
+| **Critical** | Blocks merge | Security vulnerability, data loss risk, broken functionality — must fix |
+| **Important** | Should fix before merge | Missing test, wrong abstraction, poor error handling |
+| **Suggestion** | Optional improvement | Naming, style, optional optimization — author may decline |
 
 This prevents authors from treating all feedback as mandatory and wasting time on optional suggestions.
+
+Use exactly these three labels. `/ship` resolves a review into blockers,
+recommended fixes, and non-blocking items from precisely this triple — a fourth
+tier has nowhere to land in that decision, and splitting "optional" across
+several labels makes the blocking set ambiguous. `agents/code-reviewer.md` and
+`commands/ship.md` use the same three.
 
 **Lead with what matters.** Order findings by leverage: correctness and security first, then structural regressions and missed simplifications, then everything else. Don't bury a real issue under cosmetic nits — a few high-conviction comments beat a long list. If you have one structural problem and ten nits, the structural problem *is* the review.
 
@@ -245,7 +249,7 @@ This catches issues that a single model might miss — different models have dif
 ```
 Review this code change for correctness, security, and adherence to
 our project conventions. The spec says [X]. The change should [Y].
-Flag any issues as Critical, Required, Optional, or Nit.
+Flag any issues as Critical, Important, or Suggestion.
 ```
 
 ## Dead Code Hygiene
@@ -362,10 +366,12 @@ For triaging `npm|yarn audit` findings and supply-chain risk (typosquatting, com
 - [ ] Build succeeds
 - [ ] Manual verification done (if applicable)
 
-### Verdict
-- [ ] **Approve** — Ready to merge
-- [ ] **Request changes** — Issues must be addressed
 ```
+
+This template stops at findings and carries no approve/reject line: `/review`
+reports, `/ship` decides (`docs/adr/0028-ship-command-as-synthesis-gate.md`).
+Outside that pipeline the recommendation is whether any Critical finding remains.
+
 ## See Also
 
 - For detailed security review guidance, see `../../references/security-checklist.md`
