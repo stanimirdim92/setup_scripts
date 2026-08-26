@@ -49,8 +49,6 @@ These are not owned by any persona in the pipeline. Check them here, and say
 explicitly which ones do not apply to this change rather than silently
 dropping them.
 
-- **Accessibility** — keyboard navigation, focus order, screen-reader labels,
-  contrast, for any user-facing surface touched.
 - **Infrastructure** — required env vars present in the target environment,
   migrations ordered and backward-compatible for the deploy window, feature
   flags with a defined default and an owner, monitoring/alerting for the new
@@ -86,7 +84,6 @@ Produce one output:
 - [risk + mitigation + who accepted it]
 
 ### Uncovered-axis checks
-- Accessibility: [result, or not applicable + why]
 - Infrastructure: [result, or not applicable + why]
 - Documentation: [result, or not applicable + why]
 

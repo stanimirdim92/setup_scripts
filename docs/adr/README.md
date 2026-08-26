@@ -35,8 +35,9 @@ that explanation here, just the index.
 | [0025](0025-security-auditor-provenance-corrected.md) | `security-auditor.md`'s provenance corrected: vendored from addyosmani/agent-skills, not written fresh | Accepted |
 | [0026](0026-security-auditor-reconciled-with-reference-docs.md) | `security-auditor.md` reconciled with `security-checklist.md`/`ai-security.md`/`supply-chain.md` | Accepted |
 | [0027](0027-vendored-shipping-and-launch-skill-no-ship-command.md) | Vendored `shipping-and-launch` skill, deliberately no `/ship` command | Partially superseded by [0028](0028-ship-command-as-synthesis-gate.md) (`/ship` added as a no-dispatch synthesis gate; skill stays deleted) |
-| [0028](0028-ship-command-as-synthesis-gate.md) | `/ship` added as a synthesis gate, reversing 0027 | Accepted |
+| [0028](0028-ship-command-as-synthesis-gate.md) | `/ship` added as a synthesis gate, reversing 0027 | Partially superseded by [0030](0030-ship-accessibility-axis-dropped.md) (accessibility axis dropped) |
 | [0029](0029-build-selects-executor-skills.md) | `/build` selects a compact execution skill for each executor | Accepted |
+| [0030](0030-ship-accessibility-axis-dropped.md) | `/ship`'s accessibility axis dropped rather than improvised | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

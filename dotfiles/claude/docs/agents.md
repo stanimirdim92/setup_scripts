@@ -121,7 +121,7 @@ dispatches nobody.
                 ├─ /ship synthesizes → GO / NO-GO + rollback plan
 /review findings┘
         +
-  uncovered axes (a11y, infrastructure, documentation)
+  uncovered axes (infrastructure, documentation)
   verified directly in the main context
 ```
 
