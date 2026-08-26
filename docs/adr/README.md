@@ -39,6 +39,9 @@ that explanation here, just the index.
 | [0029](0029-build-selects-executor-skills.md) | `/build` selects a compact execution skill for each executor | Accepted |
 | [0030](0030-ship-accessibility-axis-dropped.md) | `/ship`'s accessibility axis dropped rather than improvised | Accepted |
 | [0031](0031-parallel-executors-via-worktree-isolation.md) | Parallel executors enabled via worktree isolation, superseding 0003 | Accepted |
+| [0032](0032-unblock-triage-persona-removed.md) | `unblock-triage` persona removed; blocked-item triage belongs to each gate | Accepted |
+| [0033](0033-canonical-disposition-and-scoped-commit-authority.md) | Canonical release disposition, scoped commit authority, gate-state integrity | Accepted |
+| [0034](0034-spec-driven-development-narrowed-to-define.md) | `spec-driven-development` narrowed to the DEFINE stage | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and
