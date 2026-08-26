@@ -82,9 +82,9 @@ external side effect is involved.
 ## 5. Decision
 
 GO requires an unchanged candidate since TEST and REVIEW, an explained clean
-tree, all three PASS attestations, a complete rollback plan, completed required
-reviewers, and no unresolved BLOCKER. Missing gate results and a missing rollback
-plan are non-waivable blockers.
+tree, a PASS attestation on every axis listed in step 3, a complete rollback
+plan, completed required reviewers, and no unresolved BLOCKER. Missing gate
+results and a missing rollback plan are non-waivable blockers.
 
 Include the current branch, local commits, and diff/status scope in every GO,
 NO-GO, or SHIP BLOCKED result.

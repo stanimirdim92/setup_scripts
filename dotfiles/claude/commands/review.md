@@ -61,9 +61,6 @@ Then add one canonical release disposition:
 
 | Source | Native severity | Disposition |
 |---|---|---|
-| `code-review-and-quality` | Critical | BLOCKER |
-|  | Required | REQUIRED |
-|  | Optional, Consider, Nit, FYI | ADVISORY |
 | `code-reviewer` | Critical | BLOCKER |
 |  | Important | REQUIRED |
 |  | Suggestion | ADVISORY |
@@ -73,6 +70,11 @@ Then add one canonical release disposition:
 | `distributed-systems-reviewer` | Critical | BLOCKER |
 |  | Important | REQUIRED |
 |  | Suggestion | ADVISORY |
+
+Dispositions map from the personas that emit findings. `code-review-and-quality`
+supplies the rubric `code-reviewer` applies, not a separate finding stream, so it
+has no row of its own — its Critical/Important/Suggestion labels reach `/ship`
+through `code-reviewer`.
 
 Every finding carries a stable id, source reviewer, native severity, canonical
 disposition, file/location, and resolution state. Report the required-reviewer
