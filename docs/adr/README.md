@@ -8,7 +8,7 @@ that explanation here, just the index.
 
 | # | Decision | Status |
 |---|---|---|
-| [0001](0001-superpowers-overlap.md) | Superpowers overlap | Partially superseded by [0021](0021-reconcile-superpowers-overlap-with-current-sdlc.md) |
+| [0001](0001-superpowers-overlap.md) | Superpowers overlap | Superseded by [0021](0021-reconcile-superpowers-overlap-with-current-sdlc.md) and [0039](0039-runtime-catalog-narrowed-by-observed-use.md) |
 | [0002](0002-model-split-sonnet-orchestrator-tiered-subagents.md) | Model split: Sonnet orchestrator, tiered subagents | Accepted |
 | [0003](0003-executor-concurrency-sequential-only.md) | Executor concurrency: sequential only, no parallel writers | Superseded by [0031](0031-parallel-executors-via-worktree-isolation.md) (2 concurrent with worktree isolation) |
 | [0004](0004-reviewer-batch-cap-no-high-risk-exception.md) | Reviewer batch cap: no high-risk exception | Accepted |
@@ -18,7 +18,7 @@ that explanation here, just the index.
 | [0008](0008-matt-pocock-skills-removed.md) | Matt Pocock's skills: removed, committing to the addyosmani SDLC shape | Accepted |
 | [0009](0009-infra-security-reviewers-merged-into-security-auditor.md) | Infra + security reviewers merged into `security-auditor` | Accepted |
 | [0010](0010-new-vendored-skills-deprecation-migration-security-hardening.md) | New vendored skills: `deprecation-and-migration`, `security-and-hardening` | Accepted |
-| [0011](0011-plugin-set-dropped-feature-dev-added-official-plugins.md) | Plugin set: dropped `feature-dev`, added four `@claude-plugins-official` | Accepted |
+| [0011](0011-plugin-set-dropped-feature-dev-added-official-plugins.md) | Plugin set: dropped `feature-dev`, added four `@claude-plugins-official` | Partially superseded by [0039](0039-runtime-catalog-narrowed-by-observed-use.md) (`code-simplifier` no longer globally enabled) |
 | [0012](0012-replaced-llm-integration-reviewer-with-builder-trio.md) | Replaced `llm-integration-reviewer` with the `llm-application-dev` plugin's builder trio | Superseded by [0018](0018-llm-application-dev-switched-to-installed-plugin.md) (vendored → installed plugin) |
 | [0013](0013-added-qdrant-skills-skipped-langsmith.md) | Added `qdrant-skills@knowledge-work-plugins`, skipped langsmith | Accepted |
 | [0014](0014-extracted-spec-plan-task-templates.md) | Extracted spec/plan/task templates to `references/templates/` | Superseded by [0015](0015-adopted-docs-adr-split-technical-decisions.md) (its `docs/adr/*.md` rejection) |
@@ -28,7 +28,7 @@ that explanation here, just the index.
 | [0018](0018-llm-application-dev-switched-to-installed-plugin.md) | `llm-application-dev` switched from vendored files to an installed plugin | Accepted |
 | [0019](0019-adr-recording-compared-against-adr-github-vercel-ecc.md) | `adr-recording` compared against adr.github.io, vercel/ai, and ECC's ADR skills | Accepted |
 | [0020](0020-build-test-review-pipeline-split.md) | `/build` → `/test` → `/review`: split implementation from verification and review | Partially superseded by [0035](0035-independent-verify-made-risk-triggered.md) (VERIFY made risk-triggered) |
-| [0021](0021-reconcile-superpowers-overlap-with-current-sdlc.md) | Reconcile Superpowers overlap with the current SDLC | Partially superseded by [0029](0029-build-selects-executor-skills.md) |
+| [0021](0021-reconcile-superpowers-overlap-with-current-sdlc.md) | Reconcile Superpowers overlap with the current SDLC | Superseded by [0029](0029-build-selects-executor-skills.md) and [0039](0039-runtime-catalog-narrowed-by-observed-use.md) |
 | [0022](0022-agent-execution-context-evidence-and-measurement.md) | Agent execution: bounded context, evidence, and measurement | Accepted |
 | [0023](0023-agents-doc-moved-to-synced-dotfiles-claude-docs.md) | `docs/agents.md` moved to `dotfiles/claude/docs/`, now synced | Accepted |
 | [0024](0024-vendored-test-engineer-persona-for-test-verify-gate.md) | Vendored `test-engineer` persona, `/test` now dispatches it instead of investigating inline | Accepted |
@@ -40,11 +40,13 @@ that explanation here, just the index.
 | [0030](0030-ship-accessibility-axis-dropped.md) | `/ship`'s accessibility axis dropped rather than improvised | Accepted |
 | [0031](0031-parallel-executors-via-worktree-isolation.md) | Parallel executors enabled via worktree isolation, superseding 0003 | Accepted |
 | [0032](0032-unblock-triage-persona-removed.md) | `unblock-triage` persona removed; blocked-item triage belongs to each gate | Accepted |
-| [0033](0033-canonical-disposition-and-scoped-commit-authority.md) | Canonical release disposition, scoped commit authority, gate-state integrity | Accepted |
+| [0033](0033-canonical-disposition-and-scoped-commit-authority.md) | Canonical release disposition, scoped commit authority, gate-state integrity | Clarified by [0038](0038-verify-pass-test-only-candidate-identity.md) |
 | [0034](0034-spec-driven-development-narrowed-to-define.md) | `spec-driven-development` narrowed to the DEFINE stage | Accepted |
-| [0035](0035-independent-verify-made-risk-triggered.md) | Independent VERIFY made risk-triggered; `/review` owns the decision | Accepted |
+| [0035](0035-independent-verify-made-risk-triggered.md) | Independent VERIFY made risk-triggered; `/review` owns the decision | Clarified by [0038](0038-verify-pass-test-only-candidate-identity.md) |
 | [0036](0036-specialist-reviewers-to-sonnet-and-narrowed-triggers.md) | Specialist reviewers to Sonnet/medium with narrowed triggers | Accepted |
 | [0037](0037-fixed-session-context-reduced.md) | Fixed session context reduced: compact prompts and settings | Accepted |
+| [0038](0038-verify-pass-test-only-candidate-identity.md) | VERIFY PASS test-only commits may advance the BUILD candidate | Accepted |
+| [0039](0039-runtime-catalog-narrowed-by-observed-use.md) | Runtime plugins narrowed; standalone engineering skills retained | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

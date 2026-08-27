@@ -1,7 +1,10 @@
-sandbox_mode = "workspace-write"
+sandbox_mode = "danger-full-access"
 model = "gpt-5.6-sol"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "max"
 personality = "pragmatic"
+approval_policy = "on-request"
+approvals_reviewer = "user"
+service_tier = "default"
   [mcp_servers.phpstorm]
     url = "http://127.0.0.1:64443/stream"
 
@@ -88,9 +91,6 @@ keepRemoteControlAwakeWhilePluggedIn = true
 generate_memories = true
 use_memories = true
 
-[sandbox_workspace_write]
-network_access = false
-
 [projects."/home/stanimir/Documents/Codex/2026-08-23/referenced-chatgpt-conversation-this-is-an"]
 trust_level = "trusted"
 
@@ -113,4 +113,10 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/home/stanimir/Documents/Codex/2026-08-25/https-smartico1-atlassian-net-browse-ld"]
+trust_level = "trusted"
+
+[projects."/home/stanimir/Documents/Codex/2026-08-26/i-h"]
+trust_level = "trusted"
+
+[projects."/home/stanimir/Documents/Codex/2026-08-27/https-smartico1-atlassian-net-browse-ld"]
 trust_level = "trusted"

@@ -372,7 +372,7 @@ Securing data is "can an attacker read it?" Privacy is "should *we* even hold it
 - **Get consent before collection or third-party sharing**, and make it auditable. Sending PII to an analytics/ad/LLM vendor is "sharing" — the user's choice gates it, and the vendor needs a data-processing agreement.
 - **Localize defaults, don't hardcode one region's law.** Data-residency and rules differ by user location; make the policy a configurable boundary, not an assumption.
 
-When data crosses a trust boundary, validate it as untrusted (see Input Validation above); when a privacy incident exposes personal data, the breach-notification clock is part of the postmortem — follow the `superpowers:systematic-debugging` skill (the vendored copy was dropped — see `docs/adr/0001-superpowers-overlap.md`).
+When data crosses a trust boundary, validate it as untrusted (see Input Validation above); when a privacy incident exposes personal data, the breach-notification clock is part of incident response. Follow the project's runbook, preserve evidence, and debug from observed facts.
 
 ## Securing AI / LLM Features
 
@@ -415,10 +415,9 @@ Read `../../references/ai-security.md` when the change touches an LLM, agent,
 tool use, RAG, or persistent memory, and `../../references/supply-chain.md` when
 it touches dependencies.
 
-This file used to carry its own inline review checklist directly above this
-section. It silently went stale against those references — the same drift
-`docs/adr/0026-security-auditor-reconciled-with-reference-docs.md` removed from
-`agents/security-auditor.md`.
+This skill deliberately does not duplicate the full review checklist. The
+synced references above are authoritative, so updates to security categories
+and review coverage do not leave an embedded copy silently stale.
 
 ## Common Rationalizations
 

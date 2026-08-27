@@ -79,7 +79,8 @@ checks to pass, no known production defect in scope, and any test-only changes
 to be committed.
 
 Report acceptance criteria verified, tests changed, exact commands/outcomes,
-test-only commits, coverage gaps intentionally left out, branch, and tree state.
+test-only commits with their exact files, coverage gaps intentionally left out,
+the BUILD candidate identity, and the resulting branch/commits/diff/tree state.
 
 ### VERIFY FAIL
 

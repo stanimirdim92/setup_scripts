@@ -14,11 +14,17 @@ It reports findings. `/ship` owns the release verdict.
 
 ## 1. Establish the candidate
 
-Require `/build`'s **BUILD COMPLETE** handoff from the current conversation.
-Inspect the current branch, commits, diff, and tree state.
+Require `/build`'s **BUILD COMPLETE** handoff from the current conversation and
+record that handoff's candidate identity. Inspect the current branch, commits,
+diff, and tree state.
 
-If the candidate changed after that handoff, the intended scope is ambiguous, or
-the tree contains undeclared changes, return **REVIEW BLOCKED**.
+The current candidate may differ from BUILD only by passing test-only commits
+that `/test` declared in a **VERIFY PASS** for this exact current candidate.
+Confirm those commits contain only tests, fixtures, or test configuration.
+
+Any production change after BUILD, undeclared post-BUILD commit/change, stale
+VERIFY result, ambiguous scope, or undeclared working-tree change is **REVIEW
+BLOCKED**.
 
 Standalone review may still be performed when directly requested, but it is not
 the pipeline REVIEW gate.
@@ -28,9 +34,12 @@ the pipeline REVIEW gate.
 Evaluate the candidate against
 `../references/verification-triggers.md`.
 
-- If no trigger matches, record **Independent verification: NOT REQUIRED** and
-  use `/build`'s verification evidence.
-- If a trigger matches, require a **VERIFY PASS** for this exact candidate.
+- If a **VERIFY PASS** already exists for this exact candidate, record
+  **Independent verification: PASS**. This also covers explicitly requested
+  `/test` runs whose test-only commits advanced the BUILD candidate.
+- Otherwise, if no trigger matches, record **Independent verification: NOT
+  REQUIRED** and use `/build`'s verification evidence.
+- Otherwise, require a **VERIFY PASS** for this exact candidate.
 - If required verification is missing or stale, return **REVIEW BLOCKED** with
   `/test` as the next step.
 
@@ -79,6 +88,7 @@ file/location, and resolution state.
 Report:
 
 - candidate branch/diff scope;
+- BUILD candidate and any accepted post-BUILD test-only commits;
 - **Independent verification: NOT REQUIRED | PASS**;
 - required-reviewer list and trigger decisions;
 - each reviewer result under its own heading;

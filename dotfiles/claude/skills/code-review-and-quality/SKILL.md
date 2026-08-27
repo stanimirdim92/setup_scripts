@@ -14,11 +14,8 @@ Multi-dimensional code review with quality gates. Every change gets reviewed bef
 
 ## Usage
 
-```
-/code-review <PR URL, diff, or file path>
-```
-
-Review the provided code changes. If no file, URL, or diff is provided, ask what to review before proceeding.
+Invoke `code-review-and-quality` with a PR URL, diff, or file path. If none is
+provided, ask what to review before proceeding.
 
 ## When to Use
 
@@ -206,11 +203,43 @@ Label every comment with its severity so the author knows what's required vs opt
 
 This prevents authors from treating all feedback as mandatory and wasting time on optional suggestions.
 
-Use exactly these three labels. `/ship` resolves a review into blockers,
-recommended fixes, and non-blocking items from precisely this triple — a fourth
-tier has nowhere to land in that decision, and splitting "optional" across
-several labels makes the blocking set ambiguous. `agents/code-reviewer.md` and
-`commands/ship.md` use the same three.
+Use exactly these three native labels. When the review participates in the SDLC
+pipeline, their canonical dispositions are:
+
+| Native label | Pipeline disposition |
+|--------------|----------------------|
+| Critical | BLOCKER |
+| Important | REQUIRED |
+| Suggestion | ADVISORY |
+
+A fourth tier has nowhere to land in that mapping, and splitting optional work
+across several labels makes the blocking set ambiguous.
+
+### Output Contract
+
+Every finding includes a stable id (`CODE-1`, `CODE-2`, ...), native label,
+file/location, evidence, and concrete recommendation. Critical and Important
+findings must explain the required correction rather than merely naming a
+problem.
+
+Report:
+
+- review scope and one-line goal;
+- **Recommendation: APPROVE | REQUEST CHANGES**;
+- Critical issues;
+- Important issues;
+- Suggestions;
+- specific strengths worth preserving;
+- verification story: tests inspected or run, build evidence, manual/runtime
+  checks, and anything not verified.
+
+Use **REQUEST CHANGES** while any Critical or Important finding is unresolved;
+otherwise use **APPROVE**. This is a code-review recommendation, not a release
+verdict.
+
+This skill is the full standalone review method. The `/review` pipeline uses the
+compact `code-reviewer` persona instead and maps its findings before `/ship`;
+do not automatically invoke both for the same review.
 
 **Lead with what matters.** Order findings by leverage: correctness and security first, then structural regressions and missed simplifications, then everything else. Don't bury a real issue under cosmetic nits — a few high-conviction comments beat a long list. If you have one structural problem and ten nits, the structural problem *is* the review.
 
@@ -368,9 +397,9 @@ For triaging `npm|yarn audit` findings and supply-chain risk (typosquatting, com
 
 ```
 
-This template stops at findings and carries no approve/reject line: `/review`
-reports, `/ship` decides (`docs/adr/0028-ship-command-as-synthesis-gate.md`).
-Outside that pipeline the recommendation is whether any Critical finding remains.
+When invoked standalone, pair this checklist with the Output Contract's review
+recommendation. In the pipeline, `/review` reports review findings and `/ship`
+owns the separate GO/NO-GO release verdict.
 
 ## See Also
 
@@ -412,10 +441,10 @@ Outside that pipeline the recommendation is whether any Critical finding remains
 After review is complete:
 
 - [ ] All Critical issues are resolved
-- [ ] All Required (no-prefix) changes are resolved or explicitly deferred with justification
+- [ ] All Important issues are resolved or explicitly deferred with justification
 - [ ] Tests pass
 - [ ] Build succeeds
 - [ ] The verification story is documented (what changed, how it was verified)
 - [ ] Dependency upgrades were reviewed against their changelog, isolated per package, and verified by a green suite with the lockfile diff reviewed
 
-**Presumptive blockers:** surface and propose the simpler design for each of these; escalate to Required only when the change actively makes structure worse: a refactor that relocates complexity instead of reducing it; a change that pushes a file past the size boundary with no decomposition; feature logic added to a shared module; a near-duplicate of an existing canonical helper; a silent fallback that hides an unclear invariant.
+**Presumptive blockers:** surface and propose the simpler design for each of these; escalate to Important only when the change actively makes structure worse: a refactor that relocates complexity instead of reducing it; a change that pushes a file past the size boundary with no decomposition; feature logic added to a shared module; a near-duplicate of an existing canonical helper; a silent fallback that hides an unclear invariant.

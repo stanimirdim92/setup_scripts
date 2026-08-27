@@ -57,6 +57,10 @@ independent verification is required, then dispatches:
 At most two reviewers run concurrently. Reviewer findings remain separate and
 are mapped to canonical `BLOCKER` / `REQUIRED` / `ADVISORY` dispositions.
 
+A valid `VERIFY PASS` may advance the BUILD candidate only through declared,
+passing test-only commits. `/review` verifies that narrow delta; any production
+or undeclared post-BUILD change blocks the gate.
+
 Source: `../commands/review.md`.
 
 ### `/ship`

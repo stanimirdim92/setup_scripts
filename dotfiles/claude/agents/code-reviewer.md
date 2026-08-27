@@ -31,21 +31,38 @@ Evaluate every change across these five dimensions:
 - If a new pattern, is it justified and documented?
 - Are module boundaries maintained? Any circular dependencies?
 - Is the abstraction level appropriate (not over-engineered, not too coupled)?
-- Are dependencies flowing in the right direction?
+- Are dependencies flowing in the right direction (no circular dependencies)?
 
 ### 4. Security
 - Is user input validated and sanitized at system boundaries?
 - Are secrets kept out of code, logs, and version control?
 - Is authentication/authorization checked where needed?
 - Are queries parameterized? Is output encoded?
+- Insecure deserialization, path traversal, SSRF?
 - Any new dependencies with known vulnerabilities?
+- Are SQL queries parameterized (no string concatenation)?
 
 ### 5. Performance
+
+Does the change introduce performance problems?
+
 - Any N+1 query patterns?
-- Any unbounded loops or unconstrained data fetching?
-- Any synchronous operations that should be async?
-- Any unnecessary re-renders (in UI components)?
+- Unnecessary memory allocations or large objects created in hot paths?
+- Algorithmic complexity (O(n²) or worse in hot paths)?
+- Missing database indexes, missing pagination on list endpoints?
+- Unbounded loops, unconstrained data fetching, or resource leaks?
+- Any synchronous operations that should be async? Unnecessary re-renders in UI components?
 - Any missing pagination on list endpoints?
+
+## Change Sizing
+
+Small, focused changes are easier to review, faster to merge, and safer to deploy. Target these sizes:
+
+```
+~100 lines changed   → Good. Reviewable in one sitting.
+~300 lines changed   → Acceptable if it's a single logical change.
+~1000 lines changed  → Too large. Split it.
+```
 
 ## Output Format
 
