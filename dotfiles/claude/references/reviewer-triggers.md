@@ -1,22 +1,28 @@
 # Reviewer trigger matrix
 
-Single source of truth for which reviewers `/review` dispatches for a
-given diff (per `../../../docs/adr/0020-build-test-review-pipeline-split.md`,
-`/build` no longer dispatches reviewers itself). Edit this file when a
-trigger changes; don't duplicate trigger logic in `review.md` or in an
-individual reviewer agent's own file — that drift is exactly what rule 6
-("surface conflicts, don't let two things each invent their own
-pattern") is for.
+Single source of truth for `/review` specialist dispatch.
 
-- **`code-reviewer`** — always. Five-axis review: correctness,
-  readability, architecture, security, performance.
-- **`security-auditor`** — diff touches input handling, infra, configs, secrets, 3rd party integrations, auth.
-- **`distributed-systems-reviewer`** — diff crosses a process/network/
-  queue boundary: an RPC or HTTP call between services, a queue
-  producer/consumer, a scheduled job, or a background worker.
+- **`code-reviewer`** — always.
+- **`security-auditor`** — only when the diff materially changes a security
+  boundary: authentication/authorization, permissions, tenant isolation,
+  secrets/credentials, cryptography, untrusted-input handling, sensitive data
+  exposure, dependency/supply-chain trust, or security-sensitive infrastructure
+  / third-party integration behavior.
+- **`distributed-systems-reviewer`** — only when the diff materially changes
+  distributed failure semantics: retries, idempotency, ordering, delivery
+  guarantees, concurrency, timeout/failover behavior, queue processing,
+  multi-step/background-job recovery, or state coordination across a
+  process/network boundary.
 
-Give every reviewer that runs the diff plus a one-line goal and the
-acceptance criteria that apply — not the full spec, not `docs/tasks/[TICKET]-plan.md`,
-not another reviewer's output. Each axis/specialist reviews blind to the
-others; an axis that can see another's findings starts anchoring on them
-instead of forming its own.
+A generic config edit, ordinary HTTP call, existing worker touch, or third-party
+integration does **not** trigger a specialist merely because that category is
+present. The change must alter a failure/trust boundary the specialist owns.
+
+Give every reviewer that runs:
+
+- the integrated diff;
+- a one-line goal;
+- relevant acceptance criteria;
+- build/verify evidence needed to understand what was checked.
+
+Do not give reviewers the full spec/plan or another reviewer's output.

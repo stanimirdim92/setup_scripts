@@ -1,63 +1,65 @@
 ---
-description: Conduct a five-axis code review — correctness, readability, architecture, security, performance
+description: Conduct independent review and decide whether a separate VERIFY gate is required
 argument-hint: "[commit range, PR, diff, task, or feature]"
 ---
 
-`/review` is the independent **REVIEW** gate after `/test`.
+`/review` is the independent **REVIEW** gate after `/build`.
 
-Invoke `../skills/code-review-and-quality`. It owns the review methodology at
-command level: the five-axis rubric (correctness, readability, architecture,
-security, performance), its native finding categorization, the "verify the
-verification" step, and the output template. `code-reviewer` applies the same
-five-axis rubric with its own native severity vocabulary; `/review` preserves
-each source vocabulary and adds the canonical release disposition instead of
-re-deriving a second rubric.
+It owns two orchestration decisions:
 
-`/review` reports findings. It does not issue the ship verdict — that belongs
-to `/ship`.
+1. whether `/test` is required for this candidate;
+2. which review personas run.
 
-## 1. Scope the diff
+It reports findings. `/ship` owns the release verdict.
 
-Require `/test`'s **VERIFY PASS** handoff from the current conversation. Inspect
-the current branch, local commits, and diff. If candidate code changed after
-that PASS, the scope is ambiguous, or the tree contains undeclared changes,
-return **REVIEW BLOCKED** and send the candidate back through `/test`.
+## 1. Establish the candidate
+
+Require `/build`'s **BUILD COMPLETE** handoff from the current conversation.
+Inspect the current branch, commits, diff, and tree state.
+
+If the candidate changed after that handoff, the intended scope is ambiguous, or
+the tree contains undeclared changes, return **REVIEW BLOCKED**.
+
 Standalone review may still be performed when directly requested, but it is not
-the pipeline REVIEW gate. No separate evidence record or SHA checkpoint is
-created.
+the pipeline REVIEW gate.
 
-Work out the diff to review (staged changes, recent commits, or whatever
-the user pointed at) plus a one-line goal and the acceptance criteria
-that apply, if there's a spec or task to draw them from. If neither
-exists and the diff's purpose genuinely isn't inferable, say so —
-`code-reviewer`'s own rule 2 already expects this input and will do the
-same rather than guess.
+## 2. Independent-verification gate
 
-## 2. Dispatch code-reviewer
+Evaluate the candidate against
+`../references/verification-triggers.md`.
 
-Send `code-reviewer` agent the diff plus the goal/acceptance criteria — not
-the full spec or plan.
+- If no trigger matches, record **Independent verification: NOT REQUIRED** and
+  use `/build`'s verification evidence.
+- If a trigger matches, require a **VERIFY PASS** for this exact candidate.
+- If required verification is missing or stale, return **REVIEW BLOCKED** with
+  `/test` as the next step.
 
-`code-reviewer` has no `Skill` tool (see `tools:` in its definition), so it
-cannot invoke `code-review-and-quality` itself. It already carries the same
-five-axis rubric inline; that is deliberate. Do not instruct it to invoke the
-skill, and do not paste the skill into its packet.
+Do not re-run `/test` inline and do not duplicate the trigger matrix here.
 
-## 3. Specialists, by trigger
+## 3. Dispatch reviewers
 
-Check the diff against `../references/reviewer-triggers.md` and dispatch any
-specialist whose condition matches — `security-auditor`,
-`distributed-systems-reviewer`. Give each the
-same goal/acceptance-criteria/diff, not each other's output; each axis
-reviews blind to the others.
+Always dispatch `code-reviewer` with:
 
-Run no more than **2 reviewers concurrently**, with no exception for high-risk
-diffs. This is read-only fan-out; `test-engineer` is not part of REVIEW.
+- the integrated diff;
+- a one-line goal;
+- the relevant acceptance criteria;
+- the build/verify evidence needed to understand what was checked.
+
+Do not send the full spec or plan.
+
+Use `../references/reviewer-triggers.md` to decide whether
+`security-auditor` and/or `distributed-systems-reviewer` are also required.
+
+Run at most **2 reviewers concurrently**. Reviewers form judgments
+independently; do not pass one reviewer's findings to another.
+
+Use each persona's configured model by default. Escalate a specialist to a
+higher reasoning tier only when the matched risk is both high-impact and
+materially ambiguous; ordinary triggered reviews stay on the default model.
 
 ## 4. Report
 
-Report each reviewer under its own heading and preserve its native severity.
-Then add one canonical release disposition:
+Preserve every reviewer's native severity and add the canonical disposition:
 
 | Source | Native severity | Disposition |
 |---|---|---|
@@ -71,20 +73,19 @@ Then add one canonical release disposition:
 |  | Important | REQUIRED |
 |  | Suggestion | ADVISORY |
 
-Dispositions map from the personas that emit findings. `code-review-and-quality`
-supplies the rubric `code-reviewer` applies, not a separate finding stream, so it
-has no row of its own — its Critical/Important/Suggestion labels reach `/ship`
-through `code-reviewer`.
+Every finding keeps a stable id, source, native severity, disposition,
+file/location, and resolution state.
 
-Every finding carries a stable id, source reviewer, native severity, canonical
-disposition, file/location, and resolution state. Report the required-reviewer
-list, explicit matched/not-matched decisions for both specialists, all reviewer
-results, and the current branch/diff scope reviewed. Don't blend axes or
-reviewers into one ranked list.
+Report:
 
-Stop there. No GO/NO-GO here.
+- candidate branch/diff scope;
+- **Independent verification: NOT REQUIRED | PASS**;
+- required-reviewer list and trigger decisions;
+- each reviewer result under its own heading;
+- all findings with canonical disposition.
 
-The next workflow stage is `/ship`.
+Then stop. The next stage is `/ship`.
 
-Any candidate change after REVIEW invalidates that result. A fix must repeat
-`/build -> /test -> /review -> /ship`; re-testing without re-review is not enough.
+Any candidate change after REVIEW invalidates the review. A production fix
+returns to `/build`; `/review` then re-evaluates whether `/test` is required for
+the new candidate before reviewing it again.

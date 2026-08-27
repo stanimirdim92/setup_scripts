@@ -27,7 +27,7 @@ that explanation here, just the index.
 | [0017](0017-c4-architecture-people-vs-external-systems-plus-opt-in-deployment-dynamic.md) | `c4-architecture`: fixed people/external-system terminology, added opt-in Deployment/Dynamic views | Accepted |
 | [0018](0018-llm-application-dev-switched-to-installed-plugin.md) | `llm-application-dev` switched from vendored files to an installed plugin | Accepted |
 | [0019](0019-adr-recording-compared-against-adr-github-vercel-ecc.md) | `adr-recording` compared against adr.github.io, vercel/ai, and ECC's ADR skills | Accepted |
-| [0020](0020-build-test-review-pipeline-split.md) | `/build` → `/test` → `/review`: split implementation from verification and review | Accepted |
+| [0020](0020-build-test-review-pipeline-split.md) | `/build` → `/test` → `/review`: split implementation from verification and review | Partially superseded by [0035](0035-independent-verify-made-risk-triggered.md) (VERIFY made risk-triggered) |
 | [0021](0021-reconcile-superpowers-overlap-with-current-sdlc.md) | Reconcile Superpowers overlap with the current SDLC | Partially superseded by [0029](0029-build-selects-executor-skills.md) |
 | [0022](0022-agent-execution-context-evidence-and-measurement.md) | Agent execution: bounded context, evidence, and measurement | Accepted |
 | [0023](0023-agents-doc-moved-to-synced-dotfiles-claude-docs.md) | `docs/agents.md` moved to `dotfiles/claude/docs/`, now synced | Accepted |
@@ -42,6 +42,9 @@ that explanation here, just the index.
 | [0032](0032-unblock-triage-persona-removed.md) | `unblock-triage` persona removed; blocked-item triage belongs to each gate | Accepted |
 | [0033](0033-canonical-disposition-and-scoped-commit-authority.md) | Canonical release disposition, scoped commit authority, gate-state integrity | Accepted |
 | [0034](0034-spec-driven-development-narrowed-to-define.md) | `spec-driven-development` narrowed to the DEFINE stage | Accepted |
+| [0035](0035-independent-verify-made-risk-triggered.md) | Independent VERIFY made risk-triggered; `/review` owns the decision | Accepted |
+| [0036](0036-specialist-reviewers-to-sonnet-and-narrowed-triggers.md) | Specialist reviewers to Sonnet/medium with narrowed triggers | Accepted |
+| [0037](0037-fixed-session-context-reduced.md) | Fixed session context reduced: compact prompts and settings | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

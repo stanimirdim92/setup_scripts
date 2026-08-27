@@ -1,289 +1,131 @@
 ---
-description: Dispatch execution for one or more planned tasks by workstream
+description: Dispatch implementation for one or more planned tasks by workstream
 argument-hint: "[task number(s) from docs/tasks/[TICKET]-todo.md, or a task description]"
 ---
 
 Dispatch `executor` agents for implementation.
 
-The executor owns incremental/TDD execution discipline.
-`/build` owns implementation orchestration only.
+`/build` owns orchestration and integration. The executor owns implementation
+discipline, tests, verification, and scoped local commits.
 
-## 1. Resolve before dispatching anything
+## 1. Resolve scope before dispatch
 
-Read `docs/tasks/[TICKET]-todo.md` and, when needed, `docs/tasks/[TICKET]-plan.md`.
+Read `docs/tasks/[TICKET]-todo.md` and the plan only as needed.
 
-Resolve exactly which task(s) are in scope, including:
+For each selected task resolve:
 
-- acceptance criteria
-- dependencies
-- workstream
-- likely file/area scope
-- verification steps
+- outcome and acceptance criteria;
+- dependencies;
+- planned workstream;
+- expected file/area scope;
+- verification;
+- required skills.
 
-If a task reference is ambiguous, resolve it before dispatching an executor.
-
-Do not discover the task scope inside a running executor.
-
-### Workstream source of truth
-
-Honor the workstream assignments produced by `/plan`.
-
-Do not silently regroup planned tasks during `/build`.
-
-If:
-
-- a legacy or ad-hoc task has no workstream, infer one using the planning rules;
-- a recorded workstream appears unsafe, contradictory, or inconsistent with
-  task dependencies, stop and surface the discrepancy before dispatching.
-
-`/plan` owns workstream classification. `/build` consumes and validates it.
+Honor `/plan`'s workstream assignment. For ad-hoc/legacy work with no assignment,
+infer one using the same rules. If the recorded workstream conflicts with
+dependencies or the task is materially ambiguous, stop before dispatch.
 
 ## 2. Dispatch by workstream
 
-Dispatch **one executor per workstream, not one executor per task**.
+Use **one executor per workstream, not one per task**.
 
-Tasks in the same workstream share implementation context and should reuse the
-same executor whenever possible.
+- first selected task in a workstream -> fresh named `executor`;
+- later tasks in that workstream -> resume the same executor;
+- tasks inside a workstream stay sequential and follow dependency order.
 
-### Executor input contract
+### Executor packet
 
-For every executor dispatch or resume provide:
+Send only what is needed to start correctly:
 
-- task
-- acceptance criteria
-- dependencies
-- workstream
-- expected scope
-- verification
-- required skills
-- `is_last_selected_task_in_workstream: yes|no`
-- workstream verification command, when applicable
-- task-local context pointers when useful:
-  - applicable project/module rule files;
-  - one or two closest precedent files;
-  - shared contract or invariant the task must preserve.
+- task/outcome;
+- acceptance criteria;
+- dependencies;
+- workstream;
+- expected scope;
+- verification;
+- `required_skills`;
+- `is_last_selected_task_in_workstream: yes|no`;
+- workstream verification command when applicable;
+- useful pointers to project/module rules, one or two precedents, and any shared
+  contract/invariant.
 
-### Context packet discipline
+Prefer pointers over pasted documents. Do not dump the full spec, plan, project
+rules, investigation transcript, or another agent's output.
 
-Give the executor the smallest packet that lets it start correctly.
+### Skills
 
-Prefer pointers to authoritative files over pasted copies. Do not dump the full
-spec, full plan, all project rules, another agent's transcript, or raw
-investigation output into every executor. The executor can read a referenced
-file when it actually needs it.
-
-A task packet should answer:
-
-> What outcome am I implementing, what proves it, what constrains it, and where
-> is the closest trustworthy precedent?
-
-### Skill selection
-
-`/build` selects skills; executors do not discover them autonomously.
-
-For every fresh executor, include:
+Every fresh executor receives:
 
 ```text
 required_skills:
   - executor-development-discipline
 ```
 
-The executor definition preloads that baseline skill when a fresh executor is
-created, and the resumed executor retains it for later tasks in the same
-workstream. Keeping it in `required_skills` makes the packet's methodology
-explicit; do not paste the skill body into the packet or ask the executor to
-invoke the preloaded baseline again.
+That baseline is preloaded by the executor definition. Do not paste or invoke it
+again.
 
-Add a task-specific skill only when its methodology is materially required by
-the selected task. Current routing examples:
+Add a task-specific skill only when its methodology is materially required.
+Typical examples:
 
-- public API, interface, or shared-contract design → `api-and-interface-design`;
-- deprecation, compatibility transition, or migration →
-  `deprecation-and-migration`;
-- auth, permissions, secrets, untrusted input, or sensitive integration →
+- shared/public API or contract -> `api-and-interface-design`;
+- compatibility/deprecation/migration -> `deprecation-and-migration`;
+- auth, permissions, secrets, or sensitive trust boundary ->
   `security-and-hardening`.
 
-Pass the selected skill names in `required_skills`; the executor invokes only
-the additional task-specific selections before editing. Do not paste their contents.
-Do not load `incremental-implementation` or `test-driven-development` in addition
-to the baseline skill—the executor-specific discipline contains the bounded
-parts of those methodologies that BUILD needs without their broader
-orchestration guidance.
+The executor invokes only additional skills selected by `/build`.
 
-If no specialized methodology is required, select only the baseline skill. If a
-task appears to require a skill outside the executor's role, stop at the
-orchestration boundary rather than delegating planning, review, release, or
-permission decisions to the executor.
+### Parallelism
 
-### Within a workstream
+Default to sequential execution for token efficiency.
 
-- First selected task → dispatch a fresh, named `executor`.
-- Subsequent selected tasks in the same workstream → resume that same executor
-  by name or agent ID.
-- Execute dependent tasks in dependency order.
-- Do not spawn a fresh executor merely because the task number changed.
+Use at most **2 concurrent executors** only when independent,
+dependency-ready workstreams justify the wall-clock tradeoff. Every concurrent
+writer must use `isolation: worktree`; never run two writing agents against the
+same checkout.
 
-Reusing the executor preserves codebase context, prior file reads,
-implementation decisions, and task-local knowledge instead of repaying
-discovery cost for every task.
+Parallel workstreams still integrate sequentially in dependency order. After
+each integration run affected checks; after all integrations run the combined
+selected-scope verification.
 
-### Across workstreams
+Parallelism buys elapsed time, not fewer tokens.
 
-A genuinely independent workstream gets a separate executor. A workstream
-separated across a stable contract boundary also gets its own executor when the
-plan records materially different implementation context, an explicit upstream
-dependency, and a named contract checkpoint.
+### Model and retry policy
 
-Do not dispatch a contract-dependent workstream until its checkpoint passes.
-Keeping a separate executor does not erase dependency ordering.
-
-Multiple writing executors must never operate concurrently against the **same**
-git checkout. `Edit`, `Write`, `Bash`, staging, and commits share mutable
-repository state; non-overlapping source files do not eliminate working-tree or
-git-index races (`.git/index.lock` contention, or one executor's `git add`
-scooping up another's uncommitted edit).
-
-Isolation is what makes concurrency safe, so concurrency requires it. Dispatch a
-concurrent executor with `isolation: worktree`, which gives it its own git
-worktree and branch. Without worktree isolation, finish the active executor step
-before dispatching or resuming another workstream.
-
-### Parallel execution
-
-Independent, dependency-ready workstreams may run concurrently, each executor
-isolated in its own git worktree/branch.
-
-Rules for parallel implementation:
-
-- at most **2** concurrent executors (see Cost gate below);
-- one active executor per worktree;
-- one workstream per executor;
-- a resumed executor stays in the worktree it was created in;
-- only dependency-ready workstreams with no remaining unfinished dependency may
-  overlap; a contract-separated workstream becomes eligible only after its named
-  contract checkpoint passes;
-- tasks inside one workstream remain sequential and reuse the same executor;
-- never run multiple writing executors against the same checkout;
-- integration remains sequential even when implementation is parallel.
-
-Parallel execution does not imply parallel integration.
-
-After parallel workstreams complete:
-
-1. verify each workstream independently;
-2. integrate completed workstreams one at a time in dependency order;
-3. resolve integration conflicts before integrating the next workstream;
-4. run affected tests after each integration;
-5. run combined task/workstream verification after all selected workstreams are
-   integrated.
-
-If integration invalidates a completed workstream's assumptions, resume that
-workstream's existing executor instead of spawning a fresh one when practical.
-
-### Model tier
-
-Use the executor's configured default model for routine implementation.
-
-Override the model only when a workstream is architecturally ambiguous,
-unusually high-risk, or an incorrect implementation decision would be expensive
+Use the executor's configured default model for routine work. Override upward
+only for materially ambiguous/high-risk work where a wrong decision is expensive
 to undo.
 
-Keep model defaults in the executor definition; `/build` owns only the override
-policy.
+Never blind-retry. A retry needs new evidence, a code/config/environment change,
+or a materially different hypothesis.
 
-### Capability and permission discipline
+Do not broaden tools, permissions, scope, or external write authority for
+convenience. Surface a genuine capability boundary.
 
-Do not broaden an executor's tools or permissions merely for convenience.
+## 3. Completion
 
-If implementation genuinely requires a capability the executor does not have
-—for example, secret access, an external writing, a destructive operation, or a
-network integration requiring additional authority—surface that requirement at
-the orchestration boundary instead of teaching the executor to work around the
-restriction.
-
-Invoking `/build` authorizes the selected executor to create scoped **local
-commits** for its approved task/workstream after required verification passes.
-It does not authorize push, tag, deploy, release, protected-branch mutation,
-history rewriting, or committing unrelated changes. Those remain separate user
-decisions and runtime permissions.
-
-### Retry discipline
-
-Do not use blind retries as progress.
-
-A retry should follow new evidence: a code/configuration change, a changed
-environmental condition, or a new hypothesis derived from the failure. If the
-same failure persists and there is no new evidence or materially different
-hypothesis, stop the loop and report the blocker rather than burning another
-agent turn.
-
-### Cost gate
-
-Concurrency is a spend decision, not just a wall-clock decision.
-
-Current implementation cap:
-
-- writing executors: **2 active at a time**, and only with `isolation: worktree`
-  on each. Without worktree isolation the cap is 1 — the constraint there is
-  correctness, not spend.
-
-Parallelism here buys wall-clock, not tokens. Each isolated executor rediscovers
-some context the other already holds, so two concurrent workstreams cost more
-total tokens than the same two run sequentially. Choose it when a run is actually
-bottlenecked on elapsed time, not to reduce spend.
-
-## 3. Build completion gate
-
-Before `/build` completes, ensure every selected task/workstream has completed
-its executor-level verification.
-
-For sequential execution, verify the resulting integrated checkout.
-
-For parallel execution, first merge each worktree branch back in dependency
-order, then run combined task/workstream verification on the integrated
-checkout.
-
-`/build` is complete when:
+Before `/build` completes ensure:
 
 - all selected tasks are implemented;
 - all selected workstreams are integrated;
 - executor-required verification is green;
-- commits are complete;
-- the working tree is in the expected clean state.
+- scoped local commits are complete;
+- the tree is in the expected state.
 
-Then stop and report:
+Report **BUILD COMPLETE** with:
 
-**BUILD COMPLETE**
+- tasks/workstreams completed;
+- commits created;
+- exact verification commands and outcomes;
+- directly required scope expansions;
+- anything noticed but intentionally untouched;
+- blockers, if any;
+- current branch/tree state;
+- actual run metrics when exposed: fresh executor dispatches, resumes,
+  model-tier overrides, verification failures causing rework, human redirects,
+  and required scope expansions.
 
-Include:
+Never estimate unavailable token/cost/time data.
 
-- tasks completed
-- workstreams completed
-- commits created
-- exact verification commands run and their outcomes
-- anything noticed but not touched
-- any remaining blocker
-- current branch and local commits created, so `/test` can inspect the resulting
-  checkout and diff
-
-Also include a compact **Run metrics** block using actual values only:
-
-- fresh executor dispatches
-- executor resumes
-- model-tier overrides
-- verification failures that caused implementation rework
-- human redirects/decisions during BUILD
-- directly required scope expansions
-- token/cost/duration only when the runtime exposes real measurements
-
-Never estimate missing usage or timing data.
-
-See `../references/agent-run-metrics.md` for the measurement vocabulary. Do not
-create a per-project metrics file unless that project already designates one or
-the user asks for persistence.
-
-Do not perform the independent VERIFY phase here.
-Do not dispatch code reviewers here.
-Do not issue GO/NO-GO here.
-
-The next workflow stage is `/test`.
+Do not dispatch independent verifiers or reviewers here. The next stage is
+`/review`; `/review` decides whether the separate `/test` gate is required for
+this candidate.

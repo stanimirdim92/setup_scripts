@@ -1,266 +1,95 @@
-# Agent Personas
+# Agent orchestration
 
-Specialist personas play one role with one perspective. Each persona is a
-Markdown system prompt consumed by the harness.
+Personas own a role; skills own reusable methodology/policy; commands own routing
+and gates. Personas never dispatch other personas.
 
-| Persona | Role | Best for |
-|---------|------|----------|
-| [code-reviewer](../agents/code-reviewer.md) | Senior Staff Engineer | Five-axis review before merge |
-| [security-auditor](../agents/security-auditor.md) | Security Engineer | Vulnerability detection and security audit |
-| [distributed-systems-reviewer](../agents/distributed-systems-reviewer.md) | Distributed Systems Engineer | Reliability/consistency review across process/network/queue boundaries |
-| [executor](../agents/executor.md) | Implementation Engineer | Executes one planned task end-to-end; resumable across a workstream |
-| [test-engineer](../agents/test-engineer.md) | QA Engineer | Test strategy, coverage analysis, Prove-It pattern for bugs |
+## Personas
 
-## Layers
+| Persona | Role | Default use |
+|---|---|---|
+| `executor` | implementation | `/build`, one resumable instance per workstream |
+| `test-engineer` | independent verification | `/test` when risk/request warrants it |
+| `code-reviewer` | general code review | every `/review` |
+| `security-auditor` | security trust-boundary review | triggered `/review` only |
+| `distributed-systems-reviewer` | distributed failure-semantics review | triggered `/review` only |
 
-| Layer | What it owns | Example |
-|-------|--------------|---------|
-| **Skill** | Reusable methodology / the *how* | `planning-and-task-breakdown` |
-| **Persona** | Role, perspective, output contract / the *who* | `code-reviewer` |
-| **Command** | User-facing orchestration / the *when* | `/build`, `/review`, `/ship` |
-
-Skills are not automatically mandatory hops inside every persona. Invoke a skill
-when the runtime/tooling supports it. `/build` explicitly selects a compact
-`executor-development-discipline` skill for every fresh executor; the executor
-definition preloads it at startup. `/build` adds only task-specific skills whose
-methodology is materially required. Executors do not discover skills
-autonomously.
-
-The user or a slash command is the orchestrator. **Personas do not call other
-personas.**
-
-## Built orchestration patterns
-
-This repo deliberately has four different orchestration shapes.
-
-### 1. `/build`: bounded writer orchestration
-
-`/build` dispatches one `executor` per workstream and resumes that executor for
-later tasks in the same workstream.
+## Pipeline
 
 ```text
-Task 1 ─┐
-Task 2 ─┼─ Workstream A → executor A → resume A → resume A
-Task 3 ─┘
-
-Task 4 ─┐
-Task 5 ─┴─ Workstream B → executor B
+/spec -> /plan -> /build -> /review -> /ship
+                         \
+                          -> /test -> /review
+                             when required
 ```
 
-Workstreams A and B may run concurrently when each executor is dispatched with
-`isolation: worktree`; their branches merge back one at a time.
+### `/build`
 
-Rules:
+- one executor per workstream;
+- resume it for later tasks in that workstream;
+- executor implements, tests, verifies, and makes scoped local commits;
+- sequential execution is the token-efficient default;
+- concurrent writers require isolated worktrees and genuinely independent,
+  dependency-ready workstreams;
+- `/build` reports `BUILD COMPLETE` and verification evidence.
 
-- tasks inside a workstream are sequential;
-- related tasks reuse context instead of paying fresh discovery cost;
-- up to **2 concurrent writing executors**, and only when each is dispatched
-  with `isolation: worktree`; without that isolation the cap is 1, because two
-  writers in one checkout race on git state regardless of file scope;
-- concurrency requires genuinely independent, dependency-ready workstreams;
-- integration is always sequential, even when implementation is parallel;
-- executor reports implementation + test/verification evidence, then stops;
-- a fresh executor starts with `executor-development-discipline` preloaded,
-  while a resumed executor reuses it and invokes only newly selected
-  task-specific skills;
-- `/build` does not independently VERIFY, review, or issue GO/NO-GO.
+Source: `../commands/build.md`.
 
-Operational source of truth: `../commands/build.md`.
+### `/test`
 
-### 2. `/test`: bounded verifier dispatch
+Independent VERIFY is **risk-triggered, not mandatory**.
 
-After `/build` completes, `/test` resolves verification scope itself (from
-task/spec docs and `/build`'s completion report, not by re-reading the
-implementation) and dispatches one `test-engineer` with a bounded task
-packet to do the detailed inspection.
+`/review` evaluates `../references/verification-triggers.md`. If a trigger
+matches, the exact candidate must have `VERIFY PASS` before review proceeds.
 
-```text
-/build completes
-     ↓
-/test resolves scope (acceptance criteria, risk areas, tests already added)
-     ↓
-   test-engineer → inspects, adds missing tests, runs verification
-     ↓
-/test issues VERIFY PASS / VERIFY FAIL / VERIFY BLOCKED from the report
-```
+`/test` dispatches one `test-engineer`, which may add test-only changes but never
+production fixes.
 
-`test-engineer` does not decide the verdict; it reports coverage findings and
-verification evidence. A production defect found during verification goes
-back through `/build`, not fixed inline by `/test` or `test-engineer`.
-TEST consumes the planning files, current checkout, Git diff/history, and
-`/build`'s handoff when available. A passing test-only commit advances the
-current checkout; a failing reproduction stays outside the candidate branch as
-a patch/report artifact.
+Source: `../commands/test.md`.
 
-Operational source of truth: `../commands/test.md`.
+### `/review`
 
-### 3. `/review`: independent read-only fan-out
+`/review` requires the current `BUILD COMPLETE` candidate, decides whether
+independent verification is required, then dispatches:
 
-After `/test` reports VERIFY PASS, `/review` dispatches independent reviewers
-against the same integrated diff.
+- `code-reviewer` always;
+- specialists only when `../references/reviewer-triggers.md` matches.
 
-```text
-/review
-  ├── code-reviewer                    (always)
-  ├── security-auditor                 (triggered)
-  └── distributed-systems-reviewer     (triggered)
-             ↓
-      max 2 concurrently
-             ↓
-     reports stay separate
-             ↓
-       findings only
-```
+At most two reviewers run concurrently. Reviewer findings remain separate and
+are mapped to canonical `BLOCKER` / `REQUIRED` / `ADVISORY` dispositions.
 
-Reviewers do not see one another's output before forming their own judgment.
-`../references/reviewer-triggers.md` is the single trigger matrix.
+Source: `../commands/review.md`.
 
-REVIEW requires VERIFY PASS for the current candidate, preserves every native
-severity, adds the canonical `BLOCKER`/`REQUIRED`/`ADVISORY` disposition, and
-reports reviewer outcomes in its handoff. A later candidate change invalidates
-REVIEW.
+### `/ship`
 
-`/review` stops at findings. The verdict belongs to `/ship`.
+No fan-out. `/ship` synthesizes the current REVIEW handoff, its verification
+status, release-readiness evidence, unresolved findings, and rollback plan into
+GO / NO-GO / SHIP BLOCKED.
 
-Operational source of truth: `../commands/review.md`.
-
-### 4. `/ship`: synthesis gate, no dispatch
-
-After `/review` reports, `/ship` is the only gate that issues a verdict. It
-dispatches nobody.
-
-```text
-/test evidence ─┐
-                ├─ /ship synthesizes → GO / NO-GO + rollback plan
-/review findings┘
-        +
-  uncovered axes (infrastructure, documentation)
-  verified directly in the main context
-```
-
-Rules:
-
-- no persona dispatch — a missing required reviewer is a `/review` gap, not a
-  second dispatch path;
-- unresolved canonical BLOCKER → NO-GO;
-- no GO without a concrete rollback plan;
-- fixes repeat `/build` → `/test` → `/review` → `/ship`;
-- missing gate results, an undetermined or changed candidate, missing required
-  reviewers, undeclared dirty state, and a missing rollback plan are non-waivable;
-- GO is a verdict, not authorization to tag, push, deploy, or release;
-- release mechanics come from `../skills/git-workflow-and-versioning`.
-
-This is why `/ship` is not upstream's `/ship`: upstream fans out
-`code-reviewer`/`security-auditor`/`test-engineer` in parallel, which here
-would be a second orchestration path to the personas `/test` and `/review`
-already own.
-
-Operational source of truth: `../commands/ship.md`.
-
-## Direct persona invocation
-
-Use direct invocation when the user wants one perspective on one artifact.
-
-- "Review this PR" → `code-reviewer`
-- "Security review this auth change" → `security-auditor`
-- "Check this worker for retry/idempotency problems" → `distributed-systems-reviewer`
-- "Design tests for this" / "what coverage is missing here?" → `test-engineer`
-
-`executor` is the exception: it is dispatched through `/build`, not used as a
-free-form coding assistant. `test-engineer` is dispatched through `/test` for
-the VERIFY gate, but also answers direct test-design/coverage-analysis
-requests outside that pipeline.
-
-## Decision matrix
-
-```text
-Need implementation?
-├── Planned bounded task(s)
-│    └── /build → workstreams → executor/resume
-└── Not planned / ambiguous
-     └── /spec or /plan first
-
-Need independent judgment on an integrated change?
-├── One requested specialist perspective → invoke that reviewer directly
-└── Review gate → /review fan-out after VERIFY PASS
-
-Need a go/no-go on shipping it?
-└── /ship after /review — synthesis only, no dispatch
-```
-
-Do not add a `meta-orchestrator` persona whose only job is deciding which persona
-to call. Routing belongs in commands; a routing-only persona adds context,
-latency, paraphrasing loss, and cost without domain value.
+Source: `../commands/ship.md`.
 
 ## Context discipline
 
-A subagent should receive a **task packet**, not the parent conversation.
+A subagent receives a task packet, not the parent conversation.
 
-For implementation this normally means:
+Implementation packets normally contain outcome, acceptance criteria,
+dependencies/workstream, expected scope, verification, relevant rule/precedent
+pointers, and shared contracts/invariants.
 
-- outcome;
-- acceptance criteria;
-- dependencies/workstream;
-- expected scope;
-- verification;
-- applicable rule/module pointers;
-- one or two closest precedents;
-- relevant shared contract/invariant.
+Review packets are smaller: integrated diff, one-line goal, relevant acceptance
+criteria, and build/verify evidence.
 
-Do not copy the full spec/plan into every executor. Reviewers get even less:
-integrated diff, one-line goal, and relevant acceptance criteria.
+Prefer authoritative pointers over copied spec/plan text.
 
-See `../skills/context-engineering/SKILL.md`.
+## Models and cost
 
-## Evidence and cost
+Use persona defaults for routine work. Escalate upward only when a specific
+high-impact risk is materially ambiguous.
 
-Agent completion is not evidence by itself.
+Fresh agents pay fresh context/discovery cost. Reuse the executor inside a
+workstream and avoid parallelism unless wall-clock benefit is worth that cost.
 
-Implementation reports include exact verification commands and outcomes;
-unverified checks remain explicit. `/test` dispatches `test-engineer` to
-independently verify acceptance criteria; `/review` independently judges the
-integrated diff; `/ship` issues the verdict from both.
+## Direct invocation
 
-Use the configured model default for routine work. Override upward only when the
-specific workstream/review genuinely needs the reasoning tier.
-
-Track actual run signals defined in
-`../references/agent-run-metrics.md`; never estimate unavailable
-token/cost/time data.
-
-## Rules for personas
-
-1. One persona = one role and one output contract.
-2. Personas do not invoke other personas.
-3. A persona may invoke skills only when its runtime/tool set supports that.
-4. A command that dispatches a skill-capable persona selects the permitted
-   skills; the persona does not browse the catalog or broaden its own role.
-5. Every persona file ends with a Composition block describing where it fits.
-6. Writing personas should receive bounded scope and explicit verification.
-7. Read-only fan-out is easier to parallelize than writing; shared mutable state
-   changes the concurrency rule.
-
-## Claude Code interop
-
-These personas are compatible with Claude Code subagents.
-
-- `/build` uses `executor` as a resumable implementation subagent.
-- `/test` uses `test-engineer` as a bounded verifier subagent.
-- `/review` uses reviewer subagents as independent read-only fan-out.
-- `/ship` uses no subagents; it synthesizes the earlier gates' reports.
-- Subagents report back to the main agent; they do not spawn subagents.
-- Agent Teams can support teammate-to-teammate communication, but no current
-  command depends on that experimental capability.
-- Plugin-agent frontmatter should not rely on unsupported `hooks`, `mcpServers`,
-  or `permissionMode` behavior.
-
-## Adding a persona
-
-1. Create `agents/<role>.md` with `name`, `description`, `tools`, `model`, and
-   `effort`.
-2. Define one role, its scope, output contract, and stop conditions.
-3. Give it the minimum tools needed for that role.
-4. Add a Composition block.
-5. Add it to the table above.
-6. If it creates a new orchestration shape, document the command-level policy
-   here and record a durable architectural decision when warranted.
+Use a persona directly only when the user explicitly wants that perspective
+outside the pipeline, e.g. security review, distributed-systems review, code
+review, or test design. `executor` remains `/build`-only.

@@ -21,18 +21,23 @@ Write a structured specification before writing any code. The spec is the shared
 
 ## The Gated Workflow
 
-The harness has six user-invoked stages:
+The harness has these user-invoked stages:
 
 ```text
-DEFINE       PLAN       BUILD       VERIFY       REVIEW       SHIP
-/spec   ->   /plan  ->  /build  ->  /test   ->   /review  ->  /ship
+DEFINE      PLAN       BUILD       REVIEW       SHIP
+/spec  ->   /plan  ->  /build  ->  /review  ->  /ship
+                              \
+                               -> /test -> /review
+                                  VERIFY, when required
 ```
 
 This skill owns the capability scope check (Phase 0) and DEFINE/specification
 only. `/plan` owns the implementation plan and task breakdown, `/build` owns TDD
-implementation, `/test` owns independent verification, `/review` owns code
-quality findings, and `/ship` owns the release-readiness verdict. Do not advance
-or execute a downstream stage from this skill.
+implementation, `/review` owns code quality findings and decides whether
+independent verification is required (`../../references/verification-triggers.md`),
+`/test` owns that verification when triggered, and `/ship` owns the
+release-readiness verdict. Do not advance or execute a downstream stage from
+this skill.
 
 ### Phase 0: Scope Check
 

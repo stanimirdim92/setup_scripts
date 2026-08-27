@@ -1,7 +1,7 @@
 {
   "env": {
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "400000",
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "200000",
+    "ENABLE_TOOL_SEARCH": "true",
     "CLAUDE_CODE_AUTO_CONNECT_IDE": "true"
   },
   "permissions": {
@@ -163,7 +163,7 @@
   },
   "effortLevel": "medium",
   "advisorModel": "opus",
-  "autoMemoryEnabled": true,
+  "autoMemoryEnabled": false,
   "theme": "dark-ansi",
   "editorMode": "normal",
   "inputNeededNotifEnabled": true,

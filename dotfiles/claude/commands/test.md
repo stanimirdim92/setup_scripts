@@ -1,206 +1,97 @@
 ---
-description: Independently verify built work against acceptance criteria, regression risk, and the appropriate test levels
+description: Independently verify built work when risk or explicit request warrants a separate verifier
 argument-hint: "[task number(s), ticket, commit range, or feature description]"
 ---
 
-`/test` is the independent **VERIFY** gate after `/build`.
+`/test` is the optional independent **VERIFY** gate after `/build`.
 
-It does not replace the tests written during implementation. `/build` uses TDD
-as developer feedback; `/test` independently checks whether the completed work
-is actually correct and sufficiently covered. Dispatch `test-engineer` to do
-that investigation — `/test` owns scope resolution and the
-PASS/FAIL/BLOCKED verdict, not the file-by-file inspection itself.
+`/build` already requires the implementing executor to test and verify its own
+work. `/test` exists for a second, independent verification context when
+`../references/verification-triggers.md` requires it or when the user explicitly
+asks for it.
 
-## 0. Testing methodology
+If `/test` is invoked for a low-risk change anyway, run it; do not refuse merely
+because the trigger matrix would have allowed it to be skipped.
 
-Invoke `../skills/test-driven-development`. It owns the testing methodology this
-gate uses:
+## 1. Resolve scope
 
-- the Prove-It Pattern, for every defect this gate finds;
-- test-level selection (Test Pyramid, test sizes);
-- the good-test rules (state not interactions, DAMP over DRY, real
-  implementations over mocks, arrange-act-assert, descriptive names);
-- the anti-pattern list;
-- its stack-discovery and verification discipline — repository-defined
-  commands, never guessed generic ones.
+Use the selected task/spec artifacts, the current branch/diff, and `/build`'s
+completion handoff from the current conversation.
 
-Its RED-GREEN-REFACTOR loop and Iron Law ("no production code without a
-failing test first") stay with `/build`'s executor. `/test` verifies work that
-already exists; it must not become a second path that drives fresh production
-code from tests. Where that implementation discipline and this gate's scope
-conflict, this section wins.
+Resolve:
 
-## 1. Resolve verification scope
+- acceptance criteria;
+- implemented behavior;
+- risk/regression surface;
+- tests and commands `/build` already ran.
 
-Read the selected task's spec/plan/todo artifacts, inspect the current branch's
-local commits and diff, and use `/build`'s handoff from the current conversation
-when available. The current checkout is the candidate; there is no separate run
-record or checkpoint. If its intended scope is ambiguous, report `VERIFY
-BLOCKED` rather than inventing one.
+Prefer the handoff and pointers over re-reading the full implementation in the
+main context. Detailed inspection belongs to the verifier.
 
-Read the relevant task/spec context and determine:
+If the candidate or intended scope cannot be determined, return **VERIFY
+BLOCKED** rather than guessing.
 
-- acceptance criteria
-- implemented behavior
-- risk areas
-- tests already added by `/build`
-- verification commands already run
-- relevant regression surface
+## 2. Dispatch one test-engineer
 
-Resolve this from the task/spec/plan documents and `/build`'s own completion
-report — not by re-reading the full implementation yourself. The detailed
-inspection belongs to the dispatched `test-engineer` in step 2.
+Send `test-engineer` a bounded packet containing:
 
-## 2. Dispatch test-engineer
+- acceptance criteria;
+- implemented behavior;
+- relevant regression risks;
+- tests/commands already run;
+- pointers to the changed code/tests when useful.
 
-Give `test-engineer` a bounded task packet: acceptance criteria, implemented
-behavior and relevant regression surface, and tests/commands `/build` already
-ran. Do not hand it the full spec or implementation plan — pointers, not the
-whole document.
+Do not paste the full spec, plan, command methodology, or another agent's
+transcript.
 
-`test-engineer` has no `Skill` tool (see `tools:` in its definition), so it
-cannot invoke `test-driven-development` itself. When a packet depends on that
-discipline, carry it as explicit constraints or a pointer to
-`../skills/test-driven-development/SKILL.md` — never as an instruction to invoke
-the skill.
+The verifier should:
 
-`test-engineer` already knows to test at the lowest level that captures the
-behavior (its own "Test at the Right Level" rule) — `/test` doesn't need to
-restate that here. It inspects the implementation and existing tests, proves
-each acceptance criterion has verification evidence, adds missing tests
-where needed, checks edge/error cases and regression-sensitive neighboring
-behavior, and runs the repository's appropriate broader verification
-(focused regression suite, integration/feature tests, E2E for critical
-flows, build, type check, lint — using repository-defined commands, not
-guessed generic ones). It reports back test coverage findings and
-verification evidence; it does not decide the final verdict.
+- inspect the implementation and existing tests;
+- prove each acceptance criterion has credible evidence;
+- add missing test-only coverage when needed;
+- check meaningful edge/error/regression cases;
+- run the repository-defined focused and broader checks appropriate to the risk.
 
-## 3. Test-change ownership
+## 3. Ownership
 
-`/test` owns test-only changes needed to verify the selected scope.
-`test-engineer` may add or correct tests, fixtures, and test configuration, but
-must not modify production code.
+`/test` may create test-only changes: tests, fixtures, and test configuration.
+It must not modify production code.
 
-Invoking `/test` authorizes scoped **local commits** only for passing test-only
-changes required by this verification. It does not authorize push, tag, deploy,
-release, protected-branch mutation, history rewriting, or unrelated changes.
+Passing test-only changes may be committed as a separate `test:` local commit.
+No push, tag, deploy, history rewrite, or unrelated change is authorized.
 
-When `/test` changes test files:
+If a new test proves a production defect:
 
-- run the relevant verification after the change;
-- commit the test-only change separately with a clear `test:` commit message;
-- report the commit and exact files changed;
-- do not leave changes introduced by `/test` uncommitted when returning a final
-  result.
+1. preserve the reproduction as a patch/report artifact when useful;
+2. restore only uncommitted test changes introduced by `/test`;
+3. return the production fix to `/build`.
 
-If a new test exposes a production defect, preserve the failing reproduction as
-an external patch/report artifact, then restore only the test changes introduced
-by `/test`. Do **not** commit it onto the candidate branch, create a pipeline
-branch/worktree for it, push it, merge it, or treat it as releasable. `/build`
-owns the production fix and restoring the affected verification to green; only
-after the reproduction passes may a test-only commit advance the candidate.
+Do not turn `/test` into a second implementation path.
 
-Do not absorb a production fix into a "test-only" change. If a test requires a
-production-code change to pass, that is a BUILD handoff.
+## 4. Result
 
-## 4. Failure handling
-
-If `test-engineer`'s report surfaces a production-code bug, apply the skill's
-Prove-It Pattern up to the point of the fix:
-
-1. preserve or add the failing reproduction test;
-2. confirm it fails for the expected reason, not an incidental one;
-3. report the production defect clearly;
-4. return the fix to `/build`.
-
-Report the patch/report path when an external artifact was created. Clean only
-the test changes introduced by `/test`; never discard unrelated user work.
-
-Steps 5 onward of the pattern (implement, confirm green, run the suite) belong
-to `/build`, not here.
-
-Do not turn `/test` into a second general implementation path.
-
-After `/build` fixes the defect, rerun the affected verification.
-
-If the failure is only in the test itself, fix the test, verify it, commit the
-test-only correction, and continue.
-
-If verification cannot reach a trustworthy product verdict because of an
-environmental or capability problem, do not misreport it as a production
-failure. Examples include unavailable credentials or services, a broken test
-environment, missing required permissions, and unrelated pre-existing failures
-that prevent the selected scope from being isolated. Report **VERIFY BLOCKED**
-as described below.
-
-## 5. Result
-
-From `test-engineer`'s report, return one explicit verification result:
-
-**VERIFY PASS**, **VERIFY FAIL**, or **VERIFY BLOCKED**
-
-If `/test` creates a passing test-only commit, that current checkout becomes the
-candidate for REVIEW. A failing or blocked TEST may not advance the candidate
-branch. Include the current branch, local test commits, and Git diff/status in
-the handoff.
+Return exactly one result:
 
 ### VERIFY PASS
 
-Requires:
+Requires all in-scope acceptance criteria to have credible evidence, required
+checks to pass, no known production defect in scope, and any test-only changes
+to be committed.
 
-- all acceptance criteria have verification evidence;
-- required focused/regression checks pass;
-- no known production defect remains in the verified scope;
-- every test-only change introduced by `/test` is committed;
-- the working tree is in the expected state, with no uncommitted change
-  introduced by `/test`. Pre-existing unrelated changes must be identified, not
-  silently included or cleaned up.
-
-Report:
-
-- acceptance criteria verified
-- tests added or changed
-- test-only commits created
-- commands run and outcome
-- relevant coverage gaps intentionally left out, if any
-- final working-tree state
-- current branch, local test commits, and Git diff/status
-
-Then stop.
-
-The next workflow stage is `/review`.
+Report acceptance criteria verified, tests changed, exact commands/outcomes,
+test-only commits, coverage gaps intentionally left out, branch, and tree state.
 
 ### VERIFY FAIL
 
-Report:
-
-- failing criterion or behavior
-- reproduction/test evidence
-- expected vs actual behavior
-- exact handoff scope for `/build`
-- failing reproduction patch/report artifact, when one was created
-- final working-tree state
-
-Do not proceed to `/review` until verification passes.
+Report the failing behavior/criterion, reproduction evidence, expected vs actual,
+and the exact handoff back to `/build`.
 
 ### VERIFY BLOCKED
 
-Use this only when verification cannot produce trustworthy PASS/FAIL evidence
-without an environmental change, additional authority, or resolution of an
-unrelated pre-existing failure.
+Use only when environment, permissions, unavailable dependencies, or unrelated
+pre-existing failures prevent trustworthy PASS/FAIL evidence.
 
-Report:
+Report the blocker, checks completed, and the smallest action needed to unblock.
 
-- the exact blocking condition;
-- evidence that distinguishes it from a product defect;
-- checks completed before the blocker;
-- any test-only commits created;
-- the smallest action or decision needed to unblock verification;
-- final working-tree state.
-
-Do not proceed to `/review`, and do not return the issue to `/build` unless the
-blocker is itself caused by production code in the selected scope.
-
-Any production fix starts again at `/build`, then repeats `/test`, `/review`, and
-`/ship`. Earlier PASS evidence remains historical and does not authorize the new
-candidate.
+A production-code fix invalidates the previous VERIFY result and must go back
+through `/build`.
