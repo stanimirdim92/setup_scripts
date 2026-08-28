@@ -10,8 +10,17 @@ the outcome, acceptance criteria, scope, dependencies, and verification commands
 this skill owns how the executor changes code safely.
 
 Load this skill once when starting a fresh executor for a workstream. When the
-same executor is resumed for later tasks in that workstream, retain the loaded
-discipline rather than loading it again unless the skill changed.
+same executor is resumed for later tasks in that workstream, do not reload it —
+the discipline already in context stays in force.
+
+## The Task Packet Is the Contract
+
+Implement the acceptance criteria as written. Do not reinterpret, weaken, or
+extend them. If a criterion turns out to be infeasible against the actual
+repository, contradicts what you find in the code, or requires a decision the
+packet does not contain, stop that task and report the conflict through the
+completion evidence (as a blocker) — do not pick an interpretation and build
+it. `/build` routes genuine behavior conflicts back through the pipeline.
 
 ## Discover the Local Test Path
 
@@ -69,8 +78,9 @@ Every retry must follow at least one of:
 - a changed environmental condition;
 - a new hypothesis derived from the failure evidence.
 
-If no new evidence or materially different hypothesis exists, stop and report
-the blocker instead of looping.
+If no new evidence or materially different hypothesis exists — or the same
+failure has survived three evidence-driven attempts — stop and report the
+blocker instead of looping.
 
 ## Commit Atomic Increments
 
@@ -94,7 +104,9 @@ Before reporting a task complete, provide evidence for:
 - required focused and workstream verification;
 - commits created;
 - final working-tree state;
-- checks not run, scope expansions, untouched observations, and blockers.
+- checks not run, scope expansions, untouched observations, and blockers
+  (including any task-packet conflict reported under The Task Packet Is the
+  Contract).
 
 Evidence is the result of an executed check, not confidence that the change
 should work.

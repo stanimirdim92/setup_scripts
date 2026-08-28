@@ -72,7 +72,6 @@ Does the change fit the system's design?
 - Does it follow existing patterns or introduce a new one? If new, is it justified?
 - Does it maintain clean module boundaries? Are dependencies flowing in the right direction (no circular dependencies)?
 - Is there code duplication that should be shared?
-- Are dependencies flowing in the right direction (no circular dependencies)?
 - Is the abstraction level appropriate (not over-engineered, not too coupled)?
 - **Does this refactor reduce complexity or just relocate it?** Count the concepts a reader must hold to follow the change. If a "cleaner" version leaves that count unchanged, it isn't cleaner — prefer the restructuring that makes whole branches, modes, or layers disappear over one that re-centralizes the same logic. Prefer deleting an abstraction to polishing it.
 - **Is feature-specific logic leaking into a shared or general-purpose module?** Keep logic in its owning layer, reuse the existing canonical helper instead of a near-duplicate, and don't normalize architectural drift.

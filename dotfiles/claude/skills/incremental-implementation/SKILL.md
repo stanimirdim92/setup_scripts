@@ -63,7 +63,9 @@ Next slice
 2. **Implement** — write the minimum production code needed to satisfy the test.
 3. **GREEN** — run the focused test and verify it passes.
 4. **Refactor** — improve structure while keeping the test green.
-5. **Verify** — run the broader checks earned by the slice.
+5. **Verify** — run broader checks when the slice touches any risky surface
+   listed under "Keep the repository valid"; otherwise the focused test from
+   GREEN is the slice's verification.
 6. **Commit** — save the coherent, verified increment.
 7. Move to the next slice.
 
@@ -178,7 +180,9 @@ Do not opportunistically:
 - add unrequested features
 - remove code you do not understand
 
-If nearby work is worth doing, report it separately.
+If nearby work is worth doing, report it as an "untouched observation" in the
+completion evidence (per `executor-development-discipline`'s output contract)
+rather than doing it.
 
 ### One logical increment at a time
 
@@ -259,7 +263,7 @@ Before considering an implementation task complete:
 
 - [ ] Every behavioral slice followed the required TDD loop
 - [ ] Every increment had appropriate focused verification
-- [ ] Risky/shared changes received broader verification when warranted
+- [ ] Every increment touching a risky surface (per "Keep the repository valid") received broader verification
 - [ ] Commits represent coherent logical increments
 - [ ] No unrelated scope expansion was silently included
 - [ ] The final task/workstream verification passed

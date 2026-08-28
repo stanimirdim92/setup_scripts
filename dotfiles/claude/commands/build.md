@@ -22,8 +22,10 @@ For each selected task resolve:
 - required skills.
 
 Honor `/plan`'s workstream assignment. For ad-hoc/legacy work with no assignment,
-infer one using the same rules. If the recorded workstream conflicts with
-dependencies or the task is materially ambiguous, stop before dispatch.
+infer one using the same rules. Stop before dispatch when the recorded workstream
+conflicts with dependencies, or when the task is ambiguous — meaning you cannot
+state the expected observable behavior from the packet and plan without
+inventing a decision. Report what is missing instead of guessing.
 
 ## 2. Dispatch by workstream
 
@@ -32,6 +34,16 @@ Use **one executor per workstream, not one per task**.
 - first selected task in a workstream -> fresh named `executor`;
 - later tasks in that workstream -> resume the same executor;
 - tasks inside a workstream stay sequential and follow dependency order.
+
+### Checkpoints gate dependency-readiness
+
+Honor every checkpoint recorded in the plan. A task ordered after a checkpoint
+is not dependency-ready until that checkpoint's criteria have been executed and
+passed — run them at the boundary; do not take an upstream executor's task
+completion as the checkpoint result. This applies with force to
+contract-separated workstreams: never dispatch the downstream workstream before
+its named contract checkpoint passes, even when executors are idle and the work
+"could start."
 
 ### Executor packet
 
@@ -92,8 +104,9 @@ Parallelism buys elapsed time, not fewer tokens.
 ### Model and retry policy
 
 Use the executor's configured default model for routine work. Override upward
-only for materially ambiguous/high-risk work where a wrong decision is expensive
-to undo.
+only for high-risk work where a wrong decision is expensive to undo — e.g.
+irreversible migrations, concurrency/consistency invariants, security-sensitive
+boundaries, or novel external contracts.
 
 Never blind-retry. A retry needs new evidence, a code/config/environment change,
 or a materially different hypothesis.
@@ -101,24 +114,47 @@ or a materially different hypothesis.
 Do not broaden tools, permissions, scope, or external write authority for
 convenience. Surface a genuine capability boundary.
 
+### Executor blockers and conflicts
+
+When an executor reports a blocker or a task-packet conflict (acceptance
+criteria infeasible against the repository, contradicted by the code, or
+requiring an absent decision):
+
+- stop that workstream at the blocked task; do not re-dispatch the same task
+  hoping for a different reading;
+- continue other workstreams only if they do not depend on the blocked task or
+  a checkpoint behind it;
+- a behavior conflict is a `SPEC CONFLICT` — route it to the human toward
+  `/spec`; a plan-level defect (wrong dependency, wrong workstream, missing
+  verification command) routes toward `/plan`;
+- record the blocker in the completion report.
+
 ## 3. Completion
 
-Before `/build` completes ensure:
+`/build` ends in exactly one of two reports.
+
+**BUILD COMPLETE** — only when all of the following hold:
 
 - all selected tasks are implemented;
 - all selected workstreams are integrated;
+- every plan checkpoint in the selected scope was executed and passed;
 - executor-required verification is green;
 - scoped local commits are complete;
 - the tree is in the expected state.
 
-Report **BUILD COMPLETE** with:
+**BUILD BLOCKED** — in every other terminal state. Never report BUILD COMPLETE
+with open blockers, skipped checkpoints, or unimplemented selected tasks.
 
-- tasks/workstreams completed;
+Both reports include:
+
+- tasks/workstreams completed, and (for BUILD BLOCKED) tasks blocked or not
+  started, each with its blocker and the stage it routes to (`/spec`, `/plan`,
+  or human decision);
+- checkpoints executed and their outcomes;
 - commits created;
 - exact verification commands and outcomes;
 - directly required scope expansions;
 - anything noticed but intentionally untouched;
-- blockers, if any;
 - current branch/tree state;
 - actual run metrics when exposed: fresh executor dispatches, resumes,
   model-tier overrides, verification failures causing rework, human redirects,

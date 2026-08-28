@@ -18,7 +18,7 @@ Write a failing test before writing the code that makes it pass. For bug fixes, 
 - Adding edge case handling
 - Any change that could break existing behavior
 
-**When NOT to use:** Pure configuration changes, documentation updates, or static content changes that have no behavioral impact.
+**When NOT to use:** Pure configuration changes, documentation updates, or static content changes that have no behavioral impact — validate those with the repository's appropriate check instead of a manufactured failing test.
 
 Thinking "skip TDD just this once"? Stop. That's rationalization.
 
@@ -28,9 +28,13 @@ Thinking "skip TDD just this once"? Stop. That's rationalization.
 NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 ```
 
-Write code before the test? Delete it. Start over.
+Scope: the Iron Law applies to every change with behavioral impact — exactly
+the "Always" list above. The non-behavioral changes in "When NOT to use" are
+outside it, not exceptions to it.
 
-**No exceptions:**
+Wrote behavioral production code before its test? Delete that code. Start over.
+
+**Within that scope, no exceptions:**
 - Don't keep it as "reference"
 - Don't "adapt" it while writing tests
 - Don't look at it
@@ -391,21 +395,26 @@ For JavaScript/TypeScript testing patterns illustrating these principles — Jes
 
 ## Red Flags
 
-- Writing code without any corresponding tests
-- Reaching for a default test command (`npm test`) without checking what this repository actually uses
-- Tests that pass on the first run (they may not be testing what you think)
-- "All tests pass" but no tests were actually run
-- Bug fixes without reproduction tests
-- Tests that test framework behavior instead of application behavior
-- Test names that don't describe the expected behavior
-- Skipping tests to make the suite pass
-- Running the same test command twice in a row without any intervening code change
+Process flags — these mean **delete the untested behavioral production code
+and restart with TDD**:
+
+- Writing behavioral code without a prior failing test
 - "Keep as reference" or "adapt existing code"
 - "Already spent X hours, deleting is wasteful"
 - "TDD is dogmatic, I'm being pragmatic"
 - "This is different because..."
 
-**All of these mean: Delete code. Start over with TDD.**
+Quality flags — these mean **fix the named problem in place** (the delete rule
+does not apply to them):
+
+- Reaching for a default test command (`npm test`) without checking what this repository actually uses → discover the stack
+- Tests that pass on the first run → verify per Step 1: does the behavior already exist, or does the test not exercise the change?
+- "All tests pass" but no tests were actually run → run them
+- Bug fixes without reproduction tests → write the reproduction test now, confirm it fails on the pre-fix code
+- Tests that test framework behavior instead of application behavior → retarget to your code
+- Test names that don't describe the expected behavior → rename
+- Skipping or disabling tests to make the suite pass → unskip and fix
+- Running the same test command twice in a row without any intervening code change → stop; act on the evidence you have
 
 ## Verification
 
@@ -417,8 +426,8 @@ After completing any implementation:
 - [ ] Test names describe the behavior being verified
 - [ ] No tests were skipped or disabled
 - [ ] Coverage hasn't decreased (if tracked)
-- [ ] Output is pristine (no errors, warnings)
-- [ ] Tests use real code (mocks only if unavoidable)
+- [ ] The change introduces no new errors or warnings in test/build output (pre-existing ones unrelated to the change are reported, not silently fixed — that's scope expansion)
+- [ ] Test doubles follow the preference order (real > fake > stub > mock); mocks appear only at boundaries that are slow, non-deterministic, or side-effecting
 - [ ] Edge cases and errors covered
 
 **Note:** Run each test command after a change that could affect the result. After a clean run, don't repeat the same command unless the code has changed since — re-running on unchanged code adds no confidence.
