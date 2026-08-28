@@ -7,7 +7,7 @@ description: Creates specs before coding. Use when starting a new project, featu
 
 ## Overview
 
-Write a structured specification before writing any code. The spec is the shared source of truth between you and the human engineer — it defines what we're building, why, and how we'll know it's done. Code without a spec is guessing.
+Write a structured specification before writing any code. The spec is the shared source of truth between you and the human engineer — it defines what we're building, why, and how we'll know it's done. Code without a spec is guessing. A 15-minute spec prevents hours of rework.
 
 ## When to Use
 
@@ -15,9 +15,9 @@ Write a structured specification before writing any code. The spec is the shared
 - Requirements are ambiguous or incomplete
 - The change touches multiple files or modules
 - You're about to make an architectural decision
-- The task would take more than 30 minutes to implement
+- The change would decompose into more than one task in `/plan`
 
-**When NOT to use:** Single-line fixes, typo corrections, or changes where requirements are unambiguous and self-contained.
+**When NOT to use:** Single-line fixes, typo corrections, or changes where requirements are unambiguous AND the change is self-contained in one file. When the two lists conflict (e.g., a large but unambiguous change), write the spec — scope wins over clarity.
 
 ## The Gated Workflow
 
@@ -72,10 +72,11 @@ Build order: identity → billing, notifications → reporting
 
 **Then recurse per module.** Specify each module in dependency order. Each module
 gets its own spec, scoped to that module's objective, boundaries, and success
-criteria. Save the approved map at the project root and each module's spec
-alongside it, named by module id (`SPEC-identity.md`, `SPEC-billing.md`) — the map,
-not filename guessing, is the index of what exists. After specification approval,
-hand the module to `/plan`; do not plan or implement it inside this skill.
+criteria. Save the approved map at `docs/specs/[TICKET]-CAPABILITY-MAP.md` and
+each module's spec alongside it, named by module id (`SPEC-identity.md`,
+`SPEC-billing.md`) — the map, not filename guessing, is the index of what exists.
+After specification approval, hand the module to `/plan`; do not plan or
+implement it inside this skill.
 
 ### Phase 1: Specify
 
@@ -94,6 +95,25 @@ ASSUMPTIONS I'M MAKING:
 
 Don't silently fill in ambiguous requirements. The spec's entire purpose is to surface misunderstandings *before* code gets written — assumptions are the most dangerous form of misunderstanding.
 
+**Surface unresolved choices in a fixed format.** Whenever the evidence is
+mixed, a tradeoff is unresolved, or two readings of a requirement lead to
+different behavior, record it as an `OPEN QUESTION` block in the spec instead
+of deciding silently:
+
+```
+OPEN QUESTION: Deletion semantics for contacts
+- Option A: hard delete — simpler, loses audit trail
+- Option B: soft delete — spec §4 mentions "restore", implies this
+→ Decision needed before this spec can be approved.
+```
+
+A spec containing any `OPEN QUESTION` block cannot be presented for approval.
+Ask, record the decision in the spec, remove the block, and rerun the closure
+pass. Treat a choice as needing an `OPEN QUESTION` block when picking the wrong
+option would change an acceptance criterion, a schema, a public contract, or
+data lifecycle behavior; choices below that bar (internal naming, private
+helper structure) may be decided directly.
+
 ### Repository Recon Before Specifying
 
 Before naming files, classes, tables, architectural layers, test helpers, or
@@ -109,8 +129,7 @@ Common locations include:
 - architecture/design documentation
 - repository contribution or development guides
 
-Do not assume these exact paths exist; discover the project's actual instruction
-sources.
+Do not assume the above paths exist; discover the project's actual instruction sources.
 
 Then inspect the relevant repository area and closest sibling implementations.
 
@@ -142,8 +161,9 @@ When no precedent exists:
   a **new feature-specific decision**;
 - if no requirement or decision justifies it, do not invent it merely because it
   is common framework practice;
-- if the evidence is mixed or the tradeoff is material and unresolved, surface
-  the choice instead of silently deciding.
+- if the evidence is mixed or the choice would change an acceptance criterion,
+  schema, public contract, or lifecycle behavior, raise an `OPEN QUESTION`
+  block instead of silently deciding.
 
 Examples:
 
@@ -161,51 +181,53 @@ misrepresented as existing repository convention.
 
 **Write a spec document covering these six core areas:**
 
+Areas 2–4 describe repository-wide facts. In a feature or module spec, cover
+them **by reference plus delta**: link the authoritative repo doc (or state
+"per `CLAUDE.md`") and list only what this feature adds or changes. Write them
+out in full only for a new project where no such doc exists yet. This is how
+"covers all six areas" and "do not repeat repository-wide conventions" are both
+satisfied.
+
 1. **Objective** — What are we building and why? Who is the user? What does success look like?
 
 2. **Commands** — Full executable commands with flags, not just tool names.
    ```
+   Install: yarn install or composer install|update -o
    Build: yarn run build
    Lint: yarn run lint:fix
    Dev: yarn run dev
    ```
 
 3. **Project Structure** — Where source code lives, where tests go, where docs belong.
-
-- Derive names and locations from repository evidence, especially sibling features in the owning module.
-
-For each proposed new path, be able to answer:
-- What existing pattern supports this path/name?
-- Is this required by the feature, or merely a framework convention?
-
 ```
-vendor/           → framework source code
+vendor/              → framework source code
 resources/components → React components
-Modules/<MODULE>/       → App modules 
-app/           → Default app code 
-tests/         → Unit and integration tests for frontend and backend
-e2e/           → End-to-end tests
-docs/          → Documentation
+Modules/<MODULE>/    → App modules
+app/                 → Default app code
+tests/               → Unit and integration tests
+e2e/                 → End-to-end tests
+docs/                → Documentation
 ```
 
 4. **Code Style** — One real code snippet showing your style beats three paragraphs describing it. Include naming conventions, formatting rules, and examples of good output.
-
 
 5. **Testing Strategy** — Define how the feature will be proven correct.
 
 Include:
 
 - the repository's existing test framework and test locations;
-- the important behaviors and acceptance criteria that require automated verification;
-- validation, error, edge, and regression cases that materially affect correctness;
+- automated verification for every behavior whose failure would produce wrong
+  data, a broken user journey, an authorization gap, or a violated invariant —
+  when in doubt whether a case clears this bar, include it; a redundant test
+  costs seconds, a missing one costs an incident;
+- validation, error, edge, and regression cases meeting the same bar;
 - the appropriate test level for each concern (unit, integration/feature, E2E, persistence/DB, manual);
 - invariants that must be tested below the application layer when the database, queue, cache, or another infrastructure boundary enforces correctness;
 - the state transitions required to establish, preserve, transfer, or release important invariants;
 - any behavior that cannot reasonably be automated and therefore needs explicit manual verification.
 
 When a requirement defines an invariant, derive the transitions needed to keep it
-true instead of testing only the obvious CRUD operations. Check the transitions
-that apply, such as:
+true instead of testing only the obvious CRUD operations. Check every transition that applies:
 
 - creation from an empty state;
 - creation when related state already exists;
@@ -236,13 +258,13 @@ Example:
 - UI behavior with no existing automation precedent → explicit manual verification
 
 6. **Boundaries** — Three-tier system:
-    - **Always do:** Run tests before commits, follow naming conventions, validate inputs
-    - **Ask first:** Database schema changes, adding dependencies, changing CI config
-    - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
+  - **Always do:** Run tests before commits, follow naming conventions, validate inputs
+  - **Ask first:** Database schema changes, adding dependencies, changing CI config
+  - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
 
 ### Specification Closure
 
-Before presenting a spec for approval, perform an internal-consistency pass across
+Before presenting a spec for human approval, perform an internal-consistency pass across
 the entire document. Compare the objective, requirements, data model,
 implementation guidance, testing strategy, boundaries, success criteria, and
 open questions. The same behavior must not be described differently in two
@@ -258,9 +280,9 @@ At minimum, reconcile:
 - newly confirmed decisions against older assumptions or wording;
 - schema fields against their observable lifecycle behavior.
 
-Do not call a spec ready while a material contradiction or unresolved choice
-remains. Surface the conflict, update the spec after the decision, and rerun the
-closure pass.
+Do not present a spec for approval while any contradiction between two sections
+or any `OPEN QUESTION` block remains. Surface the conflict, update the spec
+after the decision, and rerun the closure pass.
 
 ### Prove Invariant Mechanisms
 
@@ -294,7 +316,7 @@ implementation detail.
 
 **Spec template:** see `../../references/templates/spec.md`.
 
-**Reframe instructions as success criteria.** When receiving vague requirements, translate them into concrete conditions:
+**Reframe instructions as success criteria.** When receiving vague requirements, translate them into concrete, measurable conditions:
 
 ```
 REQUIREMENT: "Make the dashboard faster"
@@ -308,6 +330,14 @@ REFRAMED SUCCESS CRITERIA:
 
 This lets you loop, retry, and problem-solve toward a clear goal rather than guessing what "faster" means.
 
+## Output Files
+
+- Single-capability spec: `docs/specs/[TICKET]-spec.md` (create `docs/specs/` if needed)
+- Multi-capability initiative: `docs/specs/[TICKET]-CAPABILITY-MAP.md` with `SPEC-<module-id>.md` files alongside it
+
+Projects may designate different locations in their instruction sources; the
+project rule wins over these defaults.
+
 ### Handoff after specification
 
 After the human approves the closed specification, stop. Planning and task
@@ -315,10 +345,16 @@ decomposition belong to `/plan`, which invokes `planning-and-task-breakdown` and
 writes the canonical plan/todo artifacts. Do not execute that methodology inside
 this skill.
 
-After the human approves the plan, implementation belongs to `/build`. `/build`
-selects executor skills and dispatches workstreams; the user then invokes
+After the human approves the plan, implementation belongs to `/build`.
+`/build` selects executor skills and dispatches workstreams; the user then invokes
 `/test`, `/review`, and `/ship` sequentially. Do not write production code,
 dispatch executors, or run implementation phases from `/spec`.
+
+**Handling a returned `SPEC CONFLICT`.** When `/plan` (or a later stage) returns
+a `SPEC CONFLICT`, treat it as a spec change request: raise the decision with
+the human, record the resolution in the spec, remove or update the conflicting
+requirement, rerun the closure pass, and obtain re-approval before the work
+returns to `/plan`.
 
 ## Keeping the Spec Alive
 
@@ -331,38 +367,72 @@ The spec is a living document, not a one-time artifact:
 
 ## Guardrails
 
+The four most common specification failures, shown as bad/good pairs:
+
+**Silently resolving ambiguity**
+
+```
+Bad:  Requirement says "users can share reports" → spec quietly
+      decides link-sharing with public URLs
+Good: OPEN QUESTION: Sharing model — link-based (public URL) vs
+      invite-based (account required)? → decision before approval
+```
+
+**Inventing conventions from framework practice**
+
+```
+Bad:  Spec's Project Structure adds app/DTOs/ and a service
+      interface layer "because that's standard Laravel/Spring/etc."
+Good: Every proposed layer/file/pattern cites repository evidence,
+      a project rule, an explicit user requirement — or is labeled
+      "new feature-specific decision" with its tradeoff stated
+```
+
+**One spec for independently shippable capabilities**
+
+```
+Bad:  One 40-page spec covering identity + billing + reporting
+Good: Phase 0 capability map, approved first; one spec per module
+      in dependency order
+```
+
+**Implementation smuggled into the spec**
+
+```
+Bad:  Spec contains a complete controller and CRUD service class
+Good: Spec contains a minimal snippet only where it captures a
+      non-obvious technical decision or an existing pattern the
+      planner would otherwise miss
+```
+
+Also:
+
 - Do not implement the feature during specification.
-- Code snippets are allowed only when they capture a non-obvious technical
-  decision or existing pattern that materially helps planning.
-- Prefer minimal snippets over complete classes or CRUD implementations.
-- Do not silently resolve material ambiguity.
-- Do not produce one spec for independently shippable capabilities.
-- Do not repeat repository-wide conventions in a feature spec.
-- A 15-minute spec prevents hours of rework. Waterfall in 15 minutes beats debugging in 15 hours.
-- Do not invent repository conventions from framework conventions. Every
-  proposed layer/file/pattern in Project Structure or Existing Patterns must be
-  backed by repository evidence, an explicit project rule, an explicit user
-  requirement, or clearly labeled as a justified new feature-specific decision.
-- Absence of repository precedent does not forbid a deliberate new pattern.
-  When introducing one, state the reason/tradeoff and do not present it as an
-  existing convention.
-- Ticket/domain wording does not automatically determine code identifiers. Derive naming from the owning module and closest repository precedents.
-- Do not approve a spec until its objective, requirements, implementation
-  guidance, tests, success criteria, and lifecycle semantics agree.
-- Do not claim an invariant is concurrency-safe without a mechanism proof that
-  covers every writer and the empty-state transition.
+- Do not repeat repository-wide conventions in a feature spec — reference them (see the reference-plus-delta rule for areas 2–4).
+- Ticket/domain wording does not automatically determine code identifiers; derive naming from the owning module and closest repository precedents.
+- Absence of repository precedent does not forbid a deliberate new pattern — state the reason/tradeoff and never present it as an existing convention.
+- Do not present a spec for approval while any cross-section contradiction or `OPEN QUESTION` block remains.
+- Do not claim an invariant is concurrency-safe without a mechanism proof that covers every writer and the empty-state transition.
 
 ## Verification
 
-Before considering the specification ready for implementation, confirm:
+Confirm every item. The first block is a self-check; the second block requires
+the human.
 
-- [ ] The spec covers all six core areas
-- [ ] The human has reviewed and approved the spec
+Agent self-check:
+
+- [ ] The spec covers all six core areas (areas 2–4 by reference plus delta in feature/module specs)
 - [ ] Success criteria are specific and testable
 - [ ] Boundaries (Always/Ask First/Never) are defined
-- [ ] The spec is saved to a file in the repository
+- [ ] The spec is saved per Output Files (or the project-designated location)
 - [ ] If the request bundles several independently testable capabilities, a capability map (module ids, dependency direction, build order) was approved before any module spec was written
 - [ ] Every module spec traces to a module id in the approved map
 - [ ] An internal-consistency pass found no contradictory behavior across sections
-- [ ] Every important invariant has precise empty-state semantics, complete state transitions, layer ownership, and a mechanism proof
+- [ ] No `OPEN QUESTION` block remains in the spec
+- [ ] Every invariant stated in the requirements or enforced by the schema has precise empty-state semantics, complete state transitions, layer ownership, and a mechanism proof
 - [ ] Any deletion marker or soft-delete field has explicit deletion, read, restoration, uniqueness, retention, and invariant semantics
+
+Human gate (do not self-certify these):
+
+- [ ] The human has reviewed and approved the capability map (when one exists)
+- [ ] The human has reviewed and approved the spec

@@ -12,6 +12,8 @@ Multi-dimensional code review with quality gates. Every change gets reviewed bef
 
 **The approval standard:** Approve a change when it definitely improves overall code health, even if it isn't perfect. Perfect code doesn't exist — the goal is continuous improvement. Don't block a change because it isn't exactly how you would have written it. If it improves the codebase and follows the project's conventions, approve it.
 
+**The finding standard:** Finding and filtering are separate steps. At the finding stage, record every issue you discover, including ones you are uncertain about or consider low-severity — do not pre-filter for importance or confidence. It is better to surface a finding that gets labeled Suggestion (or declined by the author) than to silently drop a real bug. The only things you may omit entirely are pure style or naming preferences already enforced by a formatter or explicitly covered by the style guide. Severity labels, confidence, and ordering — not omission — are how the review stays readable.
+
 ## Usage
 
 Invoke `code-review-and-quality` with a PR URL, diff, or file path. If none is
@@ -68,7 +70,7 @@ Can another engineer (or agent) understand this code without the author explaini
 Does the change fit the system's design?
 
 - Does it follow existing patterns or introduce a new one? If new, is it justified?
-- Does it maintain clean module boundaries? Are dependencies flowing in the right direction (no circular deps)?
+- Does it maintain clean module boundaries? Are dependencies flowing in the right direction (no circular dependencies)?
 - Is there code duplication that should be shared?
 - Are dependencies flowing in the right direction (no circular dependencies)?
 - Is the abstraction level appropriate (not over-engineered, not too coupled)?
@@ -78,16 +80,11 @@ Does the change fit the system's design?
 
 ### 4. Security
 
-- SQL injection, XSS, CSRF — are queries parameterized, outputs encoded?
-- Authentication and authorization flaws — are checks present where needed?
-- Secrets or credentials in code, logs, or version control?
+- Injection: are SQL queries parameterized (no string concatenation)? Are outputs encoded to prevent XSS? CSRF protections in place?
+- Authentication and authorization: are checks present where needed?
+- Secrets: kept out of code, logs, and version control?
 - Insecure deserialization, path traversal, SSRF?
 - Is user input validated and sanitized?
-- Are secrets kept out of code, logs, and version control?
-- Is authentication/authorization checked where needed?
-- Are SQL queries parameterized (no string concatenation)?
-- Are outputs encoded to prevent XSS?
-- Are dependencies from trusted sources with no known vulnerabilities?
 - Is data from external sources (APIs, logs, user content, config files) treated as untrusted and validated at system boundaries before use in logic or rendering?
 - Are dependencies from trusted sources with no known vulnerabilities? (`npm audit` or equivalent)
 
@@ -140,6 +137,8 @@ Small, focused changes are easier to review, faster to merge, and safer to deplo
 | **Horizontal** | Create shared code/stubs first, then consumers | Layered architecture |
 | **Vertical** | Break into smaller full-stack slices of the feature | Feature work |
 
+(Horizontal here means splitting an oversized *change* for reviewability — it does not override the planning skill's rule against horizontal task slicing.)
+
 **When large changes are acceptable:** Complete file deletions and automated refactoring where the reviewer only needs to verify intent, not every line.
 
 **Separate refactoring from feature work.** A change that refactors existing code and adds new behavior is two changes — submit them separately. Small cleanups (variable renaming) can be included at reviewer discretion.
@@ -180,7 +179,8 @@ Tests reveal intent and coverage:
 
 ### Step 3: Review the Implementation
 
-Walk through the code with the five axes in mind:
+Walk through the code with the five axes in mind, recording every finding as
+you go (per the finding standard in the Overview — no pre-filtering):
 
 ```
 For each file changed:
@@ -191,15 +191,35 @@ For each file changed:
 5. Performance: Any bottlenecks?
 ```
 
-### Step 4: Categorize Findings
+### Step 4: Label Every Finding
 
-Label every comment with its severity so the author knows what's required vs optional:
+Labeling ranks findings; it never deletes them. Every finding recorded in
+Step 3 appears in the output with a severity label and a confidence level
+(high/medium/low). Label every comment so the author knows what's required vs
+optional:
 
 | Label | Meaning | Author Action |
 |-------|---------|---------------|
 | **Critical** | Blocks merge | Security vulnerability, data loss risk, broken functionality — must fix |
 | **Important** | Should fix before merge | Missing test, wrong abstraction, poor error handling |
 | **Suggestion** | Optional improvement | Naming, style, optional optimization — author may decline |
+
+Concrete labeling bar: label Critical or Important any finding that could
+cause incorrect behavior, a test failure, a security exposure, data loss, or
+a misleading result for a future reader; everything else that survives the
+finding standard is a Suggestion. Low confidence lowers certainty, not
+severity — a low-confidence possible race condition is still Critical, marked
+low-confidence, not a Suggestion.
+
+**Presumptive blockers** — for each of these, always record the finding and
+propose the simpler design; label it Suggestion by default, escalating to
+Important when the change actively makes structure worse than before:
+
+- a refactor that relocates complexity instead of reducing it;
+- a change that pushes a file past the size boundary with no decomposition;
+- feature logic added to a shared module;
+- a near-duplicate of an existing canonical helper;
+- a silent fallback that hides an unclear invariant.
 
 This prevents authors from treating all feedback as mandatory and wasting time on optional suggestions.
 
@@ -218,9 +238,9 @@ across several labels makes the blocking set ambiguous.
 ### Output Contract
 
 Every finding includes a stable id (`CODE-1`, `CODE-2`, ...), native label,
-file/location, evidence, and concrete recommendation. Critical and Important
-findings must explain the required correction rather than merely naming a
-problem.
+confidence (high/medium/low), file/location, evidence, and concrete
+recommendation. Critical and Important findings must explain the required
+correction rather than merely naming a problem.
 
 Report:
 
@@ -241,7 +261,12 @@ This skill is the full standalone review method. The `/review` pipeline uses the
 compact `code-reviewer` persona instead and maps its findings before `/ship`;
 do not automatically invoke both for the same review.
 
-**Lead with what matters.** Order findings by leverage: correctness and security first, then structural regressions and missed simplifications, then everything else. Don't bury a real issue under cosmetic nits — a few high-conviction comments beat a long list. If you have one structural problem and ten nits, the structural problem *is* the review.
+**Lead with what matters — by ordering, never by omission.** Within each
+severity section, order findings by leverage: correctness and security first,
+then structural regressions and missed simplifications, then everything else.
+The severity sections already keep a real issue from being buried under
+Suggestions; a structural problem leads its section, and the ten nits still
+appear — as Suggestions, after it.
 
 ### Step 5: Verify the Verification
 
@@ -276,9 +301,12 @@ This catches issues that a single model might miss — different models have dif
 
 **Example prompt for a review agent:**
 ```
-Review this code change for correctness, security, and adherence to
-our project conventions. The spec says [X]. The change should [Y].
-Flag any issues as Critical, Important, or Suggestion.
+Review this code change for correctness, security, and adherence to our
+project conventions. The spec says [X]. The change should [Y]. Report every
+issue you find, including ones you are uncertain about or consider
+low-severity — do not filter for importance or confidence; a downstream step
+does that. For each finding, include a severity label (Critical, Important,
+Suggestion) and a confidence level.
 ```
 
 ## Dead Code Hygiene
@@ -301,12 +329,11 @@ DEAD CODE IDENTIFIED:
 
 ## Review Speed
 
-Slow reviews block entire teams. The cost of context-switching to review is less than the waiting cost imposed on others.
+(For human teams; an agent reviewer responds immediately.)
 
-- **Respond within one business day** — this is the maximum, not the target
-- **Ideal cadence:** Respond shortly after a review request arrives, unless deep in focused coding. A typical change should complete multiple review rounds in a single day
-- **Prioritize fast individual responses** over quick final approval. Quick feedback reduces frustration even if multiple rounds are needed
-- **Large changes:** Ask the author to split them rather than reviewing one massive changeset
+- Slow reviews block entire teams: respond within one business day maximum; ideally shortly after the request unless deep in focused work.
+- Prioritize fast individual responses over quick final approval — a typical change should complete multiple rounds in a day.
+- Large changes: ask the author to split them rather than reviewing one massive changeset.
 
 ## Handling Disagreements
 
@@ -317,7 +344,7 @@ When resolving review disputes, apply this hierarchy:
 3. **Software design** must be evaluated on engineering principles, not personal preference
 4. **Codebase consistency** is acceptable if it doesn't degrade overall health
 
-**Don't accept "I'll clean it up later."** Experience shows deferred cleanup rarely happens. Require cleanup before submission unless it's a genuine emergency. If surrounding issues can't be addressed in this change, require filing a bug with self-assignment.
+**Don't accept a bare "I'll clean it up later."** Experience shows deferred cleanup rarely happens. Require cleanup before submission unless it's a genuine emergency. The only valid deferral is a filed ticket, self-assigned by the author, linked from the review — that is what "explicitly deferred with justification" means in the Verification checklist.
 
 ## Honesty in Review
 
@@ -411,9 +438,10 @@ owns the separate GO/NO-GO release verdict.
 |---|---|
 | "It works, that's good enough" | Working code that's unreadable, insecure, or architecturally wrong creates debt that compounds. |
 | "I wrote it, so I know it's correct" | Authors are blind to their own assumptions. Every change benefits from another set of eyes. |
-| "We'll clean it up later" | Later never comes. The review is the quality gate — use it. Require cleanup before merge, not after. |
+| "We'll clean it up later" | Later never comes. The review is the quality gate — use it. Require a filed, self-assigned ticket or cleanup before merge. |
 | "AI-generated code is probably fine" | AI code needs more scrutiny, not less. It's confident and plausible, even when wrong. |
 | "The tests pass, so it's good" | Tests are necessary but not sufficient. They don't catch architecture problems, security issues, or readability concerns. |
+| "I'm not sure it's a bug, so I won't mention it" | Uncertainty is metadata, not a filter. Report it with low confidence — the label and downstream step decide, not silence. |
 | "The refactor makes it cleaner" | Relocating complexity isn't reducing it. If the reader still holds the same number of concepts, the structure didn't improve — look for the version where branches disappear. |
 | "It's only a small addition to this file" | Small diffs still push files past a healthy size and bolt branches onto unrelated flows. Judge the resulting structure, not the diff size. |
 | "It's just a version bump" | A bump is a behavior change you didn't write. Read the changelog; semver doesn't guarantee no breakage. |
@@ -428,7 +456,8 @@ owns the separate GO/NO-GO release verdict.
 - Large PRs that are "too big to review properly" (split them)
 - No regression tests with bug fix PRs
 - Review comments without severity labels — makes it unclear what's required vs optional
-- Accepting "I'll fix it later" — it never happens
+- Findings silently dropped instead of reported with low confidence
+- Accepting "I'll fix it later" with no filed ticket — it never happens
 - A refactor that moves code around without reducing the number of concepts a reader must hold
 - A change that grows an already-large file instead of decomposing it
 - New conditionals scattered into unrelated code paths (a missing abstraction)
@@ -440,11 +469,10 @@ owns the separate GO/NO-GO release verdict.
 
 After review is complete:
 
+- [ ] Every finding from Step 3 appears in the output with an id, label, and confidence — none were silently dropped
 - [ ] All Critical issues are resolved
-- [ ] All Important issues are resolved or explicitly deferred with justification
+- [ ] All Important issues are resolved or deferred via a filed, self-assigned, linked ticket
 - [ ] Tests pass
 - [ ] Build succeeds
 - [ ] The verification story is documented (what changed, how it was verified)
 - [ ] Dependency upgrades were reviewed against their changelog, isolated per package, and verified by a green suite with the lockfile diff reviewed
-
-**Presumptive blockers:** surface and propose the simpler design for each of these; escalate to Important only when the change actively makes structure worse: a refactor that relocates complexity instead of reducing it; a change that pushes a file past the size boundary with no decomposition; feature logic added to a shared module; a near-duplicate of an existing canonical helper; a silent fallback that hides an unclear invariant.

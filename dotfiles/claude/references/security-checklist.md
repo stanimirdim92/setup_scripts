@@ -42,7 +42,7 @@ Before reaching for controls, spend five minutes thinking like an attacker:
 
 ## Pre-Commit & Secrets
 
-- [ ] No secrets in staged changes; automated secret scanning used where possible (for example Gitleaks or TruffleHog)
+- [ ] No secrets in staged changes; automated secret scanning used where possible (for example Gitleaks or TruffleHog) or (`git diff --cached | grep -i "password\|secret\|api_key\|token"`)
 - [ ] `.gitignore` covers local secret/config files such as `.env`, `.env.local`, `*.pem`, `*.key`
 - [ ] `.env.example` contains placeholders only
 - [ ] Generated artifacts, fixtures, logs, and test snapshots contain no real credentials or sensitive production data
@@ -151,12 +151,16 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 - [ ] Wildcard origin never combined with credentialed browser access
 
 ```typescript
+// Restrictive (recommended)
 cors({
   origin: ['https://yourdomain.com', 'https://app.yourdomain.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 })
+
+// NEVER use in production:
+cors({ origin: '*' })  // Allows any origin
 ```
 
 ### CSRF

@@ -28,13 +28,18 @@ Before making implementation decisions, operate in read-only mode.
 - Read the approved spec.
 - Discover and read project-local instruction sources relevant to the affected area.
 - Inspect the closest repository precedents and affected code.
-- Resolve implementation constraints, dependencies, risks, and unknowns.
+- Note implementation constraints, dependencies, risks, and unknowns.
 
 Before decomposing work, reconcile the proposed plan against the approved spec.
 Build a compact trace from each planned behavior and acceptance criterion back
 to its spec source. If the repository makes an approved spec decision infeasible
 or reveals a contradiction, stop and report a `SPEC CONFLICT`; do not silently
 rewrite the requirement in the plan.
+
+A `SPEC CONFLICT` report contains: the spec section and quoted requirement, what
+in the repository contradicts or blocks it, and 1-3 candidate resolutions. Write
+it at the top of the plan document under a `## SPEC CONFLICT` heading, save the
+partial plan as-is, and stop — do not continue planning past the conflict.
 
 Common project instruction sources include:
 
@@ -48,31 +53,26 @@ Common project instruction sources include:
 Do not assume these exact paths exist; discover the project's actual instruction
 sources.
 
-Use evidence in this order:
-
-1. Approved spec decisions and explicit user instructions.
-2. Applicable project-local rules.
-3. Closest owning-module / sibling implementation precedent.
-4. Repository-wide conventions.
-5. Framework conventions only when the repository has no applicable precedent.
-
 **Do NOT write code during planning.** The output is a plan document saved to `docs/tasks/[TICKET]-plan.md` and a task list saved to `docs/tasks/[TICKET]-todo.md`, not implementation.
 
 ### Decision provenance
 
 Do not make implementation-shaping decisions appear arbitrary.
 
-When a decision is materially constrained by the spec, a project rule, or a
-repository precedent, record that source briefly in the plan when it helps
-explain the decision.
+Record a source for every decision a reviewer could reasonably ask "why this
+way and not another?" about — any decision with two or more plausible
+implementations where the spec, a project rule, or a repository precedent
+picked the winner. When in doubt, record it: an unnecessary annotation costs
+one line; a missing one costs a review round-trip.
+
+Skip annotation only when the decision has one obvious implementation (e.g.,
+"the new route lives in the existing routes file").
 
 Examples:
 
 - Request/DTO boundary — required by an applicable project rule.
 - Parent resolution by UUID or id — mirrors `AdvertiserTagAssignmentController`.
 - Generated-column uniqueness guard — approved spec decision; new repository pattern.
-
-Do not annotate obvious or trivial decisions merely for traceability.
 
 ### Preserve the approved behavioral contract
 
@@ -89,9 +89,8 @@ approved feature contract.
   not a planning assumption. Record the conflict and return to `/spec` for human
   approval before continuing.
 
-Before approval, compare the plan and every task packet against the spec section
-by section. Every acceptance criterion must be equal to or directly derived from
-the approved spec.
+Before approval, compare the plan and every task packet against the spec section by section.
+Every acceptance criterion must be equal to or directly derived from the approved spec.
 
 ### Step 2: Identify the Dependency Graph
 
@@ -133,9 +132,7 @@ Examples:
 - Controller, service, repository, builder, and model may all belong to one
   behavioral slice.
 
-### Step 3: Slice by Behavior
-
-Prefer vertical tasks that leave behind independently verifiable behavior.
+### Step 3: Slice Vertically
 
 Instead of building all the database, then all the API, then all the UI — build one complete feature path at a time:
 
@@ -155,15 +152,14 @@ Task 3: User can create a task (task schema + API + UI for creation)
 Task 4: User can view task list (query + API + UI for list view)
 ```
 
-Before accepting a task boundary, ask:
+Before accepting any task boundary, ask:
 
 > Does this task produce behavior that can be meaningfully verified on its own?
 
 If the answer is only "these architectural files now exist," merge it into the
-behavioral task that consumes them unless it is a justified foundation.
-
-A foundation task is justified only when later behavioral tasks genuinely depend
-on it and it has meaningful independent verification.
+behavioral task that consumes them — unless it is a **justified foundation**: a
+task that is independently verifiable AND consumed by two or more downstream
+tasks (e.g., a migration establishing a schema three later tasks build on).
 
 Each vertical slice delivers working, testable functionality.
 
@@ -172,10 +168,11 @@ Each vertical slice delivers working, testable functionality.
 When the approved spec defines an invariant, do not leave it as background
 prose that the executor has to rediscover.
 
-Any task that can establish, transfer, violate, or release that invariant should
-carry the relevant transition in its acceptance criteria or verification. Also
-preserve which layer is responsible for enforcing it when that distinction is
-material.
+**Every** task that can establish, transfer, violate, or release that invariant
+must carry the relevant transition in its acceptance criteria or verification —
+not just the first task that touches it. Also preserve which layer is
+responsible for enforcing it when the spec or a project rule assigns
+enforcement to a specific layer.
 
 This keeps the task behavioral: "first entity establishes the invariant" is a
 better execution contract than "implement service methods."
@@ -194,9 +191,11 @@ Keep tasks in the same workstream when they:
 - Share important implementation context
 - Benefit from retaining decisions and codebase knowledge across tasks
 
-Create another workstream when the implementation context is materially
-different and either the work is genuinely independent or a stable contract
-forms a clean dependency boundary.
+Create another workstream only when the implementation context is materially
+different — different subsystem, language, framework, or repository area, such
+that one executor's accumulated context does not help the other — and either
+the work is genuinely independent or a stable contract forms a clean dependency
+boundary.
 
 Independent workstreams have:
 
@@ -237,10 +236,16 @@ Every task must have:
 - A verification step
 - Dependencies
 - A workstream
-- Likely affected files or areas when useful
-- Compact context pointers when useful: applicable project/module rules,
-  one or two closest precedents, and a shared contract/invariant that materially
-  constrains the task
+
+Every task should also carry, whenever they exist for its area:
+
+- Likely affected files or areas
+- Compact context pointers: the applicable project/module rules, the one or two
+  closest repository precedents, and any shared contract or invariant the task
+  must respect. Include a pointer whenever an executor implementing the task
+  cold — without reading the full spec or plan — would otherwise miss a rule,
+  precedent, or invariant that changes what correct output looks like. Omit
+  pointers only when no such rule, precedent, or contract applies.
 
 The task should be dispatchable without copying the full spec or full plan into
 an executor prompt. Prefer references to authoritative files over duplicated
@@ -257,10 +262,11 @@ Arrange tasks so that:
 
 1. Dependencies are satisfied.
 2. Each task leaves the system in a working state.
-3. Add checkpoints where they materially reduce implementation or integration risk.
+3. Checkpoints exist at the risk points listed below.
 4. Put high-risk work early enough to fail fast.
 
-Useful checkpoints include:
+Add a checkpoint at each of these points (and only these, unless the plan
+states a specific new risk it mitigates):
 
 - after a risky schema or external-contract decision;
 - before dependent work consumes a newly established contract;
@@ -280,21 +286,22 @@ Example:
 
 ## Task Sizing Guidelines
 
-Use size as a planning heuristic, not a hard file-count gate.
-
 | Size | Typical Files | Scope |
 |---|---:|---|
 | XS | 1 | Localized change |
 | S | 1-2 | One small behavior/component |
 | M | 3-5 | One focused implementation session |
-| L | 5-8 | Likely >1 focused session — consider splitting |
-| XL | 8+ | Usually too broad — split unless highly cohesive |
+| L | 5-8 | More than one focused session |
+| XL | 8+ | Multiple sessions, multiple concerns |
 
-Prefer S/M tasks. Split when the work cannot reasonably be implemented,
-tested, and verified in one focused session.
+Agents perform best on S and M tasks. **Split every L and XL task** unless
+splitting would break a single coherent behavioral slice that cannot be
+verified in parts — and when you keep one, record that justification in the
+plan. File count is a proxy: size by verification effort, not by counting
+files.
 
 **When to break a task down further:**
-- It would take more than one focused session (roughly 2+ hours of agent work)
+- It would take more than one focused session (roughly one context window of agent work)
 - You cannot describe the acceptance criteria in 3 or fewer bullet points
 - It touches two or more independent subsystems (e.g., auth and billing)
 - You find yourself writing "and" in the task title (a sign it is two tasks)
@@ -314,24 +321,50 @@ assignments.
 
 ## Guardrails
 
-- Do not implement while planning
-- Do not create tasks solely around architectural layers
-- Do not split tasks based on an arbitrary file-count limit
-- Do not manufacture multiple workstreams for possible parallelism
-- Do not duplicate repository-wide conventions already documented elsewhere
-- Do not copy the spec into the plan
-- Do not hide unresolved technical risks inside implementation tasks
-- Do not treat "parallelizable" as "should run in parallel"
-- Do not introduce files, architectural layers, factories, DTOs, resources,
-  test helpers, or abstractions solely because they are common framework
-  conventions.
-- Every planned new layer or support artifact must come from the approved spec,
-  an applicable project rule, repository precedent, or a clearly stated new
-  technical decision.
-- Do not silently contradict, weaken, omit, or reinterpret approved spec behavior.
-- Do not strengthen or invent acceptance criteria during planning; return new
-  behavioral decisions to `/spec` for approval.
+The four most common planning failures, shown as bad/good pairs:
 
+**Layer tasks instead of behavior tasks**
+
+```
+Bad:  Task: Create ContactRepository, ContactFactory, ContactDTO
+Good: Task: Contacts persist with the uniqueness invariant
+      (repository + factory + DTO live inside this slice)
+```
+
+**Invented behavior not in the spec**
+
+```
+Bad:  Task: Contact creation (adds soft-delete and audit log —
+      "standard practice")
+Good: Task: Contact creation, exactly per spec §3.2.
+      Soft-delete looks needed → SPEC CONFLICT, return to /spec.
+```
+
+**Speculative framework artifacts**
+
+```
+Bad:  Plan adds a service interface, a factory, and a test helper
+      "because that's the usual structure"
+Good: Every new layer or support artifact cites its source: the
+      approved spec, a project rule, a repository precedent, or a
+      stated new technical decision recorded in the plan.
+```
+
+**Manufactured parallelism**
+
+```
+Bad:  6 workstreams because 6 tasks "could run in parallel"
+Good: 1 workstream; genuinely independent contexts split off only
+      per Step 4. "Parallelizable" is metadata for /build, not a
+      command to spend concurrency.
+```
+
+Also:
+
+- Do not implement while planning
+- Do not copy the spec into the plan, or duplicate repository-wide conventions documented elsewhere
+- Do not hide unresolved technical risks inside implementation tasks
+- Do not contradict, weaken, strengthen, omit, or reinterpret approved spec behavior; return new behavioral decisions to `/spec`
 
 ## Plan Document Template
 
@@ -354,8 +387,6 @@ writing by itself. `/build` owns the execution/concurrency policy.
   and stabilize the contract first, preserve an explicit dependency/checkpoint,
   then parallelize only dependency-ready consumers/implementations.
 
-"Parallelizable" is planning metadata. It is not a command to spend concurrency.
-
 ## Common Rationalizations
 
 | Rationalization | Reality |
@@ -368,34 +399,41 @@ writing by itself. `/build` owns the execution/concurrency policy.
 ## Red Flags
 
 - Starting implementation without a written task list
+- Writing `docs/tasks/[TICKET]-todo.md` when the project has designated an external tracker (or scattering tasks across both)
 - Tasks that say "implement the feature" without acceptance criteria
 - No verification steps in the plan
 - All tasks are XL-sized
-- Risky boundaries or integration points with no checkpoint where one would materially reduce risk
+- A risky schema decision, new contract, or workstream integration point with no checkpoint
 - Dependency order isn't considered
 
 ## Verification
 
-Before the plan is ready for `/build`, confirm:
+Before the plan is ready for `/build`, confirm every item. The first block is a
+self-check; the second block requires the human.
 
-- [ ] No task exists solely because an architectural layer exists, unless it is a justified foundation with independent verification value.
+Agent self-check:
+
+- [ ] No task exists solely because an architectural layer exists, unless it is a justified foundation (independently verifiable AND consumed by 2+ downstream tasks)
 - [ ] Every task has explicit acceptance criteria
 - [ ] Every task has a verification step
 - [ ] Dependencies are explicit and correctly ordered
 - [ ] Every task has a workstream
-- [ ] Task-local context pointers are present when project rules, precedents,
-      contracts, or invariants materially constrain implementation
+- [ ] Every task carries context pointers for each project rule, precedent, contract, or invariant that applies to its area
 - [ ] Related tasks share a workstream unless a stable contract separates materially different implementation contexts
 - [ ] Contract-separated workstreams retain explicit dependencies and a contract checkpoint
 - [ ] Task boundaries follow coherent behavior rather than arbitrary file counts
+- [ ] Every L/XL task is split, or its cohesion justification is recorded in the plan
 - [ ] High-risk decisions are addressed early enough to fail fast
-- [ ] Checkpoints exist where they materially reduce risk
+- [ ] A checkpoint exists at each risk point listed in Step 6 that occurs in this plan
 - [ ] The plan does not unnecessarily duplicate the spec
 - [ ] The plan contains no production implementation
 - [ ] Every planned behavior and acceptance criterion traces to the approved spec
 - [ ] The plan does not contradict, weaken, or strengthen the approved spec
-- [ ] The final handoff MUST be `Ready for /build`
+
+Human gate (do not self-certify these):
+
 - [ ] The human has reviewed and approved the plan
+- [ ] The final handoff is `Ready for /build`
 
 ## See Also
 

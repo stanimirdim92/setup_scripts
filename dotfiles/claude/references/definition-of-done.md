@@ -44,7 +44,7 @@ simplicity and scope discipline belong to `CLAUDE.md`,
 
 ### Documentation
 - [ ] Public interfaces, APIs, and user-facing behavior are documented
-- [ ] Architectural decisions worth preserving are recorded
+- [ ] Architectural decisions worth preserving are recorded (see `adr-recording`)
 - [ ] Documentation describes the current state in timeless language, not the change history
 
 ### Ship-readiness
@@ -56,7 +56,6 @@ simplicity and scope discipline belong to `CLAUDE.md`,
 
 - **Per task**: confirm the Correctness and Quality sections before checking the task off.
 - **Per feature**: confirm Integration and Documentation before considering the feature complete.
-- **Per release**: the full checklist is the floor.
 
 Tailor the list to the project once, then reuse it unchanged. A Definition of Done that is renegotiated every sprint is not a Definition of Done.
 

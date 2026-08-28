@@ -49,7 +49,7 @@ The TDD cycle is universal; the commands are not. Before writing the first test,
 - **Documented commands** — README, CONTRIBUTING, and CI workflows show the commands that actually gate merges
 
 Run the repository's focused-test command during the loop and its full-suite command before completion. Never assume a default like `npm test` — a Gradle, Cargo, or pytest project has its own equivalent.
-    
+
 The examples below use TypeScript for illustration; the workflow is identical in any language once you've discovered the project's own tooling.
 
 ## The TDD Cycle - Red-Green-Refactor
@@ -151,7 +151,6 @@ Bug report arrives
        ▼
   Run full test suite (no regressions)
 ```
-
 
 **Example:**
 
@@ -376,10 +375,7 @@ This separation ensures the test is written without knowledge of the fix, making
 
 ## See Also
 
-The principles above transfer to any ecosystem; a JS/TS-specific reference
-(Jest, React Testing Library, Supertest, Playwright) isn't currently
-vendored in this repo — apply the same principles with whatever
-test framework the project already uses.
+For JavaScript/TypeScript testing patterns illustrating these principles — Jest, React Testing Library, Supertest, Playwright — see `../../references/testing-patterns.md`. The principles transfer to any ecosystem; the syntax and tools there are JS/TS-specific.
 
 ## Common Rationalizations
 
