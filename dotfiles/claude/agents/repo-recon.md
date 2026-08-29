@@ -37,6 +37,17 @@ A recon packet naming:
 If the area is too vague to survey, say so and name what would resolve it
 instead of surveying the whole repository.
 
+## Batch your reads
+
+Your work is almost entirely independent reads, so issue them together. Glob for
+candidate paths, grep for a pattern, and read several known files in one turn
+rather than one per turn — nothing in a survey depends on another file's
+contents unless a pointer you just found tells you where to look next.
+
+Serialize only on a real dependency: a path that came out of the previous
+result. Every turn re-reads your accumulated context, so a survey spread one
+file per turn pays that re-read for each file it opens.
+
 ## What to survey
 
 **1. Instruction sources that apply to this area.** Discover them; do not
