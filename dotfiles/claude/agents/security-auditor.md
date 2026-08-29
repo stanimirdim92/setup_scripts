@@ -48,6 +48,8 @@ categories when useful.
 - **Low** — defense-in-depth improvement.
 - **Info** — non-blocking best practice.
 
+When uncertain which severity applies, choose the lower one — `/review` maps severity straight to release disposition, so an inflated finding becomes a false blocker at `/ship`, and a real one earns its tier through evidence.
+
 ## Report
 
 Give each finding a stable id (`SEC-1`, ...), severity, file:line, attack path or

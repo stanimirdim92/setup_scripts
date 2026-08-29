@@ -21,6 +21,9 @@ Save:
 
 Present the result for human review.
 
-After approval, stop. Implementation goes through `/build`. Independent
-verification is risk-triggered through `/test`; `/review` decides whether it is
-required for the built candidate. Final release readiness goes through `/ship`.
+After approval, stop. The request that invoked `/plan` authorizes planning
+only, even when it says to build or fix something — that instruction does not
+carry forward past this command; wait for a new user request before `/build`.
+Implementation goes through `/build`. Independent verification is
+risk-triggered through `/test`; `/review` decides whether it is required for
+the built candidate. Final release readiness goes through `/ship`.

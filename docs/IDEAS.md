@@ -17,3 +17,11 @@ doing, not just what it is.
 | Idea | Reason rejected |
 |---|---|
 | — | — |
+
+- **Delta specs merged into living per-capability specs** (from
+  Fission-AI/openspec): per-ticket specs become deltas
+  (ADDED/MODIFIED/REMOVED/RENAMED requirements) against
+  `docs/specs/<capability>/spec.md`, and `/ship`'s Documentation attestation
+  owns merging the delta after GO — fixes specs going stale after shipping.
+  Needs its own decision: changes the spec storage model. See
+  `docs/adr/0040-openspec-conventions-adopted.md`.

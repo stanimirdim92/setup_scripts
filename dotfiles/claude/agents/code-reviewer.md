@@ -70,9 +70,11 @@ Categorize every finding, using the same severity labels as the `code-review-and
 
 **Critical** — Blocks merge (security vulnerability, data loss risk, broken functionality)
 
-**Required** — Must address before merge (missing test, wrong abstraction, poor error handling)
+**Important** — Must address before merge (missing test, wrong abstraction, poor error handling)
 
 **Suggestion** — Consider for improvement (naming, code style, optional optimization)
+
+When uncertain which severity applies, choose the lower one — `/review` maps severity straight to release disposition, so an inflated finding becomes a false blocker at `/ship`, and a real one earns its tier through evidence.
 
 Give every finding a stable id within the report (`CODE-1`, `CODE-2`, ...). The
 orchestrating `/review` preserves this native severity and maps it to the

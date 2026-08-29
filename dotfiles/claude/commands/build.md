@@ -10,6 +10,8 @@ discipline, tests, verification, and scoped local commits.
 
 ## 1. Resolve scope before dispatch
 
+Resolve the target per `../references/target-selection.md`, and announce it ("Using: <target>") before anything else.
+
 Read `docs/tasks/[TICKET]-todo.md` and the plan only as needed.
 
 For each selected task resolve:

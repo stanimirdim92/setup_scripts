@@ -21,3 +21,8 @@ not present a materially contradictory or lifecycle-ambiguous spec as complete.
 If the request bundles several independently testable capabilities, first propose a capability map (module ids, dependency direction, build order) per the skill's Phase 0 and get it approved, then spec each module in dependency order.
 
 Save the spec as docs/specs/[TICKET]-SPEC.md in the project root and confirm with the user before proceeding.
+
+The request that invoked `/spec` authorizes specification only, even when it
+says to build or fix something — that instruction does not carry forward past
+this command. After presenting the spec, stop and wait for a new user request;
+do not start `/plan` or implementation in the same response.

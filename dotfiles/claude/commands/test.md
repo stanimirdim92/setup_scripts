@@ -15,12 +15,16 @@ because the trigger matrix would have allowed it to be skipped.
 
 ## 1. Resolve scope
 
+Resolve the target per `../references/target-selection.md`, and announce it ("Using: <target>") before anything else.
+
 Use the selected task/spec artifacts, the current branch/diff, and `/build`'s
 completion handoff from the current conversation.
 
 Resolve:
 
-- acceptance criteria;
+- acceptance criteria — when the spec uses `### Requirement:` /
+  `#### Scenario:` anchors, pass that enumerated list so coverage maps back
+  requirement-by-requirement;
 - implemented behavior;
 - risk/regression surface;
 - tests and commands `/build` already ran.

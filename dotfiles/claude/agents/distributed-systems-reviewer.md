@@ -43,6 +43,8 @@ Native severity:
 - **Important** — release-relevant reliability/consistency defect.
 - **Suggestion** — non-blocking resilience improvement.
 
+When uncertain which severity applies, choose the lower one — `/review` maps severity straight to release disposition, so an inflated finding becomes a false blocker at `/ship`, and a real one earns its tier through evidence.
+
 Use stable ids (`DIST-1`, ...), file:line, failure scenario, and a specific
 recommendation. If a mechanism exists but cannot be verified, say so rather than
 assuming either correctness or failure.

@@ -8,10 +8,14 @@ or implement fixes.
 
 ## 1. Require the REVIEW handoff
 
+Resolve the target per `../references/target-selection.md`, and announce it ("Using: <target>") before anything else.
+
 Require `/review`'s result for the exact current candidate.
 
 Confirm the current branch, commits, diff, and tree still match the reviewed
-candidate. Missing/stale review evidence or undeclared candidate changes are
+candidate. Re-read the handoff artifacts and any spec/plan documents from disk
+even if they appeared earlier in the conversation — the user may have edited
+them since. Missing/stale review evidence or undeclared candidate changes are
 **SHIP BLOCKED**.
 
 Use `/review`'s independent-verification status:

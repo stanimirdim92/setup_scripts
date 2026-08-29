@@ -8,7 +8,23 @@ skip a section because it "doesn't apply," write "N/A" and why instead.
 # Spec: [Project/Feature Name]
 
 ## Objective
-[What we're building and why. User stories or acceptance criteria.]
+[What we're building and why. User stories; detailed acceptance criteria go
+under Requirements below.]
+
+## Requirements
+[One `### Requirement:` per behavior the change must provide, each with
+`#### Scenario:` blocks for its cases. These exact heading forms are
+load-bearing: `/test` and `/review` enumerate them mechanically (grep
+`### Requirement:` / `#### Scenario:`) to map coverage
+requirement-by-requirement instead of interpreting prose.]
+
+### Requirement: [Behavior the system must provide]
+[One or two sentences stating the requirement precisely.]
+
+#### Scenario: [Named case — happy path, boundary, failure]
+- GIVEN [precondition]
+- WHEN [action]
+- THEN [observable outcome]
 
 ## Tech Stack
 [Framework, language, key dependencies with versions]
