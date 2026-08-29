@@ -44,7 +44,9 @@ Source: `../commands/spec.md`, `../commands/plan.md`.
 - executor implements, tests, verifies, and makes scoped local commits;
 - sequential execution is the token-efficient default;
 - concurrent writers require isolated worktrees and genuinely independent,
-  dependency-ready workstreams;
+  dependency-ready workstreams; 2 concurrent by default, a third only when
+  independence, dependency-readiness, worktree isolation, and rate-limit
+  headroom all hold, and `/build` reports which it chose;
 - `/build` reports `BUILD COMPLETE` and verification evidence.
 
 Source: `../commands/build.md`.

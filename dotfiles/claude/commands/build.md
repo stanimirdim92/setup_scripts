@@ -92,10 +92,26 @@ The executor invokes only additional skills selected by `/build`.
 
 Default to sequential execution for token efficiency.
 
-Use at most **2 concurrent executors** only when independent,
-dependency-ready workstreams justify the wall-clock tradeoff. Every concurrent
-writer must use `isolation: worktree`; never run two writing agents against the
-same checkout.
+Concurrency cap: **2 concurrent executors by default.** A third is allowed only
+when ALL of these hold, and never a fourth:
+
+- the three workstreams are genuinely independent (no unfinished dependency
+  between them, no shared mutable state);
+- each is dependency-ready now (any gating checkpoint has already passed);
+- every concurrent writer uses `isolation: worktree` — never two writing agents
+  against the same checkout;
+- the session is not near its rate limit. Concurrent executors share one limit,
+  so once throttled, 3-wide finishes no faster than 2-wide plus queueing, and
+  often slower. When near the limit, drop to 2 and queue the third.
+
+"Could run in parallel" is not "should." A third executor buys wall-clock only
+when unthrottled and truly independent; otherwise it spends tokens for no
+speedup. Prefer 2 + queue over 3 whenever either independence or headroom is in
+doubt.
+
+State the actual dispatch in the completion report: how many ran concurrently,
+which workstreams, and — if a third was used — that its four conditions held. If
+concurrency exceeds this cap, that is a reportable slip, named as such.
 
 Parallel workstreams still integrate sequentially in dependency order. After
 each integration run affected checks; after all integrations run the combined
