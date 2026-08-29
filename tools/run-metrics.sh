@@ -39,9 +39,15 @@ DIR="$PROJECTS/$(slug)"
 
 if [ "$LIST" = 1 ]; then
   [ -d "$DIR" ] || { echo "run-metrics: no transcripts at $DIR" >&2; exit 1; }
+  printf '%-34s  %-34s  %s\n' "FIRST RECORD (UTC)" "LAST RECORD (UTC)" "TRANSCRIPT"
   ls -1t "$DIR"/*.jsonl 2>/dev/null | while read -r f; do
-    printf '%s\t%s\n' "$(date -r "$f" '+%Y-%m-%d %H:%M')" "$f"
+    first=$(head -400 "$f" | jq -rs '[.[]|select(.timestamp)|.timestamp]|first // empty' 2>/dev/null || true)
+    last=$(tail -400 "$f"  | jq -rs '[.[]|select(.timestamp)|.timestamp]|last  // empty' 2>/dev/null || true)
+    printf '%-34s  %-34s  %s\n' "${first:-?}" "${last:-?}" "$f"
   done
+  echo
+  echo "Timestamps are UTC. Pick the transcript whose span covers your window,"
+  echo "then pass it explicitly: run-metrics.sh --since ... --until ... <file>"
   exit 0
 fi
 
@@ -52,8 +58,26 @@ if [ -z "$FILE" ]; then
 fi
 [ -r "$FILE" ] || { echo "run-metrics: cannot read $FILE" >&2; exit 1; }
 
+SPAN_FIRST=$(head -400 "$FILE" | jq -rs '[.[]|select(.timestamp)|.timestamp]|first // empty' 2>/dev/null || true)
+SPAN_LAST=$(tail -400  "$FILE" | jq -rs '[.[]|select(.timestamp)|.timestamp]|last  // empty' 2>/dev/null || true)
+
 echo "transcript : $FILE"
+echo "spans (UTC): ${SPAN_FIRST:-?} .. ${SPAN_LAST:-?}"
 [ -n "$SINCE$UNTIL" ] && echo "window     : ${SINCE:-start} .. ${UNTIL:-end}"
+
+# A window that misses this transcript entirely is the most common mistake:
+# --since/--until filter ONE file, and with no file given that is the newest
+# transcript, which may predate or postdate the window completely.
+if [ -n "$SPAN_FIRST" ] && [ -n "$SPAN_LAST" ]; then
+  if { [ -n "$UNTIL" ] && [ "$UNTIL" \< "$SPAN_FIRST" ]; } ||
+     { [ -n "$SINCE" ] && [ "$SINCE" \> "$SPAN_LAST" ]; }; then
+    echo
+    echo "WARNING: the window does not overlap this transcript at all." >&2
+    echo "         All figures below will be zero. Run --list to find the" >&2
+    echo "         transcript whose span covers your window, and pass it" >&2
+    echo "         explicitly. Timestamps are UTC." >&2
+  fi
+fi
 echo
 
 # Parallel tool calls are written as SEPARATE assistant records sharing one
@@ -76,7 +100,7 @@ jq -rs --arg since "$SINCE" --arg until "$UNTIL" '
 
   [ .[] | select(.type=="assistant" and .requestId and .message.content) | select(inwin)
     | {r:.requestId, side:(.isSidechain//false),
-       n:(.message.content|map(select(.type=="tool_use"))|length)} ] as $all
+       n:(.message.content|if type=="array" then map(select(.type=="tool_use"))|length else 0 end)} ] as $all
   | [ .[] | select(.message.usage) | select(inwin) | .message.usage ] as $u
 
   | "TOOL BATCHING - main session", batching([$all[]|select(.side|not)]),
@@ -95,7 +119,7 @@ jq -rs --arg since "$SINCE" --arg until "$UNTIL" '
   def inwin: (($since == "") or (.timestamp >= $since))
          and (($until == "") or (.timestamp <= $until));
   [ .[] | select(.type=="assistant" and .requestId and .message.content) | select(inwin)
-    | .requestId as $r | .message.content[] | select(.type=="tool_use") | {r:$r, t:.name} ]
+    | .requestId as $r | .message.content | select(type=="array") | .[] | select(.type=="tool_use") | {r:$r, t:.name} ]
   | group_by(.r) | map({n:length, tool:(map(.t)|first)})
   | map(select(.n==1)) | group_by(.tool)
   | map({tool:.[0].tool, solo:length}) | sort_by(-.solo) | .[:6][]
