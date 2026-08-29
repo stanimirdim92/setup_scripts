@@ -5,7 +5,7 @@
 `code-reviewer` agents running a 7-phase pipeline that duplicated this
 repo's own `/spec` → `/plan` → `/build` → `/review`, one of the two
 "active router" collisions raised via `addyosmani/agent-skills`'
-`docs/comparison.md`. Added `security-guidance`, `typescript-lsp`,
+`docs/comparison.md`. Added `typescript-lsp`,
 `code-simplifier` (referenced by `references/definition-of-done.md`'s
 Quality section), and `playwright`.
 

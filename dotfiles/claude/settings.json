@@ -1,6 +1,10 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "200000",
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "otlp",
+    "OTEL_LOGS_EXPORTER": "otlp",
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "500000",
     "ENABLE_TOOL_SEARCH": "true",
     "CLAUDE_CODE_AUTO_CONNECT_IDE": "true"
   },
@@ -110,11 +114,18 @@
       }
     ]
   },
+  "statusLine": {
+    "type": "command",
+    "command": "$HOME/.claude/statusline.sh"
+  },
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "$HOME/.claude/subagent-statusline.sh"
+  },
   "enabledPlugins": {
     "phpstorm-plugin@phpstorm-marketplace": true,
     "episodic-memory@superpowers-marketplace": true,
-    "context7@claude-plugins-official": true,
-    "security-guidance@claude-plugins-official": true,
+    "context7@claude-plugins-official": trueq,
     "typescript-lsp@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
     "qdrant-skills@knowledge-work-plugins": true,
@@ -146,20 +157,13 @@
       }
     }
   },
-  "statusLine": {
-    "type": "command",
-    "command": "$HOME/.claude/statusline.sh"
-  },
-  "subagentStatusLine": {
-    "type": "command",
-    "command": "$HOME/.claude/subagent-statusline.sh"
-  },
   "effortLevel": "medium",
   "advisorModel": "opus",
-  "autoMemoryEnabled": false,
+  "autoMemoryEnabled": true,
   "theme": "dark-ansi",
   "editorMode": "normal",
+  "preferredNotifChannel": "terminal_bell",
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "preferredNotifChannel": "terminal_bell"
+  "remoteControlAtStartup": true
 }
