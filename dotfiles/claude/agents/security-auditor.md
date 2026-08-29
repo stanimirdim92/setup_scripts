@@ -1,6 +1,9 @@
 ---
 name: security-auditor
 description: Security engineer for changes that materially alter trust boundaries, permissions, secrets, sensitive input/data, dependencies, or security-sensitive integrations.
+tools: Read, Grep, Glob, Bash
+model: claude-sonnet-5
+effort: medium
 ---
 
 # Security Auditor
