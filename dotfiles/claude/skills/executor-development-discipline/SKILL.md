@@ -50,6 +50,28 @@ Pure documentation, static content, and configuration-only changes with no
 behavioral surface do not require a manufactured failing test. Apply the
 repository's appropriate validation instead.
 
+## Batch Independent Operations
+
+Issue independent, read-only operations together in a single turn rather than
+one per turn. Reading three files, running two greps, and inspecting git state
+are independent when no one of them needs another's result first — request them
+in one turn.
+
+Serialize only when there is a real dependency: the next call's input, path, or
+decision comes from the previous call's output. A test run that must follow an
+edit is dependent; two unrelated file reads are not.
+
+This is a cost constraint, not a style preference. Every turn re-reads the whole
+accumulated context, so a task that issues 60 tool calls one-per-turn re-reads
+context 60 times. The same 60 operations batched into 15 turns cut that roughly
+fourfold, with no loss of information. Read-only inspection at the start of a
+task — rules, precedents, sibling files, current git state — should be gathered
+in as few turns as the operations' dependencies allow.
+
+Mutating operations (edits, writes, migrations, commits) stay one per step and
+follow the TDD loop; batching applies to reads, greps, and non-mutating
+inspection, not to changes that must be verified individually.
+
 ## Verify at the Right Cadence
 
 During a slice, run the smallest test command that can change meaningfully from
