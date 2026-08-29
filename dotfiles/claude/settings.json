@@ -125,7 +125,7 @@
   "enabledPlugins": {
     "phpstorm-plugin@phpstorm-marketplace": true,
     "episodic-memory@superpowers-marketplace": true,
-    "context7@claude-plugins-official": trueq,
+    "context7@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
     "qdrant-skills@knowledge-work-plugins": true,

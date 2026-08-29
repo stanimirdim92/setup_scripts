@@ -24,13 +24,24 @@ Check the changed semantics that apply:
    dependencies do not create retry storms or unbounded resource consumption.
 5. **Backpressure/queues** — queues and consumers have bounded behavior,
    poison-message handling, and observable lag/depth.
-6. **Concurrency/ordering** — races, duplicate/out-of-order delivery, locking,
+6. **CAP / partition behavior** — when the change spans a network boundary
+   (a replica, a remote store, a cross-service read/write), the design makes a
+   deliberate choice about what happens *during* a partition or node failure:
+   reject to preserve consistency (CP), or serve possibly-stale/uncommitted data
+   to preserve availability (AP). The tradeoff must match the business invariant
+   the data carries — money and inventory usually cannot serve stale; a feed or a
+   cache usually can. Flag any cross-boundary read/write that silently assumes the
+   network is reliable, or that picks availability where correctness is required
+   (or vice versa) without that choice being explicit. "The database handles it"
+   is not an answer — a multi-node store still exposes a consistency level, and
+   the caller chose one whether they meant to or not.
+7. **Concurrency/ordering** — races, duplicate/out-of-order delivery, locking,
    compare-and-set/unique constraints, and ownership transitions are correct.
-7. **Long-running work** — progress/checkpoints and graceful shutdown make crash
+8. **Long-running work** — progress/checkpoints and graceful shutdown make crash
    or deploy recovery safe.
-8. **Consistency tradeoffs** — caching/denormalization/staleness match the
+9. **Consistency tradeoffs** — caching/denormalization/staleness match the
    business invariant.
-9. **Observability** — retries, failures, queue depth, breaker/failover state, and
+10. **Observability** — retries, failures, queue depth, breaker/failover state, and
    checkpoint lag are measurable when operationally important.
 
 For every finding state the concrete production failure, not just "could be an

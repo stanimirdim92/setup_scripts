@@ -1,78 +1,112 @@
 ---
 name: api-and-interface-design
-description: Guides stable API and interface design. Use when designing APIs, module boundaries, or any public interface. Use when creating REST or GraphQL endpoints, defining type contracts between modules, or establishing boundaries between frontend and backend.
+description: Guides stable API and interface design. Use when designing APIs, module boundaries, or any public interface. Use when creating REST or GraphQL endpoints, defining type or tool-call contracts between modules or services, or establishing boundaries between components, languages, or a model and its tools.
 ---
 
 # API and Interface Design
 
 ## Overview
 
-Design stable, well-documented interfaces that are hard to misuse. Good interfaces make the right thing easy and the wrong thing hard. This applies to REST APIs, GraphQL schemas, module boundaries, component props, and any surface where one piece of code talks to another.
+Design stable, well-documented interfaces that are hard to misuse. Good interfaces make the right thing easy and the wrong thing hard. This applies to REST APIs, GraphQL schemas, module boundaries, function and type contracts between components, the tool/function schemas an LLM is given, and any surface where one piece of code — or one system — talks to another.
+
+The principles here are language- and transport-independent. Examples appear in several languages (TypeScript, Python, Rust) and as LLM tool schemas; each illustrates a principle that holds regardless of the stack. When you apply the skill, follow the repository's own language and conventions — the principle is the rule, the example is only a picture of it.
 
 ## When to Use
 
-- Designing new API endpoints
-- Defining module boundaries or contracts between teams
-- Creating component prop interfaces
-- Establishing database schema that informs API shape
-- Changing existing public interfaces
+- Designing new API endpoints or RPC/service methods
+- Defining module boundaries or contracts between teams, services, or languages
+- Defining the tool/function schemas exposed to an LLM
+- Creating function signatures, component props, or type contracts
+- Establishing database schema that informs an interface's shape
+- Changing an existing public interface
 
 ## Core Principles
+
+These nine principles are the substance of the skill. Everything below them is illustration.
 
 ### Hyrum's Law
 
 > With a sufficient number of users of an API, all observable behaviors of your system will be depended on by somebody, regardless of what you promise in the contract.
 
-This means: every public behavior — including undocumented quirks, error message text, timing, and ordering — becomes a de facto contract once users depend on it. Design implications:
+Every public behavior — undocumented quirks, error-message text, field ordering, timing, default values, even the shape of a tool's output an LLM has learned to parse — becomes a de facto contract once something depends on it. Design implications:
 
 - **Be intentional about what you expose.** Every observable behavior is a potential commitment.
-- **Don't leak implementation details.** If users can observe it, they will depend on it.
-- **Plan for deprecation at design time.** See `deprecation-and-migration` for how to safely remove things users depend on.
-- **Tests are not enough.** Even with perfect contract tests, Hyrum's Law means "safe" changes can break real users who depend on undocumented behavior.
+- **Don't leak implementation details.** If a consumer can observe it, something will depend on it.
+- **Plan for deprecation at design time.** See `deprecation-and-migration` for removing things consumers depend on.
+- **Tests are not enough.** Even with perfect contract tests, "safe" changes can break real consumers who depend on behavior you never promised.
+
+Hyrum's Law has a companion — the **Law of Leaky Abstractions**: every non-trivial abstraction leaks some of what it sits on top of. You cannot seal an interface perfectly; some implementation detail (an error, a timing, an ordering, a limit) will always show through. Hyrum's Law then says consumers *will* depend on whatever leaks. Together they set the design stance: since something always leaks and anything observable becomes a commitment, choose deliberately *what* you let leak, and treat those leaks as part of the contract rather than pretending they aren't there.
 
 ### The One-Version Rule
 
-Avoid forcing consumers to choose between multiple versions of the same dependency or API. Diamond dependency problems arise when different consumers need different versions of the same thing. Design for a world where only one version exists at a time — extend rather than fork.
+Avoid forcing consumers to choose between multiple live versions of the same dependency or interface. Diamond-dependency problems arise when different consumers need different versions of the same thing. Design for a world where one version exists at a time — extend rather than fork. This applies equally to a shared library's API, a service endpoint, and the tool schema a fleet of agents all call.
 
 ### 1. Contract First
 
-Define the interface before implementing it. The contract is the spec — implementation follows.
+Define the interface before implementing it. The contract is the spec; the implementation follows it. Write the signatures, types, errors, and semantics — then build to them.
+
+The contract is the same idea in any stack: named operations, their inputs, their outputs, and what each promises. Below, the same task API expressed four ways.
 
 ```typescript
-// Define the contract first
+// TypeScript
 interface TaskAPI {
-  // Creates a task and returns the created task with server-generated fields
-  createTask(input: CreateTaskInput): Promise<Task>;
-
-  // Returns paginated tasks matching filters
-  listTasks(params: ListTasksParams): Promise<PaginatedResult<Task>>;
-
-  // Returns a single task or throws NotFoundError
-  getTask(id: string): Promise<Task>;
-
-  // Partial update — only provided fields change
-  updateTask(id: string, input: UpdateTaskInput): Promise<Task>;
-
-  // Idempotent delete — succeeds even if already deleted
-  deleteTask(id: string): Promise<void>;
+  createTask(input: CreateTaskInput): Promise<Task>;      // returns created task incl. server fields
+  listTasks(params: ListTasksParams): Promise<Page<Task>>; // paginated
+  getTask(id: TaskId): Promise<Task>;                      // throws NotFound if absent
+  updateTask(id: TaskId, input: UpdateTaskInput): Promise<Task>; // partial update
+  deleteTask(id: TaskId): Promise<void>;                   // idempotent: ok if already gone
 }
+```
+
+```python
+# Python (Protocol = structural contract, no implementation)
+from typing import Protocol
+
+class TaskAPI(Protocol):
+    def create_task(self, data: CreateTaskInput) -> Task: ...          # created task incl. server fields
+    def list_tasks(self, params: ListTasksParams) -> Page[Task]: ...   # paginated
+    def get_task(self, task_id: TaskId) -> Task: ...                   # raises NotFound if absent
+    def update_task(self, task_id: TaskId, data: UpdateTaskInput) -> Task: ...  # partial update
+    def delete_task(self, task_id: TaskId) -> None: ...                # idempotent: ok if already gone
 ```
 
 ### 2. Consistent Error Semantics
 
-Pick one error strategy and use it everywhere:
+Pick one error strategy and use it everywhere. The failure path is part of the contract — a consumer must be able to predict how *every* operation reports failure, not discover it per call.
+
+The mechanism differs by stack — a discriminated result, an exception hierarchy, a `Result` type, HTTP status codes, or a structured error block in a tool result — but the rule is the same: **one strategy, uniform shape, machine-readable code plus human-readable message.**
 
 ```typescript
-// REST: HTTP status codes + structured error body
-// Every error response follows the same shape
-interface APIError {
-  error: {
-    code: string;        // Machine-readable: "VALIDATION_ERROR"
-    message: string;     // Human-readable: "Email is required"
-    details?: unknown;   // Additional context when helpful
-  };
-}
+// One error shape, everywhere. Discriminated so callers must handle both arms.
+type Result<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: { code: string; message: string; details?: unknown } };
+```
 
+```python
+# One exception hierarchy, everywhere. Callers catch ApiError or a specific subclass.
+class ApiError(Exception):
+    def __init__(self, code: str, message: str, details: object | None = None):
+        self.code, self.message, self.details = code, message, details
+
+class ValidationError(ApiError): ...   # invalid input
+class NotFoundError(ApiError): ...      # resource absent
+class ConflictError(ApiError): ...      # duplicate / version clash
+```
+
+```rust
+// One error enum, everywhere. The type system forces the caller to handle it.
+enum ApiError {
+    Validation { field: String, message: String },
+    NotFound { resource: String },
+    Conflict { message: String },
+    Internal,  // never leak internal detail across the boundary
+}
+```
+
+For HTTP transports, map that one strategy onto status codes consistently:
+
+```
 // Status code mapping
 // 400 → Client sent invalid data
 // 401 → Not authenticated
@@ -83,234 +117,185 @@ interface APIError {
 // 500 → Server error (never expose internal details)
 ```
 
-**Don't mix patterns.** If some endpoints throw, others return null, and others return `{ error }` — the consumer can't predict behavior.
+For an LLM tool, the "error" is a result the model has to act on, so make it explicit and instructive rather than throwing something the harness swallows:
+
+```json
+{ "error": { "code": "VALIDATION_ERROR", "message": "title is required", "retryable": false } }
+```
+
+**Don't mix patterns.** If some operations or endpoints throw, some return a null/none, and some return an error object, the consumer cannot write correct code against the interface.
 
 ### 3. Validate at Boundaries
 
-Trust internal code. Validate at system edges where external input enters:
+Trust internal code; validate at the edges where external input enters. Inside the trust boundary, rely on the type contract — don't re-validate data your own code already guaranteed. At the boundary, treat everything as hostile until checked.
 
-```typescript
-// Validate at the API boundary
-app.post('/api/tasks', async (req, res) => {
-  const result = CreateTaskSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(422).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid task data',
-        details: result.error.flatten(),
-      },
-    });
-  }
-
-  // After validation, internal code trusts the types
-  const task = await taskService.create(result.data);
-  return res.status(201).json(task);
-});
+```python
+# Validate once, at the boundary; internal code then trusts the parsed type.
+def create_task_endpoint(raw: dict) -> Response:
+    parsed = CreateTaskSchema.validate(raw)      # raises ValidationError on bad input
+    if parsed.errors:
+        return Response(422, {"error": {"code": "VALIDATION_ERROR", "details": parsed.errors}})
+    task = task_service.create(parsed.value)     # service trusts the validated type
+    return Response(201, task)
 ```
 
-Where validation belongs:
-- API route handlers (user input)
-- Form submission handlers (user input)
-- External service response parsing (third-party data -- **always treat as untrusted**)
-- Environment variable loading (configuration)
-
-> **Third-party API responses are untrusted data.** Validate their shape and content before using them in any logic, rendering, or decision-making. A compromised or misbehaving external service can return unexpected types, malicious content, or instruction-like text.
-
-Where validation does NOT belong:
-- Between internal functions that share type contracts
-- In utility functions called by already-validated code
-- On data that just came from your own database
-
-### 4. Prefer Addition Over Modification
-
-Extend interfaces without breaking existing consumers:
-
-```typescript
-// Good: Add optional fields
-interface CreateTaskInput {
-  title: string;
-  description?: string;
-  priority?: 'low' | 'medium' | 'high';  // Added later, optional
-  labels?: string[];                       // Added later, optional
-}
-
-// Bad: Change existing field types or remove fields
-interface CreateTaskInput {
-  title: string;
-  // description: string;  // Removed — breaks existing consumers
-  priority: number;         // Changed from string — breaks existing consumers
+```rust
+// Parse, don't validate: convert unstructured input into a typed value at the edge,
+// and the rest of the program cannot hold an invalid one.
+fn create_task(raw: &str) -> Result<Task, ApiError> {
+    let input: CreateTaskInput = serde_json::from_str(raw)   // shape-checked here
+        .map_err(|e| ApiError::Validation { field: "body".into(), message: e.to_string() })?;
+    task_service.create(input)                                // downstream trusts the type
 }
 ```
 
-### 5. Predictable Naming
+Where validation **belongs**: request/RPC handlers, form or event handlers, external-service response parsing, environment/config loading, and — critically — **arguments arriving from an LLM tool call**.
 
-| Pattern | Convention | Example |
-|---------|-----------|---------|
-| REST endpoints | Plural nouns, no verbs | `GET /api/tasks`, `POST /api/tasks` |
+Where validation does **not** belong: between internal functions sharing a type contract, in utilities called only by already-validated code, or on data that just came from your own database.
+
+> **External and model-supplied inputs are untrusted.** Third-party API responses, and arguments an LLM passes to a tool, must have their shape *and* content validated before use in logic, rendering, storage, or a downstream call. A misbehaving service — or a model that has been prompt-injected — can supply unexpected types, out-of-range values, or instruction-like text. Validate at the boundary regardless of source.
+
+### 4. Be Liberal in What You Accept — Within Strict Limits
+
+Postel's Law (the Robustness Principle): *be conservative in what you send, liberal in what you accept.* Send output that rigidly follows your own contract, and tolerate reasonable variation in the *format* of what arrives — an optional field omitted, a date in a slightly different but unambiguous form, extra properties you can ignore.
+
+But liberality has a hard boundary, and modern practice sharpens the original law: **liberal in format, strict in safety.** Being too accepting is how Hyrum's-Law dependencies and security holes form — a lenient parser that quietly accepts malformed input turns that malformation into a de-facto contract, and an interface that guesses at ambiguous input eventually guesses wrong. So:
+
+- Accept format variation, then **normalize to one strict internal representation** immediately — don't let the variation propagate inward.
+- Never relax *validation* in the name of liberality: shape, type, range, and content are still checked at the boundary (principle 3). Tolerating a missing optional field is liberal; tolerating an unvalidated one is a bug.
+- Reject the genuinely ambiguous rather than guessing. A rejected request is recoverable; a wrong guess acted upon is not.
+
+This is the reconciliation of "liberal in what you accept" with "external and model-supplied input is untrusted": be forgiving about form, unforgiving about safety.
+
+### 5. Prefer Addition Over Modification
+
+Extend an interface without breaking existing consumers: add optional inputs and new operations; don't change the type of an existing field, repurpose it, or remove it.
+
+```python
+# Good: new fields are optional with safe defaults — old callers keep working.
+@dataclass
+class CreateTaskInput:
+    title: str
+    description: str | None = None
+    priority: Priority = Priority.MEDIUM     # added later, defaulted
+    labels: list[str] = field(default_factory=list)  # added later, defaulted
+
+# Bad: removing `description` or changing `priority` from str to int breaks existing callers.
+```
+
+### 6. Principle of Least Astonishment
+
+An interface should behave the way its consumer expects it to. When a name, signature, or result forces the consumer to say "wait, it does *what*?", the design has failed regardless of how well it's documented — surprise is a defect. This principle is the *why* beneath the two rules that follow (consistent naming and consistent errors) and beneath consistent semantics generally: consumers build a mental model from the first few operations they touch and expect the rest to match it. An operation named `get*` that also writes, a `delete` that isn't idempotent when every neighbour is, a field that means one thing on create and another on read — each is astonishing, and each becomes a bug someone hits at the worst time.
+
+The stakes are highest for LLM tools: a model has *only* the name and description to predict behavior from, so a tool that does anything beyond what its name and description imply is the most expensive surprise there is — the model cannot see the source to correct its expectation. Name and describe tools so the obvious reading is the correct one.
+
+### 7. Predictable Naming
+
+Consistency lets a consumer guess the next name correctly. Adopt the repository's existing convention; the table below is a common baseline for HTTP/JSON APIs — a Python or Rust library will use that language's idioms (`snake_case`, etc.) instead. What matters is that the surface is internally uniform.
+
+| Element | Convention (HTTP/JSON baseline) | Example |
+|---------|--------------------------------|---------|
+| REST endpoints | plural nouns, no verbs | `GET /tasks`, `POST /tasks` |
 | Query params | camelCase | `?sortBy=createdAt&pageSize=20` |
 | Response fields | camelCase | `{ createdAt, updatedAt, taskId }` |
-| Boolean fields | is/has/can prefix | `isComplete`, `hasAttachments` |
+| Boolean fields | `is`/`has`/`can` prefix | `isComplete`, `hasAttachments` |
 | Enum values | UPPER_SNAKE | `"IN_PROGRESS"`, `"COMPLETED"` |
 
-### 6. Honouring an Idempotency Key
+The anti-pattern is language-independent: don't put verbs in REST URLs (`/createTask`), and don't mix `camelCase` and `snake_case` in one response body or one schema.
 
-Accepting an `Idempotency-Key` is the contract. Honouring it is the implementation, and it is where the money is lost — a key the server accepts but handles carelessly is worse than no key at all, because the client now believes retrying is safe.
+### 8. Make Illegal States Unrepresentable
 
-**Derive the key from the intent, not the attempt.** The key must be stable across retries of one intent and different across distinct intents:
+Prefer a type that cannot express an invalid combination over a loose type plus runtime checks. If the interface makes a bad state impossible to construct, no consumer can reach it and no validation is needed for it.
 
 ```typescript
-crypto.randomUUID()                    // ✗ new key per attempt — every retry is a new charge
-`${userId}:${amount}`                  // ✗ two legitimate $50 charges collapse into one
-`${orderId}:${Date.now()}`             // ✗ a timestamp is randomUUID() wearing a hat
+// Discriminated union: fields that only exist in one state live only in that arm.
+type TaskStatus =
+    | { type: 'pending' }
+    | { type: 'in_progress'; assignee: string; startedAt: Date }
+    | { type: 'completed'; completedAt: Date; completedBy: string }
+    | { type: 'cancelled'; reason: string; cancelledAt: Date };
+// No way to have a `completedAt` on a pending task.
+```
 
-req.headers['idempotency-key']         // ✓ client generates once, reuses on retry
-`charge:v1:${orderId}`                 // ✓ derived from an immutable identifier
+```python
+# Python: a tagged union of dataclasses; match makes handling exhaustive.
+@dataclass
+class Pending: pass
+@dataclass
+class InProgress: assignee: UserId; started_at: datetime
+@dataclass
+class Completed: completed_at: datetime; completed_by: UserId
+TaskStatus = Pending | InProgress | Completed
+```
+
+Two supporting habits in the same spirit:
+
+- **Separate input from output types.** What the caller provides (no server-generated fields) is a different type from what the system returns (ids, timestamps, computed fields). Don't force one type to do both with a scatter of optional fields.
+- **Give identifiers distinct types where the language allows.** A `TaskId` and a `UserId` that are both bare strings will eventually be swapped by accident. Branded types (TS), newtypes (Rust `struct UserId(String)`), or `NewType` (Python) make that a compile-time or checker error.
+
+### 9. Idempotency for State-Changing Operations
+
+Any operation that can be retried — and across a network, all of them can — needs a defined answer to "what if this runs twice?" Accepting an idempotency key is the *contract*; honouring it is the *implementation*, and it is where money is lost. A key the server accepts but handles carelessly is worse than no key, because the client now believes retrying is safe.
+
+**Derive the key from the intent, not the attempt** — stable across retries of one intent, distinct across different intents:
+
+```
+random-uuid-per-call        ✗ new key each attempt → every retry is a fresh effect
+"{userId}:{amount}"         ✗ two legitimate $50 charges collapse into one
+"{orderId}:{timestamp}"     ✗ a timestamp is a per-attempt value in disguise
+client-supplied key         ✓ generated once by the initiator, reused on retry
+"charge:v1:{orderId}"       ✓ derived from an immutable identifier
 ```
 
 The key comes from the client or the initiating event — never from the layer doing the retrying.
 
-**Claim atomically. A check followed by an act is a race:**
+**Claim it atomically — a check-then-act is a race:**
 
-```typescript
-// ✗ TOCTOU: two concurrent retries both read "not seen", both charge
-if (!(await db.exists(key))) {
-  await chargeCard(amount);
-  await db.insert(key);
-}
+```python
+# ✗ TOCTOU: two concurrent retries both read "not seen", both perform the effect
+if not db.exists(key):
+    charge_card(amount)
+    db.insert(key)
 
-// ✓ let the unique constraint pick the winner
-try {
-  await db.insert({ key, state: 'in_progress', requestHash });
-} catch (e) {
-  if (isUniqueViolation(e)) return replayOrReject(key);
-  throw;
-}
-const result = await chargeCard(amount);
-await db.update({ key, state: 'succeeded', response: result });
+# ✓ let a unique constraint pick the single winner
+try:
+    db.insert(key=key, state="in_progress", request_hash=h)
+except UniqueViolation:
+    return replay_or_reject(key)
+result = charge_card(amount)
+db.update(key=key, state="succeeded", response=result)
 ```
 
-The unique constraint *is* the mechanism. A store that cannot enforce uniqueness in one operation cannot back this.
+The unique constraint *is* the mechanism; a store that can't enforce uniqueness in one operation can't back this.
 
-**Guard the payload.** The same key with a different body is a client bug and must fail loudly rather than serving the first response to a second request:
+**Guard the payload.** The same key with a different body is a client bug — fail loudly rather than serving the first response to a different request:
 
-```typescript
-if (existing.requestHash !== hash(req.body)) {
-  return res.status(422).json({ error: 'idempotency key reused with a different payload' });
-}
+```python
+if existing.request_hash != hash(body):
+    return error(422, "idempotency key reused with a different payload")
 ```
 
-**Decide what an in-flight duplicate gets.** The first request is still running when the second arrives — the common case under retry storms:
+**Decide what an in-flight duplicate gets** — the first request is still running when the second arrives, the common case under a retry storm:
 
 | Strategy | Response | Use when |
 |---|---|---|
-| Reject | `409 Conflict` | Client can retry later; simplest and safest |
-| Wait | Block for the result, bounded | Caller needs it synchronously |
-| Return pending | `202` + status URL | Long-running effects |
+| Reject | conflict (`409`) | client can retry later; simplest and safest |
+| Wait | block for the result, bounded | caller needs it synchronously |
+| Return pending | accepted (`202`) + status handle | long-running effects |
 
-Never let the second caller through because the first "seems stuck". A stalled attempt whose fate is unknown is exactly when duplicating costs most.
+Never let the second caller through because the first "seems stuck" — a stalled attempt of unknown fate is exactly when duplicating costs most.
 
-**Every call has three outcomes, not two: success, failure, and _unknown_.** A timeout tells you nothing about whether the effect applied. Record the intent *before* calling out, so a crash between the call and the response leaves evidence something must resolve later — rather than a silently retried charge.
+**Every call has three outcomes, not two: success, failure, and _unknown_.** A timeout tells you nothing about whether the effect applied. Record the intent *before* calling out, so a crash between the call and its response leaves evidence something must be resolved later, rather than a silently retried effect.
 
-**Set retention from the longest retry chain**, not from disk cost. Keys must outlive every path that can re-deliver the same intent, including a dead-letter queue replayed a week later and any provider dispute window. A 24-hour key TTL behind a 7-day DLQ is a duplicate waiting to happen.
+**Set retention from the longest retry chain**, not from storage cost. Keys must outlive every path that can re-deliver the same intent — a dead-letter queue replayed a week later, a provider dispute window. A 24-hour key behind a 7-day DLQ is a duplicate waiting to happen.
 
-## REST API Patterns
+### 10. Pagination, Filtering, and Partial Update
 
-### Resource Design
+Three list/mutation habits that are cheap at design time and expensive to retrofit:
 
-```
-GET    /api/v1/tasks              → List tasks (with query params for filtering)
-POST   /api/v1/tasks              → Create a task
-GET    /api/v1/tasks/:id          → Get a single task
-PATCH  /api/v1/tasks/:id          → Update a task (partial)
-DELETE /api/v1/tasks/:id          → Delete a task
-
-GET    /api/v1/tasks/:id/comments → List comments for a task (sub-resource)
-POST   /api/v1/tasks/:id/comments → Add a comment to a task
-```
-
-### Pagination
-
-Paginate list endpoints:
-
-```typescript
-// Request
-GET /api/tasks?page=1&pageSize=20&sortBy=createdAt&sortOrder=desc
-
-// Response
-{
-  "data": [...],
-  "pagination": {
-    "page": 1,
-    "pageSize": 20,
-    "totalItems": 142,
-    "totalPages": 8
-  }
-}
-```
-
-### Filtering
-
-Use query parameters for filters:
-
-```
-GET /api/tasks?status=in_progress&assignee=user123&createdAfter=2025-01-01
-```
-
-### Partial Updates (PATCH)
-
-Accept partial objects — only update what's provided:
-
-```typescript
-// Only title changes, everything else preserved
-PATCH /api/tasks/123
-{ "title": "Updated title" }
-```
-
-## TypeScript Interface Patterns
-
-### Use Discriminated Unions for Variants
-
-```typescript
-// Good: Each variant is explicit
-type TaskStatus =
-  | { type: 'pending' }
-  | { type: 'in_progress'; assignee: string; startedAt: Date }
-  | { type: 'completed'; completedAt: Date; completedBy: string }
-  | { type: 'cancelled'; reason: string; cancelledAt: Date };
-
-// Consumer gets type narrowing
-function getStatusLabel(status: TaskStatus): string {
-  switch (status.type) {
-    case 'pending': return 'Pending';
-    case 'in_progress': return `In progress (${status.assignee})`;
-    case 'completed': return `Done on ${status.completedAt}`;
-    case 'cancelled': return `Cancelled: ${status.reason}`;
-  }
-}
-```
-
-### Input/Output Separation
-
-```typescript
-// Input: what the caller provides
-interface CreateTaskInput {
-  title: string;
-  description?: string;
-}
-
-// Output: what the system returns (includes server-generated fields)
-interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string;
-}
-```
-
-### Use Branded Types for IDs
+- **Paginate every list from the start.** An endpoint or method that returns "all" items becomes a problem the moment a consumer has hundreds. Return a page plus metadata (page/size/total, or a cursor).
+- **Filter and sort via explicit parameters**, not by returning everything and letting the caller filter.
+- **Support partial update** where it fits: accept only the fields that change rather than requiring the caller to resubmit the whole object.
 
 ```typescript
 type TaskId = string & { readonly __brand: 'TaskId' };
@@ -324,44 +309,52 @@ function getTask(id: TaskId): Promise<Task> { ... }
 
 | Rationalization | Reality |
 |---|---|
-| "We'll document the API later" | The types ARE the documentation. Define them first. |
-| "We don't need pagination for now" | You will the moment someone has 100+ items. Add it from the start. |
-| "PATCH is complicated, let's just use PUT" | PUT requires the full object every time. PATCH is what clients actually want. |
-| "We'll version the API when we need to" | Breaking changes without versioning break consumers. Design for extension from the start. |
-| "Nobody uses that undocumented behavior" | Hyrum's Law: if it's observable, somebody depends on it. Treat every public behavior as a commitment. |
-| "We can just maintain two versions" | Multiple versions multiply maintenance cost and create diamond dependency problems. Prefer the One-Version Rule. |
-| "Internal APIs don't need contracts" | Internal consumers are still consumers. Contracts prevent coupling and enable parallel work. |
-| "Accepting the Idempotency-Key header is enough" | The header is the contract; storing the key against the result is the implementation. A key you accept but don't honour tells the client retrying is safe when it isn't. |
-| "Our queue guarantees exactly-once delivery" | No queue does across a consumer crash — the broker's ack and your side effect are not in one transaction. Design for at-least-once with idempotent processing. |
-| "Duplicate requests are rare" | They're *correlated*. Retries spike exactly when a dependency is degraded — the moment duplicates are most likely and most expensive. |
+| "We'll document the interface later" | The types/signatures ARE the documentation. Define them first. |
+| "We don't need pagination for now" | You will the moment a consumer has 100+ items. Add it from the start. |
+| "Full-object update is simpler than partial" | It forces every caller to resend everything and clobbers concurrent edits. Support partial update. |
+| "We'll version it when we need to" | Breaking changes without a version break consumers silently. Design for extension from the start. |
+| "Nobody uses that undocumented behavior" | Hyrum's Law: if it's observable, something depends on it. Treat every public behavior as a commitment. |
+| "We can just maintain two versions" | Multiple live versions multiply maintenance and create diamond-dependency problems. Prefer the One-Version Rule. |
+| "Internal interfaces don't need contracts" | Internal consumers are still consumers. Contracts prevent coupling and enable parallel work. |
+| "The model will figure out the arguments" | The model has only your schema and descriptions. Vague descriptions produce malformed calls; be explicit. |
+| "Be liberal — just accept whatever comes in" | Liberal in *format*, strict in *safety*. Accepting unvalidated or ambiguous input turns malformation into a contract and opens holes. Normalize to one strict internal form. |
+| "Accepting the idempotency key is enough" | The key is the contract; claiming it atomically against the result is the implementation. A key you accept but don't honour tells the client retrying is safe when it isn't. |
+| "Our queue guarantees exactly-once delivery" | None does across a consumer crash — the broker's ack and your side effect aren't in one transaction. Design for at-least-once with idempotent processing. |
+| "Duplicate requests are rare" | They're *correlated*. Retries spike exactly when a dependency is degraded — when duplicates are most likely and most costly. |
 
 ## Red Flags
 
-- Endpoints that return different shapes depending on conditions
-- Inconsistent error formats across endpoints
-- Validation scattered throughout internal code instead of at boundaries
-- Breaking changes to existing fields (type changes, removals)
-- List endpoints without pagination
-- Verbs in REST URLs (`/api/createTask`, `/api/getUsers`)
-- Third-party API responses used without validation or sanitization
-- A `SELECT` for an idempotency key followed by an `INSERT` — that's a race, not a guard
-- An idempotency key derived from a UUID, timestamp, or anything else regenerated per attempt
-- The same key accepted with a different request body, silently returning the first response
-- A key retention window shorter than the longest path that can re-deliver the request
+- An operation that returns different shapes depending on conditions
+- Inconsistent error format/strategy across operations in the same interface
+- Validation scattered through internal code instead of at the boundary
+- External or model-supplied input used without validation
+- Breaking changes to existing fields (type change, removal, repurposing)
+- List endpoints or methods with no pagination
+- Verbs in REST URLs (`/createTask`, `/getUsers`), or mixed casing in one surface
+- Bare-string identifiers that are easily swapped (no branded/newtype distinction)
+- A read-then-write for an idempotency key — that's a race, not a guard
+- An idempotency key derived from a UUID, timestamp, or anything regenerated per attempt
+- The same key accepted with a different body, silently replaying the first response
+- Key retention shorter than the longest path that can re-deliver the request
+- An LLM tool whose field descriptions don't state required/optional, defaults, or format
+- A parser that silently accepts malformed or ambiguous input instead of rejecting or normalizing it
+- An operation whose behavior contradicts its name (a `get*` that writes, a non-idempotent `delete` among idempotent siblings)
 
 ## Verification
 
-After designing an API:
+After designing an interface:
 
-- [ ] Every endpoint has typed input and output schemas
-- [ ] Error responses follow a single consistent format
-- [ ] Validation happens at system boundaries only
-- [ ] List endpoints support pagination
-- [ ] New fields are additive and optional (backward compatible)
-- [ ] Naming follows consistent conventions across all endpoints
-- [ ] API documentation or types are committed alongside the implementation
-- [ ] State-changing endpoints either honour an idempotency key or are documented as unsafe to retry
+- [ ] Every operation has typed (or fully described) input and output
+- [ ] Errors follow a single consistent strategy and shape across the whole interface
+- [ ] Validation happens at boundaries only; external and model-supplied input is validated for shape and content
+- [ ] List operations support pagination; filtering/sorting use explicit parameters
+- [ ] New fields/parameters are additive and optional with safe defaults (backward compatible)
+- [ ] Naming is internally consistent and follows the repository's language conventions
+- [ ] Illegal states are unrepresentable where the type system allows; input and output types are separate
+- [ ] Documentation or types are committed alongside the implementation
+- [ ] State-changing operations either honour an idempotency key or are documented as unsafe to retry
 - [ ] The key is claimed in one atomic operation, guarded by a unique constraint
 - [ ] A reused key with a different payload fails loudly rather than replaying the wrong response
-- [ ] The in-flight-duplicate response is a deliberate choice (409, wait, or 202) rather than whatever falls out
+- [ ] The in-flight-duplicate response is a deliberate choice (reject / wait / pending), not whatever falls out
 - [ ] Key retention outlives the longest retry path, including dead-letter replay
+- [ ] For LLM tools: descriptions state required/optional, defaults, units, and format; results are structured for the model to act on
