@@ -26,9 +26,14 @@ Decompose work into small, verifiable tasks with explicit acceptance criteria. G
 Before making implementation decisions, operate in read-only mode.
 
 - Read the approved spec.
-- Discover and read project-local instruction sources relevant to the affected area.
-- Inspect the closest repository precedents and affected code.
-- Note implementation constraints, dependencies, risks, and unknowns.
+- Work from the `repo-recon` report `/plan` provides for the affected area —
+  applicable rules, conventions, architectural chain, test setup, closest
+  precedents, constraints and dependencies. Do not survey the repository
+  yourself; the report's findings are pointers, so open a file it names only
+  when a specific planning question turns on that file's detail.
+- Note implementation constraints, dependencies, risks, and unknowns, treating
+  the report's **No precedent found for** and **Not surveyed** sections as
+  explicit unknowns rather than settled ground.
 
 Before decomposing work, reconcile the proposed plan against the approved spec.
 Build a compact trace from each planned behavior and acceptance criterion back
@@ -40,18 +45,6 @@ A `SPEC CONFLICT` report contains: the spec section and quoted requirement, what
 in the repository contradicts or blocks it, and 1-3 candidate resolutions. Write
 it at the top of the plan document under a `## SPEC CONFLICT` heading, save the
 partial plan as-is, and stop — do not continue planning past the conflict.
-
-Common project instruction sources include:
-
-- `CLAUDE.md`
-- `AGENTS.md`
-- `.ai/rules/*.md`
-- module-local instruction files
-- architecture/design documentation
-- repository contribution/development guides
-
-Do not assume these exact paths exist; discover the project's actual instruction
-sources.
 
 **Do NOT write code during planning.** The output is a plan document saved to `docs/tasks/[TICKET]-plan.md` and a task list saved to `docs/tasks/[TICKET]-todo.md`, not implementation.
 

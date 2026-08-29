@@ -11,6 +11,22 @@ Begin by understanding what the user wants to build. If a `jira-ticket` intake s
 3. Tech stack preferences and constraints
 4. Known boundaries (what to always do, ask first about, and never do)
 
+## Repository recon
+
+Dispatch one `repo-recon` agent for the affected area before drafting the
+spec. Give it the area, `/spec` as the calling stage, and any specific questions you already
+have. Do not survey the repository in this context — that survey is the largest
+avoidable cost of this command, and the agent's reads stay in its own context.
+
+Reuse a `repo-recon` report already in this conversation when it covers the
+same area and nothing has changed since. Dispatch again only for a different
+area, after the repository has changed, or when the report's **Not surveyed**
+section excludes something you now need.
+
+Open a file the report names only when a specific unresolved question turns on
+that file's detail. Its **No precedent found for** entries are decisions you
+are making without repository guidance — the spec must justify them explicitly.
+
 Then generate a structured spec covering all six core areas: objective, commands, project structure, code style, testing strategy, and boundaries.
 
 Before asking for approval, run the skill's specification-closure gate. Reconcile

@@ -7,6 +7,7 @@ and gates. Personas never dispatch other personas.
 
 | Persona | Role | Default use |
 |---|---|---|
+| `repo-recon` | read-only repository survey | `/spec` and `/plan`, before specifying or planning |
 | `executor` | implementation | `/build`, one resumable instance per workstream |
 | `test-engineer` | independent verification | `/test` when risk/request warrants it |
 | `code-reviewer` | general code review | every `/review` |
@@ -17,10 +18,24 @@ and gates. Personas never dispatch other personas.
 
 ```text
 /spec -> /plan -> /build -> /review -> /ship
-                         \
-                          -> /test -> /review
-                             when required
+   |       |                 \
+   |       |                  -> /test -> /review
+   |       |                     when required
+   +-------+-> repo-recon (read-only survey, reused within a conversation)
 ```
+
+### `/spec` and `/plan`
+
+Both dispatch one `repo-recon` for the affected area instead of surveying the
+repository in the main context. The agent reads widely and reports pointers —
+applicable rules, conventions, architectural chain, test setup, closest
+precedents, and explicitly what it found no precedent for or did not survey.
+Its own reads never reach the caller's context; only its report does.
+
+A report already in the conversation is reused for the same unchanged area, so
+`/plan` following `/spec` does not re-survey.
+
+Source: `../commands/spec.md`, `../commands/plan.md`.
 
 ### `/build`
 

@@ -117,31 +117,24 @@ helper structure) may be decided directly.
 ### Repository Recon Before Specifying
 
 Before naming files, classes, tables, architectural layers, test helpers, or
-implementation patterns, discover and read the project's instruction sources
-that apply to the feature.
+implementation patterns, you need the project's applicable rules, the owning
+module's conventions and architectural chain, its test setup, and the closest
+sibling implementations.
 
-Common locations include:
+Do not gather that by reading the repository yourself. `/spec` dispatches the
+`repo-recon` agent for the affected area and hands you its report; work from
+that report. Its findings are pointers, so open a file it names only when a
+specific unresolved question turns on that file's detail — one or two files,
+not the survey again.
 
-- `CLAUDE.md`
-- `AGENTS.md`
-- `.ai/rules/*.md`
-- module-local instruction files
-- architecture/design documentation
-- repository contribution or development guides
+`repo-recon` owns the discovery method, including which instruction sources to
+look for. Do not restate that list here.
 
-Do not assume the above paths exist; discover the project's actual instruction sources.
-
-Then inspect the relevant repository area and closest sibling implementations.
-
-Look for:
-
-- sibling features solving a similar problem;
-- naming conventions for models, tables, services, repositories, controllers,
-  components, and tests;
-- the actual architectural chain used by the owning module;
-- existing test setup and fixture/factory conventions;
-- how data crosses boundaries such as Controller → Service;
-- existing registration/binding/routing patterns.
+Treat its **No precedent found for** section as load-bearing: those are the
+aspects you are deciding without repository guidance, and the spec must justify
+them explicitly rather than presenting them as the obvious choice. Its **Not
+surveyed** section bounds what the report can support; if it excludes something
+the spec depends on, ask for a follow-up recon rather than assuming.
 
 Use evidence in this order:
 
