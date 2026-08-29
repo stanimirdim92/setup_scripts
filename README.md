@@ -7,6 +7,11 @@ including right after `git clone` on a new machine:
 
     ./tools/link_dotfiles.sh
 
+`tools/run-metrics.sh` reports measured run metrics from a Claude Code
+transcript — tool-call batching, token totals, main-session vs subagent split —
+with `--since`/`--until` to scope a single `/build`. See
+`dotfiles/claude/references/agent-run-metrics.md`.
+
 This repo's own build decisions (why an agent is configured one way and
 not another, including choices reversed after contact with reality) are
 recorded in `docs/adr/*.md` — read that before re-proposing

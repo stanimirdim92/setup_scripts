@@ -20,6 +20,27 @@ Record when available:
 Never estimate token usage, cost, or elapsed time when the runtime does not
 expose it.
 
+## Where the exposed numbers actually come from
+
+- `/cost` — session cost and duration.
+- The statusline payload — `cost.total_cost_usd`, `cost.total_duration_ms`,
+  `context_window.used_percentage`. Read before BUILD and at BUILD COMPLETE;
+  the delta is that run.
+- The session transcript — `~/.claude/projects/<slug>/<session-id>.jsonl`, the
+  only source for per-request tool batching and cache-token totals. Each
+  assistant turn carries `message.usage` with `input_tokens`, `output_tokens`,
+  `cache_read_input_tokens`, and `cache_creation_input_tokens`.
+
+`tools/run-metrics.sh` in this repo reports batching, tokens, and the
+main-session/subagent split from a transcript, with `--since`/`--until` to scope
+one BUILD.
+
+**Counting tool batching correctly.** Parallel tool calls are written as
+separate assistant records that share one `requestId`. Counting calls per record
+reports a mean of 1.0 and zero batching no matter what actually happened — group
+by `requestId` instead. A measurement claiming "zero batched" is usually this
+mistake rather than a finding.
+
 ## Downstream quality signals
 
 Across the full pipeline, useful signals are:
