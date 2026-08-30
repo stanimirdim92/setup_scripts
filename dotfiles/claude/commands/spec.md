@@ -27,7 +27,7 @@ Open a file the report names only when a specific unresolved question turns on
 that file's detail. Its **No precedent found for** entries are decisions you
 are making without repository guidance — the spec must justify them explicitly.
 
-Then generate a structured spec covering all six core areas: objective, commands, project structure, code style, testing strategy, and boundaries.
+Then generate a structured spec covering all six core areas: objective, commands, project structure, code style, testing strategy, and boundaries. For bounded, low-risk changes that qualify, use the skill's compact form instead of filling every template section.
 
 Before asking for approval, run the skill's specification-closure gate. Reconcile
 all sections, prove any cross-row/resource concurrency mechanism, and define

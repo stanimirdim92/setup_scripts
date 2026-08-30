@@ -4,6 +4,13 @@ The canonical spec document shape. Used by `spec-driven-development`'s
 Phase 1 (Specify) — fill in every section before a human reviews it; don't
 skip a section because it "doesn't apply," write "N/A" and why instead.
 
+Exception: the skill's compact form for bounded, low-risk work (no new
+architecture/pattern, no contract or schema change, no concurrent invariant,
+no lifecycle field) keeps only Objective, Requirements, Testing Strategy,
+Boundaries, and Success Criteria, and omits the rest outright. The
+`### Requirement:` / `#### Scenario:` heading forms stay mandatory in both
+forms — `/test` and `/review` enumerate them mechanically.
+
 ```markdown
 # Spec: [Project/Feature Name]
 

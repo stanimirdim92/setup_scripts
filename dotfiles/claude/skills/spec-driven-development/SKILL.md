@@ -73,8 +73,9 @@ Build order: identity → billing, notifications → reporting
 **Then recurse per module.** Specify each module in dependency order. Each module
 gets its own spec, scoped to that module's objective, boundaries, and success
 criteria. Save the approved map at `docs/specs/[TICKET]-CAPABILITY-MAP.md` and
-each module's spec alongside it, named by module id (`SPEC-identity.md`,
-`SPEC-billing.md`) — the map, not filename guessing, is the index of what exists.
+each module's spec alongside it, named by ticket and module id
+(`[TICKET]-SPEC-identity.md`, `[TICKET]-SPEC-billing.md`) — the map, not
+filename guessing, is the index of what exists.
 After specification approval, hand the module to `/plan`; do not plan or
 implement it inside this skill.
 
@@ -309,6 +310,18 @@ implementation detail.
 
 **Spec template:** see `../../references/templates/spec.md`.
 
+**Compact specs for bounded, low-risk work.** When the change introduces no new
+architecture or pattern, no public contract or schema change, no cross-row or
+concurrent invariant, and no data-lifecycle field, the spec may use only:
+Objective, Requirements (the `### Requirement:` / `#### Scenario:` headings are
+still load-bearing), Testing Strategy, Boundaries, and Success Criteria — the
+remaining template sections may be omitted rather than filled with N/A. The
+closure rules still apply in full: no `OPEN QUESTION` block and no
+cross-section contradiction at approval. If drafting surfaces any of the
+excluded concerns, upgrade to the full template — the compact form is
+proportionality for genuinely bounded work, never a way past the invariant,
+concurrency, or lifecycle gates.
+
 **Reframe instructions as success criteria.** When receiving vague requirements, translate them into concrete, measurable conditions:
 
 ```
@@ -325,8 +338,8 @@ This lets you loop, retry, and problem-solve toward a clear goal rather than gue
 
 ## Output Files
 
-- Single-capability spec: `docs/specs/[TICKET]-spec.md` (create `docs/specs/` if needed)
-- Multi-capability initiative: `docs/specs/[TICKET]-CAPABILITY-MAP.md` with `SPEC-<module-id>.md` files alongside it
+- Single-capability spec: `docs/specs/[TICKET]-SPEC.md` (create `docs/specs/` if needed)
+- Multi-capability initiative: `docs/specs/[TICKET]-CAPABILITY-MAP.md` with `[TICKET]-SPEC-<module-id>.md` files alongside it — the ticket prefix keeps two initiatives that touch the same module from targeting the same file
 
 Projects may designate different locations in their instruction sources; the
 project rule wins over these defaults.
@@ -339,9 +352,12 @@ writes the canonical plan/todo artifacts. Do not execute that methodology inside
 this skill.
 
 After the human approves the plan, implementation belongs to `/build`.
-`/build` selects executor skills and dispatches workstreams; the user then invokes
-`/test`, `/review`, and `/ship` sequentially. Do not write production code,
-dispatch executors, or run implementation phases from `/spec`.
+`/build` selects executor skills and dispatches workstreams; the user then
+invokes `/review` and `/ship`. Independent verification is conditional, not a
+fixed stage: `/review` evaluates `../../references/verification-triggers.md`
+and requires `/test` only when a trigger matches (matching the Gated Workflow
+diagram above). Do not write production code, dispatch executors, or run
+implementation phases from `/spec`.
 
 **Handling a returned `SPEC CONFLICT`.** When `/plan` (or a later stage) returns
 a `SPEC CONFLICT`, treat it as a spec change request: raise the decision with
@@ -414,7 +430,7 @@ the human.
 
 Agent self-check:
 
-- [ ] The spec covers all six core areas (areas 2–4 by reference plus delta in feature/module specs)
+- [ ] The spec covers all six core areas (areas 2–4 by reference plus delta in feature/module specs), or qualifies for the compact form and covers its required sections with none of the excluded concerns present
 - [ ] Success criteria are specific and testable
 - [ ] Boundaries (Always/Ask First/Never) are defined
 - [ ] The spec is saved per Output Files (or the project-designated location)
