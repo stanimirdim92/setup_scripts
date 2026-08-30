@@ -14,6 +14,12 @@ and gates. Personas never dispatch other personas.
 | `security-auditor` | security trust-boundary review | triggered `/review` only |
 | `distributed-systems-reviewer` | distributed failure-semantics review | triggered `/review` only |
 
+`repo-recon` and the three reviewers are read-only by tool grant (Read/Grep/Glob
+— no Bash), not just by instruction: they cannot run commands or modify the
+candidate. The diff and verification evidence arrive in the packet; anything a
+reviewer could not check is reported as not verified, with the command named for
+the caller to run.
+
 ## Pipeline
 
 ```text

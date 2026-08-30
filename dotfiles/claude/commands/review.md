@@ -85,8 +85,10 @@ Preserve every reviewer's native severity and add the canonical disposition:
 |  | Important | REQUIRED |
 |  | Suggestion | ADVISORY |
 
-Every finding keeps a stable id, source, native severity, disposition,
-file/location, and resolution state.
+Every finding keeps a stable id, source, native severity, confidence,
+disposition, file/location, and resolution state. Confidence travels with the
+finding so `/ship` can distinguish a confirmed BLOCKER (resolved only by a fix)
+from a suspected one (resolvable by a fix or by recorded refuting evidence).
 
 Report:
 

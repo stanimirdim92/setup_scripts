@@ -210,6 +210,13 @@ finding standard is a Suggestion. Low confidence lowers certainty, not
 severity — a low-confidence possible race condition is still Critical, marked
 low-confidence, not a Suggestion.
 
+A low-confidence Critical or Important finding is a **suspected** defect, not a
+confirmed one: state what evidence would confirm or refute it (the input, the
+interleaving, the state) so the resolution step can settle it by investigation.
+Downstream, such a finding is resolved either by a fix or by recorded evidence
+refuting its failure scenario — never by changing code that investigation shows
+to be correct, and never by dropping it.
+
 **Presumptive blockers** — for each of these, always record the finding and
 propose the simpler design; label it Suggestion by default, escalating to
 Important when the change actively makes structure worse than before:

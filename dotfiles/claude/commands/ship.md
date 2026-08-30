@@ -30,7 +30,11 @@ for a missing gate.
 
 Carry REVIEW findings forward unchanged.
 
-- every **BLOCKER** must be fixed before GO;
+- every **BLOCKER** must be resolved before GO: fixed, or — for a finding the
+  reviewer marked low-confidence (suspected) — refuted with recorded evidence
+  that addresses its specific failure scenario. Low confidence alone never
+  waives a BLOCKER, and refutation evidence comes from the resolution loop
+  (`/build` or the user), not from `/ship` itself;
 - every **REQUIRED** finding must be fixed, explicitly accepted as risk, or
   deferred with a concrete reason;
 - **ADVISORY** findings do not block shipping.

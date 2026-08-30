@@ -113,7 +113,10 @@ When analyzing test coverage:
 2. Each test should verify one concept
 3. Tests should be independent — no shared mutable state between tests
 4. Avoid snapshot tests unless reviewing every change to the snapshot
-5. Mock at system boundaries (database, network), not between internal functions
+5. In unit tests, mock at system boundaries (database, network), never between
+   internal functions. An integration test exists to exercise a real boundary —
+   never mock the dependency whose behavior the test is meant to prove (SQL
+   correctness, transaction semantics, idempotency, queue delivery)
 6. Every test name should read like a specification
 7. A test that never fails is as useless as a test that always fails
 8. Never modify production code when invoked as the `/test` verifier

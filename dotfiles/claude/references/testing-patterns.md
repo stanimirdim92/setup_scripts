@@ -122,6 +122,11 @@ Mock these:                    Don't mock these:
 └── Time/Date (when needed)    └── Pure functions
 ```
 
+The "mock these" column governs **unit** tests. An integration test exists to
+verify a real boundary — never mock the dependency under verification there
+(SQL correctness, transaction semantics, idempotency, queue delivery need the
+real database/queue).
+
 ## React/Component Testing
 
 ```tsx
