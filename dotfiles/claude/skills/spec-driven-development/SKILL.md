@@ -115,6 +115,15 @@ option would change an acceptance criterion, a schema, a public contract, or
 data lifecycle behavior; choices below that bar (internal naming, private
 helper structure) may be decided directly.
 
+**Ask for domain knowledge the repository cannot reveal.** When the area
+plausibly carries history — known production failures, compatibility
+obligations, regulatory or unusual business rules — ask the human about it
+directly; no amount of recon surfaces what was never written down. Ask only
+what is relevant to this change and not already answered (by the intake
+summary or earlier in the conversation), and record each answer beside the
+requirement it constrains, with its source. This is a targeted question or
+two, not another questionnaire.
+
 ### Repository Recon Before Specifying
 
 Before naming files, classes, tables, architectural layers, test helpers, or
@@ -182,14 +191,22 @@ out in full only for a new project where no such doc exists yet. This is how
 "covers all six areas" and "do not repeat repository-wide conventions" are both
 satisfied.
 
-1. **Objective** — What are we building and why? Who is the user? What does success look like?
+1. **Objective** — What are we building and why? Who is the user? What does
+   success look like? When the request could plausibly be read wider than
+   intended, record the relevant exclusions here ("out of scope: …") so scope
+   is bounded by decision, not by omission.
 
 2. **Commands** — Full executable commands with flags, not just tool names.
+   Every command comes from repository evidence (the recon report, package
+   manifests, CI config) — never guessed. Distinguish read-only checks (test,
+   lint, typecheck) from commands that modify files or dependencies (install,
+   update, codegen).
    ```
-   Install: yarn install or composer install|update -o
-   Build: yarn run build
-   Lint: yarn run lint:fix
-   Dev: yarn run dev
+   Install: yarn install            (modifies node_modules)
+   Build:   yarn run build          (writes build output)
+   Test:    yarn run test           (check)
+   Lint:    yarn run lint:fix       (modifies files; lint alone is the check)
+   Dev:     yarn run dev
    ```
 
 3. **Project Structure** — Where source code lives, where tests go, where docs belong.
@@ -274,6 +291,14 @@ At minimum, reconcile:
 - newly confirmed decisions against older assumptions or wording;
 - schema fields against their observable lifecycle behavior.
 
+The pass also checks completeness and scope, not only consistency — a spec can
+be internally consistent while omitting part of the request:
+
+- every behavior the request asked for appears in a `### Requirement:` with its
+  scenarios, or in a recorded exclusion under Objective;
+- every behavior the spec adds beyond the request traces to an explicit
+  requirement or an approved decision, not to silent scope growth.
+
 Do not present a spec for approval while any contradiction between two sections
 or any `OPEN QUESTION` block remains. Surface the conflict, update the spec
 after the decision, and rerun the closure pass.
@@ -322,6 +347,16 @@ excluded concerns, upgrade to the full template — the compact form is
 proportionality for genuinely bounded work, never a way past the invariant,
 concurrency, or lifecycle gates.
 
+**Navigation for long specs.** When a spec grows past what one screen of
+reading can hold (many requirements, several invariants), add a short index at
+the top — section links with a one-line description each — and give
+requirements stable ids inside the existing heading form
+(`### Requirement: REQ-001 — Title`), so scenarios, invariant proofs, and
+later stages can reference `REQ-001` instead of re-quoting prose. Link related
+contracts and invariants from the requirements they protect. The index points;
+it never restates — a summary that paraphrases the requirements is a second
+copy that will drift.
+
 **Reframe instructions as success criteria.** When receiving vague requirements, translate them into concrete, measurable conditions:
 
 ```
@@ -334,7 +369,14 @@ REFRAMED SUCCESS CRITERIA:
 → Are these the right targets?
 ```
 
-This lets you loop, retry, and problem-solve toward a clear goal rather than guessing what "faster" means.
+This lets you loop, retry, and problem-solve toward a clear goal rather than guessing what "faster" means. (The numbers above are illustrative, not defaults — each target comes from the actual requirement.)
+
+Where prose alone leaves a scenario ambiguous, add representative inputs and
+their expected outcomes to the scenario — one concrete example settles what a
+sentence cannot. A performance criterion is complete only when it names the
+metric, the threshold, the workload, the environment, and how it will be
+measured; "fast" or a bare number with no measurement conditions is not
+testable.
 
 ## Output Files
 
@@ -373,6 +415,15 @@ The spec is a living document, not a one-time artifact:
 - **Update when scope changes** — Features added or cut should be reflected in the spec.
 - **Commit the spec** — The spec belongs in version control alongside the code.
 - **Reference the spec in PRs** — Link back to the spec section that each PR implements.
+
+Any edit to an approved spec that changes behavior — a requirement, scenario,
+schema, contract, invariant, or boundary — follows the same path as a
+`SPEC CONFLICT`: identify the affected requirements, rerun the closure pass,
+and obtain re-approval before downstream work resumes on the changed sections.
+Editorial corrections (typos, formatting, clarified wording that changes no
+behavior) do not reopen approval. Never weaken a valid requirement because an
+implementation fails to meet it — a failing implementation is a finding
+against the code or a decision for the human, not grounds to move the goal.
 
 ## Guardrails
 

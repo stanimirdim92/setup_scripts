@@ -26,12 +26,18 @@ load-bearing: `/test` and `/review` enumerate them mechanically (grep
 requirement-by-requirement instead of interpreting prose.]
 
 ### Requirement: [Behavior the system must provide]
-[One or two sentences stating the requirement precisely.]
+[One or two sentences stating the requirement precisely. In long specs, give
+each requirement a stable id inside this heading form:
+`### Requirement: REQ-001 — Title`.]
 
 #### Scenario: [Named case — happy path, boundary, failure]
 - GIVEN [precondition]
 - WHEN [action]
 - THEN [observable outcome]
+
+[Where prose leaves the outcome ambiguous, add representative inputs and their
+expected outputs. Performance criteria name metric, threshold, workload,
+environment, and measurement method.]
 
 ## Tech Stack
 [Framework, language, key dependencies with versions]
