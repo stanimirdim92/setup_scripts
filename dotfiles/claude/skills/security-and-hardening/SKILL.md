@@ -298,16 +298,20 @@ When you defer a fix, document the reason and set a review date.
 
 ### Supply-Chain Hygiene
 
-Do not assume npm or treat the nearest manifest as the install root. Apply this order:
+Do not assume npm or treat the nearest manifest as the install root. The
+installation-boundary rules, the frozen/immutable install matrix per manager, the
+install-script gate, the per-version native policies, and the review checklist
+are all in `../../references/supply-chain.md` — work from it rather than the
+summary that used to sit here, which restated it well enough to go stale
+silently.
 
-1. **Find the installation boundary and manager.** Use the workspace root that owns the lockfile, or an independent nested project only when it is outside that workspace. There, corroborate `packageManager` (when present), the lockfile, and CI; stop on disagreement or competing lockfiles. Pin the manager version and use the matrix in `../../references/security-checklist.md`.
-2. **Block dependency scripts before first execution.** Bootstrap with scripts disabled or a documented fail-closed policy, inspect the pending script source, approve only the minimum required packages, commit the policy, then verify with a clean frozen/immutable install. Never blanket-approve scripts.
-
-Audits only find known advisories; they do not catch a newly malicious or typosquatted package. Therefore:
-
-- **Never apply forced audit remediation automatically** (`npm audit fix --force` or equivalent). Preview the remediation, read changelogs, and test each resulting upgrade; forced fixes may cross declared dependency ranges.
-- **Verify registry signatures and provenance where supported** (`npm audit signatures`, `pnpm audit signatures`) and treat absence as a signal to investigate, not automatic proof of compromise.
-- **Review new dependencies, lockfile diffs, and script-policy changes together** — ownership, maintenance, release age, provenance, transitive graph, and typosquats such as `cross-env` vs `crossenv` (OWASP **A06**, **LLM03**).
+The framing that reference assumes, and the reason it is not optional: audits
+match known advisories, so they neither catch a newly malicious or typosquatted
+package nor prove that vulnerable code is reachable (OWASP **A06**, **LLM03**).
+Two consequences bear repeating at the point of decision — never apply forced
+remediation automatically (`npm audit fix --force` and equivalents cross
+declared ranges), and review new dependencies, lockfile diffs, and
+script-policy changes together rather than one at a time.
 
 ## Rate Limiting
 

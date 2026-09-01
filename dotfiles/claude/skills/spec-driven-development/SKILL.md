@@ -133,61 +133,18 @@ two, not another questionnaire.
 
 ### Repository Recon Before Specifying
 
-Before naming files, classes, tables, architectural layers, test helpers, or
-implementation patterns, you need the project's applicable rules, the owning
-module's conventions and architectural chain, its test setup, and the closest
-sibling implementations.
+Before naming files, classes, tables, layers, test helpers, or implementation
+patterns, work from the `repo-recon` report `/spec` dispatched — do not survey
+the repository in this context. How to use the report, the evidence order that
+decides between user requirement, project rule, module precedent,
+repository-wide convention and framework default, and what to do when there is
+no precedent: `../../references/repository-precedent.md`.
 
-Do not gather that by reading the repository yourself. `/spec` dispatches the
-`repo-recon` agent for the affected area and hands you its report; work from
-that report. Its findings are pointers, so open a file it names only when a
-specific unresolved question turns on that file's detail — one or two files,
-not the survey again.
-
-`repo-recon` owns the discovery method, including which instruction sources to
-look for. Do not restate that list here.
-
-Treat its **No precedent found for** section as load-bearing: those are the
-aspects you are deciding without repository guidance, and the spec must justify
-them explicitly rather than presenting them as the obvious choice. Its **Not
-surveyed** section bounds what the report can support; if it excludes something
-the spec depends on, ask for a follow-up recon rather than assuming.
-
-Use evidence in this order:
-
-1. Explicit user requirements and approved feature-specific decisions.
-2. Applicable project-local rules.
-3. Existing patterns in the owning module or closest sibling feature.
-4. Existing repository-wide conventions.
-5. Framework conventions only when the repository provides no applicable precedent.
-
-Repository precedent is a strong default, not a prohibition against deliberate
-change.
-
-When no precedent exists:
-
-- if an explicit user requirement or approved feature-specific decision requires
-  a new layer, file, pattern, or abstraction, include it and label it clearly as
-  a **new feature-specific decision**;
-- if no requirement or decision justifies it, do not invent it merely because it
-  is common framework practice;
-- if the evidence is mixed or the choice would change an acceptance criterion,
-  schema, public contract, or lifecycle behavior, raise an `OPEN QUESTION`
-  block instead of silently deciding.
-
-Examples:
-
-- A Factory may be introduced when comparable tests use factories, the feature
-  needs reusable test/seed data, or it is an explicit feature decision.
-- A DTO/Data layer may be introduced when project rules require it, repository
-  precedent supports it, or an explicit feature decision accepts the additional
-  boundary/complexity for a concrete benefit.
-- Do not derive class/table names solely from ticket wording when sibling
-  resources establish a different ownership/naming convention.
-
-Do not confuse **no precedent** with **forbidden**. New patterns are acceptable
-when they are intentional, justified, and identified as new rather than
-misrepresented as existing repository convention.
+Two consequences that bind this skill: the report's **No precedent found for**
+entries must be justified explicitly in the spec rather than presented as the
+obvious choice, and a choice with mixed evidence — or one that would change an
+acceptance criterion, schema, public contract or lifecycle behavior — becomes an
+`OPEN QUESTION` block instead of a silent decision.
 
 **State what this change does to behavior that already exists.** Every spec
 carries a `Change kind` (New/Modify/Remove/Rename/Bugfix); every spec whose kind
@@ -328,35 +285,22 @@ Do not present a spec for approval while any contradiction between two sections
 or any `OPEN QUESTION` block remains. Surface the conflict, update the spec
 after the decision, and rerun the closure pass.
 
-### Prove Invariant Mechanisms
+### Invariants and Data Lifecycle
 
-Naming a transaction, lock, constraint, retry, or "last write wins" policy is not
-proof that an invariant holds. For every cross-row, cross-resource, or concurrent
-invariant, explain why the chosen mechanism covers every transition and writer.
+Two gates the closure pass enforces, both in
+`../../references/spec-quality-gates.md`:
 
-The proof must identify:
+- **§4 Invariant mechanism proof.** Naming a transaction, lock, constraint or
+  retry is not proof. Every cross-row, cross-resource or concurrent invariant
+  needs a proof covering each transition and writer, its empty-state semantics,
+  the common serialization point, and which layer guarantees which part.
+- **§5 Data lifecycle semantics.** A deletion marker, soft-delete timestamp,
+  tombstone, archival flag or status field obliges the spec to define what
+  "delete" means — for reads, uniqueness, relationships, restoration, invariant
+  calculations, retention and tests. Never propose the field and leave the
+  behavior as an implementation detail.
 
-- the precise invariant, including zero/empty-state semantics;
-- every operation that can establish, transfer, violate, or release it;
-- the common serialization point or persistence constraint;
-- how the mechanism works when no child/entity row exists yet;
-- what the application guarantees and what infrastructure guarantees;
-- the verification evidence, including a lower-level constraint test when
-  infrastructure participates in correctness.
-
-If the mechanism cannot be shown to serialize or reject all conflicting writes,
-the invariant design is unresolved. A transaction alone does not imply a common
-lock or uniqueness guarantee.
-
-### Define Data Lifecycle Semantics
-
-When the schema or existing model contains a deletion marker, soft-delete
-timestamp, tombstone, archival flag, status, or equivalent lifecycle field, the
-spec must define what "delete" means. State whether deletion is hard, soft,
-archival, or another transition, and define how deleted records affect reads,
-uniqueness, relationships, restoration, invariant calculations, retention, and
-tests. Do not propose a deletion marker while leaving deletion behavior as an
-implementation detail.
+Neither is satisfied by asserting the mechanism exists.
 
 **Spec template:** see `../../references/templates/spec.md`. For a defect use
 `../../references/templates/bugfix-spec.md` instead — it leads with reproduction

@@ -26,11 +26,10 @@ Decompose work into small, verifiable tasks with explicit acceptance criteria. G
 Before making implementation decisions, operate in read-only mode.
 
 - Read the approved spec.
-- Work from the `repo-recon` report `/plan` provides for the affected area —
-  applicable rules, conventions, architectural chain, test setup, closest
-  precedents, constraints and dependencies. Do not survey the repository
-  yourself; the report's findings are pointers, so open a file it names only
-  when a specific planning question turns on that file's detail.
+- Work from the `repo-recon` report `/plan` provides for the affected area, per
+  `../../references/repository-precedent.md` — including its evidence order when
+  choosing between a project rule, module precedent, repository-wide convention
+  and framework default. Do not survey the repository yourself.
 - Note implementation constraints, dependencies, risks, and unknowns, treating
   the report's **No precedent found for** and **Not surveyed** sections as
   explicit unknowns rather than settled ground.
@@ -48,9 +47,11 @@ each planned behavior and acceptance criterion back to its spec source, keyed by
 `REQ-###`: every requirement maps to at least one task, every task names at
 least one requirement, and the plan reports `Unmapped requirements: None` and
 `Orphan tasks: None`. An orphan task is scope the spec never asked for — remove
-it, or report a `SPEC CONFLICT` if the behavior is genuinely needed (§3). If the repository makes an approved spec decision infeasible
-or reveals a contradiction, stop and report a `SPEC CONFLICT`; do not silently
-rewrite the requirement in the plan.
+it, or report a `SPEC CONFLICT` if the behavior is genuinely needed (§3).
+
+If the repository makes an approved spec decision infeasible or reveals a
+contradiction, stop and report a `SPEC CONFLICT`; do not silently rewrite the
+requirement in the plan.
 
 A `SPEC CONFLICT` report contains: the spec section and quoted requirement, what
 in the repository contradicts or blocks it, and 1-3 candidate resolutions. Write

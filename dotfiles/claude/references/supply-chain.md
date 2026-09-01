@@ -33,7 +33,7 @@ Never discover dependency lifecycle scripts by first executing an ordinary insta
 
 1. Bootstrap with dependency scripts disabled, or with a documented default-deny policy plus fail-closed enforcement.
 2. Inspect the exact script source and package version before approval.
-3. Record the narrowest native allow/deny policy at the installation boundary and commit it.
+3. Record the narrowest native allow/deny policy at the installation boundary and commit it. Approve only the minimum packages that genuinely require a script, each pinned to a reviewed version; never blanket-approve scripts, and keep denials name-wide.
 4. Run a clean frozen/immutable install with that policy and verify required packages still build.
 
 ## Point-in-Time Native Policies

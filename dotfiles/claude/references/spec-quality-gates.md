@@ -107,3 +107,41 @@ Two failure modes this catches, which prose-reading does not:
 Neither is resolved by adding a traceability matrix as a separate document. The
 coverage table in the plan and the requirement ids in the task packets *are* the
 matrix; a third artifact would be a copy that drifts.
+
+## 4. Invariant mechanism proof
+
+Naming a transaction, lock, constraint, retry, or "last write wins" policy is not
+proof that an invariant holds. For every cross-row, cross-resource, or concurrent
+invariant, explain why the chosen mechanism covers every transition and writer.
+
+The proof must identify:
+
+- the precise invariant, including zero/empty-state semantics;
+- every operation that can establish, transfer, violate, or release it;
+- the common serialization point or persistence constraint;
+- how the mechanism works when no child/entity row exists yet;
+- what the application guarantees and what infrastructure guarantees;
+- the verification evidence, including a lower-level constraint test when
+  infrastructure participates in correctness.
+
+If the mechanism cannot be shown to serialize or reject all conflicting writes,
+the invariant design is unresolved. A transaction alone does not imply a common
+lock or uniqueness guarantee.
+
+Deriving the transitions to test from an invariant — creation from empty,
+creation with related state, updates that establish or transfer it, deletion of
+the satisfying entity, deletion of the last one, concurrent writes across rows
+or processes — is part of the spec's Testing Strategy, and each transition's
+enforcing layer is named there (a persistence constraint may guarantee **at most
+one** while application behavior still owes **at least one when applicable**).
+
+## 5. Data lifecycle semantics
+
+When the schema or existing model contains a deletion marker, soft-delete
+timestamp, tombstone, archival flag, status, or equivalent lifecycle field, the
+spec must define what "delete" means. State whether deletion is hard, soft,
+archival, or another transition, and define how deleted records affect reads,
+uniqueness, relationships, restoration, invariant calculations, retention, and
+tests. Do not propose a deletion marker while leaving deletion behavior as an
+implementation detail.
+
