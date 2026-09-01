@@ -5,10 +5,32 @@ argument-hint: "[ticket or feature description]"
 
 Invoke the `planning-and-task-breakdown` skill.
 
-Read the approved spec.
+## Require an approved spec
+
+Read the spec from disk — including its `Status` header, not your memory of
+approval earlier in the conversation. Proceed only on `Status: Approved`.
+`Draft`, `Needs reapproval` or `Superseded` stops planning immediately: report
+the status and return the spec to `/spec`. A spec whose requirements have no
+`REQ-###` ids is also not plannable; return it for ids
+(`../references/spec-quality-gates.md` §2-3).
+
 Reconcile every planned behavior and acceptance criterion against the approved
 spec. On contradiction, infeasibility, or a proposed new/stronger behavior,
 stop with `SPEC CONFLICT` and return the decision to `/spec`.
+
+## Requirement coverage
+
+Map every spec requirement to the tasks that deliver it, and give every task at
+least one `REQ-###`. Record the map in the plan's Requirement Coverage table and
+report both lines explicitly:
+
+- `Unmapped requirements: None` — a requirement with no task is a dropped
+  requirement; it surfaces in production rather than at this gate.
+- `Orphan tasks: None` — a task with no requirement is scope the spec never
+  asked for. Remove it, or return a `SPEC CONFLICT` if the behavior is genuinely
+  needed, so it gets specified and approved instead of entering through the plan.
+
+Neither line may read anything other than `None` at handoff.
 
 ## Repository recon
 

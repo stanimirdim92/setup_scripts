@@ -35,9 +35,17 @@ Before making implementation decisions, operate in read-only mode.
   the report's **No precedent found for** and **Not surveyed** sections as
   explicit unknowns rather than settled ground.
 
-Before decomposing work, reconcile the proposed plan against the approved spec.
-Build a compact trace from each planned behavior and acceptance criterion back
-to its spec source. If the repository makes an approved spec decision infeasible
+Before decomposing work, confirm the spec's `Status` header reads `Approved`,
+reading it from disk rather than relying on approval seen earlier in the
+conversation. Any other status stops planning and returns the spec to `/spec`
+(`../../references/spec-quality-gates.md` §2).
+
+Then reconcile the proposed plan against the approved spec. Build the trace from
+each planned behavior and acceptance criterion back to its spec source, keyed by
+`REQ-###`: every requirement maps to at least one task, every task names at
+least one requirement, and the plan reports `Unmapped requirements: None` and
+`Orphan tasks: None`. An orphan task is scope the spec never asked for — remove
+it, or report a `SPEC CONFLICT` if the behavior is genuinely needed (§3). If the repository makes an approved spec decision infeasible
 or reveals a contradiction, stop and report a `SPEC CONFLICT`; do not silently
 rewrite the requirement in the plan.
 
@@ -421,6 +429,8 @@ Agent self-check:
 - [ ] The plan does not unnecessarily duplicate the spec
 - [ ] The plan contains no production implementation
 - [ ] Every planned behavior and acceptance criterion traces to the approved spec
+- [ ] The spec's `Status` header read `Approved` on disk before planning began
+- [ ] Every spec requirement maps to at least one task and every task names at least one `REQ-###`; the plan reports `Unmapped requirements: None` and `Orphan tasks: None`
 - [ ] The plan does not contradict, weaken, or strengthen the approved spec
 
 Human gate (do not self-certify these):

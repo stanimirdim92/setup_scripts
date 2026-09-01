@@ -110,7 +110,14 @@ OPEN QUESTION: Deletion semantics for contacts
 
 A spec containing any `OPEN QUESTION` block cannot be presented for approval.
 Ask, record the decision in the spec, remove the block, and rerun the closure
-pass. Treat a choice as needing an `OPEN QUESTION` block when picking the wrong
+pass. When the resolution materially changed specified behavior — a product,
+domain, contract, or lifecycle choice — record it as a `DEC-###` entry under
+Material Decisions naming the alternative that lost and the requirements it
+affects. Otherwise the reasoning disappears into the final prose and gets
+re-litigated by whoever reads the spec next. Technical decisions belong to the
+plan, not here.
+
+Treat a choice as needing an `OPEN QUESTION` block when picking the wrong
 option would change an acceptance criterion, a schema, a public contract, or
 data lifecycle behavior; choices below that bar (internal naming, private
 helper structure) may be decided directly.
@@ -181,6 +188,18 @@ Examples:
 Do not confuse **no precedent** with **forbidden**. New patterns are acceptable
 when they are intentional, justified, and identified as new rather than
 misrepresented as existing repository convention.
+
+**State what this change does to behavior that already exists.** Every spec
+carries a `Change kind` (New/Modify/Remove/Rename/Bugfix); every spec whose kind
+is not `New` carries a `## Change Impact` section naming behavior added,
+modified, removed, renamed, and — the load-bearing one — **explicitly
+preserved**, each against a `REQ-###` or contract rather than an area. Naming
+the adjacent behavior that must not change turns the characteristic brownfield
+failure, fixing one path while silently altering its neighbour, into a testable
+requirement instead of a hope. This is delta vocabulary inside one spec, not the
+delta *storage* model that
+`docs/adr/0040-openspec-conventions-adopted.md` rejected and `docs/IDEAS.md`
+still parks.
 
 **Write a spec document covering these six core areas:**
 
@@ -299,6 +318,12 @@ be internally consistent while omitting part of the request:
 - every behavior the spec adds beyond the request traces to an explicit
   requirement or an approved decision, not to silent scope growth.
 
+**Then test the requirements themselves, as prose that can be wrong.** Run
+`../../references/spec-quality-gates.md` §1 — measurability, scenario coverage,
+applicable operational concerns, validated assumptions, no duplicate or
+conflicting requirements. It is a pass over this document, not a second
+artifact.
+
 Do not present a spec for approval while any contradiction between two sections
 or any `OPEN QUESTION` block remains. Surface the conflict, update the spec
 after the decision, and rerun the closure pass.
@@ -333,26 +358,37 @@ uniqueness, relationships, restoration, invariant calculations, retention, and
 tests. Do not propose a deletion marker while leaving deletion behavior as an
 implementation detail.
 
-**Spec template:** see `../../references/templates/spec.md`.
+**Spec template:** see `../../references/templates/spec.md`. For a defect use
+`../../references/templates/bugfix-spec.md` instead — it leads with reproduction
+evidence and makes preserved behavior its own requirement. It does not lower the
+bar for when a bug needs a spec ("When NOT to use" still governs), and root
+cause and fix mechanism stay in `/plan`.
 
 **Compact specs for bounded, low-risk work.** When the change introduces no new
 architecture or pattern, no public contract or schema change, no cross-row or
-concurrent invariant, and no data-lifecycle field, the spec may use only:
-Objective, Requirements (the `### Requirement:` / `#### Scenario:` headings are
-still load-bearing), Testing Strategy, Boundaries, and Success Criteria — the
-remaining template sections may be omitted rather than filled with N/A. The
+concurrent invariant, and no data-lifecycle field, the spec may use only: the
+status header, Objective, Change Impact, Requirements (the `### Requirement:` /
+`#### Scenario:` headings and `REQ-###` ids are still load-bearing), Testing
+Strategy, Boundaries, and Success Criteria — the remaining template sections may
+be omitted rather than filled with N/A. The status header and the ids are never
+optional — they are what the downstream gates read — and bounded work is where
+brownfield changes most often land, so Change Impact stays too. The
 closure rules still apply in full: no `OPEN QUESTION` block and no
 cross-section contradiction at approval. If drafting surfaces any of the
 excluded concerns, upgrade to the full template — the compact form is
 proportionality for genuinely bounded work, never a way past the invariant,
 concurrency, or lifecycle gates.
 
+**Requirement ids are mandatory** for any spec that will enter `/plan`: a
+stable id inside the existing heading form (`### Requirement: REQ-001 — Title`)
+plus a `Source:` line. They are what `/plan`, `/test`, `/review` and `/ship`
+trace coverage and evidence against, so they are assigned once and never
+renumbered. Rules and the per-stage chain:
+`../../references/spec-quality-gates.md` §3.
+
 **Navigation for long specs.** When a spec grows past what one screen of
 reading can hold (many requirements, several invariants), add a short index at
-the top — section links with a one-line description each — and give
-requirements stable ids inside the existing heading form
-(`### Requirement: REQ-001 — Title`), so scenarios, invariant proofs, and
-later stages can reference `REQ-001` instead of re-quoting prose. Link related
+the top — section links with a one-line description each. Link related
 contracts and invariants from the requirements they protect. The index points;
 it never restates — a summary that paraphrases the requirements is a second
 copy that will drift.
@@ -416,10 +452,19 @@ The spec is a living document, not a one-time artifact:
 - **Commit the spec** — The spec belongs in version control alongside the code.
 - **Reference the spec in PRs** — Link back to the spec section that each PR implements.
 
+**Approval is document state, not conversation history.** The spec's `Status`
+header (`Draft` / `Approved` / `Needs reapproval` / `Superseded`) is the record,
+because a later session, a compaction boundary, or a downstream stage cannot see
+what was said in this one. `/spec` moves `Draft` → `Approved` only on explicit
+human approval — never on its own judgment, and a passing closure pass is not
+approval. Transitions and who may set them:
+`../../references/spec-quality-gates.md` §2.
+
 Any edit to an approved spec that changes behavior — a requirement, scenario,
-schema, contract, invariant, or boundary — follows the same path as a
-`SPEC CONFLICT`: identify the affected requirements, rerun the closure pass,
-and obtain re-approval before downstream work resumes on the changed sections.
+schema, contract, invariant, boundary, or Change Impact entry — follows the same
+path as a `SPEC CONFLICT`: set `Needs reapproval`, identify the affected
+requirement ids, rerun the closure pass, and obtain re-approval before
+downstream work resumes on the changed sections.
 Editorial corrections (typos, formatting, clarified wording that changes no
 behavior) do not reopen approval. Never weaken a valid requirement because an
 implementation fails to meet it — a failing implementation is a finding
@@ -482,6 +527,12 @@ the human.
 Agent self-check:
 
 - [ ] The spec covers all six core areas (areas 2–4 by reference plus delta in feature/module specs), or qualifies for the compact form and covers its required sections with none of the excluded concerns present
+- [ ] The status header is present and complete, and `Status` is `Draft` — `Approved` is the human's to grant, not this checklist's
+- [ ] Every requirement has a `REQ-###` id and a `Source:` line; no id was renumbered or reused
+- [ ] `Change kind` is set, and a `Change Impact` section exists whenever it is not `New`, including its explicitly-preserved-behavior entry
+- [ ] Every material product/domain/contract/lifecycle decision made while drafting is recorded as a `DEC-###`, or the section reads "None"
+- [ ] A defect spec uses the bugfix template, with reproduction evidence concrete enough to write a failing test from
+- [ ] No requirement rests on an unmeasurable adjective, and applicable operational concerns are requirements or recorded exclusions rather than silence
 - [ ] Success criteria are specific and testable
 - [ ] Boundaries (Always/Ask First/Never) are defined
 - [ ] The spec is saved per Output Files (or the project-designated location)

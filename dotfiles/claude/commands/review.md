@@ -97,7 +97,12 @@ Report:
 - **Independent verification: NOT REQUIRED | PASS**;
 - required-reviewer list and trigger decisions;
 - each reviewer result under its own heading;
-- all findings with canonical disposition.
+- all findings with canonical disposition, each tagged with the `REQ-###` it
+  bears on when it bears on one;
+- **requirement evidence**: one line per `REQ-###` in the spec — the change that
+  implements it and the verification that proves it, or an explicit statement
+  that one of those is missing. `/ship` blocks on a missing entry, so report the
+  gap rather than leaving the requirement off the list.
 
 Then stop. The next stage is `/ship`.
 

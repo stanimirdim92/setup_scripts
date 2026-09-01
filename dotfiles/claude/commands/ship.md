@@ -47,7 +47,23 @@ Carry REVIEW findings forward unchanged.
 A production fix returns to `/build`, then the new candidate goes through
 `/review` again; REVIEW will decide whether `/test` is required.
 
-## 3. Release-readiness attestations
+## 3. Requirement evidence
+
+Carry `/review`'s per-requirement evidence forward. For every `REQ-###` in the
+approved spec, confirm both an implementing change and verification evidence.
+
+A requirement missing either is **NO-GO**, not an advisory note: the spec said
+the release must do this and nothing shows that it does. Two resolutions only —
+the evidence is produced (back to `/build` or `/test`), or the requirement is
+withdrawn from the spec through `/spec` with re-approval. Do not accept a
+missing requirement as risk; risk acceptance is for a known finding, not for an
+unproven requirement.
+
+A requirement the spec marks withdrawn needs no evidence. Explicitly preserved
+behavior from Change Impact is a requirement like any other — its evidence is
+that its tests still pass.
+
+## 4. Release-readiness attestations
 
 Record `PASS`, `FAIL`, or `BLOCKED` with evidence for:
 
@@ -58,18 +74,19 @@ Record `PASS`, `FAIL`, or `BLOCKED` with evidence for:
 
 Use `PASS — not applicable: <reason>` when an axis genuinely does not apply.
 
-## 4. Rollback
+## 5. Rollback
 
 A concrete rollback plan is mandatory before GO. "Revert the commit" is enough
 only when that is genuinely sufficient and safe.
 
-## 5. Decision
+## 6. Decision
 
 GO requires:
 
 - unchanged reviewed candidate;
 - independent verification satisfied exactly as REVIEW required;
 - no unresolved BLOCKER;
+- every spec requirement carrying both implementation and verification evidence;
 - every REQUIRED finding resolved (fixed or refuted), explicitly risk-accepted,
   or deferred with a concrete reason;
 - release-readiness attestations passed;
@@ -86,6 +103,9 @@ Return:
 
 ### Required findings / refutations / accepted risks
 - ...
+
+### Requirement evidence
+- REQ-001: [implementing change] / [verification evidence]
 
 ### Release-readiness
 - Infrastructure: ...

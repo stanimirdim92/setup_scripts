@@ -38,6 +38,22 @@ If the request bundles several independently testable capabilities, first propos
 
 Save the spec as docs/specs/[TICKET]-SPEC.md in the project root and confirm with the user before proceeding.
 
+## Approval state
+
+Write the spec with `Status: Draft` and the rest of the header from
+`../references/templates/spec.md` filled in. After presenting it, set
+`Status: Approved` — with `Approved by` and `Approved at` — only when the human
+has explicitly approved it. Approval is not implied by silence, by "looks good"
+on a different question, or by an instruction to continue to `/plan`; when in
+doubt, ask rather than promoting the status. Per-transition rules:
+`../references/spec-quality-gates.md` §2.
+
+Every requirement gets a `REQ-###` id and a `Source:` line — `/plan` refuses a
+spec without them, and every later gate traces evidence against them (§3).
+
+A defect uses `../references/templates/bugfix-spec.md` instead, which leads with
+reproduction evidence and makes preserved behavior its own requirement.
+
 The request that invoked `/spec` authorizes specification only, even when it
 says to build or fix something — that instruction does not carry forward past
 this command. After presenting the spec, stop and wait for a new user request;

@@ -7,9 +7,14 @@ without copying the full spec or plan.
 ```markdown
 ## Task [N]: [Short descriptive title]
 
+**Requirements:** [One or more `REQ-###` ids from the approved spec. A task
+with no requirement is scope the spec never asked for — remove it, or return a
+SPEC CONFLICT if the behavior is genuinely needed.]
+
 **Description:** One paragraph explaining the outcome this task delivers.
 
 **Acceptance criteria:**
+[Each criterion traces to one of the requirements above.]
 - [ ] [Specific, testable condition]
 - [ ] [Specific, testable condition]
 

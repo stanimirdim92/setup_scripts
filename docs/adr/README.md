@@ -52,6 +52,7 @@ that explanation here, just the index.
 | [0042](0042-third-executor-as-conditional-exception.md) | A third concurrent executor as a conditional exception, not a raised cap | Accepted |
 | [0043](0043-automatic-memory-and-compaction-window-restored.md) | Automatic memory and the 500k compaction window restored, reversing 0037 | Accepted |
 | [0044](0044-config-security-hardening-pass.md) | Config security hardening: enforcement made to match the stated guarantees | Accepted |
+| [0045](0045-spec-approval-state-change-impact-and-requirement-traceability.md) | Spec approval state, change-impact semantics, and requirement traceability | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

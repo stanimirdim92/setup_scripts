@@ -11,7 +11,8 @@ the skill's Step 6 risk points, named for the risk they gate.
 ```markdown
 # Implementation Plan: [Feature/Project Name]
 
-Spec: [path to approved spec, and module-id if from a capability map]
+Spec: [path to approved spec, its Status (must be Approved), and module-id if
+from a capability map]
 
 ## SPEC CONFLICT
 [Only when one exists — spec section + quoted requirement, what in the
@@ -27,12 +28,28 @@ stops here until resolved via /spec. Delete this section otherwise.]
 - [ws-other: only per Step 4 criteria; note the contract checkpoint that
   gates it]
 
+## Requirement Coverage
+[Every `REQ-###` in the approved spec, and the tasks that deliver it. This is
+the mechanical check that planning did not drop a requirement or invent work:
+a requirement with no task is a planning gap, a task with no requirement is
+scope the spec never asked for.]
+
+| Requirement | Tasks |
+|---|---|
+| REQ-001 | T1, T3 |
+| REQ-002 | T2 |
+
+Unmapped requirements: None
+Orphan tasks: None
+
 ## Task List
 [Dependency order. Each task's full packet lives in the todo file /
-tracker per task.md; this list is the ordered index.]
+tracker per task.md; this list is the ordered index. Every task names at least
+one REQ id — that reference, not a section number, is what /review and /ship
+trace evidence against.]
 
-- [ ] T1 (S, ws-main, deps: —, spec 2.1): [behavioral outcome]
-- [ ] T2 (M, ws-main, deps: T1, spec 2.2): [behavioral outcome]
+- [ ] T1 (S, ws-main, deps: —, REQ-001): [behavioral outcome]
+- [ ] T2 (M, ws-main, deps: T1, REQ-002): [behavioral outcome]
 
 ### Checkpoint: [named risk — e.g. "API contract established"]
 [Placed per Step 6: after a risky schema/external-contract decision,
@@ -42,7 +59,7 @@ workstreams.]
 - [ ] Application builds without errors
 - [ ] [The specific contract/decision this checkpoint gates is stable]
 
-- [ ] T3 (M, ws-frontend, deps: checkpoint above, spec 3): [outcome]
+- [ ] T3 (M, ws-frontend, deps: checkpoint above, REQ-001): [outcome]
 
 ## Sizing Exceptions
 [Every task kept at L/XL, with why splitting would break a single

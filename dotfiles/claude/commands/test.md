@@ -22,9 +22,9 @@ completion handoff from the current conversation.
 
 Resolve:
 
-- acceptance criteria — when the spec uses `### Requirement:` /
-  `#### Scenario:` anchors, pass that enumerated list so coverage maps back
-  requirement-by-requirement;
+- acceptance criteria — pass the spec's enumerated `### Requirement:` /
+  `#### Scenario:` list with its `REQ-###` ids, so coverage maps back
+  requirement-by-requirement rather than file-by-file;
 - implemented behavior;
 - risk/regression surface;
 - tests and commands `/build` already ran.
@@ -82,14 +82,17 @@ Requires all in-scope acceptance criteria to have credible evidence, required
 checks to pass, no known production defect in scope, and any test-only changes
 to be committed.
 
-Report acceptance criteria verified, tests changed, exact commands/outcomes,
-test-only commits with their exact files, coverage gaps intentionally left out,
-the BUILD candidate identity, and the resulting branch/commits/diff/tree state.
+Report acceptance criteria verified **per `REQ-###`** — one line per
+requirement in scope, with its evidence — plus tests changed, exact
+commands/outcomes, test-only commits with their exact files, coverage gaps
+intentionally left out, the BUILD candidate identity, and the resulting
+branch/commits/diff/tree state. A requirement in scope with no evidence line is
+a gap to report, not one to omit.
 
 ### VERIFY FAIL
 
-Report the failing behavior/criterion, reproduction evidence, expected vs actual,
-and the exact handoff back to `/build`.
+Report the failing behavior/criterion with its `REQ-###`, reproduction evidence,
+expected vs actual, and the exact handoff back to `/build`.
 
 ### VERIFY BLOCKED
 
