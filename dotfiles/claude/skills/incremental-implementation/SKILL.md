@@ -1,6 +1,7 @@
 ---
 name: incremental-implementation
 description: Delivers changes in small, verifiable increments. Use when implementing multi-file features, refactors, or tasks that need safe slicing and commit boundaries.
+disable-model-invocation: true
 ---
 
 # Incremental Implementation

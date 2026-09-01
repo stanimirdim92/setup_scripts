@@ -35,8 +35,13 @@ Carry REVIEW findings forward unchanged.
   that addresses its specific failure scenario. Low confidence alone never
   waives a BLOCKER, and refutation evidence comes from the resolution loop
   (`/build` or the user), not from `/ship` itself;
-- every **REQUIRED** finding must be fixed, explicitly accepted as risk, or
-  deferred with a concrete reason;
+- every **REQUIRED** finding must be fixed, refuted with recorded evidence that
+  addresses its specific claim, explicitly accepted as risk, or deferred with a
+  concrete reason. Refutation is the resolution for a false positive; do not
+  record one as an accepted risk, which attributes to the release a risk it
+  does not carry. Unlike a BLOCKER, a REQUIRED finding may be refuted at any
+  confidence, but the evidence — not the reviewer's own uncertainty — is what
+  resolves it, and it comes from the resolution loop, not from `/ship` itself;
 - **ADVISORY** findings do not block shipping.
 
 A production fix returns to `/build`, then the new candidate goes through
@@ -65,7 +70,8 @@ GO requires:
 - unchanged reviewed candidate;
 - independent verification satisfied exactly as REVIEW required;
 - no unresolved BLOCKER;
-- every REQUIRED finding resolved or explicitly risk-accepted;
+- every REQUIRED finding resolved (fixed or refuted), explicitly risk-accepted,
+  or deferred with a concrete reason;
 - release-readiness attestations passed;
 - concrete rollback plan;
 - explained working-tree state.
@@ -78,7 +84,7 @@ Return:
 ### Blockers
 - ...
 
-### Required findings / accepted risks
+### Required findings / refutations / accepted risks
 - ...
 
 ### Release-readiness

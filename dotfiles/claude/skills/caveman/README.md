@@ -45,4 +45,6 @@ Caveman (ultra):
 ## See also
 
 - [`SKILL.md`](./SKILL.md) — full LLM-facing instructions
-- [Caveman README](../../README.md) — repo overview, install, benchmarks
+- `../CAVEMAN_LICENSE` — upstream license and author. The upstream project's
+  own root README (repo overview, install, benchmarks) is not vendored here,
+  so this file is the overview.

@@ -21,6 +21,18 @@ deny() {
 
 [ -z "$command" ] && exit 0
 
+# dotfiles/.gitconfig defines shortcut/typo aliases that expand to commands
+# checked below -- `rlc` -> `reset --hard HEAD~1`, `co` -> `checkout` -- so a
+# grep for the spelled-out command misses `git rlc` and `git co .` entirely.
+# Expand those aliases before matching. Keep this list in sync with the
+# [alias] section of dotfiles/.gitconfig; the push family lives in
+# warn-force-push.sh. Note `git help.autocorrect = 1` can still run a
+# near-miss typo that no fixed list covers.
+command="$(sed -E \
+  -e 's/\bgit[[:space:]]+rlc\b/git reset --hard HEAD~1/g' \
+  -e 's/\bgit[[:space:]]+co\b/git checkout/g' \
+  <<<"$command")"
+
 # rm -rf (or -fr, or -r -f) targeting root, home, a bare dot/dotdot, or a
 # top-level wildcard. The target must be its own whitespace-delimited word
 # (immediately followed by a space or end-of-string) so this does NOT match

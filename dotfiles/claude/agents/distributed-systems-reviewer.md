@@ -60,8 +60,19 @@ Native severity:
 
 When uncertain which severity applies, choose the lower one — `/review` maps severity straight to release disposition, so an inflated finding becomes a false blocker at `/ship`, and a real one earns its tier through evidence.
 
-Use stable ids (`DIST-1`, ...), file:line, failure scenario, and a specific
-recommendation. If a mechanism exists but cannot be verified, say so rather than
-assuming either correctness or failure.
+Attach a confidence (high/medium/low) to every finding, separately from its
+severity. Confidence is how sure you are the failure mode is real; severity is
+how bad it is if it is. Low confidence lowers certainty, not severity: an
+unverified but plausible message-loss path stays Critical, marked
+low-confidence, rather than being demoted to a Suggestion. A low-confidence
+Critical/Important finding is a **suspected** defect — state what evidence
+would confirm or refute it, so the resolution loop can settle it by
+investigation rather than by changing code that may already be correct. This is
+the common case here: distributed failure modes often cannot be reproduced from
+the diff alone.
+
+Use stable ids (`DIST-1`, ...), severity, confidence, file:line, failure
+scenario, and a specific recommendation. If a mechanism exists but cannot be
+verified, say so rather than assuming either correctness or failure.
 
 Do not issue GO/NO-GO and do not invoke another agent.

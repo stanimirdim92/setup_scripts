@@ -55,11 +55,23 @@ categories when useful.
 
 When uncertain which severity applies, choose the lower one — `/review` maps severity straight to release disposition, so an inflated finding becomes a false blocker at `/ship`, and a real one earns its tier through evidence.
 
+## Confidence
+
+Attach a confidence (high/medium/low) to every finding, separately from its
+severity. Confidence is how sure you are the weakness is real and reachable;
+severity is how bad it is if it is. Low confidence lowers certainty, not
+severity: an unverified but plausible auth bypass stays Critical, marked
+low-confidence, rather than being demoted to Low.
+
+A low-confidence Critical/High finding is a **suspected** vulnerability. State
+what evidence would confirm or refute it, so the resolution loop can settle it
+by investigation rather than by changing code that may already be correct.
+
 ## Report
 
-Give each finding a stable id (`SEC-1`, ...), severity, file:line, attack path or
-failure mode, impact, and specific remediation. Include positive observations
-only when they are concrete and useful.
+Give each finding a stable id (`SEC-1`, ...), severity, confidence, file:line,
+attack path or failure mode, impact, and specific remediation. Include positive
+observations only when they are concrete and useful.
 
 Do not invent vulnerabilities from uncertainty; name what could not be verified.
 
