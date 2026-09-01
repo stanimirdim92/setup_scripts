@@ -44,6 +44,17 @@ absolute numbers approximate):
 `/spec` and `/plan` also lost 935 bytes between them, which matters more than it
 looks: command bodies are paid on every invocation.
 
+> **Correction, per [0048](0048-repository-precedent-placement-corrected.md).**
+> The two claims above are measured but incomplete, and together they mislead.
+> They count bytes leaving the skills and commands and never count the
+> `repository-precedent.md` read arriving. `/spec` dispatches recon on every
+> invocation, so that file is read every run: one `/spec` run went from 3,652B of
+> recon rules to 8,728B, a **regression of 5,076B**, not the saving this entry
+> reports. The `spec-driven-development` figure of 6,557/5,147 is correct as a
+> file measurement and correct about the truncation cap; it is the per-run
+> reading cost that this entry failed to account for. 0048 fixes the placement
+> and states the corrected numbers.
+
 **Honest note.** `spec-driven-development` is still over the cap on both
 estimates. De-duplication had roughly 2,600 bytes to give and gave them; closing
 the remaining gap requires deleting or relocating content that exists once, which
@@ -56,6 +67,12 @@ recording as a deliberate no. Area 5 is filled in for *every* spec, so putting i
 behind a pointer trades a silent-truncation risk for a guaranteed extra file read
 on every single run. The cap is not worth optimising past the point where the
 skill stops working well.
+
+> **Correction, per [0048](0048-repository-precedent-placement-corrected.md).**
+> This test is right and was applied to one block and not the other: the recon
+> rules extracted above are also needed on every run, and the same reasoning
+> should have stopped that extraction from taking the whole block. 0048 applies
+> it consistently.
 
 **Rejected — compressing the multi-language code examples in
 `api-and-interface-design` (24% code fences) and `security-and-hardening`

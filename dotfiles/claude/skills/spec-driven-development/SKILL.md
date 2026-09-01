@@ -135,16 +135,28 @@ two, not another questionnaire.
 
 Before naming files, classes, tables, layers, test helpers, or implementation
 patterns, work from the `repo-recon` report `/spec` dispatched — do not survey
-the repository in this context. How to use the report, the evidence order that
-decides between user requirement, project rule, module precedent,
-repository-wide convention and framework default, and what to do when there is
-no precedent: `../../references/repository-precedent.md`.
+the repository in this context.
+
+Use evidence in this order:
+
+1. Explicit user requirements and approved feature-specific decisions.
+2. Applicable project-local rules.
+3. Existing patterns in the owning module or closest sibling feature.
+4. Existing repository-wide conventions.
+5. Framework conventions only when the repository provides no applicable
+   precedent.
+
+Repository precedent is a strong default, not a prohibition against deliberate
+change.
 
 Two consequences that bind this skill: the report's **No precedent found for**
 entries must be justified explicitly in the spec rather than presented as the
 obvious choice, and a choice with mixed evidence — or one that would change an
 acceptance criterion, schema, public contract or lifecycle behavior — becomes an
 `OPEN QUESTION` block instead of a silent decision.
+
+How to use the report, and the rules for deciding when there is no precedent at
+all: `../../references/repository-precedent.md`.
 
 **State what this change does to behavior that already exists.** Every spec
 carries a `Change kind` (New/Modify/Remove/Rename/Bugfix); every spec whose kind

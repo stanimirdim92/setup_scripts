@@ -27,9 +27,11 @@ Before making implementation decisions, operate in read-only mode.
 
 - Read the approved spec.
 - Work from the `repo-recon` report `/plan` provides for the affected area, per
-  `../../references/repository-precedent.md` — including its evidence order when
-  choosing between a project rule, module precedent, repository-wide convention
-  and framework default. Do not survey the repository yourself.
+  `../../references/repository-precedent.md`. Do not survey the repository
+  yourself. The evidence order for choosing between a project rule, module
+  precedent, repository-wide convention and framework default is the same one
+  `/spec` applied — `../spec-driven-development/SKILL.md`, "Repository Recon";
+  a plan does not get to re-rank it.
 - Note implementation constraints, dependencies, risks, and unknowns, treating
   the report's **No precedent found for** and **Not surveyed** sections as
   explicit unknowns rather than settled ground.
