@@ -1,10 +1,19 @@
-sandbox_mode = "danger-full-access"
+sandbox_mode = "workspace-write"
 model = "gpt-5.6-sol"
 model_reasoning_effort = "max"
 personality = "pragmatic"
 approval_policy = "on-request"
 approvals_reviewer = "user"
 service_tier = "default"
+
+# Writes are confined to the workspace, with .git/.agents/.codex read-only
+# inside it; anything outside needs an approval, so escalation is per task
+# rather than granted once for every session. Network stays on: npx, composer,
+# the remote MCP servers and mcp-remote all need it, and turning it off trades
+# a boundary Codex already enforces for a stream of approvals.
+[sandbox_workspace_write]
+network_access = true
+
   [mcp_servers.phpstorm]
     url = "http://127.0.0.1:64443/stream"
 

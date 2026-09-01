@@ -20,7 +20,7 @@ something already tried and rejected here.
 Synced:
 - `dotfiles/claude/CLAUDE.md` -> `~/.claude/CLAUDE.md` — global working rules (Karpathy's rules + kept extensions + the document-set convention), loaded on every session unconditionally, unlike skills below
 - `dotfiles/claude/AGENTS.md` -> `~/.claude/AGENTS.md` — pointer to `CLAUDE.md`
-- `dotfiles/claude/settings.json` -> `~/.claude/settings.json` — model, permissions, hooks, active plugins, and context settings. Built-in automatic memory is disabled; versioned project facts and the actively used episodic conversation-search plugin have distinct roles
+- `dotfiles/claude/settings.json` -> `~/.claude/settings.json` — model, permissions, hooks, active plugins, and context settings. Built-in automatic memory is **enabled** (`autoMemoryEnabled: true`) alongside versioned `docs/MEMORY.md` and the episodic conversation-search plugin, and the auto-compact window is 500k — both reverse `docs/adr/0037-fixed-session-context-reduced.md`; see `docs/adr/0043-automatic-memory-and-compaction-window-restored.md` for the reversal and the precedence rule that resolves the three memory surfaces
 - `dotfiles/claude/remote-settings.json` -> `~/.claude/remote-settings.json`
 - `dotfiles/claude/statusline.sh` -> `~/.claude/statusline.sh` — status line script wired via `settings.json`'s `statusLine.command`: model name, cwd, git branch, context-usage bar, session cost, elapsed time
 - `dotfiles/claude/subagent-statusline.sh` -> `~/.claude/subagent-statusline.sh` — per-subagent row override wired via `settings.json`'s `subagentStatusLine.command`: status icon, name, model, token count/percentage, elapsed time
@@ -30,8 +30,9 @@ Synced:
 - `dotfiles/claude/references/` -> `~/.claude/references/` (whole directory) — shared checklists (`definition-of-done.md`, `security-checklist.md`) that the SDLC skills point at with a `../../references/` path, `documentation-practices.md` (the Ideas/Decisions/Memory practice moved out of `CLAUDE.md` so it isn't force-loaded into every subagent), `reviewer-triggers.md` (the single trigger-condition matrix `/review` reads when dispatching specialist reviewers), `agent-run-metrics.md` (lightweight actual-only signals for tuning executor/workstream/model policy), and `templates/` (`spec.md`, `plan.md`, `task.md` — the canonical document shapes `spec-driven-development`/`planning-and-task-breakdown` point at instead of embedding their own copy, so the two skills can't drift apart on format either); must stay a sibling of `skills/`, not nested inside it
 - `dotfiles/claude/hooks/` -> `~/.claude/hooks/` (whole directory) — scripts referenced by `settings.json`'s `hooks` key: destructive-bash blocking (`rm -rf`, block-device writes, recursive chmod/chown, and the git equivalents — `reset --hard`, `clean -f`, `branch -D`, `checkout .`/`restore .`), and a force-push-to-main/master warning plus a plain-push confirm in local IDE sessions (`$CLAUDE_CODE_REMOTE` unset). Both hooks expand the `dotfiles/.gitconfig` aliases that reach those commands (`rlc`, `co`, `fu`, and the `push` typo family) before matching, since a grep for the spelled-out command lets every alias through; keep the two lists in sync when that `[alias]` section changes
 - `dotfiles/claude/docs/` -> `~/.claude/docs/` (whole directory) — `agents.md`: the persona/orchestration reference (roster, `/build`→`/test`→`/review` shapes, context-discipline, adding-a-persona checklist), made available at runtime instead of living only in this repo's own `docs/` (which holds repo-specific meta-documentation — ADRs, IDEAS.md, MEMORY.md — that has no reason to sync to every machine's `~/.claude/`)
-- `dotfiles/codex/config.toml` -> `~/.codex/config.toml`
-- `dotfiles/codex/rules/default.rules` -> `~/.codex/rules/default.rules`
+- `dotfiles/codex/config.toml` -> `~/.codex/config.toml` — `sandbox_mode = "workspace-write"` with `[sandbox_workspace_write] network_access = true`: writes confined to the workspace (`.git`/`.agents`/`.codex` read-only inside it), network kept on for npx/composer/remote MCP. The `[desktop]`, `[projects]`, `[plugins.*]` and `[mcp_servers.node_repl]` blocks are written by the Codex app itself, so they churn per machine — that's expected noise in `git status`, not config to hand-edit
+- `dotfiles/codex/rules/default.rules` -> `~/.codex/rules/default.rules` — per-command approval rules. These are convenience, not a security boundary: `sandbox_mode` is what enforces. Blanket `sed` was removed (it covers `sed -i` and GNU sed's `s///e`, which executes a shell command, and prefix matching can't express "no `-i` anywhere"), along with approvals left behind by other projects. `["codex", "mcp"]` still allows `codex mcp add` — see `docs/adr/0044-config-security-hardening-pass.md`
+- `dotfiles/claude/CLAUDE.md` -> `~/.codex/AGENTS.md` — the same rules file, linked a second time: Codex reads its global instructions from `~/.codex/AGENTS.md` and never from `~/.claude`, so before this Codex ran with no global rules at all. Codex skills are deliberately not linked (`~/.codex/skills` holds Codex's own `.system` skills a directory symlink would shadow, and the pipeline skills are written around `/build`, `/test`, `/review`, `/ship`, which Codex has no equivalent of)
 
 Superpowers, Code Simplifier, and Commit Commands remain installed/known for
 project-scoped opt-in but are not globally enabled. Qdrant and LLM Application
@@ -55,6 +56,13 @@ that Claude Code expands at load time, so the stored config holds variable
 names rather than tokens — export those variables in the shell that starts
 Claude Code. Re-running the script skips any server that already exists
 instead of aborting on the first duplicate name.
+
+The filesystem MCP server is deliberately **not** configured. At user scope
+rooted on `$HOME` it reached around `settings.json`'s `Read` deny paths
+(`~/.ssh`, `~/.aws`, `~/.config/gh`, `~/.git-credentials`) — that deny list
+constrains Claude Code's own file tools, not an MCP server — while the built-in
+`Read`/`Write`/`Glob`/`Grep` tools already cover the workspace. Run
+`claude mcp remove filesystem` on a machine that still has it.
 
 Deliberately **not** synced:
 - `~/.claude.json` — MCP server config (user/local scope) plus per-project trust

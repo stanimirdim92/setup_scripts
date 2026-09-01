@@ -121,6 +121,10 @@ Surface uncertainty, skipped steps, and unverified claims explicitly. Never let 
 
 ## Agent orchestration
 
+This section is Claude Code-specific. It is also linked as `~/.codex/AGENTS.md`,
+where the file paths below do not exist — apply the principles, ignore the
+pointers.
+
 - Delegate bounded outcomes with acceptance criteria and verification.
 - Commands/user orchestrate; personas do not dispatch personas.
 - Reuse one implementation executor across related tasks in a workstream.

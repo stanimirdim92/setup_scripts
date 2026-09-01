@@ -50,9 +50,22 @@ link "$DOTFILES/claude/docs"                   "$HOME/.claude/docs"
 link "$DOTFILES/codex/config.toml"             "$HOME/.codex/config.toml"
 link "$DOTFILES/codex/rules/default.rules"     "$HOME/.codex/rules/default.rules"
 
+# Codex reads its global instructions from $HOME/.codex/AGENTS.md (and
+# AGENTS.override.md ahead of it, if one exists), NOT from ~/.claude — so
+# without this line Codex ran with no global rules at all while Claude Code
+# had the full set. Same file, one source of truth: CLAUDE.md is the rules
+# document, and its "Agent orchestration" section is marked Claude
+# Code-specific for the Codex reader.
+#
+# Codex skills are deliberately NOT linked. $HOME/.codex/skills already holds
+# Codex's own vendor-shipped .system skills, which a whole-directory symlink
+# would shadow, and the pipeline skills are written around /build, /test,
+# /review and /ship, which Codex has no equivalent of.
+link "$DOTFILES/claude/CLAUDE.md"              "$HOME/.codex/AGENTS.md"
+
 # MCP servers are NOT symlinked: `claude mcp add` writes into ~/.claude.json,
 # which also holds per-project trust state and can carry OAuth tokens/API
 # keys. Run the setup script by hand on each machine instead:
 #   ./dotfiles/claude/mcp/setup.sh
 echo
-echo "Note: MCP servers aren't auto-linked. Run ./dotfiles/claude/mcp/setup.sh separately (once per machine, needs GITHUB_TOKEN)."
+echo "Note: MCP servers aren't auto-linked. Run ./dotfiles/claude/mcp/setup.sh separately (once per machine; no secrets needed — it writes \${VAR} placeholders)."

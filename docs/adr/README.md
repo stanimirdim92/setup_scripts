@@ -44,12 +44,14 @@ that explanation here, just the index.
 | [0034](0034-spec-driven-development-narrowed-to-define.md) | `spec-driven-development` narrowed to the DEFINE stage | Accepted |
 | [0035](0035-independent-verify-made-risk-triggered.md) | Independent VERIFY made risk-triggered; `/review` owns the decision | Clarified by [0038](0038-verify-pass-test-only-candidate-identity.md) |
 | [0036](0036-specialist-reviewers-to-sonnet-and-narrowed-triggers.md) | Specialist reviewers to Sonnet/medium with narrowed triggers | Accepted |
-| [0037](0037-fixed-session-context-reduced.md) | Fixed session context reduced: compact prompts and settings | Accepted |
+| [0037](0037-fixed-session-context-reduced.md) | Fixed session context reduced: compact prompts and settings | Partially superseded by [0043](0043-automatic-memory-and-compaction-window-restored.md) (both settings changes reversed; the prompt compression stands) |
 | [0038](0038-verify-pass-test-only-candidate-identity.md) | VERIFY PASS test-only commits may advance the BUILD candidate | Accepted |
-| [0039](0039-runtime-catalog-narrowed-by-observed-use.md) | Runtime plugins narrowed; standalone engineering skills retained | Accepted |
+| [0039](0039-runtime-catalog-narrowed-by-observed-use.md) | Runtime plugins narrowed; standalone engineering skills retained | Partially superseded by [0043](0043-automatic-memory-and-compaction-window-restored.md) (automatic memory no longer disabled) |
 | [0040](0040-openspec-conventions-adopted.md) | Four conventions adopted from Fission-AI/openspec; nothing vendored | Accepted |
 | [0041](0041-recon-delegated-to-repo-recon-subagent.md) | Repository recon delegated to a `repo-recon` subagent | Accepted |
 | [0042](0042-third-executor-as-conditional-exception.md) | A third concurrent executor as a conditional exception, not a raised cap | Accepted |
+| [0043](0043-automatic-memory-and-compaction-window-restored.md) | Automatic memory and the 500k compaction window restored, reversing 0037 | Accepted |
+| [0044](0044-config-security-hardening-pass.md) | Config security hardening: enforcement made to match the stated guarantees | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

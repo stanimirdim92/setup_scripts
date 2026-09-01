@@ -54,13 +54,18 @@ add_server github --transport http https://api.githubcopilot.com/mcp/ \
   --header 'Authorization: Bearer ${GITHUB_TOKEN}' \
   --scope user
 
-echo "==> Filesystem MCP server (user scope, all projects)"
-# Version pinned rather than floating: `npx -y <pkg>` resolves the newest
-# release at every launch, which hands an unreviewed package version
-# filesystem access on the roots below — see references/supply-chain.md.
-# Bump this deliberately.
-add_server filesystem --transport stdio --scope user \
-  -- npx -y @modelcontextprotocol/server-filesystem@2026.8.31 "$HOME"
+# Deliberately NOT configured: @modelcontextprotocol/server-filesystem.
+# It was previously added at user scope rooted at "$HOME", which reached
+# around settings.json's Read-deny paths (~/.ssh, ~/.aws, ~/.config/gh,
+# ~/.git-credentials) — the deny list constrains Claude Code's own file
+# tools, not an MCP server's. The built-in Read/Write/Glob/Grep tools
+# already cover the workspace, so the server's only real addition was reach
+# outside it. On a machine that already has it, remove it:
+#
+#   claude mcp remove filesystem
+#
+# If a future task genuinely needs MCP filesystem access, add it per-project
+# with an explicit narrow root and a pinned version, not user-wide.
 
 echo "==> Atlassian (Jira/Confluence) MCP server (user scope, all projects)"
 # Official Atlassian remote MCP server (Cloud-only) — also covers
