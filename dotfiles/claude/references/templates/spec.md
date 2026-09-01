@@ -72,8 +72,9 @@ environment, and measurement method.]
 
 ## Material Decisions
 [Only decisions that materially changed specified behavior — product, domain,
-contract, or lifecycle. Technical decisions belong in the plan's Decisions and
-Provenance. This exists so a resolved OPEN QUESTION leaves a trace instead of
+contract, or lifecycle. Technical decisions belong in the plan, as `TD-###`
+under its Decisions and Provenance — `DEC` and `TD` are separate id spaces so
+"see DEC-002" is never ambiguous between the two documents. This exists so a resolved OPEN QUESTION leaves a trace instead of
 disappearing into the final prose. "None" is a valid entry.]
 
 ### DEC-001 — [Short title]

@@ -53,6 +53,7 @@ that explanation here, just the index.
 | [0043](0043-automatic-memory-and-compaction-window-restored.md) | Automatic memory and the 500k compaction window restored, reversing 0037 | Accepted |
 | [0044](0044-config-security-hardening-pass.md) | Config security hardening: enforcement made to match the stated guarantees | Accepted |
 | [0045](0045-spec-approval-state-change-impact-and-requirement-traceability.md) | Spec approval state, change-impact semantics, and requirement traceability | Accepted |
+| [0046](0046-plan-technical-approach-spec-pinning-and-plan-gates.md) | Plan gains a technical approach, a spec pin, and its own approval state | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

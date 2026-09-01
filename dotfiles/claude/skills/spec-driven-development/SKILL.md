@@ -115,7 +115,7 @@ domain, contract, or lifecycle choice — record it as a `DEC-###` entry under
 Material Decisions naming the alternative that lost and the requirements it
 affects. Otherwise the reasoning disappears into the final prose and gets
 re-litigated by whoever reads the spec next. Technical decisions belong to the
-plan, not here.
+plan as `TD-###`, a separate id space from the spec's `DEC-###`.
 
 Treat a choice as needing an `OPEN QUESTION` block when picking the wrong
 option would change an acceptance criterion, a schema, a public contract, or

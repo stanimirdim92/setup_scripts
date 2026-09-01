@@ -14,6 +14,23 @@ Resolve the target per `../references/target-selection.md`, and announce it ("Us
 
 Read `docs/tasks/[TICKET]-todo.md` and the plan only as needed.
 
+### Require a current plan
+
+Check the plan's own header before dispatching anything:
+
+- `Status` must read `Approved`. `Draft`, `Needs replan` or `Superseded` stops
+  dispatch and returns to `/plan`.
+- Recompute the spec pin — `git hash-object docs/specs/[TICKET]-SPEC.md` — and
+  compare it to the plan's `Spec revision`.
+
+A mismatch is not automatically a stale plan; an editorial fix changes the hash
+without changing behavior. Diff it before deciding:
+`git cat-file blob <pinned-hash>` against the current spec. Editorial only →
+re-pin the new hash, note it, proceed. Behavioral → the plan is stale: set it
+`Needs replan` and stop. Report which path was taken; a mismatch waved through
+without the diff defeats the check
+(`../references/plan-quality-gates.md` §2).
+
 For each selected task resolve:
 
 - outcome and acceptance criteria;
@@ -114,8 +131,10 @@ which workstreams, and — if a third was used — that its four conditions held
 concurrency exceeds this cap, that is a reportable slip, named as such.
 
 Parallel workstreams still integrate sequentially in dependency order. After
-each integration run affected checks; after all integrations run the combined
-selected-scope verification.
+each integration run affected checks; after all integrations run the plan's
+**Verification Strategy → Integrated** commands over the selected scope. Task-
+and workstream-focused checks passing is not evidence that the integrated
+behavior works, which is the gap that line exists to close.
 
 Parallelism buys elapsed time, not fewer tokens.
 

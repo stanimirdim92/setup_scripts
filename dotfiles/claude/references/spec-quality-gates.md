@@ -80,7 +80,8 @@ Every requirement in a spec that will enter `/plan` carries a stable
 Ids are sequential, assigned once, and **never renumbered after approval** —
 every downstream artifact references them, so renumbering silently invalidates
 the whole trace. A withdrawn requirement keeps its id and is marked withdrawn
-rather than reused.
+rather than reused. The full id-ownership table — which document owns `REQ`,
+`DEC`, `TD`, `T` and `CP` — is in `plan-quality-gates.md` §3.
 
 The chain each id carries:
 

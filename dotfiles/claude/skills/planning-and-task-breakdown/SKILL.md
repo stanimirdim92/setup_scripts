@@ -38,7 +38,10 @@ Before making implementation decisions, operate in read-only mode.
 Before decomposing work, confirm the spec's `Status` header reads `Approved`,
 reading it from disk rather than relying on approval seen earlier in the
 conversation. Any other status stops planning and returns the spec to `/spec`
-(`../../references/spec-quality-gates.md` §2).
+(`../../references/spec-quality-gates.md` §2). Then pin the spec with
+`git hash-object -w <spec path>` and record it in the plan: an approved status
+proves a human approved something, not that the spec still says what this plan
+assumes (`../../references/plan-quality-gates.md` §2).
 
 Then reconcile the proposed plan against the approved spec. Build the trace from
 each planned behavior and acceptance criterion back to its spec source, keyed by
@@ -276,6 +279,13 @@ states a specific new risk it mitigates):
 Do not add a checkpoint or human approval merely because a fixed number of tasks
 has elapsed.
 
+**Technical uncertainty that cannot be resolved read-only becomes a bounded
+spike task, not an open question** — acceptance criteria naming the evidence and
+the deciding threshold, gated by a checkpoint before dependent work. It runs
+during `/build`, changes no production behavior, and is only for technical
+questions: if the answer could change a `REQ-###` it is a `SPEC CONFLICT`.
+Rules: `../../references/plan-quality-gates.md` §5.
+
 Example:
 
 ```markdown
@@ -369,7 +379,13 @@ Also:
 
 ## Plan Document Template
 
-Use `../../references/templates/plan.md`.
+Use `../../references/templates/plan.md` — it adds a Technical Approach (the
+HOW a task list alone does not express) and a plan-level Verification Strategy,
+since task-focused checks do not prove integrated behavior.
+
+Plan approval state, spec-revision pinning, id stability (`REQ`/`DEC` in the
+spec; `TD`/`T`/`CP` in the plan, never renumbered after approval), closure
+checks, and spike rules: `../../references/plan-quality-gates.md`.
 
 ## Parallelization Opportunities
 
@@ -429,7 +445,10 @@ Agent self-check:
 - [ ] The plan does not unnecessarily duplicate the spec
 - [ ] The plan contains no production implementation
 - [ ] Every planned behavior and acceptance criterion traces to the approved spec
-- [ ] The spec's `Status` header read `Approved` on disk before planning began
+- [ ] The spec's `Status` header read `Approved` on disk before planning began, and its `git hash-object -w` revision is recorded in the plan
+- [ ] The plan states a Technical Approach, and a Verification Strategy whose commands come from repository evidence
+- [ ] Every risk mitigation names the task or checkpoint that performs it
+- [ ] Conditional sections are present when they apply, omitted rather than N/A when they don't
 - [ ] Every spec requirement maps to at least one task and every task names at least one `REQ-###`; the plan reports `Unmapped requirements: None` and `Orphan tasks: None`
 - [ ] The plan does not contradict, weaken, or strengthen the approved spec
 
