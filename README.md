@@ -54,7 +54,10 @@ in the "not synced" list below, not linked like the rest. The script writes
 auth headers as literal `${GITHUB_TOKEN}`/`${CONTEXT7_API_KEY}` placeholders
 that Claude Code expands at load time, so the stored config holds variable
 names rather than tokens — export those variables in the shell that starts
-Claude Code. Re-running the script skips any server that already exists
+Claude Code. One exception: with `CONTEXT7_API_KEY` unset, Context7 is added
+with no auth header at all (its unauthenticated rate limit), and a later rerun
+skips it as already configured — so export the key before the first run if you
+want the higher limit. Re-running the script skips any server that already exists
 instead of aborting on the first duplicate name.
 
 The filesystem MCP server is deliberately **not** configured. At user scope

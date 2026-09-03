@@ -18,17 +18,22 @@ Read `docs/tasks/[TICKET]-todo.md` and the plan only as needed.
 
 Check the plan's own header before dispatching anything:
 
-- `Status` must read `Approved`. `Draft`, `Needs replan` or `Superseded` stops
-  dispatch and returns to `/plan`.
-- Recompute the spec pin — `git hash-object docs/specs/[TICKET]-SPEC.md` — and
-  compare it to the plan's `Spec revision`.
+- The **plan's** `Status` must read `Approved`. `Draft`, `Needs replan` or
+  `Superseded` stops dispatch and returns to `/plan`.
+- The **spec's** `Status` must still read `Approved` too. A plan approved
+  against a spec that has since gone `Needs reapproval` or `Superseded` is
+  building to requirements nobody currently stands behind — check the spec
+  header, not just the plan's record of it.
+- Retrieve the pinned spec and diff it:
+  `git show <sha>:<spec path>` against the working copy.
 
-A mismatch is not automatically a stale plan; an editorial fix changes the hash
-without changing behavior. Diff it before deciding:
-`git cat-file blob <pinned-hash>` against the current spec. Editorial only →
-re-pin the new hash, note it, proceed. Behavioral → the plan is stale: set it
-`Needs replan` and stop. Report which path was taken; a mismatch waved through
-without the diff defeats the check
+A difference is not automatically a stale plan; an editorial fix changes the
+file without changing behavior. Read the diff before deciding. Editorial only →
+re-pin the new commit, note it, proceed. Behavioral, **or any change to the
+`Status` line** → the plan is stale: set it `Needs replan` and stop. If the
+pinned sha no longer resolves (rebased or squashed away), treat the plan as
+`Needs replan` rather than guessing. Report which path was taken; a difference
+waved through without the diff defeats the check
 (`../references/plan-quality-gates.md` §2).
 
 For each selected task resolve:
@@ -69,6 +74,9 @@ its named contract checkpoint passes, even when executors are idle and the work
 Send only what is needed to start correctly:
 
 - task/outcome;
+- `requirements: [REQ-###, ...]` — copied from the task packet. The executor
+  needs to know which requirement its work answers, and `/review` and `/ship`
+  trace evidence against these ids;
 - acceptance criteria;
 - dependencies;
 - workstream;

@@ -5,8 +5,8 @@ commands all need and would otherwise each restate: what makes a requirement
 approvable, how approval is recorded, and how a requirement id is traced from
 spec to release.
 
-Single-sourced here for the same reason as `reviewer-triggers.md` — four
-consumers (`/spec`, `/plan`, `/review`, `/ship`, plus `/test`) enforcing
+Single-sourced here for the same reason as `reviewer-triggers.md` — five
+consumers (`/spec`, `/plan`, `/test`, `/review`, `/ship`) enforcing
 copy-pasted versions of one rule set is how the copies start disagreeing.
 
 ## 1. Requirements quality — the closure pass's assertions
@@ -144,4 +144,3 @@ archival, or another transition, and define how deleted records affect reads,
 uniqueness, relationships, restoration, invariant calculations, retention, and
 tests. Do not propose a deletion marker while leaving deletion behavior as an
 implementation detail.
-

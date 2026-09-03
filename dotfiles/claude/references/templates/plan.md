@@ -27,7 +27,7 @@ they are what `/build`, `/review` and `/ship` read.
 Status: Draft
 Spec: docs/specs/[TICKET]-SPEC.md [+ module-id if from a capability map]
 Spec status: Approved
-Spec revision: git-blob:[hash from `git hash-object -w <spec path>`]
+Spec revision: git-commit:[sha]:docs/specs/[TICKET]-SPEC.md
 Approved by: —
 Approved at: —
 
@@ -110,6 +110,7 @@ that planning dropped nothing and invented nothing.]
 - REQ-001 → T001 → feature test
 - REQ-002 → T002 → API contract test
 - REQ-003 → T001, T003 → persistence and concurrency tests
+- REQ-004 → withdrawn in spec, no task required
 
 Unmapped requirements: None
 Orphan tasks: None

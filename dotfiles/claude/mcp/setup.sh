@@ -32,7 +32,7 @@ add_server() {
   shift
 
   if claude mcp get "$name" >/dev/null 2>&1; then
-    echo "    skipped: '$name' already exists (re-add with: claude mcp remove $name)"
+    echo "    skipped: '$name' already exists (re-add with: claude mcp remove $name --scope user)"
     return 0
   fi
 
@@ -62,7 +62,7 @@ add_server github --transport http https://api.githubcopilot.com/mcp/ \
 # already cover the workspace, so the server's only real addition was reach
 # outside it. On a machine that already has it, remove it:
 #
-#   claude mcp remove filesystem
+#   claude mcp remove filesystem --scope user
 #
 # If a future task genuinely needs MCP filesystem access, add it per-project
 # with an explicit narrow root and a pinned version, not user-wide.

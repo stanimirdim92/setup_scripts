@@ -22,15 +22,18 @@ deny() {
 [ -z "$command" ] && exit 0
 
 # dotfiles/.gitconfig defines shortcut/typo aliases that expand to commands
-# checked below -- `rlc` -> `reset --hard HEAD~1`, `co` -> `checkout` -- so a
-# grep for the spelled-out command misses `git rlc` and `git co .` entirely.
-# Expand those aliases before matching. Keep this list in sync with the
-# [alias] section of dotfiles/.gitconfig; the push family lives in
-# warn-force-push.sh. Note `git help.autocorrect = 1` can still run a
-# near-miss typo that no fixed list covers.
+# checked below -- `rlc` -> `reset --hard HEAD~1`, `co` -> `checkout` -- and git
+# accepts global options between `git` and the subcommand (`git -C /tmp reset`,
+# `git --no-pager push`), so a grep for the spelled-out command misses both.
+# Normalise before matching: expand the aliases, then strip the global options.
+# Keep the alias list in sync with the [alias] section of dotfiles/.gitconfig.
+# Every form here is covered by tools/test-hooks.sh -- add a fixture before
+# adding a matcher. Note `git help.autocorrect = 1` can still run a near-miss
+# typo that no fixed list covers.
 command="$(sed -E \
   -e 's/\bgit[[:space:]]+rlc\b/git reset --hard HEAD~1/g' \
   -e 's/\bgit[[:space:]]+co\b/git checkout/g' \
+  -e 's/\bgit((([[:space:]]+(-C|-c|--git-dir|--work-tree|--exec-path|--namespace)([[:space:]]+|=)[^[:space:]]+))|([[:space:]]+(--no-pager|--paginate|--bare|--literal-pathspecs|--no-optional-locks|--no-replace-objects)))+/git/g' \
   <<<"$command")"
 
 # rm -rf (or -fr, or -r -f) targeting root, home, a bare dot/dotdot, or a
@@ -38,7 +41,7 @@ command="$(sed -E \
 # (immediately followed by a space or end-of-string) so this does NOT match
 # a real path like `rm -rf ./build` or `rm -rf /srv/app` — only bare `/`,
 # `~`, `$HOME`, `.`, `..`, `/*`, or `~/*`.
-if echo "$command" | grep -Eq 'rm[[:space:]]+(-[a-zA-Z]*[rf][a-zA-Z]*|--recursive|--force)([[:space:]]+-[a-zA-Z-]+)*[[:space:]]+(/\*?|~(/\*)?|\$HOME|\.{1,2})([[:space:]]|$)'; then
+if echo "$command" | grep -Eq 'rm[[:space:]]+(-[a-zA-Z]*[rf][a-zA-Z]*|--recursive|--force)([[:space:]]+-[a-zA-Z-]+)*[[:space:]]+["'"'"']?(/\*?|~/?\*?|\$\{?HOME\}?/?\*?|\.{1,2})["'"'"']?([[:space:]]|$)'; then
   deny "rm -rf against /, ~, \$HOME, or . is almost never intended — confirm the exact path with the user first."
 fi
 
@@ -77,6 +80,14 @@ if echo "$command" | grep -Eq 'git[[:space:]]+branch\b' \
   && { echo "$command" | grep -Eq -- '(^|[[:space:]])(-[a-zA-Z]*D[a-zA-Z]*)([[:space:]]|$)' \
     || { echo "$command" | grep -Eq -- '--delete\b' && echo "$command" | grep -Eq -- '--force\b'; }; }; then
   deny "git branch -D force-deletes the branch, discarding any commits on it that aren't reachable elsewhere."
+fi
+
+# git checkout -f / git switch -f / git switch --discard-changes: throws away
+# every uncommitted change in the working tree without naming a path, so the
+# bare-dot matcher below never sees it.
+if echo "$command" | grep -Eq 'git[[:space:]]+(checkout|switch)\b' \
+  && echo "$command" | grep -Eq -- '(^|[[:space:]])(-f|--force|--discard-changes)([[:space:]]|$)'; then
+  deny "This discards every uncommitted change in the working tree with no undo — confirm that's really intended."
 fi
 
 # git checkout . / git restore .: discards all uncommitted changes in the

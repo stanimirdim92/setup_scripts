@@ -7,9 +7,11 @@ without copying the full spec or plan.
 ```markdown
 ## Task [N]: [Short descriptive title]
 
-**Requirements:** [One or more `REQ-###` ids from the approved spec. A task
-with no requirement is scope the spec never asked for — remove it, or return a
-SPEC CONFLICT if the behavior is genuinely needed.]
+**Requirements:** [A delivery task names one or more `REQ-###` ids from the
+approved spec. A spike names the `TD-###` it resolves plus the `REQ-###` ids it
+unblocks. A task fitting neither is scope the spec never asked for — remove it,
+or return a SPEC CONFLICT if the behavior is genuinely needed. `/build` passes
+this line through to the executor verbatim.]
 
 **Description:** One paragraph explaining the outcome this task delivers.
 

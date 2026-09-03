@@ -51,11 +51,12 @@ that explanation here, just the index.
 | [0041](0041-recon-delegated-to-repo-recon-subagent.md) | Repository recon delegated to a `repo-recon` subagent | Accepted |
 | [0042](0042-third-executor-as-conditional-exception.md) | A third concurrent executor as a conditional exception, not a raised cap | Accepted |
 | [0043](0043-automatic-memory-and-compaction-window-restored.md) | Automatic memory and the 500k compaction window restored, reversing 0037 | Accepted |
-| [0044](0044-config-security-hardening-pass.md) | Config security hardening: enforcement made to match the stated guarantees | Accepted |
+| [0044](0044-config-security-hardening-pass.md) | Config security hardening: enforcement made to match the stated guarantees | Partially superseded by [0049](0049-durable-spec-pin-and-hook-bypasses.md) (alias-awareness was one normalisation gap of several) |
 | [0045](0045-spec-approval-state-change-impact-and-requirement-traceability.md) | Spec approval state, change-impact semantics, and requirement traceability | Accepted |
-| [0046](0046-plan-technical-approach-spec-pinning-and-plan-gates.md) | Plan gains a technical approach, a spec pin, and its own approval state | Accepted |
+| [0046](0046-plan-technical-approach-spec-pinning-and-plan-gates.md) | Plan gains a technical approach, a spec pin, and its own approval state | Partially superseded by [0049](0049-durable-spec-pin-and-hook-bypasses.md) (the `hash-object` pin was not durable) |
 | [0047](0047-skill-trim-by-deduplication.md) | Skills trimmed by de-duplication, not by cutting policy | Partially superseded by [0048](0048-repository-precedent-placement-corrected.md) (its reported per-run saving was a regression; placement corrected) |
 | [0048](0048-repository-precedent-placement-corrected.md) | `repository-precedent.md` placement corrected: hot rules inline, cold ones referenced | Accepted |
+| [0049](0049-durable-spec-pin-and-hook-bypasses.md) | Spec pin made durable; hook bypasses closed and put under test | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

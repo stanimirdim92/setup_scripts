@@ -39,10 +39,10 @@ Before making implementation decisions, operate in read-only mode.
 Before decomposing work, confirm the spec's `Status` header reads `Approved`,
 reading it from disk rather than relying on approval seen earlier in the
 conversation. Any other status stops planning and returns the spec to `/spec`
-(`../../references/spec-quality-gates.md` §2). Then pin the spec with
-`git hash-object -w <spec path>` and record it in the plan: an approved status
-proves a human approved something, not that the spec still says what this plan
-assumes (`../../references/plan-quality-gates.md` §2).
+(`../../references/spec-quality-gates.md` §2). Then pin the spec by the commit
+that last touched it, requiring it committed first, and record it in the plan:
+an approved status proves a human approved something, not that the spec still
+says what this plan assumes (`../../references/plan-quality-gates.md` §2).
 
 Then reconcile the proposed plan against the approved spec. Build the trace from
 each planned behavior and acceptance criterion back to its spec source, keyed by
@@ -448,7 +448,7 @@ Agent self-check:
 - [ ] The plan does not unnecessarily duplicate the spec
 - [ ] The plan contains no production implementation
 - [ ] Every planned behavior and acceptance criterion traces to the approved spec
-- [ ] The spec's `Status` header read `Approved` on disk before planning began, and its `git hash-object -w` revision is recorded in the plan
+- [ ] The spec's `Status` header read `Approved` on disk before planning began, the spec is committed, and the commit that last touched it is recorded as the plan's `Spec revision`
 - [ ] The plan states a Technical Approach, and a Verification Strategy whose commands come from repository evidence
 - [ ] Every risk mitigation names the task or checkpoint that performs it
 - [ ] Conditional sections are present when they apply, omitted rather than N/A when they don't

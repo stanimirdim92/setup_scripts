@@ -14,11 +14,14 @@ the status and return the spec to `/spec`. A spec whose requirements have no
 `REQ-###` ids is also not plannable; return it for ids
 (`../references/spec-quality-gates.md` §2-3).
 
-Then pin the spec's content — `git hash-object -w docs/specs/[TICKET]-SPEC.md` —
-and record it in the plan as `Spec revision: git-blob:<hash>`. `/build`
-recomputes it and stops on a mismatch, which catches a spec edited without its
-approval status being updated. `-w` matters: it writes the blob so the pinned
-content can be diffed later.
+Then pin the spec by commit. Require it committed with no uncommitted edits
+(`git diff --quiet HEAD -- <spec>`), take the commit that last touched it
+(`git log -1 --format=%H -- <spec>`), and record
+`Spec revision: git-commit:<sha>:<spec path>`. `/build` retrieves that content
+with `git show` and diffs it, which catches a spec edited without its approval
+status being updated. Pin a commit, never a loose `hash-object` blob: an
+unreferenced blob is pruned by `git gc` and never leaves the machine
+(`../references/plan-quality-gates.md` §2).
 
 Reconcile every planned behavior and acceptance criterion against the approved
 spec. On contradiction, infeasibility, or a proposed new/stronger behavior,
@@ -26,15 +29,18 @@ stop with `SPEC CONFLICT` and return the decision to `/spec`.
 
 ## Requirement coverage
 
-Map every spec requirement to the tasks that deliver it, and give every task at
-least one `REQ-###`. Record the map in the plan's Requirement Coverage table and
-report both lines explicitly:
+Map every spec requirement to the tasks that deliver it. A delivery task names
+at least one `REQ-###`; a spike names the `TD-###` it resolves plus the
+requirements it unblocks. A withdrawn requirement stays in the table marked
+withdrawn rather than disappearing from it. Record the map in the plan's
+Requirement Coverage table and report both lines explicitly:
 
 - `Unmapped requirements: None` — a requirement with no task is a dropped
   requirement; it surfaces in production rather than at this gate.
-- `Orphan tasks: None` — a task with no requirement is scope the spec never
-  asked for. Remove it, or return a `SPEC CONFLICT` if the behavior is genuinely
-  needed, so it gets specified and approved instead of entering through the plan.
+- `Orphan tasks: None` — a task that names neither a requirement nor a
+  `TD-###`-plus-unblocked-requirements is scope the spec never asked for.
+  Remove it, or return a `SPEC CONFLICT` if the behavior is genuinely needed,
+  so it gets specified and approved instead of entering through the plan.
 
 Neither line may read anything other than `None` at handoff.
 

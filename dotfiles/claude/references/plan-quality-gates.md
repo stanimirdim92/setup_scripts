@@ -31,50 +31,60 @@ readable by a later session or a downstream gate.
 
 ## 2. Spec revision pinning
 
-A plan is only valid against the spec it was planned from. `Status: Approved` on
-the spec proves a human approved *something*; it does not prove the spec still
-says what the plan assumed — a spec can be edited without its status being
-updated correctly, which is exactly the case this pin catches.
+A plan is only valid against the spec it was planned from. `Status: Approved`
+on the spec proves a human approved *something*; it does not prove the spec
+still says what the plan assumed — a spec can be edited without its status
+being updated correctly, which is exactly the case this pin catches.
 
-**When planning starts**, after confirming the spec reads `Status: Approved`,
-pin its content:
+**The pin must be a commit, not a loose blob.** An earlier version of this rule
+used `git hash-object -w`, which writes an object no ref points at: `git prune`
+deletes it, and it is never transferred by push or clone. The plan was
+unverifiable on a second machine and could become unverifiable on the first
+(see `docs/adr/0049-durable-spec-pin-and-hook-bypasses.md` in the harness repo).
+
+**When planning starts**, after confirming `Status: Approved`, require the spec
+to be committed with no uncommitted edits, then pin the commit that last
+touched it:
 
 ```bash
-git hash-object -w docs/specs/[TICKET]-SPEC.md
+git diff --quiet HEAD -- docs/specs/[TICKET]-SPEC.md \
+  || echo "spec has uncommitted edits — commit it before planning"
+git log -1 --format=%H -- docs/specs/[TICKET]-SPEC.md
 ```
 
-Record the result as `Spec revision: git-blob:<hash>`. Use `-w` so the blob is
-written to the object database — without it the hash is recorded but the pinned
-content cannot be recovered later, which makes the mismatch unresolvable.
+Record it as `Spec revision: git-commit:<sha>:docs/specs/[TICKET]-SPEC.md`.
+Requiring the commit is not extra ceremony: `spec-driven-development`'s
+"Keeping the Spec Alive" already says the spec belongs in version control.
 
-**When `/build` starts**, recompute:
-
-```bash
-git hash-object docs/specs/[TICKET]-SPEC.md
-```
-
-A match means the plan is current; dispatch proceeds.
-
-A **mismatch is not automatically a stale plan** — an editorial correction
-changes the hash without changing behavior, and refusing on that alone would
-make the gate something people learn to bypass. Resolve it by looking:
+**When `/build` starts**, retrieve the pinned content and compare:
 
 ```bash
-git cat-file blob <pinned-hash> > /tmp/spec-pinned.md
+git show <sha>:docs/specs/[TICKET]-SPEC.md > /tmp/spec-pinned.md
 diff /tmp/spec-pinned.md docs/specs/[TICKET]-SPEC.md
 ```
 
-- **Editorial only** (typos, formatting, wording that changes no behavior):
-  re-pin the new hash in the plan, note it, and proceed. This is the cheap path
-  and it is the common one.
-- **Behavioral** (a requirement, scenario, contract, invariant, boundary or
-  Change Impact entry differs): stop. The plan is stale — set the plan to
-  `Needs replan`, and the spec to `Needs reapproval` if its status does not
-  already say so. Do not dispatch against a plan built on requirements that have
-  since changed.
+Identical means the plan is current; dispatch proceeds.
 
-Report which path was taken. "The hashes differed and I proceeded" without the
-diff is the failure this gate exists to prevent.
+A **difference is not automatically a stale plan** — an editorial correction
+changes the file without changing behavior, and refusing on that alone would
+make the gate something people learn to bypass. Resolve it by reading the diff:
+
+- **Editorial only** (typos, formatting, wording that changes no behavior):
+  re-pin the new commit, note it, and proceed. The cheap and common path.
+- **Behavioral** (a requirement, scenario, contract, invariant, boundary or
+  Change Impact entry differs): stop. Set the plan `Needs replan`, and the spec
+  `Needs reapproval` if its status does not already say so.
+- **A `Status` line change is never editorial.** `Approved` →
+  `Needs reapproval` or `Superseded` is the spec telling you the plan's
+  foundation moved. Treat it as behavioral, whatever the rest of the diff says.
+
+Report which path was taken. "The revisions differed and I proceeded" without
+the diff is the failure this gate exists to prevent.
+
+**If the sha no longer resolves** — the spec commit was rebased, squashed or
+amended away — the pin cannot be checked. Do not guess: treat the plan as
+`Needs replan` and re-pin against the current committed spec after confirming
+with the human that the requirements did not change in the rewrite.
 
 ## 3. Id stability
 
@@ -103,9 +113,17 @@ takes the next unused number.
 - Every `REQ-###` maps to at least one task, or to explicit verification-only
   evidence when the requirement is already satisfied by existing behavior that
   the change must preserve. `Unmapped requirements: None`.
-- Every task maps to a `REQ-###`, a `TD-###`, or a named delivery concern
-  (migration, rollout, contract stabilization). `Orphan tasks: None`. A task
-  that maps to none of those is scope the spec never asked for.
+- **A withdrawn requirement stays in the coverage table**, marked withdrawn,
+  rather than being deleted from it. Deleting the row makes a dropped
+  requirement indistinguishable from one that was never specified.
+- Every task carries requirement ids, under one of exactly two shapes:
+  - a **delivery task** names at least one `REQ-###` — the behavior it
+    delivers;
+  - a **spike** names the `TD-###` it resolves *and* the `REQ-###` ids it
+    unblocks, because a spike with no downstream requirement is investigation
+    for its own sake.
+  A task fitting neither is scope the spec never asked for.
+  `Orphan tasks: None`.
 - **Every risk mitigation names the task or checkpoint that performs it.** A
   mitigation with no owner is a hope, and a plan whose risk table is entirely
   hopes has not mitigated anything. This fails closure.
@@ -126,8 +144,8 @@ Sanctioned instead: a spike task in the plan, executed by `/build` like any
 other task.
 
 ```markdown
-- [ ] T000 (S, ws-research, deps: —) [TD-002]: Prove whether the proposed
-      index supports the target query
+- [ ] T000 (S, ws-research, deps: —) [TD-002, unblocks REQ-004]: Prove whether
+      the proposed index supports the target query
 ```
 
 Its acceptance criteria state the evidence to produce, the comparison to run,
