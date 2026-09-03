@@ -168,7 +168,12 @@ behavioral task that consumes them — unless it is a **justified foundation**: 
 task that is independently verifiable AND consumed by two or more downstream
 tasks (e.g., a migration establishing a schema three later tasks build on).
 
-Each vertical slice delivers working, testable functionality.
+Each vertical slice delivers working, testable functionality. Its production
+implementation and the automated tests that prove it are normally one task:
+red, green, and refactor are execution steps inside that task, not separate
+planning units. Split out test work only when it has independently verifiable
+value without the production change (for example, a characterization suite
+that passes against the current behavior and gates a risky later task).
 
 ### Carry invariants into the task boundary
 
@@ -243,6 +248,10 @@ Every task must have:
 - A verification step
 - Dependencies
 - A workstream
+
+A delivery task includes both the implementation and the tests needed to prove
+its acceptance criteria. Do not create a test-only follower merely because the
+test files differ from the production files.
 
 Every task should also carry, whenever they exist for its area:
 
@@ -328,6 +337,10 @@ Default outputs:
 - Task list: `docs/tasks/[TICKET]-todo.md`
 
 Create `docs/tasks/` if needed.
+
+In a compact plan, the plan indexes tasks and the todo contains their full
+packets. Never copy the packet into both artifacts; follow the compact form in
+`../../references/templates/plan.md`.
 
 Projects may designate an external task tracker instead of the default todo
 file, but the plan should still preserve task dependencies and workstream
@@ -442,6 +455,7 @@ Agent self-check:
 - [ ] Related tasks share a workstream unless a stable contract separates materially different implementation contexts
 - [ ] Contract-separated workstreams retain explicit dependencies and a contract checkpoint
 - [ ] Task boundaries follow coherent behavior rather than arbitrary file counts
+- [ ] Production implementation and its proving tests share one delivery task unless the test work is independently verifiable before that change
 - [ ] Every L/XL task is split, or its cohesion justification is recorded in the plan
 - [ ] High-risk decisions are addressed early enough to fail fast
 - [ ] A checkpoint exists at each risk point listed in Step 6 that occurs in this plan

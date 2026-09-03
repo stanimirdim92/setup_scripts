@@ -24,9 +24,11 @@ report — that survey is the largest avoidable cost of the command, and the
 agent's reads stay in its own context. `repo-recon` owns the discovery method,
 including which instruction sources to look for; do not restate that list.
 
-- **Reuse** a report already in this conversation when it covers the same area
-  and nothing has changed since. Dispatch again only for a different area, after
-  the repository has changed, or when the report's **Not surveyed** section
+- **Reuse** a report already in this conversation when it covers the same
+  implementation and test area and that surveyed area has not changed. A spec,
+  plan, or other documentation-only edit does not stale implementation
+  precedent. Dispatch again only for a different or changed affected area, or
+  when the report's **Not surveyed** section
   excludes something you now need.
 - **Findings are pointers.** Open a file the report names only when a specific
   unresolved question turns on that file's detail — one or two files, not the

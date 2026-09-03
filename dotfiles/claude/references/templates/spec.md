@@ -4,13 +4,21 @@ The canonical spec document shape. Used by `spec-driven-development`'s
 Phase 1 (Specify) — fill in every section before a human reviews it; don't
 skip a section because it "doesn't apply," write "N/A" and why instead.
 
-Exception: the skill's compact form for bounded, low-risk work (no new
-architecture/pattern, no contract or schema change, no concurrent invariant,
-no lifecycle field) keeps only the status header, Objective, Change Impact,
-Requirements, Testing Strategy, Boundaries, and Success Criteria, and omits the
-rest outright. The `### Requirement:` / `#### Scenario:` heading forms and the
-`REQ-###` ids stay mandatory in both forms — `/plan`, `/test`, `/review` and
-`/ship` enumerate them mechanically.
+Exception: prefer the skill's compact form for bounded, low-risk work (no new
+architecture/pattern, contract or schema change, concurrent invariant, or
+lifecycle field). It keeps the complete status header, a short Objective,
+Requirements, and a concise Testing Strategy. Add Change Impact for a non-`New`
+change, Boundaries only for additional feature-specific constraints, and
+Material Decisions only when an actual `DEC-###` exists. Omit every other
+section — including Success Criteria, because the requirement scenarios are the
+authoritative success criteria — rather than writing `N/A` or `None`.
+
+Each fact gets one home in a compact spec: scenarios own acceptance behavior;
+Objective states purpose and scope; Change Impact points to changed/preserved
+requirement ids; Testing Strategy names evidence and commands. Do not restate
+the scenarios across those sections. The `### Requirement:` / `#### Scenario:`
+heading forms and `REQ-###` ids stay mandatory in both forms — `/plan`, `/test`,
+`/review` and `/ship` enumerate them mechanically.
 
 For a bug fix, use `bugfix-spec.md` instead: same header and id rules, but it
 leads with reproduction evidence and carries an explicit preserved-behavior

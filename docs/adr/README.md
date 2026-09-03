@@ -57,6 +57,7 @@ that explanation here, just the index.
 | [0047](0047-skill-trim-by-deduplication.md) | Skills trimmed by de-duplication, not by cutting policy | Partially superseded by [0048](0048-repository-precedent-placement-corrected.md) (its reported per-run saving was a regression; placement corrected) |
 | [0048](0048-repository-precedent-placement-corrected.md) | `repository-precedent.md` placement corrected: hot rules inline, cold ones referenced | Accepted |
 | [0049](0049-durable-spec-pin-and-hook-bypasses.md) | Spec pin made durable; hook bypasses closed and put under test | Accepted |
+| [0050](0050-compact-spec-and-plan-state-each-fact-once.md) | Compact specs and plans state each fact once | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

@@ -3,7 +3,8 @@ description: Break work into small verifiable tasks with acceptance criteria and
 argument-hint: "[ticket or feature description]"
 ---
 
-Invoke the `planning-and-task-breakdown` skill.
+Invoke the `planning-and-task-breakdown` skill before planning; its methodology
+is required, not optional background.
 
 ## Require an approved spec
 
@@ -46,12 +47,16 @@ Neither line may read anything other than `None` at handoff.
 
 ## Repository recon
 
-Dispatch one `repo-recon` agent for the affected area before planning — the area,
-`/plan` as the calling stage, and any specific questions you already have. Do not
-survey the repository in this context. Reuse, pointer-following, and
-**No precedent found for** / **Not surveyed** handling:
-`../references/repository-precedent.md` §1. Its no-precedent entries are risks
-for the plan, not settled ground.
+Reuse the `/spec` repo-recon report first when it still covers the affected
+implementation and test area. Committing or editing the spec alone does not
+make that report stale. Dispatch one `repo-recon` agent only when there is no
+usable report, the affected area differs or changed, or **Not surveyed** omits
+needed evidence. Pass the area, `/plan` as the calling stage, and the specific
+questions; do not survey the repository in this context. Compact-plan
+eligibility does not waive this rule. Full reuse,
+pointer-following, and **No precedent found for** handling:
+`../references/repository-precedent.md` §1. No-precedent entries are plan risks,
+not settled ground.
 
 Let the skill own planning methodology: dependency graph, behavioral slicing,
 workstreams, task sizing, context pointers, verification, and risk-based
@@ -74,8 +79,20 @@ Beyond the task breakdown the skill owns, the plan records:
   N/A;
 - risks whose every mitigation names the task or checkpoint that performs it.
 
-Bounded single-workstream work with no schema, contract, migration or major risk
-uses the template's compact plan.
+Choose the smallest valid plan shape. Bounded single-workstream work with no
+schema, contract, migration or major risk uses the template's compact plan;
+do not add empty or duplicative sections to it.
+
+For that compact plan, enforce the separation directly:
+
+- `plan.md` has the template header, Technical Approach, Task Index,
+  Requirement Coverage, Verification Strategy, and Handoff — no `Tasks`,
+  empty Risks, Boundaries, or other sections;
+- `todo.md` has the full task packets; do not copy those packets into the plan;
+- use stable `T001` task ids, and keep one coherent behavior plus its proving
+  tests in one task; and
+- when focused and integrated verification are the same command, record it once
+  as Integrated.
 
 Save:
 

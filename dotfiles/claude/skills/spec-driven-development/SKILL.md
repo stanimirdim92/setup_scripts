@@ -307,17 +307,29 @@ cause and fix mechanism stay in `/plan`.
 
 **Compact specs for bounded, low-risk work.** When the change introduces no new
 architecture or pattern, no public contract or schema change, no cross-row or
-concurrent invariant, and no data-lifecycle field, the spec may use only: the
-status header, Objective, Change Impact, Requirements (the `### Requirement:` /
-`#### Scenario:` headings and `REQ-###` ids are still load-bearing), Testing
-Strategy, Boundaries, and Success Criteria — the remaining template sections may
-be omitted rather than filled with N/A. The status header and the ids are never
-optional — they are what the downstream gates read — and bounded work is where
-brownfield changes most often land, so Change Impact stays too. The
-closure rules still apply in full: no `OPEN QUESTION` block and no
-cross-section contradiction at approval. If drafting surfaces any of the
-excluded concerns, upgrade to the full template — the compact form is
-proportionality for genuinely bounded work, never a way past the invariant,
+concurrent invariant, and no data-lifecycle field, prefer the compact form:
+
+- the complete status header;
+- a short Objective, with only material exclusions;
+- Change Impact for a non-`New` change, reduced to applicable
+  added/modified/removed/renamed behavior and explicitly preserved behavior,
+  all pointing at requirement ids;
+- Requirements, with the load-bearing `### Requirement:` / `#### Scenario:`
+  headings, `REQ-###` ids, and `Source:` lines;
+- a Testing Strategy naming the evidence level and repository command, without
+  restating every scenario;
+- Boundaries only when a feature-specific constraint is not already a
+  requirement; and
+- Material Decisions only when an actual `DEC-###` exists.
+
+The scenarios are the compact spec's success criteria, so do not add a separate
+Success Criteria section or repeat them in Objective, Change Impact, Testing
+Strategy, or Boundaries. Omit every other section rather than filling it with
+`N/A` or `None`. The status header and requirement ids are never optional —
+downstream gates read them — and Change Impact remains mandatory for brownfield
+work. Closure rules still apply in full: no `OPEN QUESTION` block and no
+cross-section contradiction at approval. If drafting surfaces an excluded
+concern, upgrade to the full template; compact form never bypasses invariant,
 concurrency, or lifecycle gates.
 
 **Requirement ids are mandatory** for any spec that will enter `/plan`: a
@@ -471,11 +483,11 @@ Agent self-check:
 - [ ] The status header is present and complete, and `Status` is `Draft` — `Approved` is the human's to grant, not this checklist's
 - [ ] Every requirement has a `REQ-###` id and a `Source:` line; no id was renumbered or reused
 - [ ] `Change kind` is set, and a `Change Impact` section exists whenever it is not `New`, including its explicitly-preserved-behavior entry
-- [ ] Every material product/domain/contract/lifecycle decision made while drafting is recorded as a `DEC-###`, or the section reads "None"
+- [ ] Every material product/domain/contract/lifecycle decision made while drafting is recorded as a `DEC-###`; a compact spec with none omits the section
 - [ ] A defect spec uses the bugfix template, with reproduction evidence concrete enough to write a failing test from
 - [ ] No requirement rests on an unmeasurable adjective, and applicable operational concerns are requirements or recorded exclusions rather than silence
-- [ ] Success criteria are specific and testable
-- [ ] Boundaries (Always/Ask First/Never) are defined
+- [ ] Requirement scenarios (and a full spec's Success Criteria) are specific and testable
+- [ ] Boundaries (Always/Ask First/Never) are defined, or a compact spec has no additional feature-specific constraint to record
 - [ ] The spec is saved per Output Files (or the project-designated location)
 - [ ] If the request bundles several independently testable capabilities, a capability map (module ids, dependency direction, build order) was approved before any module spec was written
 - [ ] Every module spec traces to a module id in the approved map

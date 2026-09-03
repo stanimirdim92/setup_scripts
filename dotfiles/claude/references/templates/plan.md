@@ -15,11 +15,19 @@ rules are in `../spec-quality-gates.md` §3.
 Sections marked **conditional** are omitted entirely when they don't apply —
 not filled with N/A.
 
-**Compact plan.** For a bounded single-workstream change with no schema change,
-no public contract, no migration, and no major risk, keep only: the metadata
-header, Technical Approach, Task Index, Requirement Coverage, Verification
-Strategy, and Handoff. The metadata header and the ids are never optional —
-they are what `/build`, `/review` and `/ship` read.
+**Compact plan.** Prefer this form for a bounded single-workstream change with
+no schema change, public contract, migration, or major risk. Keep exactly: the
+metadata header; a short Technical Approach (current → proposed flow and
+affected paths, without mandatory subheadings); Task Index; Requirement
+Coverage; a Verification Strategy containing the focused command only when it
+differs from the integrated command; and Handoff. Do not add empty Decisions,
+Workstreams, Boundaries, Risks, or other sections. The metadata header and ids
+are never optional — `/build`, `/review` and `/ship` read them.
+
+The todo file holds each full task packet; the plan only indexes it. For one
+coherent behavior, implementation and its proving tests are one task, not an
+implementation task plus a test task. Omit empty optional fields from a compact
+task packet rather than spelling out `None`.
 
 ```markdown
 # Implementation Plan: [Feature/Project Name]

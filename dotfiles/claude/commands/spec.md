@@ -3,7 +3,8 @@ description: Start spec-driven development — write a structured specification 
 argument-hint: "[ticket or feature description]"
 ---
 
-Invoke `../skills/spec-driven-development`.
+Invoke the `spec-driven-development` skill before drafting; its methodology is
+required, not optional background.
 
 Begin by understanding what the user wants to build. If a `jira-ticket` intake summary already answered some of this, don't re-ask it — confirm what's already known and ask only what's still open. Otherwise ask clarifying questions about:
 1. The objective and target users
@@ -19,7 +20,11 @@ have. Do not survey the repository in this context. Reuse, pointer-following, an
 **No precedent found for** / **Not surveyed** handling:
 `../references/repository-precedent.md` §1.
 
-Then generate a structured spec covering all six core areas: objective, commands, project structure, code style, testing strategy, and boundaries. For bounded, low-risk changes that qualify, use the skill's compact form instead of filling every template section.
+Choose the smallest valid spec shape. For bounded, low-risk changes that
+qualify, use the skill's compact form. Use the full form only when the change
+needs all six core areas: objective, commands, project structure, code style,
+testing strategy, and boundaries. In either form, give each fact one home;
+don't repeat acceptance criteria outside their requirement scenarios.
 
 Before asking for approval, run the skill's specification-closure gate. Reconcile
 all sections, prove any cross-row/resource concurrency mechanism, and define

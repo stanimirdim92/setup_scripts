@@ -4,8 +4,14 @@ The canonical single-task shape used by `planning-and-task-breakdown` Step 5.
 One task should be a bounded outcome that `/build` can hand to an executor
 without copying the full spec or plan.
 
+For a compact plan, use the same fields but omit empty optional entries and a
+Description that merely repeats the title. Keep production changes and the
+tests that prove their acceptance criteria in one delivery task; red/green is
+an execution sequence, not two plan tasks. A separate test task needs
+independently verifiable value before the production task.
+
 ```markdown
-## Task [N]: [Short descriptive title]
+## T001: [Short descriptive title]
 
 **Requirements:** [A delivery task names one or more `REQ-###` ids from the
 approved spec. A spike names the `TD-###` it resolves plus the `REQ-###` ids it
@@ -13,7 +19,8 @@ unblocks. A task fitting neither is scope the spec never asked for — remove it
 or return a SPEC CONFLICT if the behavior is genuinely needed. `/build` passes
 this line through to the executor verbatim.]
 
-**Description:** One paragraph explaining the outcome this task delivers.
+**Description:** [Omit when the title and acceptance criteria already state the
+outcome; otherwise one short paragraph.]
 
 **Acceptance criteria:**
 [Each criterion traces to one of the requirements above.]
@@ -23,9 +30,9 @@ this line through to the executor verbatim.]
 **Verification:**
 - [ ] Tests pass: [the repository's focused-test command]
 - [ ] Build/static check succeeds: [the repository's relevant command]
-- [ ] Manual check: [only when automation cannot prove the behavior]
+- [ ] Manual check: [include only when automation cannot prove the behavior]
 
-**Dependencies:** [Task numbers this depends on, or "None"]
+**Dependencies:** [Stable task ids this depends on, or "None"]
 
 **Workstream:** [Short stable name shared by related/dependent tasks — lets
 `/build` resume one executor across later tasks instead of paying fresh
