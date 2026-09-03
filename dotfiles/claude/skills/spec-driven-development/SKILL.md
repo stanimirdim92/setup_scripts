@@ -31,14 +31,6 @@ DEFINE      PLAN       BUILD       REVIEW       SHIP
                                   VERIFY, when required
 ```
 
-This skill owns the capability scope check (Phase 0) and DEFINE/specification
-only. `/plan` owns the implementation plan and task breakdown, `/build` owns TDD
-implementation, `/review` owns code quality findings and decides whether
-independent verification is required (`../../references/verification-triggers.md`),
-`/test` owns that verification when triggered, and `/ship` owns the
-release-readiness verdict. Do not advance or execute a downstream stage from
-this skill.
-
 ### Phase 0: Scope Check
 
 Most requests describe one capability. If this one does, skip this phase and go straight to Specify — Phase 0 exists for the exception, not the rule, and it puts no hierarchy on single-capability features.
@@ -71,13 +63,11 @@ Build order: identity → billing, notifications → reporting
 **The map is gated like every phase.** The human reviews module boundaries, dependency direction, and build order before any module spec is written. Getting the map wrong is expensive; reviewing ten lines is not.
 
 **Then recurse per module.** Specify each module in dependency order. Each module
-gets its own spec, scoped to that module's objective, boundaries, and success
-criteria. Save the approved map at `docs/specs/[TICKET]-CAPABILITY-MAP.md` and
-each module's spec alongside it, named by ticket and module id
-(`[TICKET]-SPEC-identity.md`, `[TICKET]-SPEC-billing.md`) — the map, not
-filename guessing, is the index of what exists.
-After specification approval, hand the module to `/plan`; do not plan or
-implement it inside this skill.
+gets its own spec, scoped to that module's objective, boundaries, and success criteria. 
+Save the approved map at `docs/specs/[TICKET]-CAPABILITY-MAP.md` and each module's spec alongside it, 
+named by ticket and module id (`[TICKET]-SPEC-identity.md`, `[TICKET]-SPEC-billing.md`) — the map, 
+not filename guessing, is the index of what exists.
+After specification approval, hand the module to `/plan`; do not plan or implement it inside this skill.
 
 ### Phase 1: Specify
 
@@ -90,7 +80,7 @@ ASSUMPTIONS I'M MAKING:
 1. This is a web application (not native mobile)
 2. Authentication uses session-based cookies (not JWT)
 3. The database is MySQL or PostgreSQL
-4. We're targeting modern browsers only
+4. We're targeting modern browsers only (no IE11)
 → Correct me now or I'll proceed with these.
 ```
 
@@ -172,13 +162,6 @@ still parks.
 
 **Write a spec document covering these six core areas:**
 
-Areas 2–4 describe repository-wide facts. In a feature or module spec, cover
-them **by reference plus delta**: link the authoritative repo doc (or state
-"per `CLAUDE.md`") and list only what this feature adds or changes. Write them
-out in full only for a new project where no such doc exists yet. This is how
-"covers all six areas" and "do not repeat repository-wide conventions" are both
-satisfied.
-
 1. **Objective** — What are we building and why? Who is the user? What does
    success look like? When the request could plausibly be read wider than
    intended, record the relevant exclusions here ("out of scope: …") so scope
@@ -190,11 +173,13 @@ satisfied.
    lint, typecheck) from commands that modify files or dependencies (install,
    update, codegen).
    ```
-   Install: yarn install            (modifies node_modules)
+   Install FE: yarn install            (modifies node_modules)
+   Install BE: composer install            (modifies node_modules)
    Build:   yarn run build          (writes build output)
    Test:    yarn run test           (check)
    Lint:    yarn run lint:fix       (modifies files; lint alone is the check)
    Dev:     yarn run dev
+   Format:  yarn run format or format:write
    ```
 
 3. **Project Structure** — Where source code lives, where tests go, where docs belong.
@@ -257,9 +242,9 @@ Example:
 - UI behavior with no existing automation precedent → explicit manual verification
 
 6. **Boundaries** — Three-tier system:
-  - **Always do:** Run tests before commits, follow naming conventions, validate inputs
-  - **Ask first:** Database schema changes, adding dependencies, changing CI config
-  - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
+   - **Always do:** Run tests before commits, follow naming conventions, validate inputs
+   - **Ask first:** Database schema changes, adding dependencies, changing CI config
+   - **Never do:** Commit secrets, edit vendor directories, remove failing tests without approval
 
 ### Specification Closure
 
