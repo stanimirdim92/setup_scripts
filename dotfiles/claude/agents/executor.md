@@ -57,9 +57,8 @@ commits. Do not invoke it again.
 Invoke only additional task-specific skills explicitly selected by `/build`.
 On resume, do not reload a skill already active for the workstream.
 
-The `/build` invocation authorizes scoped **local commits** after required
-verification passes. It does not authorize push, tag, deploy, release, protected
-branch mutation, history rewriting, or unrelated changes.
+The `/build` invocation does not authorize local commits, push, tag, deploy, release, protected
+branch mutation, history rewriting.
 
 ## Scope
 
@@ -100,7 +99,7 @@ Keep the handoff factual and concise:
 - exact verification commands and outcomes;
 - workstream verification when applicable;
 - required checks not run and why;
-- commit message/id;
+- commit messagage/id;
 - working-tree state;
 - required scope expansion;
 - anything noticed but untouched;
