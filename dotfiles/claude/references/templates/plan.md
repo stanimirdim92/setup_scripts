@@ -1,14 +1,14 @@
 # Plan Template
 
 The canonical implementation-plan document shape. Used by
-`planning-and-task-breakdown`'s Step 4-6 output — saved to
+`planning-and-task-breakdown`'s Draft the Plan section — saved to
 `docs/tasks/[TICKET]-plan.md` per that skill's Output Files convention.
 
 Structure the task list by workstream and dependency order — not by
-generic phases like Foundation/Core/Polish. Place checkpoints only at
-the skill's Step 6 risk points, named for the risk they gate.
+generic phases like Foundation/Core/Polish. Place checkpoints only at the risk
+points defined by the skill, named for the risk they gate.
 
-Approval state, spec-revision pinning, id stability, the closure checks, and
+Approval state, spec-revision pinning, id stability, the approval checks, and
 the rules for spike tasks live in `../plan-quality-gates.md`. Requirement-id
 rules are in `../spec-quality-gates.md` §3.
 
@@ -89,7 +89,7 @@ than one workstream.
 
 ## Workstreams
 - ws-main: [scope — default single workstream]
-- [ws-other: only per Step 4 criteria; note the contract checkpoint that
+- [ws-other: only per the skill's workstream criteria; note the contract checkpoint that
   gates it]
 
 ## Task Index
@@ -102,7 +102,7 @@ through as superseded.]
 - [ ] T002 (M, ws-main, deps: T001) [REQ-002, TD-001]: [behavioral outcome]
 
 ### CP-001 — Checkpoint: [named risk, e.g. "API contract established"]
-[Placed per Step 6: after a risky schema/external-contract decision,
+[Placed at the skill's risk points: after a risky schema/external-contract decision,
 before dependent work consumes a new contract, or after integrating
 workstreams.]
 - [ ] All tests pass
@@ -150,8 +150,8 @@ deployment shape.
 - Post-deployment evidence:
 
 ## Sizing Exceptions
-[Every task kept at L/XL, with why splitting would break a single
-coherent behavioral slice. "None" if all tasks are XS-M.]
+**Conditional** — include only for a task kept at L/XL, with why splitting it
+would break a single coherent behavioral slice.
 
 ## Parallelization Metadata
 **Conditional** — dependency-ready workstreams with no shared mutable state.
@@ -159,7 +159,7 @@ Informational for `/build`, not an instruction to run in parallel.
 
 ## Risks and Mitigations
 [Every mitigation names the task or checkpoint that performs it. A mitigation
-with no owner is a hope, and fails closure.]
+with no owner is a hope, and fails the approval check.]
 
 | Risk | Trigger/evidence | Mitigation | Task/checkpoint |
 |---|---|---|---|
@@ -172,5 +172,6 @@ uncertainty that needs evidence becomes a spike task, not an entry here — see
 `../plan-quality-gates.md` §5. Must read "None" before the handoff line.]
 
 ---
-Handoff: Ready for /build — [pending human approval / approved by <name>]
+Handoff: Awaiting plan approval
+[After explicit approval, replace with: Ready for /build]
 ```

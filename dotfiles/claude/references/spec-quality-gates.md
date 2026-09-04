@@ -9,11 +9,11 @@ Single-sourced here for the same reason as `reviewer-triggers.md` — five
 consumers (`/spec`, `/plan`, `/test`, `/review`, `/ship`) enforcing
 copy-pasted versions of one rule set is how the copies start disagreeing.
 
-## 1. Requirements quality — the closure pass's assertions
+## 1. Requirements quality — approval-check assertions
 
-`spec-driven-development`'s Specification Closure runs these against the spec
-before it is presented for approval. The closure pass is the unit test for the
-English; these are its assertions.
+`spec-driven-development`'s Approval Check runs these against the spec before it
+is presented for approval. The check is the unit test for the English; these are
+its assertions.
 
 - **Measurable.** No requirement leans on "fast", "secure", "robust",
   "reliable" or "scalable" without a threshold and a way to measure it. A
@@ -57,7 +57,7 @@ in the conversation where approval happened.
 | `Superseded` | Replaced by a later spec, which names it in `Supersedes` | the superseding spec's `/spec` run |
 
 - `/spec` never sets `Approved` on its own judgment. Explicit human approval is
-  the only thing that moves `Draft` → `Approved`. A passing closure pass is not
+  the only thing that moves `Draft` → `Approved`. A passing approval check is not
   approval; neither is silence, nor an instruction to continue, nor the absence
   of objections.
 - Record `Approved by` as the human identified themselves and `Approved at` as

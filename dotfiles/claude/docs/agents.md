@@ -27,19 +27,19 @@ the caller to run.
    |       |                 \
    |       |                  -> /test -> /review
    |       |                     when required
-   +-------+-> repo-recon (read-only survey, reused within a conversation)
+   +-------+-> repo-recon (when needed; reused within a conversation)
 ```
 
 ### `/spec` and `/plan`
 
-Both dispatch one `repo-recon` for the affected area instead of surveying the
-repository in the main context. The agent reads widely and reports pointers —
-applicable rules, conventions, architectural chain, test setup, closest
-precedents, and explicitly what it found no precedent for or did not survey.
-Its own reads never reach the caller's context; only its report does.
+Both choose the smallest adequate evidence path: reuse a current report, inspect
+only named files for a bounded familiar change, or dispatch `repo-recon` when
+the area is unfamiliar, broad, cross-module, high-risk, or missing evidence.
+The dispatched agent reads widely but reports only pointers, verification,
+constraints, and explicit unknowns; its reads stay out of the caller's context.
 
-A report already in the conversation is reused for the same unchanged area, so
-`/plan` following `/spec` does not re-survey.
+`/plan` starts from the spec's pointers and reuses any report for the same
+unchanged area instead of repeating `/spec`'s survey.
 
 Source: `../commands/spec.md`, `../commands/plan.md`.
 

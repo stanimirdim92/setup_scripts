@@ -92,10 +92,6 @@ correct, or whether already-corrupted data gets repaired. "None" otherwise.]
 - Ask first: [...]
 - Never: [...]
 
-## Success Criteria
-[Specific, testable conditions — including that the preserved-behavior tests
-still pass.]
-
 ## Open Questions
 [Must be empty before approval.]
 ```

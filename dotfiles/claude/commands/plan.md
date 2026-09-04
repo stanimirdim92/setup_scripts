@@ -1,111 +1,75 @@
 ---
-description: Break work into small verifiable tasks with acceptance criteria and dependency ordering
+description: Break approved requirements into ordered, verifiable implementation tasks
 argument-hint: "[ticket or feature description]"
 ---
 
-Invoke the `planning-and-task-breakdown` skill before planning; its methodology
-is required, not optional background.
+Invoke `planning-and-task-breakdown` before drafting; its methodology is
+required.
 
-## Require an approved spec
+## Preconditions
 
-Read the spec from disk — including its `Status` header, not your memory of
-approval earlier in the conversation. Proceed only on `Status: Approved`.
-`Draft`, `Needs reapproval` or `Superseded` stops planning immediately: report
-the status and return the spec to `/spec`. A spec whose requirements have no
-`REQ-###` ids is also not plannable; return it for ids
-(`../references/spec-quality-gates.md` §2-3).
+Read the spec from disk. Proceed only when:
 
-Then pin the spec by commit. Require it committed with no uncommitted edits
-(`git diff --quiet HEAD -- <spec>`), take the commit that last touched it
-(`git log -1 --format=%H -- <spec>`), and record
-`Spec revision: git-commit:<sha>:<spec path>`. `/build` retrieves that content
-with `git show` and diffs it, which catches a spec edited without its approval
-status being updated. Pin a commit, never a loose `hash-object` blob: an
-unreferenced blob is pruned by `git gc` and never leaves the machine
-(`../references/plan-quality-gates.md` §2).
+- its header reads `Status: Approved`;
+- every requirement uses a stable `REQ-###` id;
+- the spec is committed with no uncommitted edits; and
+- `git log -1 --format=%H -- <spec>` resolves the revision to record as
+  `Spec revision: git-commit:<sha>:<spec path>`.
 
-Reconcile every planned behavior and acceptance criterion against the approved
-spec. On contradiction, infeasibility, or a proposed new/stronger behavior,
-stop with `SPEC CONFLICT` and return the decision to `/spec`.
+Any other status returns to `/spec`. Pin and later comparison rules are in
+`../references/plan-quality-gates.md` §1–2.
 
-## Requirement coverage
+Use the spec's pointers and any current recon report. Reuse current evidence;
+otherwise choose the smallest adequate path in
+`../references/repository-precedent.md` §1. Never guess or abbreviate a
+repository-defined command. Treat **No precedent found for** as a risk and
+**Not surveyed** as a limit.
 
-Map every spec requirement to the tasks that deliver it. A delivery task names
-at least one `REQ-###`; a spike names the `TD-###` it resolves plus the
-requirements it unblocks. A withdrawn requirement stays in the table marked
-withdrawn rather than disappearing from it. Record the map in the plan's
-Requirement Coverage table and report both lines explicitly:
+If repository evidence contradicts the approved behavior, or planning requires
+new, weaker, or stronger behavior, save the bounded `SPEC CONFLICT` from the
+plan template and stop. Do not repair the spec inside `/plan`.
 
-- `Unmapped requirements: None` — a requirement with no task is a dropped
-  requirement; it surfaces in production rather than at this gate.
-- `Orphan tasks: None` — a task that names neither a requirement nor a
-  `TD-###`-plus-unblocked-requirements is scope the spec never asked for.
-  Remove it, or return a `SPEC CONFLICT` if the behavior is genuinely needed,
-  so it gets specified and approved instead of entering through the plan.
+## Draft
 
-Neither line may read anything other than `None` at handoff.
+Use `../references/templates/plan.md` and
+`../references/templates/task.md`. Choose compact or full form per the skill.
 
-## Repository recon
+The plan must include:
 
-Reuse the `/spec` repo-recon report first when it still covers the affected
-implementation and test area. Committing or editing the spec alone does not
-make that report stale. Dispatch one `repo-recon` agent only when there is no
-usable report, the affected area differs or changed, or **Not surveyed** omits
-needed evidence. Pass the area, `/plan` as the calling stage, and the specific
-questions; do not survey the repository in this context. Compact-plan
-eligibility does not waive this rule. Full reuse,
-pointer-following, and **No precedent found for** handling:
-`../references/repository-precedent.md` §1. No-precedent entries are plan risks,
-not settled ground.
+- a Technical Approach without production code or repeated requirements;
+- an ordered Task Index with stable `T###` ids;
+- Requirement Coverage with every `REQ-###` mapped and exactly
+  `Unmapped requirements: None` and `Orphan tasks: None`;
+- a Verification Strategy using repository-defined commands; and
+- conditional contracts, migration, workstream, decision, checkpoint, and risk
+  sections only when applicable.
 
-Let the skill own planning methodology: dependency graph, behavioral slicing,
-workstreams, task sizing, context pointers, verification, and risk-based
-checkpoints. Project-rule discovery and repository precedent come from the
-recon report above, not from the skill re-deriving them.
+Each task packet carries requirements, acceptance criteria, verification,
+dependencies, workstream, and material context pointers. Keep one coherent
+behavior and its proving tests in one delivery task.
 
-## Plan contents
+For a compact plan, `plan.md` contains only its header, Technical Approach,
+Task Index, Requirement Coverage, Verification Strategy, and Handoff;
+`todo.md` owns the full task packets. When focused and integrated verification
+are identical, record the command once as Integrated.
 
-Beyond the task breakdown the skill owns, the plan records:
-
-- a **Technical Approach** — current flow, proposed flow, components and
-  responsibilities, affected areas. This is the HOW a task list does not carry;
-  no production code, and no restating requirements;
-- a **Verification Strategy** with task-focused, workstream, integrated, and
-  where applicable data/migration and manual lines, every command from
-  repository evidence. `/build` uses the integrated line for final verification;
-- **Contracts and Data Changes** and **Migration and Rollout** when the change
-  has APIs, schemas, events, shared DTOs, more than one workstream, or alters
-  stored data or deployment shape — omitted entirely otherwise, not filled with
-  N/A;
-- risks whose every mitigation names the task or checkpoint that performs it.
-
-Choose the smallest valid plan shape. Bounded single-workstream work with no
-schema, contract, migration or major risk uses the template's compact plan;
-do not add empty or duplicative sections to it.
-
-For that compact plan, enforce the separation directly:
-
-- `plan.md` has the template header, Technical Approach, Task Index,
-  Requirement Coverage, Verification Strategy, and Handoff — no `Tasks`,
-  empty Risks, Boundaries, or other sections;
-- `todo.md` has the full task packets; do not copy those packets into the plan;
-- use stable `T001` task ids, and keep one coherent behavior plus its proving
-  tests in one task; and
-- when focused and integrated verification are the same command, record it once
-  as Integrated.
+Before writing, inspect the target artifacts. Revise in place only for the same
+work. If an incomplete plan or task target belongs to different work, stop and
+ask rather than overwriting, renaming, closing, or deleting it.
 
 Save:
 
 - `docs/tasks/[TICKET]-plan.md`;
-- `docs/tasks/[TICKET]-todo.md`.
+- `docs/tasks/[TICKET]-todo.md`, unless project rules designate an external
+  tracker. In that case, record the tracker in the plan and keep its Task Index
+  as ordered item ids or links, not duplicate task packets.
 
-Present the result for human review with `Status: Draft`, and set
-`Status: Approved` (plus `Approved by`/`Approved at`) only on explicit human
-approval — `../references/plan-quality-gates.md` §1.
+## Approval
 
-After approval, stop. The request that invoked `/plan` authorizes planning
-only, even when it says to build or fix something — that instruction does not
-carry forward past this command; wait for a new user request before `/build`.
-Implementation goes through `/build`. Independent verification is
-risk-triggered through `/test`; `/review` decides whether it is required for
-the built candidate. Final release readiness goes through `/ship`.
+Present the plan with `Status: Draft`, `Approved by: —`, `Approved at: —`, and
+`Handoff: Awaiting plan approval`. Run the skill's Approval Check, but set
+`Status: Approved` and `Handoff: Ready for /build` only after explicit human
+approval (`../references/plan-quality-gates.md` §1).
+
+After approval, stop. `/plan` authorizes planning only; it does not invoke
+`/build`, `/test`, `/review`, or `/ship`.

@@ -20,7 +20,7 @@ readable by a later session or a downstream gate.
 | `Needs replan` | Approved once, then materially changed — or its spec pin went stale behaviorally | whichever stage made or discovered the change |
 | `Superseded` | Replaced by a later plan for the same work | the superseding plan's `/plan` run |
 
-- `/plan` never sets `Approved` on its own judgment, and a passing closure check
+- `/plan` never sets `Approved` on its own judgment, and a passing approval check
   is not approval. Record `Approved by` as the human identified themselves and
   `Approved at` as the date; never invent a name.
 - A material plan change sets `Needs replan` in the same edit: a task added,
@@ -40,7 +40,7 @@ being updated correctly, which is exactly the case this pin catches.
 used `git hash-object -w`, which writes an object no ref points at: `git prune`
 deletes it, and it is never transferred by push or clone. The plan was
 unverifiable on a second machine and could become unverifiable on the first
-(see `docs/adr/0049-durable-spec-pin-and-hook-bypasses.md` in the harness repo).
+(see `../../../docs/adr/0049-durable-spec-pin-and-hook-bypasses.md`).
 
 **When planning starts**, after confirming `Status: Approved`, require the spec
 to be committed with no uncommitted edits, then pin the commit that last
@@ -108,7 +108,7 @@ report that referenced the old numbers. A task that is dropped or replaced keeps
 its id and is marked superseded (`~~T003~~ superseded by T007`); the next task
 takes the next unused number.
 
-## 4. Closure checks before presenting a plan
+## 4. Approval checks before presenting a plan
 
 - Every `REQ-###` maps to at least one task, or to explicit verification-only
   evidence when the requirement is already satisfied by existing behavior that
@@ -126,11 +126,12 @@ takes the next unused number.
   `Orphan tasks: None`.
 - **Every risk mitigation names the task or checkpoint that performs it.** A
   mitigation with no owner is a hope, and a plan whose risk table is entirely
-  hopes has not mitigated anything. This fails closure.
+  hopes has not mitigated anything. This fails the approval check.
 - Every verification command comes from repository evidence — the recon report,
   package manifests, CI config — never guessed.
-- Open Questions reads `None`. Anything about feature behavior is a
-  `SPEC CONFLICT`, not an open question.
+- In a full plan, Open Questions reads `None`; a compact plan omits the section
+  when none exist. Anything about feature behavior is a `SPEC CONFLICT`, not an
+  open question.
 
 ## 5. Bounded technical spikes
 
@@ -138,7 +139,7 @@ Some HOW questions cannot be answered read-only: whether an index supports a
 query at real cardinality, whether a library behaves as documented under the
 repository's configuration, which of two migration strategies holds a lock.
 Leaving these as Open Questions blocks the plan; guessing hides the risk inside
-an implementation task, which the skill's guardrails forbid.
+an implementation task, which the planning boundary forbids.
 
 Sanctioned instead: a spike task in the plan, executed by `/build` like any
 other task.

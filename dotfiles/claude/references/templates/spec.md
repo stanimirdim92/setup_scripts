@@ -10,8 +10,7 @@ lifecycle field). It keeps the complete status header, a short Objective,
 Requirements, and a concise Testing Strategy. Add Change Impact for a non-`New`
 change, Boundaries only for additional feature-specific constraints, and
 Material Decisions only when an actual `DEC-###` exists. Omit every other
-section — including Success Criteria, because the requirement scenarios are the
-authoritative success criteria — rather than writing `N/A` or `None`.
+section rather than writing `N/A` or `None`.
 
 Each fact gets one home in a compact spec: scenarios own acceptance behavior;
 Objective states purpose and scope; Change Impact points to changed/preserved
@@ -121,9 +120,6 @@ lifecycle state exists.]
 - Always: [...]
 - Ask first: [...]
 - Never: [...]
-
-## Success Criteria
-[How we'll know this is done — specific, testable conditions]
 
 ## Open Questions
 [Anything unresolved that needs human input. Must be empty before approval.]

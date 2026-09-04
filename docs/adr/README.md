@@ -48,16 +48,19 @@ that explanation here, just the index.
 | [0038](0038-verify-pass-test-only-candidate-identity.md) | VERIFY PASS test-only commits may advance the BUILD candidate | Accepted |
 | [0039](0039-runtime-catalog-narrowed-by-observed-use.md) | Runtime plugins narrowed; standalone engineering skills retained | Partially superseded by [0043](0043-automatic-memory-and-compaction-window-restored.md) (automatic memory no longer disabled) |
 | [0040](0040-openspec-conventions-adopted.md) | Four conventions adopted from Fission-AI/openspec; nothing vendored | Accepted |
-| [0041](0041-recon-delegated-to-repo-recon-subagent.md) | Repository recon delegated to a `repo-recon` subagent | Accepted |
+| [0041](0041-recon-delegated-to-repo-recon-subagent.md) | Repository recon delegated to a `repo-recon` subagent | Partially superseded by [0051](0051-repository-recon-made-evidence-triggered.md) (agent isolation retained; dispatch is no longer mandatory) |
 | [0042](0042-third-executor-as-conditional-exception.md) | A third concurrent executor as a conditional exception, not a raised cap | Accepted |
 | [0043](0043-automatic-memory-and-compaction-window-restored.md) | Automatic memory and the 500k compaction window restored, reversing 0037 | Accepted |
 | [0044](0044-config-security-hardening-pass.md) | Config security hardening: enforcement made to match the stated guarantees | Partially superseded by [0049](0049-durable-spec-pin-and-hook-bypasses.md) (alias-awareness was one normalisation gap of several) |
 | [0045](0045-spec-approval-state-change-impact-and-requirement-traceability.md) | Spec approval state, change-impact semantics, and requirement traceability | Accepted |
 | [0046](0046-plan-technical-approach-spec-pinning-and-plan-gates.md) | Plan gains a technical approach, a spec pin, and its own approval state | Partially superseded by [0049](0049-durable-spec-pin-and-hook-bypasses.md) (the `hash-object` pin was not durable) |
 | [0047](0047-skill-trim-by-deduplication.md) | Skills trimmed by de-duplication, not by cutting policy | Partially superseded by [0048](0048-repository-precedent-placement-corrected.md) (its reported per-run saving was a regression; placement corrected) |
-| [0048](0048-repository-precedent-placement-corrected.md) | `repository-precedent.md` placement corrected: hot rules inline, cold ones referenced | Accepted |
+| [0048](0048-repository-precedent-placement-corrected.md) | `repository-precedent.md` placement corrected: hot rules inline, cold ones referenced | Partially superseded by [0051](0051-repository-recon-made-evidence-triggered.md) (recon is no longer an every-`/spec` cost) |
 | [0049](0049-durable-spec-pin-and-hook-bypasses.md) | Spec pin made durable; hook bypasses closed and put under test | Accepted |
 | [0050](0050-compact-spec-and-plan-state-each-fact-once.md) | Compact specs and plans state each fact once | Accepted |
+| [0051](0051-repository-recon-made-evidence-triggered.md) | Repository recon made evidence-triggered | Accepted |
+| [0052](0052-spec-guidance-consolidated-around-human-approval.md) | Spec guidance consolidated around human approval | Accepted |
+| [0053](0053-plan-guidance-consolidated-around-behavioral-tasks.md) | Plan guidance consolidated around behavioral tasks | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

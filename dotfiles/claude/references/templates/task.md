@@ -1,6 +1,7 @@
 # Task Template
 
-The canonical single-task shape used by `planning-and-task-breakdown` Step 5.
+The canonical single-task shape used by `planning-and-task-breakdown` when
+drafting behavioral tasks.
 One task should be a bounded outcome that `/build` can hand to an executor
 without copying the full spec or plan.
 

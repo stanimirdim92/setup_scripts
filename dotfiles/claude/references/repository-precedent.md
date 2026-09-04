@@ -1,8 +1,7 @@
 # Repository Precedent
 
-How to use a `repo-recon` report, and how to decide when the repository gives no
-guidance. Single-sourced because `/spec` and `/plan` had near-identical copies of the
-dispatch rules and `spec-driven-development` a third.
+How `/spec` and `/plan` gather repository evidence, when to dispatch
+`repo-recon`, and what to do when the repository gives no guidance.
 
 The **evidence order** itself is not here — it is five lines, needed on nearly
 every run, and lives inline in `../skills/spec-driven-development/SKILL.md`
@@ -11,32 +10,36 @@ more than the duplication it avoids. A worked example report is in
 `repository-precedent-example.md`, read while learning the shape rather than on
 every run.
 
-## 1. Using a recon report
+## 1. Choose the smallest evidence path
 
 Before naming files, classes, tables, architectural layers, test helpers, or
 implementation patterns, you need the project's applicable rules, the owning
 module's conventions and architectural chain, its test setup, and the closest
 sibling implementations.
 
-Do not gather that by reading the repository yourself. The calling stage
-dispatches one `repo-recon` agent for the affected area and works from its
-report — that survey is the largest avoidable cost of the command, and the
-agent's reads stay in its own context. `repo-recon` owns the discovery method,
-including which instruction sources to look for; do not restate that list.
+Use the first adequate option:
 
-- **Reuse** a report already in this conversation when it covers the same
-  implementation and test area and that surveyed area has not changed. A spec,
-  plan, or other documentation-only edit does not stale implementation
-  precedent. Dispatch again only for a different or changed affected area, or
-  when the report's **Not surveyed** section
-  excludes something you now need.
-- **Findings are pointers.** Open a file the report names only when a specific
-  unresolved question turns on that file's detail — one or two files, not the
-  survey again.
-- **No precedent found for** is load-bearing: those are the aspects being
-  decided without repository guidance.
-- **Not surveyed** bounds what the report can support. If it excludes something
-  the work depends on, ask for a follow-up recon rather than assuming.
+1. **Reuse** a current report for the same unchanged implementation/test area.
+   Documentation-only edits do not stale it.
+2. **Bounded check** when the affected files are known, the change stays in one
+   familiar area, and no schema, public contract, lifecycle, concurrency, or
+   cross-module concern is involved. Read applicable instructions plus only the
+   named source, test, README, manifest, and CI files needed to confirm
+   conventions and exact commands.
+3. **Dispatch `repo-recon`** when the area is unfamiliar or broad; crosses
+   modules; changes schema, contract, lifecycle, or concurrency behavior; lacks
+   a verified command or precedent; or a prior report is stale or marked
+   **Not surveyed** where evidence is now needed.
+
+Do not turn a bounded check into an inline repository survey. Whatever path is
+used, distinguish verified facts from inference and surface:
+
+- **No precedent found for** — surveyed, but the repository gives no guidance.
+- **Not surveyed** — outside the evidence gathered; never assume from silence.
+
+If no exact repository-defined verification command is found, dispatch recon or
+record the command as unresolved. Never normalize or abbreviate a guessed
+equivalent.
 
 Per-stage handling of **No precedent found for**:
 
