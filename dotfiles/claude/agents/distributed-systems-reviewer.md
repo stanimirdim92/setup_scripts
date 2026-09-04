@@ -48,7 +48,7 @@ Check the changed semantics that apply:
 10. **Observability** — retries, failures, queue depth, breaker/failover state, and
    checkpoint lag are measurable when operationally important.
 
-For every finding state the concrete production failure, not just "could be an
+For every finding you MUST state the concrete production failure, not just "could be an
 issue."
 
 Native severity:
