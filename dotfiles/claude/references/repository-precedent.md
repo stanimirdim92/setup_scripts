@@ -19,8 +19,10 @@ sibling implementations.
 
 Use the first adequate option:
 
-1. **Reuse** a current report for the same unchanged implementation/test area.
-   Documentation-only edits do not stale it.
+1. **Reuse** a report while its relevant sources and conclusions remain current.
+   Changes to instructions, ADRs, or documented commands can stale it even when
+   implementation files are unchanged. Refresh only the affected evidence;
+   unrelated edits or committing unchanged evidence do not require a new survey.
 2. **Bounded check** when the affected files are known, the change stays in one
    familiar area, and no schema, public contract, lifecycle, concurrency, or
    cross-module concern is involved. Read applicable instructions plus only the
@@ -28,7 +30,7 @@ Use the first adequate option:
    conventions and exact commands.
 3. **Dispatch `repo-recon`** when the area is unfamiliar or broad; crosses
    modules; changes schema, contract, lifecycle, or concurrency behavior; lacks
-   a verified command or precedent; or a prior report is stale or marked
+   a source-supported command or precedent; or a prior report is stale or marked
    **Not surveyed** where evidence is now needed.
 
 Do not turn a bounded check into an inline repository survey. Whatever path is
@@ -40,6 +42,10 @@ used, distinguish verified facts from inference and surface:
 If no exact repository-defined verification command is found, dispatch recon or
 record the command as unresolved. Never normalize or abbreviate a guessed
 equivalent.
+
+Recon establishes what command the repository defines; its read-only agent
+does not execute it. Report execution results only when a caller supplies
+current run evidence, and keep that evidence distinct from source discovery.
 
 Per-stage handling of **No precedent found for**:
 

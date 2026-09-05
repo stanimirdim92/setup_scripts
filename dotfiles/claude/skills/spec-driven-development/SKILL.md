@@ -1,6 +1,6 @@
 ---
 name: spec-driven-development
-description: Creates specs before coding. Use when starting a new project, feature, or significant change and no specification exists yet. Use when requirements are unclear, ambiguous, or only exist as a vague idea. Use when a single requirement spans several independently testable capabilities and needs decomposing into a capability map of modules before specifying.
+description: Create or revise a specification for a feature, significant change, or bugfix before planning implementation. Use for unclear requirements, material behavior changes, or requests spanning independently testable capabilities. Owns specification and approval, not implementation.
 ---
 
 # Spec-Driven Development
@@ -75,20 +75,11 @@ After specification approval, hand the module to `/plan`; do not plan or impleme
 
 ### Phase 1: Specify
 
-Start with a high-level vision. Ask the human clarifying questions until requirements are concrete.
-
-**Surface assumptions immediately.** Before writing any spec content, list what you're assuming:
-
-```
-ASSUMPTIONS I'M MAKING:
-1. This is a web application (not native mobile)
-2. Authentication uses session-based cookies (not JWT)
-3. The database is MySQL or PostgreSQL
-4. We're targeting modern browsers only (no IE11)
-→ Correct me now or I'll proceed with these.
-```
-
-Don't silently fill in ambiguous requirements. The spec's entire purpose is to surface misunderstandings *before* code gets written — assumptions are the most dangerous form of misunderstanding.
+Reuse the intake, user decisions, existing spec, and current repository evidence
+before asking questions. Discover stack, authentication, data shape, and other
+repository facts rather than presenting guesses for the user to correct.
+Surface only unresolved assumptions that materially affect the specification;
+silence does not validate them. Keep proposals distinct from accepted decisions.
 
 **Surface unresolved choices in a fixed format.** Whenever the evidence is
 mixed, a tradeoff is unresolved, or two readings of a requirement lead to
@@ -144,7 +135,11 @@ Choose the smallest valid form:
 
 - **Bugfix:** use `../../references/templates/bugfix-spec.md`; lead with
   reproduction evidence and make preserved behavior its own requirement. Root
-  cause and fix mechanism stay in `/plan`.
+  cause and implementation details stay in `/plan`. When an affected invariant
+  requires proof under `../../references/spec-quality-gates.md` §4, include it
+  before approval; it is a deliberate exception to leaving technical detail
+  for planning. Keep it limited to the mechanism needed to establish the
+  invariant, without task breakdown or production code.
 - **Compact:** use for bounded low-risk work with no new architecture or
   pattern, public contract or schema change, cross-row/concurrent invariant, or
   data-lifecycle field. Include the complete header, Objective, Requirements,
@@ -191,53 +186,43 @@ human can do that.
 Projects may designate different locations in their instruction sources; the
 project rule wins over these defaults.
 
+Read the existing target spec or capability map before writing. Revise the same
+work in place, preserving stable ids and applying the approval transitions
+below. If the target belongs to different work or cannot be resolved, ask rather
+than overwriting it. New specs use the selected template's Draft header.
+
 ### Handoff after specification
 
-After the human approves the specification, stop. Planning and task
-decomposition belong to `/plan`, which invokes `planning-and-task-breakdown` and
-writes the canonical plan/todo artifacts. Do not execute that methodology inside
-this skill.
+Save and present the spec, then stop for human approval. Approval completes
+this stage; the user invokes `/plan` separately. Spec and plan may share a
+session, while `/build` may start fresh after plan approval; each stage must
+also work without the previous conversation.
 
-After the human approves the plan, implementation belongs to `/build`.
-`/build` selects executor skills and dispatches workstreams; the user then
-invokes `/review` and `/ship`. Independent verification is conditional, not a
-fixed stage: `/review` evaluates `../../references/verification-triggers.md`
-and requires `/test` only when a trigger matches (matching the Gated Workflow
-diagram above). Do not write production code, dispatch executors, or run
-implementation phases from `/spec`.
+The saved spec owns requirements and sources, accepted material decisions,
+constraints, preserved behavior, and the relevant repository/verification
+pointers. Reuse current recon in the same session, but put conclusions needed
+by planning into the spec rather than relying on a chat-only report. Link
+source evidence instead of copying transcripts or creating another handoff file.
+The plan and task packets own the later implementation handoff.
 
-**Handling a returned `SPEC CONFLICT`.** When `/plan` (or a later stage) returns
-a `SPEC CONFLICT`, treat it as a spec change request: raise the decision with
-the human, record the resolution in the spec, remove or update the conflicting
-requirement, rerun the approval check, and obtain re-approval before the work
-returns to `/plan`.
+Keep the spec in version control: `/plan` requires an approved, committed spec
+with no uncommitted edits to pin its revision. Report when that prerequisite
+is pending. Do not plan tasks, write production code, dispatch executors, or
+invoke later stages from this skill.
 
 ## Keeping the Spec Alive
 
-The spec is a living document, not a one-time artifact:
+Approval lives in the saved header, under
+`../../references/spec-quality-gates.md` §2. Only explicit human approval may
+set Approved and its approval metadata. Editorial changes retain existing
+approval. Behavioral changes set Needs reapproval immediately, preserve ids,
+identify affected requirements, and require a new Approval Check and human
+approval before downstream work resumes.
 
-- **Update when decisions change** — If you discover the data model needs to change, update the spec first, then implement.
-- **Update when scope changes** — Features added or cut should be reflected in the spec.
-- **Commit the spec** — The spec belongs in version control alongside the code.
-- **Reference the spec in PRs** — Link back to the spec section that each PR implements.
-
-**Approval is document state, not conversation history.** The spec's `Status`
-header (`Draft` / `Approved` / `Needs reapproval` / `Superseded`) is the record,
-because a later session, a compaction boundary, or a downstream stage cannot see
-what was said in this one. `/spec` moves `Draft` → `Approved` only on explicit
-human approval — never on its own judgment, and a passing approval check is not
-approval. Transitions and who may set them:
-`../../references/spec-quality-gates.md` §2.
-
-Any edit to an approved spec that changes behavior — a requirement, scenario,
-schema, contract, invariant, boundary, or Change Impact entry — follows the same
-path as a `SPEC CONFLICT`: set `Needs reapproval`, identify the affected
-requirement ids, rerun the approval check, and obtain re-approval before
-downstream work resumes on the changed sections.
-Editorial corrections (typos, formatting, clarified wording that changes no
-behavior) do not reopen approval. Never weaken a valid requirement because an
-implementation fails to meet it — a failing implementation is a finding
-against the code or a decision for the human, not grounds to move the goal.
+Handle a returned `SPEC CONFLICT` through that same revision process: raise the
+decision with the human and record its resolution in the spec. Never weaken a
+valid requirement merely because the implementation fails it. Link relevant
+spec sections from later PRs so the behavior remains traceable.
 
 ## Verification
 

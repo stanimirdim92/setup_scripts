@@ -6,54 +6,41 @@ argument-hint: "[ticket or feature description]"
 Invoke the `spec-driven-development` skill before drafting; its methodology is
 required, not optional background.
 
-Begin by understanding what the user wants to build. If a `jira-ticket` intake summary already answered some of this, don't re-ask it — confirm what's already known and ask only what's still open. Otherwise ask clarifying questions about:
-1. The objective and target users
-2. Core features and acceptance criteria
-3. Tech stack preferences and constraints
-4. Known boundaries (what to always do, ask first about, and never do)
+Resolve the requested ticket or feature from the argument and conversation.
+Reuse the intake, user decisions, and current repository evidence; ask only for
+material information still missing. Do not repeat a questionnaire or ask the
+user to supply facts the repository establishes.
 
 ## Repository evidence
 
-Use the smallest adequate evidence path from
-`../references/repository-precedent.md` §1: reuse a current recon report;
-dispatch `repo-recon` when its triggers match; otherwise inspect only applicable
-instructions and the named source, test, README, manifest, or CI files needed
-for this bounded change. Never guess or abbreviate repository rules, commands,
-or precedent. If the bounded check cannot find an exact verification command,
-dispatch recon or leave it unresolved; do not invent one.
+Follow `../references/repository-precedent.md` §1 for reuse, bounded checks,
+or `repo-recon` dispatch. Keep repository-defined commands exact and distinguish
+finding a command in source from executing it successfully.
 
-Choose the smallest valid spec shape. For bounded, low-risk changes that
-qualify, use the skill's compact form. Use the full form only when the change
-does not qualify for compact or bugfix form. In every form, give each fact one home;
-don't repeat acceptance criteria outside their requirement scenarios.
+## Draft or revise
+
+Use the skill's scope check, form selection, and Output Files rules, including
+per-module paths and project overrides. Read existing target artifacts before
+writing. Revise in place only for the same work; ask if the target is ambiguous
+or belongs to different work rather than overwriting it.
+
+The selected template owns the heading, header, and document shape. Keep the
+skill's requirement ids, source lines, and scenario forms. For an existing spec,
+preserve stable ids and use the status transitions in
+`../references/spec-quality-gates.md` §2; do not reset its header as if new.
 
 Before asking for approval, run the skill's Approval Check and the applicable
-checks in `../references/spec-quality-gates.md`. Do not present a contradictory,
-incomplete, or unresolved spec.
-
-If the request bundles several independently testable capabilities, first propose a capability map (module ids, dependency direction, build order) per the skill's Phase 0 and get it approved, then spec each module in dependency order.
-
-Save the spec as docs/specs/[TICKET]-SPEC.md in the project root and confirm with the user before proceeding.
+checks in `../references/spec-quality-gates.md`. A draft may expose questions
+for discussion, but must not be presented as ready for approval while unresolved.
 
 ## Approval state
 
-Start with `# Spec: [name]`, then write the complete header from
-`../references/templates/spec.md`: `Status: Draft`, Ticket,
-`Change kind: New | Modify | Remove | Rename | Bugfix`, Supersedes,
-`Approved by: —`, and `Approved at: —`. After presenting it, set
-`Status: Approved` — with `Approved by` and `Approved at` — only when the human
-has explicitly approved it. Approval is not implied by silence, by "looks good"
-on a different question, or by an instruction to continue to `/plan`; when in
-doubt, ask rather than promoting the status. Per-transition rules:
-`../references/spec-quality-gates.md` §2.
+New specs start as Draft. Only explicit human approval sets Approved and its
+approval metadata; passing the check, silence, or an instruction to continue
+does not grant approval. Editorial revisions retain existing approval;
+behavioral revisions require reapproval under the shared transition rules.
 
-Every requirement gets a `REQ-###` id and a `Source:` line — `/plan` refuses a
-spec without them, and every later gate traces evidence against them (§3).
-
-A defect uses `../references/templates/bugfix-spec.md` instead, which leads with
-reproduction evidence and makes preserved behavior its own requirement.
-
-The request that invoked `/spec` authorizes specification only, even when it
-says to build or fix something — that instruction does not carry forward past
-this command. After presenting the spec, stop and wait for a new user request;
-do not start `/plan` or implementation in the same response.
+Save the spec and report its path, status, and remaining blockers. `/spec` ends
+here; it does not invoke `/plan` or implementation. After approval, the user
+may invoke `/plan` in this session or a new one. Preserve the durable handoff
+described by the skill so either works without the conversation transcript.

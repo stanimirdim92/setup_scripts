@@ -21,9 +21,11 @@ template when the defect clears that bar: unclear correct behavior, more than
 one plausible fix, adjacent behavior at risk, or a data-correctness or
 authorization consequence.
 
-**Root cause stays out.** The technical cause and the fix mechanism belong in
-`/plan`, the same WHAT/WHY versus HOW boundary every other spec keeps. This
-document says what the system must do; it does not say which line was wrong.
+**Root cause and implementation detail belong in `/plan`.** For an affected
+invariant, the mechanism proof required by `../spec-quality-gates.md` §4 is an
+exception: add an Invariants and Mechanism Proof section before approval.
+Limit it to establishing the invariant across its transitions and writers;
+leave task breakdown and production code to later stages.
 
 ```markdown
 # Bugfix Spec: [Title]
