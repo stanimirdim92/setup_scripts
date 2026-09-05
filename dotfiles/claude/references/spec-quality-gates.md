@@ -15,6 +15,14 @@ copy-pasted versions of one rule set is how the copies start disagreeing.
 is presented for approval. The check is the unit test for the English; these are
 its assertions.
 
+- **Source coverage.** Compare the draft with the collected requirements,
+  including requirement-bearing child/linked issues and required references.
+  Each requested behavior must map to a requirement or an explicit human
+  decision changing or excluding it. Preserve that decision's source and
+  affected requirement ids in Material Decisions. Repository precedent is
+  implementation context, not permission to weaken requested behavior.
+  Required content still unread leaves coverage unresolved; reuse completed
+  reads and retrieve only the missing relevant content before claiming a pass.
 - **Measurable.** No requirement leans on "fast", "secure", "robust",
   "reliable" or "scalable" without a threshold and a way to measure it. A
   performance criterion names metric, threshold, workload, environment, and
@@ -34,7 +42,11 @@ its assertions.
   because nobody objected.
 - **No duplicate or conflicting requirements.** Two requirements describing the
   same behavior are one requirement; two requiring different behavior are a
-  contradiction to resolve, not to ship.
+  contradiction to resolve, not to ship. Compare requirement prose with its
+  scenarios, decisions, exclusions, and tests; they must promise the same
+  behavior. Calling a violation a known limitation or exclusion does not
+  resolve the conflict. Propose the changed behavior as an `OPEN QUESTION`
+  until the human decides, then reconcile the affected sections before passing.
 
 Judge applicability honestly and include only the concerns this change actually
 touches. A column of `N/A` lines is not coverage, it is the appearance of it,
@@ -126,7 +138,10 @@ The proof must identify:
 
 If the mechanism cannot be shown to serialize or reject all conflicting writes,
 the invariant design is unresolved. A transaction alone does not imply a common
-lock or uniqueness guarantee.
+lock or uniqueness guarantee. An acknowledged race, existing unsafe precedent,
+or assumed low concurrency does not satisfy the invariant. Either establish the
+guarantee or obtain an explicit human decision narrowing it under §1; do not
+retain the original guarantee while declaring its known violation acceptable.
 
 Deriving the transitions to test from an invariant — creation from empty,
 creation with related state, updates that establish or transfer it, deletion of

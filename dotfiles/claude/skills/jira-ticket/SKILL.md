@@ -49,12 +49,16 @@ failure from an unconfigured integration.
 Always include key, title, and status for children, parents, and linked issues;
 preserve the actual relationship type for links.
 
-Read an issue's full details when its summary or type mentions behavior,
-constraints, data, interfaces, deadlines, or decisions not already stated on
-the main ticket. When in doubt, read it. Skip full details only for purely
-administrative links, such as duplicates, tracking rollups, or closed tickets
-referenced as history. Do not traverse grandchildren unless a read child points
-to one for a requirement. Do not fetch unrelated Jira context.
+Read full descriptions, acceptance criteria, and relevant comments for children,
+parents, and linked issues that concern behavior, constraints, data, interfaces,
+deadlines, or decisions, including design and technical spikes cited as a basis
+for the work. Apparent overlap with the main ticket does not justify skipping
+these reads; it cannot establish that no additional requirements or decisions
+exist. When in doubt, read it. Skip full details only for purely administrative
+or history-only links with no bearing on current requirements; status or issue
+type alone does not establish that exemption. Do not traverse grandchildren
+unless a read child points to one for a requirement. Do not fetch unrelated
+Jira context.
 
 Read the relevant content of attachments or linked specifications explicitly
 required by the ticket before handoff. Metadata locates content; it does not

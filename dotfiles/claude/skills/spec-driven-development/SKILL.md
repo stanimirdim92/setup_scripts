@@ -168,7 +168,9 @@ For a long full spec, add a short index of links rather than a second summary.
 
 Before presenting a spec for human approval:
 
-- every requested behavior is a requirement or explicit exclusion;
+- reconcile the collected source requirements and user decisions against the
+  draft under `../../references/spec-quality-gates.md` §1; every requested
+  behavior is retained or changed by an explicit human decision;
 - every added behavior traces to a requirement or approved decision;
 - no sections contradict each other;
 - no `OPEN QUESTION` remains; and
