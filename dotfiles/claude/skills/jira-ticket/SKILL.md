@@ -105,6 +105,12 @@ exist; do not invent relationships or fill unknown fields with guesses.
 - [Relationship]: [KEY] — [Title] — [Status]
 - None. <!-- if none -->
 
+**Source Coverage**
+- [Main ticket, related issue, or required reference] — [read / partially read / unavailable] — [content read; remaining content or actual retrieval failure, if any].
+  <!-- Include the main ticket, children, linked/parent issues, and required
+  references. Group sources with identical coverage. For related issues whose
+  full details are not required under §2, state "summary only" and why. -->
+
 **Requirements**
 - ...
 
