@@ -34,9 +34,10 @@ required by the `/build` pipeline.
    the smallest adequate evidence path in
    `../../references/repository-precedent.md`; never guess a command or repeat
    an unchanged survey.
-4. Reconcile the plan against the approved behavior. If repository evidence
-   makes a requirement contradictory, infeasible, or incomplete, write the
-   bounded `SPEC CONFLICT` described by the plan template and stop.
+4. Reconcile the plan against the approved behavior. If the spec contradicts
+   itself, or repository evidence makes a requirement contradictory, infeasible,
+   or incomplete, write the bounded `SPEC CONFLICT` described by the plan
+   template and stop; do not choose which conflicting behavior to implement.
 
 Planning is read-only with respect to production code. It produces plan and task
 artifacts, not implementation.
@@ -157,8 +158,9 @@ one should be superseded; never overwrite, rename, bulk-close, or delete it on
 your own.
 
 The plan indexes tasks; the todo or tracker owns their full packets. Never copy
-the same task packet into both. Start with `Status: Draft` and
-`Handoff: Awaiting plan approval`. After explicit human approval, record
+the same task packet into both. New plans start with `Status: Draft` and
+`Handoff: Awaiting plan approval`; revisions follow Changes and Reapproval below.
+After explicit human approval, record
 `Status: Approved`, `Approved by`, `Approved at`, and
 `Handoff: Ready for /build`, then stop. `/plan` does not implement or invoke
 `/build`.

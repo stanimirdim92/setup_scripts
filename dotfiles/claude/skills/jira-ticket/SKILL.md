@@ -34,9 +34,10 @@ acceptance criteria / Definition of Done, comments, links, parent, and other
 relevant fields. Retain comments that change requirements, acceptance criteria,
 scope, constraints, or priority; skip status chatter and social replies.
 
-Check direct subtasks/children explicitly. If the response does not establish
-the child list, query it, for example `parent = [TICKET] ORDER BY key ASC`.
-Fetch each child's key, title, status, and issue type.
+Enumerate the main ticket's complete subtask/child hierarchy, including nested
+children. If a response does not establish a complete child list, query it,
+for example `parent = [TICKET] ORDER BY key ASC`, and exhaust pagination.
+Deduplicate by issue key and count all discovered tickets before handoff.
 
 If no integration exists, say so and ask for the description, acceptance
 criteria, relevant comments, and linked/parent context when needed.
@@ -49,16 +50,20 @@ failure from an unconfigured integration.
 Always include key, title, and status for children, parents, and linked issues;
 preserve the actual relationship type for links.
 
-Read full descriptions, acceptance criteria, and relevant comments for children,
-parents, and linked issues that concern behavior, constraints, data, interfaces,
-deadlines, or decisions, including design and technical spikes cited as a basis
-for the work. Apparent overlap with the main ticket does not justify skipping
-these reads; it cannot establish that no additional requirements or decisions
-exist. When in doubt, read it. Skip full details only for purely administrative
-or history-only links with no bearing on current requirements; status or issue
-type alone does not establish that exemption. Do not traverse grandchildren
-unless a read child points to one for a requirement. Do not fetch unrelated
-Jira context.
+Read every ticket in the intake scope: the main ticket, every subtask/child in
+its hierarchy, and parents and linked issues discovered on those tickets.
+Read each full description, acceptance criteria, and all comment pages; retain
+requirement-bearing comments in the summary. Titles, metadata, status, apparent
+overlap, and administrative/history labels never exempt a ticket from reading.
+Do not recursively expand the parent/link graph beyond this scope.
+
+Reconcile the unique discovered count with fully read, partially read, and
+unread counts. Identify every incomplete ticket by key and the missing content
+or actual retrieval failure. Intake is incomplete until every discovered
+ticket is fully read; report retrieval failures as blockers, never as a reason
+to claim completion. If any in-scope child/link list could not be enumerated,
+label the total unverified: counting known tickets does not prove that an
+unread ticket has no further children or links.
 
 Read the relevant content of attachments or linked specifications explicitly
 required by the ticket before handoff. Metadata locates content; it does not
@@ -110,10 +115,11 @@ exist; do not invent relationships or fill unknown fields with guesses.
 - None. <!-- if none -->
 
 **Source Coverage**
+- Tickets: [N unique discovered; enumeration complete/unverified] — [R fully read, P partially read, U unread]. <!-- R + P + U = N; includes main, subtickets, parents and links. -->
 - [Main ticket, related issue, or required reference] — [read / partially read / unavailable] — [content read; remaining content or actual retrieval failure, if any].
   <!-- Include the main ticket, children, linked/parent issues, and required
-  references. Group sources with identical coverage. For related issues whose
-  full details are not required under §2, state "summary only" and why. -->
+  references. Group fully read sources; identify each incomplete ticket by key.
+  Required non-ticket references are reported separately from ticket totals. -->
 
 **Requirements**
 - ...
