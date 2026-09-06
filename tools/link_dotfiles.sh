@@ -50,18 +50,10 @@ link "$DOTFILES/claude/docs"                   "$HOME/.claude/docs"
 link "$DOTFILES/codex/config.toml"             "$HOME/.codex/config.toml"
 link "$DOTFILES/codex/rules/default.rules"     "$HOME/.codex/rules/default.rules"
 
-# Codex reads its global instructions from $HOME/.codex/AGENTS.md (and
-# AGENTS.override.md ahead of it, if one exists), NOT from ~/.claude — so
-# without this line Codex ran with no global rules at all while Claude Code
-# had the full set. Same file, one source of truth: CLAUDE.md is the rules
-# document, and its "Agent orchestration" section is marked Claude
-# Code-specific for the Codex reader.
-#
-# Codex skills are deliberately NOT linked. $HOME/.codex/skills already holds
-# Codex's own vendor-shipped .system skills, which a whole-directory symlink
-# would shadow, and the pipeline skills are written around /build, /test,
-# /review and /ship, which Codex has no equivalent of.
+# Share global rules and install individual Codex adapter links without
+# replacing bundled system skills or unrelated user skills.
 link "$DOTFILES/claude/CLAUDE.md"              "$HOME/.codex/AGENTS.md"
+python3 "$DOTFILES/codex/install-skills.py"
 
 # MCP servers are NOT symlinked: `claude mcp add` writes into ~/.claude.json,
 # which also holds per-project trust state and can carry OAuth tokens/API

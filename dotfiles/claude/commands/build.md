@@ -190,6 +190,11 @@ or executor summary alone does not establish an outcome its checks did not
 exercise. Return an evidence gap to the same executor for focused verification;
 route missing plan decisions or behavior conflicts under §2.
 
+Confirm affected project documentation matches the integrated result under
+`../references/documentation-practices.md` §Project documentation. Return stale
+in-scope sections to the owning executor; report missing scope through the
+existing blocker process rather than declaring the documentation complete.
+
 `/build` ends in exactly one of two reports.
 
 **BUILD COMPLETE** — only when all of the following hold:

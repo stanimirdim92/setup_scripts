@@ -60,6 +60,11 @@ Choose the smallest valid form:
 Give each fact one home: the spec owns behavior, the plan owns implementation
 approach and ordering, and the todo owns executable task detail.
 
+Carry affected project-documentation paths from the spec/recon into the owning
+task's scope and verification under `../../references/documentation-practices.md`
+§Project documentation. Do not invent a separate documentation workstream or a
+full document bundle for routine updates.
+
 ### Technical Approach and Decisions
 
 Describe the current-to-proposed implementation flow, affected areas, and

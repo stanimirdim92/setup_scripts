@@ -94,6 +94,11 @@ At task completion:
 - record exact commands and outcomes;
 - report any required check that could not run and why.
 
+Reconcile affected existing project docs with the implemented result under
+`../../references/documentation-practices.md` §Project documentation. Verify
+their references and command claims; report a required documentation update
+outside the packet's scope to the orchestrator instead of expanding silently.
+
 Match evidence to the promised outcome. A dispatch assertion proves enqueueing,
 not job execution or its effect on the intended record. When that effect is in
 scope, exercise the relevant job path with repository-supported test boundaries.

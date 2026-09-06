@@ -169,6 +169,11 @@ In every form:
 
 For a long full spec, add a short index of links rather than a second summary.
 
+When proposed behavior affects existing project documentation, name the affected
+paths in the spec's context for `/plan`, following
+`../../references/documentation-practices.md` §Project documentation. Keep
+current-state docs describing the existing system until implementation lands.
+
 ### Approval Check
 
 Before presenting a spec for human approval:

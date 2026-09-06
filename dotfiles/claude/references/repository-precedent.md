@@ -17,6 +17,10 @@ implementation patterns, you need the project's applicable rules, the owning
 module's conventions and architectural chain, its test setup, and the closest
 sibling implementations.
 
+Use relevant existing project documentation as navigation, cross-checked with
+source under `documentation-practices.md` §Project documentation. This applies
+to reused reports and bounded checks as well as dispatched recon.
+
 Use the first adequate option:
 
 1. **Reuse** a report while its relevant sources and conclusions remain current.

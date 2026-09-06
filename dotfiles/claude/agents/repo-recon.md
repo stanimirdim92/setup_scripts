@@ -34,6 +34,12 @@ next path. Discover rather than assume:
 - one to three closest precedents; and
 - for `/plan`, dependencies, affected consumers, and unusual existing state.
 
+Consult relevant existing project docs under
+`../references/documentation-practices.md` §Project documentation. Compare their
+claims with inspected source; report stale claims and broken references in the
+existing Constraints/Unknowns sections. Missing optional documents do not block
+recon or require generating them.
+
 For named reuse candidates, apply `../references/repository-precedent.md` §1's
 "Verify claimed reuse" check. Report the actual behavior and any mismatch with
 the requested behavior, with source pointers; leave decisions to the caller.
