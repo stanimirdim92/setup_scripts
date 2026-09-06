@@ -176,6 +176,12 @@ corrections do not. If the pinned spec changes behaviorally, the spec returns to
 `/spec` and the plan becomes `Needs replan`. See
 `../../references/plan-quality-gates.md` §1–2.
 
+When reconciling an amendment, search the plan and its authoritative task file
+for superseded behavior. Update the technical approach, decisions, risks,
+verification, task index, and full task packets wherever affected. Reconcile
+task status with recorded execution evidence; approval alone does not complete
+a task. Read the affected sections together before reapproval.
+
 ## Verification
 
 Verification is a human gate. The agent runs the Approval Check before

@@ -131,8 +131,9 @@ approved task unless the user explicitly requests an uncommitted result;
 preserve and report that override. It does not authorize push, tag, deploy, release,
 protected-branch mutation, history rewriting, or unrelated changes.
 
-Do not include unrelated pre-existing changes. Report directly required
-neighboring changes as scope expansion through the executor's output contract.
+Apply the staged-diff and commit-content checks in `../../CLAUDE.md` §3.
+Report directly required neighboring changes as scope expansion through the
+executor's output contract.
 
 ## Completion Evidence
 

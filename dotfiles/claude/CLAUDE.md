@@ -62,6 +62,12 @@ When your changes create orphans:
 
 The test: Every changed line should trace directly to the user's request.
 
+Before every commit, inspect `git diff --cached` against the authorized files
+and hunks; explicit `git add` paths do not exclude previously staged work.
+Isolate the intended commit while preserving unrelated staged and unstaged
+content, including changes in the same file. After committing, inspect the
+resulting commit diff and remaining status before claiming completion.
+
 ## 4. Goal-Driven Execution
 
 **Define success criteria. Loop until verified.**

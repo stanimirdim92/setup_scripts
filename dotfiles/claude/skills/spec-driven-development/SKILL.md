@@ -107,6 +107,11 @@ option would change an acceptance criterion, a schema, a public contract, or
 data lifecycle behavior; choices below that bar (internal naming, private
 helper structure) may be decided directly.
 
+When plausible readings produce different results, use one small input/output
+example that distinguishes them to resolve the choice and retain the accepted
+outcome as an acceptance scenario. Include the interaction of changed and
+preserved behavior where relevant. Do not reopen an already explicit decision.
+
 **Ask for domain knowledge the repository cannot reveal.** When the area
 plausibly carries history — known production failures, compatibility
 obligations, regulatory or unusual business rules — ask the human about it
@@ -222,6 +227,12 @@ set Approved and its approval metadata. Editorial changes retain existing
 approval. Behavioral changes set Needs reapproval immediately, preserve ids,
 identify affected requirements, and require a new Approval Check and human
 approval before downstream work resumes.
+
+For each changed behavior, search the whole spec for superseded wording and
+reconcile requirements, scenarios, boundaries, decisions, and testing strategy.
+Read the affected sections together before reapproval; changing only the named
+requirement is insufficient. Identify affected downstream plan/task artifacts
+for `/plan` reconciliation rather than treating them as current.
 
 Handle a returned `SPEC CONFLICT` through that same revision process: raise the
 decision with the human and record its resolution in the spec. Never weaken a

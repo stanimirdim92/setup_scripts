@@ -43,6 +43,12 @@ available pre-fix version in a disposable test location without changing the
 candidate's production files. If that proof is required but unavailable,
 report the gap; do not force a failure on corrected code.
 
+Reuse trustworthy recorded RED evidence for the same regression and pre-fix
+version before rebuilding an optional historical environment. Retry setup only
+with a new evidence-based hypothesis; stop when none remains or the same failure
+survives three attempts. Continue independent candidate checks and report any
+missing proof. Do not expand into unrelated suites to repair optional setup.
+
 ### 4. Write Descriptive Tests
 
 ```
@@ -71,6 +77,10 @@ or component.
 Do not expand into low-value permutations merely to fill the table. Prioritize
 observable behavior whose failure would violate an acceptance criterion, corrupt
 data, weaken security, break a shared contract, or regress a neighboring flow.
+
+Where plausible interpretations differ, choose a case that passes the accepted
+behavior and fails the alternative. Exercise interactions between changed and
+preserved behavior; separate happy-path tests may pass both interpretations.
 
 Match the test boundary to the claim: a dispatch assertion proves dispatch,
 not job execution or effects on the intended record. Exercise the relevant job
@@ -104,7 +114,9 @@ When dispatched by `/test`, report:
 
 - candidate identity and selected scope;
 - one evidence entry per in-scope `REQ-###`, covering its relevant scenarios:
-  test/check, exact executed command and outcome, and any unverified portion;
+  test/check, exact command and outcome, candidate/version, and any unverified portion;
+  distinguish checks executed here from inherited evidence (name its source),
+  code reasoning, and blocked checks;
 - reproduced defects with expected versus actual behavior and reproduction;
 - test-only files/commits, final tree state, and any changes from the baseline;
 - required checks not run, blockers, and the next action needed.

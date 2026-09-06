@@ -113,7 +113,9 @@ requirement in scope, with its evidence — plus tests changed, exact
 commands/outcomes, test-only commits with their exact files, coverage gaps
 intentionally left out, the BUILD candidate identity, and the resulting
 branch/commits/diff/tree state. A requirement in scope with no evidence line is
-a gap to report, not one to omit.
+a gap to report, not one to omit. Preserve evidence provenance in the summary:
+inherited results and code reasoning must not become claims that the verifier
+executed a check. Include their source/version and any remaining proof gap.
 
 ### VERIFY FAIL
 
