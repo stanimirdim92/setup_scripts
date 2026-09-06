@@ -47,6 +47,21 @@ Recon establishes what command the repository defines; its read-only agent
 does not execute it. Report execution results only when a caller supplies
 current run evidence, and keep that evidence distinct from source discovery.
 
+### Verify claimed reuse
+
+Before promising to reuse an existing method or job, read its implementation
+and only the callees needed to establish the claimed behavior. Check relevant
+inputs, matching rules, scope, return values, and side effects; a method name or
+call site is not evidence that it satisfies the requirement. Record the source
+pointer and behavioral conclusion in the existing spec or task context.
+
+When the user requests existing behavior, specify direct reuse rather than a
+parallel implementation or additional rules. If requested behavior differs,
+state the intended change explicitly; do not describe it as unchanged reuse.
+Apply already-recorded user decisions without asking again. Unresolved behavior
+goes through `/spec`; `/plan` returns a `SPEC CONFLICT` when the approved spec
+promises behavior the named unchanged implementation does not provide.
+
 Per-stage handling of **No precedent found for**:
 
 | Stage | Obligation |

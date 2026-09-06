@@ -57,8 +57,9 @@ commits. Do not invoke it again.
 Invoke only additional task-specific skills explicitly selected by `/build`.
 On resume, do not reload a skill already active for the workstream.
 
-The `/build` invocation does not authorize local commits, push, tag, deploy, release, protected
-branch mutation, history rewriting.
+Follow the preloaded skill's scoped local-commit policy and any explicit user
+override. `/build` does not authorize push, tag, deploy, release,
+protected-branch mutation, or history rewriting.
 
 ## Scope
 

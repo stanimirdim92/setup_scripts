@@ -135,6 +135,8 @@ Before presenting the plan for human review, confirm:
 
 - the approved committed spec and its revision pin are current;
 - the plan neither drops nor adds behavior;
+- claimed reuse and task acceptance criteria match the implementation under
+  `../../references/repository-precedent.md` §1; any intended change is explicit;
 - every task is behavioral, ordered, dispatchable, and covered by requirements;
 - workstreams and checkpoints follow actual dependencies and risk;
 - verification commands come from repository evidence; and

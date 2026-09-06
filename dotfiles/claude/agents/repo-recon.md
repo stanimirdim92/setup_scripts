@@ -34,6 +34,10 @@ next path. Discover rather than assume:
 - one to three closest precedents; and
 - for `/plan`, dependencies, affected consumers, and unusual existing state.
 
+For named reuse candidates, apply `../references/repository-precedent.md` §1's
+"Verify claimed reuse" check. Report the actual behavior and any mismatch with
+the requested behavior, with source pointers; leave decisions to the caller.
+
 ## Report
 
 ```markdown

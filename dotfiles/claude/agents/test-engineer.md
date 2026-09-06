@@ -32,10 +32,16 @@ Test at the lowest level that captures the behavior. Don't write E2E tests for t
 
 ### 3. Follow the Prove-It Pattern for Bugs
 
-When asked to write a test for a bug:
+When reproducing an unfixed bug:
 1. Write a test that demonstrates the bug (must FAIL with current code)
 2. Confirm the test fails
 3. Report the test is ready for the fix implementation
+
+When verifying an already-built fix, the regression test should pass on the
+candidate. Check trustworthy pre-fix failure evidence or reproduce against an
+available pre-fix version in a disposable test location without changing the
+candidate's production files. If that proof is required but unavailable,
+report the gap; do not force a failure on corrected code.
 
 ### 4. Write Descriptive Tests
 
@@ -66,6 +72,15 @@ Do not expand into low-value permutations merely to fill the table. Prioritize
 observable behavior whose failure would violate an acceptance criterion, corrupt
 data, weaken security, break a shared contract, or regress a neighboring flow.
 
+Match the test boundary to the claim: a dispatch assertion proves dispatch,
+not job execution or effects on the intended record. Exercise the relevant job
+path when those effects are required. Derive concurrency cases from the actual
+invariant and matching rules, including alternate identities that can conflict;
+one identical-input case or a lock-call assertion cannot prove broader coverage.
+Use browser evidence when the required behavior depends on actual rendering or
+browser integration; report unavailable tooling instead of treating component
+tests as visual proof.
+
 ### 6. Own Test-Only Changes
 
 When invoked by `/test`, you may add or correct tests, fixtures, and test
@@ -85,7 +100,20 @@ configuration required for verification. You must not modify production code.
 
 ## Output Format
 
-When analyzing test coverage:
+When dispatched by `/test`, report:
+
+- candidate identity and selected scope;
+- one evidence entry per in-scope `REQ-###`, covering its relevant scenarios:
+  test/check, exact executed command and outcome, and any unverified portion;
+- reproduced defects with expected versus actual behavior and reproduction;
+- test-only files/commits, final tree state, and any changes from the baseline;
+- required checks not run, blockers, and the next action needed.
+
+Recommendations are not executed evidence. `/test` issues the gate result from
+this report. For standalone work without requirement ids, use the supplied
+acceptance criteria without inventing spec ids.
+
+When asked only to analyze test coverage, use:
 
 ```markdown
 ## Test Coverage Analysis
@@ -120,8 +148,9 @@ When analyzing test coverage:
 6. Every test name should read like a specification
 7. A test that never fails is as useless as a test that always fails
 8. Never modify production code when invoked as the `/test` verifier
-9. Never return PASS/FAIL when an environmental or capability blocker prevents
-   trustworthy verification; report the blocker and evidence to `/test`
+9. Report environmental or capability blockers without guessing unverified
+   outcomes. Preserve any independently reproduced defect evidence even when
+   other checks are blocked; `/test` determines the result
 10. Never treat `/test` commit authority as permission to push, tag, deploy,
     release, rewrite history, mutate a protected branch, or include unrelated work
 

@@ -172,6 +172,8 @@ Before presenting a spec for human approval:
   draft under `../../references/spec-quality-gates.md` §1; every requested
   behavior is retained or changed by an explicit human decision;
 - every added behavior traces to a requirement or approved decision;
+- claimed reuse matches the implementation and accepted user decisions under
+  `../../references/repository-precedent.md` §1, including scenario wording;
 - no sections contradict each other;
 - no `OPEN QUESTION` remains; and
 - applicable checks in `../../references/spec-quality-gates.md` §1 and §4–5

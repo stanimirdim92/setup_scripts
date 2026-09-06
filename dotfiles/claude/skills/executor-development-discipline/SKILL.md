@@ -22,6 +22,12 @@ packet does not contain, stop that task and report the conflict through the
 completion evidence (as a blocker) — do not pick an interpretation and build
 it. `/build` routes genuine behavior conflicts back through the pipeline.
 
+For claimed reuse, apply `../../references/repository-precedent.md` §1's
+"Verify claimed reuse" check before implementing the affected slice. Read the
+method/job and relevant callees, including arguments or mode flags that alter
+its behavior. Reuse current evidence; report mismatches rather than copying a
+similar call whose semantics do not fit this task.
+
 ## Discover the Local Test Path
 
 Before the first edit, identify the repository-defined focused and broader
@@ -88,6 +94,16 @@ At task completion:
 - record exact commands and outcomes;
 - report any required check that could not run and why.
 
+Match evidence to the promised outcome. A dispatch assertion proves enqueueing,
+not job execution or its effect on the intended record. When that effect is in
+scope, exercise the relevant job path with repository-supported test boundaries.
+For a concurrency invariant, derive conflicting cases from the actual matching
+rules, including alternate identities that can match the same entity; the
+presence of a lock or one identical-input case is not proof of the whole claim.
+Add focused checks for already-required behavior within the task. If adequate
+verification needs an unresolved decision or unavailable capability, report the
+gap and its limit instead of claiming completion or expanding scope silently.
+
 Do not repeat an unchanged successful command without an intervening change or
 new condition that could affect its result.
 
@@ -111,7 +127,8 @@ focused verification is green, and the tree is in a valid state. Use meaningful
 messages that explain the change and follow the repository's commit convention.
 
 Invocation through `/build` authorizes these scoped local commits for the
-approved task. It does not authorize push, tag, deploy, release,
+approved task unless the user explicitly requests an uncommitted result;
+preserve and report that override. It does not authorize push, tag, deploy, release,
 protected-branch mutation, history rewriting, or unrelated changes.
 
 Do not include unrelated pre-existing changes. Report directly required

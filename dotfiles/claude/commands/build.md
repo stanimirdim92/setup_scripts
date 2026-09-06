@@ -12,7 +12,12 @@ discipline, tests, verification, and scoped local commits.
 
 Resolve the target per `../references/target-selection.md`, and announce it ("Using: <target>") before anything else.
 
-Read `docs/tasks/[TICKET]-todo.md` and the plan only as needed.
+Read the selected plan's header, task index, dependencies/checkpoints, and
+Verification Strategy. Resolve full task packets from its designated local
+todo or external tracker, honoring project artifact locations; default to
+`docs/tasks/[TICKET]-todo.md` only when no alternative is designated. If the
+authoritative packets cannot be read, report the missing source and stop;
+do not reconstruct them from summaries or a stale local copy.
 
 ### Require a current plan
 
@@ -138,11 +143,7 @@ State the actual dispatch in the completion report: how many ran concurrently,
 which workstreams, and — if a third was used — that its four conditions held. If
 concurrency exceeds this cap, that is a reportable slip, named as such.
 
-Parallel workstreams still integrate sequentially in dependency order. After
-each integration run affected checks; after all integrations run the plan's
-**Verification Strategy → Integrated** commands over the selected scope. Task-
-and workstream-focused checks passing is not evidence that the integrated
-behavior works, which is the gap that line exists to close.
+Parallel workstreams still integrate sequentially in dependency order.
 
 Parallelism buys elapsed time, not fewer tokens.
 
@@ -176,6 +177,19 @@ requiring an absent decision):
 
 ## 3. Completion
 
+For sequential and parallel builds alike, run affected checks after each
+integration and the plan's **Verification Strategy → Integrated** commands
+on the final integrated tree. Reuse an identical successful check only when
+no intervening change could affect its result. For a selected subset, report
+that scope without claiming unselected behavior complete; do not silently
+drop or rewrite required commands that cannot run.
+
+Check executor evidence against the selected acceptance criteria and shared
+invariants under the development skill's completion rules. A green command
+or executor summary alone does not establish an outcome its checks did not
+exercise. Return an evidence gap to the same executor for focused verification;
+route missing plan decisions or behavior conflicts under §2.
+
 `/build` ends in exactly one of two reports.
 
 **BUILD COMPLETE** — only when all of the following hold:
@@ -184,7 +198,9 @@ requiring an absent decision):
 - all selected workstreams are integrated;
 - every plan checkpoint in the selected scope was executed and passed;
 - executor-required verification is green;
-- scoped local commits are complete;
+- integrated verification is green and claimed outcomes have executed evidence;
+- scoped local commits are complete, unless the user explicitly requested an
+  uncommitted result (report that instruction and the remaining diff);
 - the tree is in the expected state.
 
 **BUILD BLOCKED** — in every other terminal state. Never report BUILD COMPLETE

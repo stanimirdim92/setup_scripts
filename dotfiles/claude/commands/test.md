@@ -17,8 +17,23 @@ because the trigger matrix would have allowed it to be skipped.
 
 Resolve the target per `../references/target-selection.md`, and announce it ("Using: <target>") before anything else.
 
-Use the selected task/spec artifacts, the current branch/diff, and `/build`'s
-completion handoff from the current conversation.
+Read the selected spec/plan and authoritative task packets from disk or the
+plan's designated tracker. Use BUILD's completion handoff from the conversation,
+a saved report, or a user-supplied handoff; a fresh session is valid. Check its
+claims against git and available run evidence, not just its completion label.
+
+Before dispatch, record the selected scope, BUILD commit and any declared
+uncommitted BUILD diff, current HEAD/tree, base revision, and any pre-existing
+staged, unstaged, or untracked changes.
+Reconcile differences from BUILD, accepting only declared passing test-only
+changes; unexplained differences or changed production code block the pipeline
+VERIFY gate. Check the plan's spec pin under `../references/plan-quality-gates.md`
+§2 so verification uses the approved behavior for this candidate.
+
+If BUILD evidence is missing, do not invent it or rerun implementation. An
+explicitly requested standalone test investigation may still run against a
+clearly identified target, but report its findings separately from pipeline
+verification and return VERIFY BLOCKED for the missing BUILD evidence.
 
 Resolve:
 
@@ -39,11 +54,16 @@ BLOCKED** rather than guessing.
 
 Send `test-engineer` a bounded packet containing:
 
+- candidate identity, baseline tree changes, and selected scope;
 - acceptance criteria;
 - implemented behavior;
 - relevant regression risks;
 - tests/commands already run;
 - pointers to the changed code/tests when useful.
+
+Include relevant invariant and decision pointers. BUILD's results are prior
+evidence, not the verifier's conclusion; the agent independently selects and
+executes checks sufficient to establish the in-scope behavior.
 
 Do not paste the full spec, plan, command methodology, or another agent's
 transcript.
@@ -82,6 +102,12 @@ Requires all in-scope acceptance criteria to have credible evidence, required
 checks to pass, no known production defect in scope, and any test-only changes
 to be committed.
 
+Before issuing PASS, reconcile the final tree with the recorded candidate:
+only the declared, verified test-only changes may have been introduced.
+Confirm the agent supplied executed evidence per requirement, not merely
+recommended tests. Missing in-scope evidence cannot be labeled an intentional
+coverage exclusion; obtain it or report why verification is blocked.
+
 Report acceptance criteria verified **per `REQ-###`** — one line per
 requirement in scope, with its evidence — plus tests changed, exact
 commands/outcomes, test-only commits with their exact files, coverage gaps
@@ -96,8 +122,10 @@ expected vs actual, and the exact handoff back to `/build`.
 
 ### VERIFY BLOCKED
 
-Use only when environment, permissions, unavailable dependencies, or unrelated
-pre-existing failures prevent trustworthy PASS/FAIL evidence.
+Use when scope/candidate identity, missing handoff or required evidence,
+environment, permissions, unavailable dependencies, or unrelated pre-existing
+failures prevent trustworthy PASS/FAIL evidence. A reproduced production defect
+is FAIL, not merely a coverage blocker; report any other blocked checks as well.
 
 Report the blocker, checks completed, and the smallest action needed to unblock.
 
