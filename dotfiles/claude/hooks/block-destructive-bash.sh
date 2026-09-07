@@ -25,16 +25,22 @@ deny() {
 # checked below -- `rlc` -> `reset --hard HEAD~1`, `co` -> `checkout` -- and git
 # accepts global options between `git` and the subcommand (`git -C /tmp reset`,
 # `git --no-pager push`), so a grep for the spelled-out command misses both.
-# Normalise before matching: expand the aliases, then strip the global options.
+# Normalise before matching: strip shell-quoted or unquoted global options, then
+# expand aliases. Alias expansion must happen after stripping because forms such
+# as `git -C /tmp rlc` do not place the alias directly after `git` initially.
 # Keep the alias list in sync with the [alias] section of dotfiles/.gitconfig.
 # Every form here is covered by tools/test-hooks.sh -- add a fixture before
 # adding a matcher. Note `git help.autocorrect = 1` can still run a near-miss
 # typo that no fixed list covers.
 command="$(sed -E \
+  -e "s/\bgit((([[:space:]]+(-C|-c|--git-dir|--work-tree|--exec-path|--namespace)([[:space:]]+|=)(\"[^\"]*\"|'[^']*'|[^[:space:]]+)))|([[:space:]]+(--no-pager|--paginate|--bare|--literal-pathspecs|--no-optional-locks|--no-replace-objects)))+/git/g" \
   -e 's/\bgit[[:space:]]+rlc\b/git reset --hard HEAD~1/g' \
   -e 's/\bgit[[:space:]]+co\b/git checkout/g' \
-  -e 's/\bgit((([[:space:]]+(-C|-c|--git-dir|--work-tree|--exec-path|--namespace)([[:space:]]+|=)[^[:space:]]+))|([[:space:]]+(--no-pager|--paginate|--bare|--literal-pathspecs|--no-optional-locks|--no-replace-objects)))+/git/g' \
   <<<"$command")"
+# This option weakens rm's own root guard but does not change the target or the
+# operation this policy classifies. Remove it so it cannot hide the following
+# recursive/force flags from the matcher.
+command="$(sed -E 's/(^|[[:space:]])--preserve-root=no([[:space:]]|$)/ /g' <<<"$command")"
 
 # rm -rf (or -fr, or -r -f) targeting root, home, a bare dot/dotdot, or a
 # top-level wildcard. The target must be its own whitespace-delimited word
@@ -42,6 +48,12 @@ command="$(sed -E \
 # a real path like `rm -rf ./build` or `rm -rf /srv/app` — only bare `/`,
 # `~`, `$HOME`, `.`, `..`, `/*`, or `~/*`.
 if echo "$command" | grep -Eq 'rm[[:space:]]+(-[a-zA-Z]*[rf][a-zA-Z]*|--recursive|--force)([[:space:]]+-[a-zA-Z-]+)*[[:space:]]+["'"'"']?(/\*?|~/?\*?|\$\{?HOME\}?/?\*?|\.{1,2})["'"'"']?([[:space:]]|$)'; then
+  deny "rm -rf against /, ~, \$HOME, or . is almost never intended — confirm the exact path with the user first."
+fi
+
+# GNU rm accepts options after operands too (`rm "$HOME" -rf`). Match that
+# spelling separately so argument reordering cannot bypass the same policy.
+if echo "$command" | grep -Eq 'rm[[:space:]]+["'"'"']?(/\*?|~/?\*?|\$\{?HOME\}?/?\*?|\.{1,2})["'"'"']?([[:space:]]+[^[:space:]]+)*[[:space:]]+(-[a-zA-Z]*[rf][a-zA-Z]*|--recursive|--force)([[:space:]]|$)'; then
   deny "rm -rf against /, ~, \$HOME, or . is almost never intended — confirm the exact path with the user first."
 fi
 

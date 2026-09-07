@@ -16,6 +16,9 @@ from that source's own directory. Do not copy or rewrite the shared sources.
 - Tool-dependent skills still require callable tools. Claude MCP setup examples
   and hooks do not configure or enforce anything in Codex. Report missing
   capabilities instead of claiming successful browser, diagram, or Jira checks.
+  When a task packet selects `browser-testing-with-devtools`, use the available
+  Codex browser tooling for equivalent runtime evidence or block the required
+  check when no callable browser capability exists.
 
 ## Agent dispatch
 

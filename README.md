@@ -46,7 +46,10 @@ Synced:
 
 The main `tools/link_dotfiles.sh` setup calls the Codex installer. To install
 or repeat only the Codex skill setup, run `python3 dotfiles/codex/install-skills.py`
-from the repository root. It refuses conflicting paths before creating links.
+from the repository root. The main setup preflights every destination before
+mutation, refuses to overwrite an existing `.bak`, and reverts paths changed by
+the current run if a later link fails. The Codex installer likewise preflights
+conflicts and rolls back adapter links created by a failed run.
 `python3 dotfiles/codex/install-skills.py --check` verifies installed link targets
 without changing files; it does not test model behavior or connector access.
 Use `--dest PATH` for an isolated installation check. Links point at this checkout,

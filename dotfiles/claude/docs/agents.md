@@ -65,13 +65,17 @@ Independent VERIFY is **risk-triggered, not mandatory**.
 matches, the exact candidate must have `VERIFY PASS` before review proceeds.
 
 `/test` dispatches one `test-engineer`, which may add test-only changes but never
-production fixes.
+production fixes. It selects unit, integration, E2E, smoke, and real-browser
+checks from the candidate's claims and risks; required browser checks block when
+the capability is unavailable.
 
 Source: `../commands/test.md`.
 
 ### `/review`
 
-`/review` requires the current `BUILD COMPLETE` candidate, decides whether
+`/review` requires the current `BUILD COMPLETE` candidate, supplied as the
+complete message in this conversation or manually by the user in a new one,
+then decides whether
 independent verification is required, then dispatches:
 
 - `code-reviewer` always;

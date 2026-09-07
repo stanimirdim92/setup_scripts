@@ -81,6 +81,14 @@ repository facts rather than presenting guesses for the user to correct.
 Surface only unresolved assumptions that materially affect the specification;
 silence does not validate them. Keep proposals distinct from accepted decisions.
 
+For ticket-backed work, the intake must be complete in the current conversation,
+either produced there or manually supplied by the user. When it is absent,
+incomplete, or stale for the requested scope, refetch the main ticket and every
+discovered ticket/subticket under `jira-ticket` §§1–3 before recon or drafting.
+Do not substitute memory or an agent summary. If Jira is unavailable and the
+user has not supplied the complete intake, report that blocker instead of
+silently specifying from partial requirements.
+
 **Surface unresolved choices in a fixed format.** Whenever the evidence is
 mixed, a tradeoff is unresolved, or two readings of a requirement lead to
 different behavior, record it as an `OPEN QUESTION` block in the spec instead

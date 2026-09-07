@@ -16,10 +16,11 @@ It reports findings. `/ship` owns the release verdict.
 
 Resolve the target per `../references/target-selection.md`, and announce it ("Using: <target>") before anything else.
 
-Require `/build`'s **BUILD COMPLETE** handoff from the current conversation and
-record that handoff's candidate identity. Inspect the current branch, commits,
-diff, and tree state. Re-read spec/plan/task artifacts from disk even if they
-appeared earlier in the conversation — the user may have edited them since.
+Require `/build`'s **BUILD COMPLETE** message from one of the valid sources in
+`../references/target-selection.md` §Gate handoffs and record its candidate
+identity. Inspect the current branch, commits, diff, and tree state. Re-read
+spec/plan/task artifacts from disk even if they appeared earlier in the
+conversation — the user may have edited them since.
 
 The current candidate may differ from BUILD only by passing test-only commits
 that `/test` declared in a **VERIFY PASS** for this exact current candidate.

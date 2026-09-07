@@ -12,6 +12,7 @@ set -euo pipefail
 input="$(cat)"
 command="$(jq -r '.tool_input.command // empty' <<<"$input")"
 cwd="$(jq -r '.cwd // empty' <<<"$input")"
+raw_command="$command"
 
 [ -z "$command" ] && exit 0
 
@@ -19,15 +20,17 @@ cwd="$(jq -r '.cwd // empty' <<<"$input")"
 # checked below -- `fu` -> `push --force-with-lease -u`, plus a dozen push typos -- and git
 # accepts global options between `git` and the subcommand (`git -C /srv push`,
 # `git --no-pager push`), so a grep for the spelled-out command misses both.
-# Normalise before matching: expand the aliases, then strip the global options.
+# Normalise before matching: strip shell-quoted or unquoted global options, then
+# expand aliases. Alias expansion must happen after stripping because forms such
+# as `git -C /tmp fu` do not place the alias directly after `git` initially.
 # Keep the alias list in sync with the [alias] section of dotfiles/.gitconfig.
 # Every form here is covered by tools/test-hooks.sh -- add a fixture before
 # adding a matcher. Note `git help.autocorrect = 1` can still run a near-miss
 # typo that no fixed list covers.
 command="$(sed -E \
+  -e "s/\bgit((([[:space:]]+(-C|-c|--git-dir|--work-tree|--exec-path|--namespace)([[:space:]]+|=)(\"[^\"]*\"|'[^']*'|[^[:space:]]+)))|([[:space:]]+(--no-pager|--paginate|--bare|--literal-pathspecs|--no-optional-locks|--no-replace-objects)))+/git/g" \
   -e 's/\bgit[[:space:]]+fu\b/git push --force-with-lease -u/g' \
   -e 's/\bgit[[:space:]]+(pish|poush|ps|psuh|puhs|puosh|pus|pushy|toyou|tpush|upsh)\b/git push/g' \
-  -e 's/\bgit((([[:space:]]+(-C|-c|--git-dir|--work-tree|--exec-path|--namespace)([[:space:]]+|=)[^[:space:]]+))|([[:space:]]+(--no-pager|--paginate|--bare|--literal-pathspecs|--no-optional-locks|--no-replace-objects)))+/git/g' \
   <<<"$command")"
 
 ask() {
@@ -65,8 +68,13 @@ if echo "$command" | grep -Eq -- '(--force([[:space:]]|$)|--force-with-lease|(^|
   # it targets isn't in the command text — resolve the checked-out branch to
   # catch a force push to main/master that never spells the name out.
   branch=""
-  if [ -n "$cwd" ]; then
-    branch="$(git -C "$cwd" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  git_cwd="$cwd"
+  option_cwd="$(sed -nE 's/.*\bgit[[:space:]].*-C[[:space:]]+"([^"]+)".*/\1/p' <<<"$raw_command")"
+  [ -z "$option_cwd" ] && option_cwd="$(sed -nE "s/.*\\bgit[[:space:]].*-C[[:space:]]+'([^']+)'.*/\\1/p" <<<"$raw_command")"
+  [ -z "$option_cwd" ] && option_cwd="$(sed -nE 's/.*\bgit[[:space:]].*-C[[:space:]]+([^[:space:]]+).*/\1/p' <<<"$raw_command")"
+  [ -n "$option_cwd" ] && git_cwd="$option_cwd"
+  if [ -n "$git_cwd" ]; then
+    branch="$(git -C "$git_cwd" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
   fi
 
   if echo "$command" | grep -Eq '(main|master)' \

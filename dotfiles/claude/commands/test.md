@@ -18,9 +18,11 @@ because the trigger matrix would have allowed it to be skipped.
 Resolve the target per `../references/target-selection.md`, and announce it ("Using: <target>") before anything else.
 
 Read the selected spec/plan and authoritative task packets from disk or the
-plan's designated tracker. Use BUILD's completion handoff from the conversation,
-a saved report, or a user-supplied handoff; a fresh session is valid. Check its
-claims against git and available run evidence, not just its completion label.
+plan's designated tracker. Require BUILD's complete message from one of the
+valid sources in `../references/target-selection.md` §Gate handoffs. A fresh
+session is valid when the user manually supplies that message. Check every
+identity claim against git and available run evidence, not just its completion
+label.
 
 Before dispatch, record the selected scope, BUILD commit and any declared
 uncommitted BUILD diff, current HEAD/tree, base revision, and any pre-existing
@@ -61,6 +63,12 @@ Send `test-engineer` a bounded packet containing:
 - tests/commands already run;
 - pointers to the changed code/tests when useful.
 
+Include `required_skills`. Select `browser-testing-with-devtools` when an
+in-scope claim depends on actual rendering, browser APIs, navigation, console,
+or network behavior. The verifier invokes each selected skill before testing.
+When a required browser capability is unavailable, return `VERIFY BLOCKED` for
+that check; component tests cannot replace browser evidence.
+
 Include relevant invariant and decision pointers. BUILD's results are prior
 evidence, not the verifier's conclusion; the agent independently selects and
 executes checks sufficient to establish the in-scope behavior.
@@ -75,6 +83,9 @@ The verifier should:
 - add missing test-only coverage when needed;
 - check meaningful edge/error/regression cases;
 - run the repository-defined focused and broader checks appropriate to the risk.
+- run a repository-defined smoke check when the candidate changes a deployed
+  runtime entrypoint or a critical end-to-end path. Do not invent a deployment
+  target or mutate a shared environment to manufacture one.
 
 ## 3. Ownership
 

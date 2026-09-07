@@ -115,6 +115,8 @@ Typical examples:
 - compatibility/deprecation/migration -> `deprecation-and-migration`;
 - auth, permissions, secrets, or sensitive trust boundary ->
   `security-and-hardening`.
+- actual rendering, browser APIs, navigation, console, or network behavior ->
+  `browser-testing-with-devtools`.
 
 The executor invokes only additional skills selected by `/build`.
 
@@ -184,6 +186,12 @@ no intervening change could affect its result. For a selected subset, report
 that scope without claiming unselected behavior complete; do not silently
 drop or rewrite required commands that cannot run.
 
+When the candidate changes a deployed runtime entrypoint or critical end-to-end
+path, run the repository-defined smoke check in the appropriate safe
+environment. Browser-dependent acceptance criteria require real-browser
+evidence through `browser-testing-with-devtools`; unavailable required tooling
+blocks BUILD rather than being replaced by component tests.
+
 Check executor evidence against the selected acceptance criteria and shared
 invariants under the development skill's completion rules. A green command
 or executor summary alone does not establish an outcome its checks did not
@@ -222,6 +230,8 @@ Both reports include:
 - directly required scope expansions;
 - anything noticed but intentionally untouched;
 - current branch/tree state;
+- the complete candidate identity required by
+  `../references/target-selection.md` §Gate handoffs;
 - actual run metrics when exposed: fresh executor dispatches, resumes,
   model-tier overrides, verification failures causing rework, human redirects,
   and required scope expansions.

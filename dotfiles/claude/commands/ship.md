@@ -10,7 +10,9 @@ or implement fixes.
 
 Resolve the target per `../references/target-selection.md`, and announce it ("Using: <target>") before anything else.
 
-Require `/review`'s result for the exact current candidate.
+Require `/review`'s complete result from one of the valid sources in
+`../references/target-selection.md` §Gate handoffs for the exact current
+candidate.
 
 Confirm the current branch, commits, diff, and tree still match the reviewed
 candidate. Re-read the handoff artifacts and any spec/plan documents from disk
