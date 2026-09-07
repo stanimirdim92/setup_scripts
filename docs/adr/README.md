@@ -38,7 +38,7 @@ that explanation here, just the index.
 | [0028](0028-ship-command-as-synthesis-gate.md) | `/ship` added as a synthesis gate, reversing 0027 | Partially superseded by [0030](0030-ship-accessibility-axis-dropped.md) (accessibility axis dropped) |
 | [0029](0029-build-selects-executor-skills.md) | `/build` selects a compact execution skill for each executor | Accepted |
 | [0030](0030-ship-accessibility-axis-dropped.md) | `/ship`'s accessibility axis dropped rather than improvised | Accepted |
-| [0031](0031-parallel-executors-via-worktree-isolation.md) | Parallel executors enabled via worktree isolation, superseding 0003 | Partially superseded by [0042](0042-third-executor-as-conditional-exception.md) (conditional third executor) |
+| [0031](0031-parallel-executors-via-worktree-isolation.md) | Parallel executors enabled via worktree isolation, superseding 0003 | Partially superseded by [0042](0042-third-executor-as-conditional-exception.md) (conditional third executor) and [0054](0054-executor-concurrency-condition-gated-not-capped.md) (cap removed; worktree isolation shown not to cover runtime state) |
 | [0032](0032-unblock-triage-persona-removed.md) | `unblock-triage` persona removed; blocked-item triage belongs to each gate | Accepted |
 | [0033](0033-canonical-disposition-and-scoped-commit-authority.md) | Canonical release disposition, scoped commit authority, gate-state integrity | Clarified by [0038](0038-verify-pass-test-only-candidate-identity.md) |
 | [0034](0034-spec-driven-development-narrowed-to-define.md) | `spec-driven-development` narrowed to the DEFINE stage | Accepted |
@@ -49,7 +49,7 @@ that explanation here, just the index.
 | [0039](0039-runtime-catalog-narrowed-by-observed-use.md) | Runtime plugins narrowed; standalone engineering skills retained | Partially superseded by [0043](0043-automatic-memory-and-compaction-window-restored.md) (automatic memory no longer disabled) |
 | [0040](0040-openspec-conventions-adopted.md) | Four conventions adopted from Fission-AI/openspec; nothing vendored | Accepted |
 | [0041](0041-recon-delegated-to-repo-recon-subagent.md) | Repository recon delegated to a `repo-recon` subagent | Partially superseded by [0051](0051-repository-recon-made-evidence-triggered.md) (agent isolation retained; dispatch is no longer mandatory) |
-| [0042](0042-third-executor-as-conditional-exception.md) | A third concurrent executor as a conditional exception, not a raised cap | Accepted |
+| [0042](0042-third-executor-as-conditional-exception.md) | A third concurrent executor as a conditional exception, not a raised cap | Superseded by [0054](0054-executor-concurrency-condition-gated-not-capped.md) |
 | [0043](0043-automatic-memory-and-compaction-window-restored.md) | Automatic memory and the 500k compaction window restored, reversing 0037 | Accepted |
 | [0044](0044-config-security-hardening-pass.md) | Config security hardening: enforcement made to match the stated guarantees | Partially superseded by [0049](0049-durable-spec-pin-and-hook-bypasses.md) (alias-awareness was one normalisation gap of several) |
 | [0045](0045-spec-approval-state-change-impact-and-requirement-traceability.md) | Spec approval state, change-impact semantics, and requirement traceability | Accepted |
@@ -61,6 +61,7 @@ that explanation here, just the index.
 | [0051](0051-repository-recon-made-evidence-triggered.md) | Repository recon made evidence-triggered | Accepted |
 | [0052](0052-spec-guidance-consolidated-around-human-approval.md) | Spec guidance consolidated around human approval | Accepted |
 | [0053](0053-plan-guidance-consolidated-around-behavioral-tasks.md) | Plan guidance consolidated around behavioral tasks | Accepted |
+| [0054](0054-executor-concurrency-condition-gated-not-capped.md) | Executor concurrency gated by conditions, not a fixed cap | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

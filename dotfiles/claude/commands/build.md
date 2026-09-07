@@ -124,26 +124,38 @@ The executor invokes only additional skills selected by `/build`.
 
 Default to sequential execution for token efficiency.
 
-Concurrency cap: **2 concurrent executors by default.** A third is allowed only
-when ALL of these hold, and never a fourth:
+**No fixed concurrency cap.** Dispatch at most one executor per genuinely
+independent workstream, and only for workstreams where ALL of these hold. A
+workstream failing any condition is queued, not dispatched:
 
-- the three workstreams are genuinely independent (no unfinished dependency
-  between them, no shared mutable state);
+- the workstreams are genuinely independent (no unfinished dependency between
+  them, no shared mutable state);
 - each is dependency-ready now (any gating checkpoint has already passed);
 - every concurrent writer uses `isolation: worktree` — never two writing agents
   against the same checkout;
+- **their verification commands do not share mutable runtime state.** A
+  worktree isolates git and files; it does not isolate a database, queue,
+  cache, search index, or a fixed port. Two suites migrating or truncating one
+  database corrupt each other silently — no lock error, just a suite that fails
+  for reasons unrelated to its own diff. Dispatch concurrently only when each
+  executor has its own instance of every mutable resource its checks touch, or
+  when those checks are deferred and run serially at integration. Establish
+  which applies from repository evidence, never by assumption;
 - the session is not near its rate limit. Concurrent executors share one limit,
-  so once throttled, 3-wide finishes no faster than 2-wide plus queueing, and
-  often slower. When near the limit, drop to 2 and queue the third.
+  so once throttled, N-wide finishes no faster than a smaller fan-out plus
+  queueing, and often slower. When near the limit, reduce the fan-out and queue
+  the rest.
 
-"Could run in parallel" is not "should." A third executor buys wall-clock only
-when unthrottled and truly independent; otherwise it spends tokens for no
-speedup. Prefer 2 + queue over 3 whenever either independence or headroom is in
-doubt.
+"Could run in parallel" is not "should." Each additional executor buys
+wall-clock only when unthrottled, truly independent, and runtime-isolated;
+otherwise it spends tokens for no speedup, or produces verification results that
+cannot be trusted. Prefer a narrower fan-out plus queueing whenever
+independence, runtime isolation, or headroom is in doubt.
 
 State the actual dispatch in the completion report: how many ran concurrently,
-which workstreams, and — if a third was used — that its four conditions held. If
-concurrency exceeds this cap, that is a reportable slip, named as such.
+which workstreams, and how the runtime-isolation condition was satisfied for
+each — separate instances, or checks deferred to serial integration. A dispatch
+made without establishing that condition is a reportable slip, named as such.
 
 Parallel workstreams still integrate sequentially in dependency order.
 

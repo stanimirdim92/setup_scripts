@@ -106,6 +106,8 @@ localeOverride = "bg-BG"
 keepRemoteControlAwakeWhilePluggedIn = true
 notifications-turn-mode = "always"
 appearanceTheme = "system"
+avatar-overlay-mascot-width-px = 80
+selected-avatar-id = "codex"
 
 [memories]
 generate_memories = true

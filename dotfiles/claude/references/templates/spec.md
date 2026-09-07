@@ -68,7 +68,7 @@ any spec that will enter `/plan`, sequential and never renumbered once
 approved — downstream artifacts reference them. A withdrawn requirement keeps
 its id and is marked withdrawn rather than reused.]
 
-#### Acceptance Scenario: [Named case — happy path, boundary, failure]
+#### Scenario: [Named case — happy path, boundary, failure]
 - GIVEN [precondition]
 - WHEN [action]
 - THEN [observable outcome]

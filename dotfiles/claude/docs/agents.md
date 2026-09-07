@@ -50,9 +50,10 @@ Source: `../commands/spec.md`, `../commands/plan.md`.
 - executor implements, tests, verifies, and makes scoped local commits;
 - sequential execution is the token-efficient default;
 - concurrent writers require isolated worktrees and genuinely independent,
-  dependency-ready workstreams; 2 concurrent by default, a third only when
-  independence, dependency-readiness, worktree isolation, and rate-limit
-  headroom all hold, and `/build` reports which it chose;
+  dependency-ready workstreams; there is no fixed cap — one executor per
+  workstream that satisfies independence, dependency-readiness, worktree
+  isolation, runtime isolation of every mutable resource its checks touch, and
+  rate-limit headroom, with the rest queued and `/build` reporting what it chose;
 - `/build` reports `BUILD COMPLETE` and verification evidence.
 
 Source: `../commands/build.md`.
