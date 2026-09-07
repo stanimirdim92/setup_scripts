@@ -13,7 +13,12 @@ def main():
         "--dest", type=Path, default=Path.home() / ".agents" / "skills",
         help="skill directory (default: ~/.agents/skills)",
     )
-    parser.add_argument("--check", action="store_true", help="check links without changing files")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--check", action="store_true", help="check links without changing files")
+    mode.add_argument(
+        "--preflight", action="store_true",
+        help="check for conflicts without requiring or creating links",
+    )
     args = parser.parse_args()
     source = Path(__file__).resolve().parent / "skills"
     skills = sorted(path.parent for path in source.glob("*/SKILL.md"))
@@ -23,6 +28,8 @@ def main():
     destination = args.dest.expanduser().absolute()
     missing = []
     errors = []
+    if os.path.lexists(destination) and not destination.is_dir():
+        errors.append(f"Skill destination is not a directory: {destination}")
     for skill in skills:
         link = destination / skill.name
         if not os.path.lexists(link):
@@ -33,12 +40,35 @@ def main():
     # Preflight the whole set before creating anything.
     if errors:
         parser.exit(1, "\n".join(errors) + "\n")
+    if args.preflight:
+        print(f"{len(skills)} skill destinations preflighted; no conflicts.")
+        return
     if args.check and missing:
         parser.exit(1, "\n".join(f"Missing: {link}" for link, _ in missing) + "\n")
     if not args.check:
-        destination.mkdir(parents=True, exist_ok=True)
-        for link, skill in missing:
-            link.symlink_to(skill, target_is_directory=True)
+        destination_existed = destination.exists()
+        created = []
+        try:
+            destination.mkdir(parents=True, exist_ok=True)
+            for link, skill in missing:
+                link.symlink_to(skill, target_is_directory=True)
+                created.append(link)
+        except OSError as error:
+            rollback_errors = []
+            for link in reversed(created):
+                try:
+                    link.unlink()
+                except OSError as rollback_error:
+                    rollback_errors.append(f"{link}: {rollback_error}")
+            if not destination_existed:
+                try:
+                    destination.rmdir()
+                except OSError:
+                    pass
+            detail = f"Installation failed after {len(created)} link(s); rolled them back: {error}"
+            if rollback_errors:
+                detail += "\nRollback failures:\n" + "\n".join(rollback_errors)
+            parser.exit(1, detail + "\n")
 
     for skill in skills:
         print(f"OK {destination / skill.name} -> {skill}")

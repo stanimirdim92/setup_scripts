@@ -29,8 +29,11 @@ when a shared skill's discovery contract changes.
 
 [tools/link_dotfiles.sh](tools/link_dotfiles.sh) links the Claude directories and
 configuration into the user's home and links the global rules to Codex's
-`AGENTS.md`. Its general link helper backs up existing real files and replaces
-old symlinks; review its output when moving an installation.
+`AGENTS.md`. It preflights every destination (including the Codex adapter
+links below) before mutating anything, refuses to overwrite an existing
+`.bak`, and reverts paths changed by the current run if a later link fails.
+Its general link helper backs up existing real files and replaces old
+symlinks; review its output when moving an installation.
 
 The script calls [dotfiles/codex/install-skills.py](dotfiles/codex/install-skills.py)
 for individual Codex skill links under `~/.agents/skills`. That installer checks
@@ -88,6 +91,9 @@ Codex tools must be available in its own session.
 ## Verification and maintenance
 
 - `python3 dotfiles/codex/install-skills.py --check` checks installed link targets.
+- `tools/test-install-skills.py` regression-tests the installer's preflight and
+  rollback behavior (conflict detection, injected-failure rollback) in a
+  temporary destination, without touching real links.
 - `tools/test-hooks.sh` exercises the Claude command hooks with fixtures.
 - [Workflow checks](tools/tests/workflow/README.md) document the isolated
   Jira/spec/plan runner, its invocation, and what its evidence does not cover.

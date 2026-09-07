@@ -158,12 +158,17 @@
     }
   },
   "effortLevel": "medium",
+  "modelSettings": {
+    "claude-sonnet-5": {
+      "effortLevel": "high"
+    }
+  },
   "advisorModel": "opus",
   "autoMemoryEnabled": true,
   "theme": "dark-ansi",
   "editorMode": "normal",
   "preferredNotifChannel": "terminal_bell",
+  "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true,
-  "remoteControlAtStartup": true
+  "agentPushNotifEnabled": true
 }

@@ -28,6 +28,8 @@ git init -q -b main "$TMP/on-main"
 git -C "$TMP/on-main" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
 git init -q -b feature/x "$TMP/on-feature"
 git -C "$TMP/on-feature" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+git init -q -b main "$TMP/on main"
+git -C "$TMP/on main" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
 
 PASS=0; FAIL=0; FAILED=()
 
@@ -63,6 +65,10 @@ blk 'rm -rf ~/'                                 deny
 blk 'rm -rf /*'                                 deny
 blk 'rm -rf .'                                  deny
 blk 'rm -fr ..'                                 deny
+blk 'rm "$HOME" -rf'                           deny
+blk "rm '\$HOME' --force --recursive"          deny
+blk 'rm "$HOME" -r -f'                         deny
+blk 'rm --preserve-root=no -rf /'               deny
 blk 'rm -rf ./build'                            allow
 blk 'rm -rf /srv/app/cache'                     allow
 blk 'rm -rf node_modules'                        allow
@@ -75,6 +81,8 @@ blk 'git rlc'                                   deny
 blk 'git -C /tmp reset --hard HEAD~1'           deny
 blk 'git --no-pager reset --hard'               deny
 blk 'git -c core.pager=cat reset --hard'        deny
+blk 'git -C /tmp rlc'                           deny
+blk 'git -C "/tmp/a b" reset --hard'           deny
 blk 'git reset --soft HEAD~1'                   allow
 blk 'git ulc'                                   allow
 blk 'git reset HEAD -- file.txt'                allow
@@ -87,6 +95,7 @@ blk 'git checkout -f'                           deny
 blk 'git switch -f main'                        deny
 blk 'git switch --discard-changes main'         deny
 blk 'git -C /srv checkout .'                    deny
+blk 'git -C "/srv/app copy" co .'              deny
 blk 'git checkout ./src/file.ts'                allow
 blk 'git checkout -b feature/new'               allow
 blk 'git switch main'                           allow
@@ -119,6 +128,7 @@ warn 'git push --mirror origin'                 ask
 warn 'git push --delete origin main'            ask
 warn 'git push origin :main'                    ask
 warn 'git fu'                        ask "$TMP/on-main"     # alias, on main
+warn "git -C \"$TMP/on main\" fu" ask "$TMP/on-feature" # -C owns branch lookup
 warn 'git push --force-with-lease -u' ask "$TMP/on-main"    # no refspec, on main
 warn 'git fu'                        allow "$TMP/on-feature" # force onto a feature branch
 warn 'git push -u origin feature/x'             allow
