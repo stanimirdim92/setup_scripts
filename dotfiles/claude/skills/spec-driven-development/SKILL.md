@@ -170,6 +170,14 @@ In every form:
 - `Change kind` is recorded, and non-`New` work names modified and explicitly
   preserved behavior in Change Impact;
 - commands are exact and repository-defined, never abbreviated or inferred;
+- design-backed behavior is enumerated from the design itself, never from memory
+  of similar UIs: each observable state — including empty, loading, error, and
+  undo states and their copy strings — becomes its own scenario citing the
+  design node in `Source:`, or an out-of-scope exclusion in the Objective. A
+  design fact that could not be read is an explicit Assumption naming the
+  unread reference and what would confirm it, never a silent one, and a
+  design/ticket conflict goes to the human rather than being resolved in the
+  draft;
 - testing maps each requirement to credible evidence at the layer that
   guarantees it; and
 - applicable invariant and lifecycle checks follow

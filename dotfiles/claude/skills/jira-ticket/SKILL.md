@@ -71,6 +71,14 @@ replace reading requirement-bearing text, tables, or visuals. Use available
 readers and recover truncated relevant content. Stay within intake: extract
 requirements, without implementing or performing a full design audit.
 
+A design file is such a reference: when any ticket in the intake scope names a
+Figma file, frame, or node, open it with the available Figma tools rather than
+recording the link alone. Design commonly lives on a sibling, parent, or linked
+ticket, so enumerate across the hierarchy. Pin each one by file key and node id,
+not by frame name. No Figma tool in the session means the reference is
+unavailable for the recorded reason — report that, never as design that does not
+exist.
+
 Record required references as read, partially read, or unavailable, with any
 remaining requirement-bearing content identified. Continue available reads
 before handing off; an unperformed read is not an access blocker. If retrieval

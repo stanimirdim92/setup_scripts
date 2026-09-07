@@ -75,6 +75,19 @@ echo "==> Atlassian (Jira/Confluence) MCP server (user scope, all projects)"
 add_server jira --transport http https://mcp.atlassian.com/v1/mcp/authv2 \
   --scope user
 
+echo "==> Figma MCP server (user scope, all projects)"
+# Official remote Figma MCP server. OAuth 2.1 like Atlassian above, so no token
+# env var here: after this runs, start a Claude Code session and run `/mcp` to
+# authenticate interactively. Without this server the design-reference rule in
+# `skills/jira-ticket` §2 has nothing to open, and design-backed specs fall back
+# to whatever the user pastes into the conversation.
+#
+# The Claude desktop app bundles its own inline `design` plugin carrying a
+# figma server, but that one is namespaced `plugin:design:figma` and only
+# exists in desktop sessions; this user-scope entry is what makes Figma
+# reachable from a plain CLI session.
+add_server figma --transport http https://mcp.figma.com/mcp --scope user
+
 echo "==> Context7 docs MCP server (user scope, all projects)"
 # Works without a key at low rate limits; set CONTEXT7_API_KEY for a higher
 # limit (free key at https://context7.com/dashboard). The branch decides only

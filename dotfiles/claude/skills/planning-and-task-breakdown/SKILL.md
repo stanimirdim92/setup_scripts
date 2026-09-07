@@ -132,6 +132,11 @@ required behavior is a `SPEC CONFLICT`, not a spike. Full rules:
   slice; workstream checks prove integrations within a stream; Integrated checks
   prove the selected plan as a whole. Record a focused command only when it
   differs from Integrated.
+- Visual parity with a design is not machine-verifiable: never plan it as an
+  automated check or a passing gate. Split the criterion — that the specified
+  states render, that copy strings match, and that keyboard and focus behavior
+  holds are automatable; pixel-level and aesthetic parity routes to a named
+  manual or QA task, subtask, or ticket, recorded as visual-only.
 - Every risk mitigation names the task or checkpoint that performs it.
 
 ## Approval Check
