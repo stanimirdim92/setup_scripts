@@ -125,6 +125,35 @@ Surface uncertainty, skipped steps, and unverified claims explicitly. Never let 
   user decisions, architectural decisions, changed files, verification evidence,
   blockers, and remaining work.
 
+## Worktrees
+
+Ticket-scoped work defaults to one isolated worktree per ticket.
+
+- Start it with `claude --worktree <ticket>` (Codex: choose Worktree in a new
+  chat). Both create a managed worktree branched from the remote default
+  branch. `worktree.baseRef` selects the base: `fresh` (default) branches from
+  the remote default branch, `head` from local `HEAD`.
+- Claude Code places managed worktrees in `.claude/worktrees/`, which belongs in
+  the project's `.gitignore`. Prefer that location: `.worktreeinclude`,
+  subagent `isolation: worktree`, and the cleanup sweep only apply there.
+- Gitignored files a worktree needs — `.env`, local config, credentials
+  templates — go in a project-root `.worktreeinclude` using gitignore syntax.
+  Claude Code and Codex both copy matching **ignored** files into every managed
+  worktree; tracked files are never duplicated. A `WorktreeCreate` hook replaces
+  this, so copy inside the hook script instead.
+- A worktree is a fresh checkout: dependencies are not installed and no build
+  or test command works until they are. Specification and planning work needs
+  none of them; anything that builds, tests, or lints does.
+- Use `git worktree add` directly only to check out an existing branch or to
+  place a worktree outside the repository. Remove with `git worktree remove`,
+  never `rm -rf` — that strands metadata, recoverable with `git worktree prune`.
+- A branch lives in exactly one worktree. Free it with `git worktree remove`
+  before checking it out elsewhere.
+- Concurrency is bounded by the conditions in `commands/build.md`, not by a
+  fixed count. Worktrees isolate git and files only; a database, queue, cache,
+  or fixed port is still shared, and concurrent writers need their own instance
+  of every mutable resource their checks touch.
+
 ## Agent orchestration
 
 - Delegate bounded outcomes with acceptance criteria and verification.

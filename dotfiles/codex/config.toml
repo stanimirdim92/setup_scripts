@@ -108,6 +108,7 @@ notifications-turn-mode = "always"
 appearanceTheme = "system"
 avatar-overlay-mascot-width-px = 80
 selected-avatar-id = "codex"
+worktree-upstream-refresh-mode = "best-effort"
 
 [memories]
 generate_memories = true
@@ -162,4 +163,7 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/home/stanimir/Documents/Codex/2026-09-07/hatch-pet-home-stanimir-codex-skills"]
+trust_level = "trusted"
+
+[projects."/home/stanimir/Documents/Codex/2026-09-07/h"]
 trust_level = "trusted"
