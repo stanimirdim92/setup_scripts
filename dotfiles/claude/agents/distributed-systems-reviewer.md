@@ -4,6 +4,7 @@ description: Reviews changes that materially alter retries, idempotency, orderin
 tools: Read, Grep, Glob
 model: claude-sonnet-5
 effort: high
+maxTurns: 60
 ---
 
 # Distributed Systems Reviewer
@@ -74,5 +75,9 @@ the diff alone.
 Use stable ids (`DIST-1`, ...), severity, confidence, file:line, failure
 scenario, and a specific recommendation. If a mechanism exists but cannot be
 verified, say so rather than assuming either correctness or failure.
+
+The turn cap (`maxTurns`) may end the review early. List every unexamined
+mechanism as unverified; a truncated review is reported as partial, never as
+clean.
 
 Do not issue GO/NO-GO and do not invoke another agent.

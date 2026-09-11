@@ -2,10 +2,14 @@
 # Fixture tests for the PreToolUse hooks in dotfiles/claude/hooks/.
 #
 # Every case is (command, expected decision). Expected decisions are:
-#   deny  — block-destructive-bash.sh must refuse
+#   deny  — block-destructive-bash.sh / block-agent-push.sh must refuse
 #   ask   — warn-force-push.sh must ask for confirmation
 #   allow — the hook must stay out of the way (regression guard: a hook that
 #           denies real work is as broken as one that misses a bypass)
+#
+# block-agent-push.sh is agent-scoped (executor and test-engineer frontmatter),
+# so its allow cases matter twice over: it must let those personas commit and
+# tag locally while denying every spelling of push.
 #
 # Run: tools/test-hooks.sh
 #
@@ -18,6 +22,7 @@ set -uo pipefail
 HOOKS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../dotfiles/claude/hooks" && pwd)"
 BLOCK="$HOOKS/block-destructive-bash.sh"
 WARN="$HOOKS/warn-force-push.sh"
+PUSH="$HOOKS/block-agent-push.sh"
 
 command -v jq >/dev/null || { echo "test-hooks: jq is required" >&2; exit 1; }
 
@@ -52,6 +57,7 @@ check() { # hook, command, expected, cwd, label
 
 blk()  { check "$BLOCK" "$1" "$2" "$TMP/on-feature" "block"; }
 warn() { check "$WARN"  "$1" "$2" "${3:-$TMP/on-feature}" "warn"; }
+push() { check "$PUSH"  "$1" "$2" "$TMP/on-feature" "agent-push"; }
 
 # ---------------------------------------------------------------- block: rm
 blk 'rm -rf /'                                  deny
@@ -143,6 +149,35 @@ warn 'git push -u origin feature/x'             ask
 warn 'git ps'                                   ask
 warn 'git status'                               allow
 export CLAUDE_CODE_REMOTE=true
+
+# ------------------------- agent-push: writers commit and tag, never push
+push 'git push'                                 deny
+push 'git push -u origin feature/x'             deny
+push 'git push --force origin main'             deny
+push 'git push origin v1.2.0'                   deny   # pushing a tag is still a push
+push 'git push --tags'                          deny
+push 'git ps'                                   deny   # alias
+push 'git fu'                                   deny   # alias -> push --force-with-lease
+push 'git pish origin main'                     deny   # typo alias
+push 'git -C /srv push'                         deny
+push 'git --no-pager push origin HEAD'          deny
+push 'git -c core.pager=cat push'               deny
+push 'cd /srv && git push origin main'          deny
+push 'gh pr create --fill'                      deny
+push 'gh pr merge 42 --squash'                  deny
+push 'gh release create v1.2.0'                 deny
+push 'git commit -m "feat: thing"'              allow
+push 'git tag v1.2.0'                           allow  # local tag is allowed
+push 'git tag -a v1.2.0 -m "release"'           allow
+push 'git add -A && git commit -m x'            allow
+push 'git status'                               allow
+push 'git log --oneline -5'                     allow
+push 'git fetch origin main'                    allow
+push 'git pull origin main'                     allow
+push 'gh pr view 42'                            allow
+push 'gh pr list'                               allow
+push 'echo "do not git push"'                   deny   # conservative: text mentions push; documented false positive
+push 'yarn test'                                allow
 
 # ------------------------------------------------------------------ report
 echo "hooks: $PASS passed, $FAIL failed"

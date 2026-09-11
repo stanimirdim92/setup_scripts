@@ -73,14 +73,17 @@ defines document ownership and change-driven maintenance.
 ## Host enforcement and integrations
 
 Claude's [settings](dotfiles/claude/settings.json) configure PreToolUse hooks from
-[dotfiles/claude/hooks](dotfiles/claude/hooks); persona frontmatter declares its
-Claude tools and models. Those declarations are not Codex enforcement. Codex's
+[dotfiles/claude/hooks](dotfiles/claude/hooks) and pin the subagent spawn depth
+to 1, so no persona can dispatch another; persona frontmatter declares its
+Claude tools, models, turn caps, and — for the writing personas — agent-scoped
+hooks that deny pushing and gate the handoff report. Those declarations are not Codex enforcement. Codex's
 own sandbox, approvals, and available tools determine its actual capabilities;
 the runtime adapter passes persona constraints as instructions and uses available
 Codex delegation. A textual restriction is not an OS permission boundary.
 
-Concurrent writers require separate checkouts; otherwise dispatch stays
-sequential. Review and verification contexts remain independent from executors.
+Concurrent writers require separate checkouts and isolated runtimes; `/build`
+fans out whenever those conditions are established and queues a workstream
+when any is unproven. Review and verification contexts remain independent from executors.
 Missing required tools or delegation produce an explicit blocker.
 
 MCP connections and authentication remain host-specific. A linked browser, Jira,
@@ -94,9 +97,11 @@ Codex tools must be available in its own session.
 - `tools/test-install-skills.py` regression-tests the installer's preflight and
   rollback behavior (conflict detection, injected-failure rollback) in a
   temporary destination, without touching real links.
-- `tools/test-hooks.sh` exercises the Claude command hooks with fixtures.
+- `tools/test-hooks.sh` exercises the Claude command hooks with fixtures;
+  `tools/test-handoff-hook.sh` does the same for the `SubagentStop` handoff gate.
 - [Workflow checks](tools/tests/workflow/README.md) document the isolated
-  Jira/spec/plan runner, its invocation, and what its evidence does not cover.
+  Jira/spec/plan/build/review runner, its invocation, and what its evidence
+  does not cover.
 - Changed instructions need focused behavioral checks when their decisions or
   orchestration change; syntax and valid paths alone do not establish behavior.
 

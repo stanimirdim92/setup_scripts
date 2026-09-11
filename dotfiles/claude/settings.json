@@ -6,7 +6,8 @@
     "OTEL_LOGS_EXPORTER": "otlp",
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "500000",
     "ENABLE_TOOL_SEARCH": "true",
-    "CLAUDE_CODE_AUTO_CONNECT_IDE": "true"
+    "CLAUDE_CODE_AUTO_CONNECT_IDE": "true",
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1"
   },
   "permissions": {
     "allow": [

@@ -4,6 +4,16 @@ description: QA engineer specialized in test strategy, test writing, and coverag
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill, mcp__chrome-devtools__*
 model: claude-sonnet-5
 effort: medium
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "$HOME/.claude/hooks/block-agent-push.sh"
+  Stop:
+    - hooks:
+        - type: command
+          command: "$HOME/.claude/hooks/require-handoff-report.sh"
 ---
 
 # Test Engineer
@@ -170,8 +180,10 @@ When asked only to analyze test coverage, use:
 9. Report environmental or capability blockers without guessing unverified
    outcomes. Preserve any independently reproduced defect evidence even when
    other checks are blocked; `/test` determines the result
-10. Never treat `/test` commit authority as permission to push, tag, deploy,
-    release, rewrite history, mutate a protected branch, or include unrelated work
+10. Never treat `/test` commit authority as permission to push, deploy,
+    release, rewrite history, mutate a protected branch, or include unrelated
+    work. Local tags are allowed; pushing them is not (`git push` is denied by
+    hook for this persona)
 
 ## Composition
 

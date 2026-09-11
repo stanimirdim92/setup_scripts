@@ -122,11 +122,12 @@ The executor invokes only additional skills selected by `/build`.
 
 ### Parallelism
 
-Default to sequential execution for token efficiency.
-
-**No fixed concurrency cap.** Dispatch at most one executor per genuinely
-independent workstream, and only for workstreams where ALL of these hold. A
-workstream failing any condition is queued, not dispatched:
+**Parallel when safe, sequential otherwise.** Dispatch every workstream that
+satisfies ALL of the conditions below concurrently, one executor each, with no
+fixed cap. A workstream failing any condition — or unable to prove it from
+repository evidence — is queued and runs sequentially. The conditions are the
+quality guard: a fan-out that satisfies them costs tokens, never correctness;
+one that does not is never worth the time it saves.
 
 - the workstreams are genuinely independent (no unfinished dependency between
   them, no shared mutable state);
@@ -146,11 +147,11 @@ workstream failing any condition is queued, not dispatched:
   queueing, and often slower. When near the limit, reduce the fan-out and queue
   the rest.
 
-"Could run in parallel" is not "should." Each additional executor buys
+"Probably independent" is not established. Each additional executor buys
 wall-clock only when unthrottled, truly independent, and runtime-isolated;
 otherwise it spends tokens for no speedup, or produces verification results that
-cannot be trusted. Prefer a narrower fan-out plus queueing whenever
-independence, runtime isolation, or headroom is in doubt.
+cannot be trusted. A condition in doubt is a condition unmet: that workstream
+queues. Speed is never bought by skipping or weakening a check.
 
 State the actual dispatch in the completion report: how many ran concurrently,
 which workstreams, and how the runtime-isolation condition was satisfied for

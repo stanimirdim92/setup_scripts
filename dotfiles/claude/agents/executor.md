@@ -6,6 +6,16 @@ skills:
   - executor-development-discipline
 model: claude-sonnet-5
 effort: medium
+hooks:
+  PreToolUse:
+    - matcher: Bash
+      hooks:
+        - type: command
+          command: "$HOME/.claude/hooks/block-agent-push.sh"
+  Stop:
+    - hooks:
+        - type: command
+          command: "$HOME/.claude/hooks/require-handoff-report.sh"
 ---
 
 Implement exactly one task, then stop and report.
@@ -58,8 +68,11 @@ Invoke only additional task-specific skills explicitly selected by `/build`.
 On resume, do not reload a skill already active for the workstream.
 
 Follow the preloaded skill's scoped local-commit policy and any explicit user
-override. `/build` does not authorize push, tag, deploy, release,
-protected-branch mutation, or history rewriting.
+override. `/build` authorizes scoped local commits and local tags (release or
+commit tagging); it does not authorize push, deploy, release, protected-branch
+mutation, or history rewriting. `git push` and `gh pr create/merge` are denied
+by hook for this persona — report the commit id and let the orchestrator or a
+human push after `/review`.
 
 ## Scope
 

@@ -1,4 +1,4 @@
-# Jira → spec → plan behavioral checks
+# Jira → spec → plan → build → review behavioral checks
 
 Run `python3 tools/tests/workflow/run.py` from the repository root. Requires an
 authenticated Claude CLI. These calls consume normal account usage. Use
@@ -23,6 +23,20 @@ decision fidelity, contradictory specs, a new plan, editorial approval
 preservation, and a stale/unapproved spec. Planning receives runner-verified Git
 evidence because the model has no shell tool. Output files are materialized by
 the runner from the model's structured response, not by the model itself.
+
+The `build_*` and `review_*` cases test the two orchestration decisions, not
+orchestration itself: the runner grants no `Agent` tool, so the model returns
+the decision it *would* make in `dispatch` (one `concurrent|queued` line per
+workstream) or `reviewers` (one `dispatched|not dispatched` line per persona).
+`build_shared_db` supplies a verification script that truncates one shared
+database and asserts fan-out stays at one; `build_independent` supplies an
+in-process check and asserts both workstreams run concurrently
+(`docs/adr/0055`). `review_plain_diff` asserts `code-reviewer` alone with
+verification NOT REQUIRED; `review_auth_diff` supplies a VERIFY PASS and
+asserts `security-auditor` is added and `distributed-systems-reviewer` is not.
+These pin the decision rules in `commands/build.md` and
+`references/reviewer-triggers.md`; they do not prove an executor or reviewer
+would actually be dispatched, run in a worktree, or return.
 
 `plan_stale` tests an unapproved spec status, not revision-pin drift.
 `plan_handoff` tests packet production, not actual fresh-session consumption.

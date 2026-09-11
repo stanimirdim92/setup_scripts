@@ -175,8 +175,9 @@ Ticket-scoped work defaults to one isolated worktree per ticket.
 - Delegate bounded outcomes with acceptance criteria and verification.
 - Commands/user orchestrate; personas do not dispatch personas.
 - Reuse one implementation executor across related tasks in a workstream.
-- Parallel writers require separate worktrees/branches; sequential is the
-  token-efficient default.
+- Parallel writers require separate worktrees/branches and isolated runtimes;
+  fan out whenever those hold, queue when any is unproven. Speed never comes
+  from skipping or weakening verification.
 - Give subagents small task packets: outcome, criteria, relevant rules,
   precedents, contracts, and verification. Prefer file pointers over copied docs.
 - Do not widen tools/permissions or seek secrets to bypass an orchestration

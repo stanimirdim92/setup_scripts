@@ -93,7 +93,8 @@ The verifier should:
 It must not modify production code.
 
 Passing test-only changes may be committed as a separate `test:` local commit.
-No push, tag, deploy, history rewrite, or unrelated change is authorized.
+No push, deploy, history rewrite, or unrelated change is authorized; local
+tags are allowed but never pushed.
 
 If a new test proves a production defect:
 

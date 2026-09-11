@@ -4,6 +4,7 @@ description: Read-only repository reconnaissance. Discovers a project's instruct
 tools: Read, Grep, Glob
 model: claude-sonnet-5
 effort: medium
+maxTurns: 40
 ---
 
 # Repository Recon
@@ -73,6 +74,9 @@ the requested behavior, with source pointers; leave decisions to the caller.
 4. Never guess a repository-defined command.
 5. Stay inside the packet's area; note adjacent findings without expanding.
 6. Never invoke another agent or slash command.
+7. The turn cap (`maxTurns`) may end the survey early. Report what was covered
+   and list the rest under **Not surveyed** — a marked partial report is valid;
+   an unmarked one is not.
 
 ## Composition
 

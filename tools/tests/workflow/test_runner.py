@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from run import audit_reads, checks
+from run import audit_reads, checks, parse_decisions, prepare, cases
 
 
 class EvidenceAuditTests(unittest.TestCase):
@@ -43,6 +43,72 @@ class EvidenceAuditTests(unittest.TestCase):
         self.assertTrue(checks('plan_stale', result, set(), self.directory)['no_dispatchable_tasks'])
         result['todo'] = '## T001: Implement the change\n**Requirements:** REQ-001'
         self.assertFalse(checks('plan_stale', result, set(), self.directory)['no_dispatchable_tasks'])
+
+
+
+def result(**fields):
+    base = dict(state='decided', explanation='', intake='', spec='', plan='', todo='', dispatch='', reviewers='')
+    base.update(fields)
+    return base
+
+
+class OrchestrationDecisionTests(unittest.TestCase):
+    def test_parse_decisions_prefers_longer_verdict_and_tolerates_markup(self):
+        block = '- `code-reviewer`: dispatched — always\n* security-auditor: not dispatched — no trust boundary\ndistributed-systems-reviewer: Not Dispatched — none'
+        parsed = parse_decisions(block, ('code-reviewer', 'security-auditor', 'distributed-systems-reviewer'), ('not dispatched', 'dispatched'))
+        self.assertEqual(parsed, {'code-reviewer': 'dispatched', 'security-auditor': 'not dispatched', 'distributed-systems-reviewer': 'not dispatched'})
+
+    def test_shared_database_must_not_fan_out(self):
+        both = result(dispatch='ws-label: concurrent — independent files\nws-report: concurrent — independent files')
+        self.assertFalse(checks('build_shared_db', both, set(), Path('.'))['shared_runtime_not_fanned_out'])
+        one = result(dispatch='ws-label: concurrent — worktree isolated\nws-report: queued — tests/run.sh truncates the shared app_test database')
+        got = checks('build_shared_db', one, set(), Path('.'))
+        self.assertTrue(got['shared_runtime_not_fanned_out'] and got['runtime_condition_named'] and got['both_workstreams_decided'])
+
+    def test_independent_workstreams_must_fan_out(self):
+        queued = result(dispatch='ws-label: concurrent — isolated\nws-report: queued — sequential default')
+        self.assertFalse(checks('build_independent', queued, set(), Path('.'))['independent_workstreams_fanned_out'])
+        both = result(dispatch='ws-label: concurrent — python3 verify.py is in-process\nws-report: concurrent — same')
+        self.assertTrue(checks('build_independent', both, set(), Path('.'))['independent_workstreams_fanned_out'])
+
+    def test_missing_workstream_line_fails(self):
+        partial = result(dispatch='ws-label: concurrent — fine')
+        self.assertFalse(checks('build_independent', partial, set(), Path('.'))['both_workstreams_decided'])
+
+    def test_auth_diff_dispatches_security_auditor_only(self):
+        good = result(explanation='Independent verification: PASS (VERIFY PASS supplied for HEAD).',
+                      reviewers='code-reviewer: dispatched — always\nsecurity-auditor: dispatched — authorization gate added\ndistributed-systems-reviewer: not dispatched — no cross-process semantics')
+        got = checks('review_auth_diff', good, set(), Path('.'))
+        self.assertTrue(all(got[k] for k in ['code_reviewer_always', 'security_auditor_triggered', 'distributed_not_triggered', 'verification_pass_recorded']))
+        over = dict(good, reviewers=good['reviewers'].replace('distributed-systems-reviewer: not dispatched', 'distributed-systems-reviewer: dispatched'))
+        self.assertFalse(checks('review_auth_diff', over, set(), Path('.'))['distributed_not_triggered'])
+
+    def test_plain_diff_gets_code_reviewer_only(self):
+        good = result(explanation='Independent verification: NOT REQUIRED — localized change with green focused test.',
+                      reviewers='code-reviewer: dispatched — always\nsecurity-auditor: not dispatched — no trust boundary\ndistributed-systems-reviewer: not dispatched — none')
+        got = checks('review_plain_diff', good, set(), Path('.'))
+        self.assertTrue(got['no_specialist_for_plain_diff'] and got['verification_not_required'] and got['code_reviewer_always'])
+        eager = dict(good, reviewers=good['reviewers'].replace('security-auditor: not dispatched', 'security-auditor: dispatched'))
+        self.assertFalse(checks('review_plain_diff', eager, set(), Path('.'))['no_specialist_for_plain_diff'])
+
+    def test_review_findings_are_not_written_by_the_gate(self):
+        leaked = result(explanation='Independent verification: NOT REQUIRED', reviewers='code-reviewer: dispatched — always',
+                        plan='- [CODE-1] ui.py:1 (confidence: high) label typo')
+        self.assertFalse(checks('review_plain_diff', leaked, set(), Path('.'))['no_review_findings_written'])
+
+    def test_fixtures_build_for_every_decision_case(self):
+        for name in [c for c in cases() if c.startswith(('build_', 'review_'))]:
+            with tempfile.TemporaryDirectory() as tmp:
+                directory = Path(tmp)
+                evidence = prepare(directory, name)
+                self.assertTrue((directory / 'AGENTS.md').is_file(), name)
+                self.assertIn('no Agent tool', evidence, name)
+                if name.startswith('review_'):
+                    self.assertIn('BUILD COMPLETE', evidence, name)
+                    self.assertEqual('VERIFY PASS' in evidence, name == 'review_auth_diff', name)
+                else:
+                    self.assertTrue((directory / 'work/WF-30-todo.md').is_file(), name)
+                    self.assertEqual((directory / 'tests/run.sh').is_file(), name == 'build_shared_db', name)
 
 
 if __name__ == '__main__':

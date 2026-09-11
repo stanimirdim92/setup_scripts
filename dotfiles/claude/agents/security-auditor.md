@@ -4,6 +4,7 @@ description: Security engineer for changes that materially alter trust boundarie
 tools: Read, Grep, Glob
 model: claude-sonnet-5
 effort: medium
+maxTurns: 60
 ---
 
 # Security Auditor
@@ -76,6 +77,10 @@ observations only when they are concrete and useful.
 Do not invent vulnerabilities from uncertainty; name what could not be verified.
 
 Never disable a security control as the fix.
+
+The turn cap (`maxTurns`) may end the audit early. List every unexamined area
+under what could not be verified; a truncated audit is reported as partial,
+never as clean.
 
 `/review` maps native severity to release disposition. Do not issue GO/NO-GO and
 do not invoke another agent.

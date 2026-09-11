@@ -48,12 +48,11 @@ Source: `../commands/spec.md`, `../commands/plan.md`.
 - one executor per workstream;
 - resume it for later tasks in that workstream;
 - executor implements, tests, verifies, and makes scoped local commits;
-- sequential execution is the token-efficient default;
-- concurrent writers require isolated worktrees and genuinely independent,
-  dependency-ready workstreams; there is no fixed cap — one executor per
-  workstream that satisfies independence, dependency-readiness, worktree
-  isolation, runtime isolation of every mutable resource its checks touch, and
-  rate-limit headroom, with the rest queued and `/build` reporting what it chose;
+- parallel dispatch is the default: one executor per workstream that
+  satisfies independence, dependency-readiness, worktree isolation, runtime
+  isolation of every mutable resource its checks touch, and rate-limit
+  headroom, with no fixed cap; a workstream failing or unable to prove any
+  condition queues and runs sequentially, and `/build` reports what it chose;
 - `/build` reports `BUILD COMPLETE` and verification evidence.
 
 Source: `../commands/build.md`.

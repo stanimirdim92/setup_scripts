@@ -13,12 +13,16 @@ HARNESS = ROOT / 'dotfiles/claude'
 SCHEMA = {
     'type': 'object',
     'properties': {
-        'state': {'type': 'string', 'enum': ['ready_for_review', 'blocked', 'approved_unchanged']},
+        'state': {'type': 'string', 'enum': ['ready_for_review', 'blocked', 'approved_unchanged', 'decided']},
         'explanation': {'type': 'string'},
         'intake': {'type': 'string'}, 'spec': {'type': 'string'},
         'plan': {'type': 'string'}, 'todo': {'type': 'string'},
+        # Orchestration decisions (no dispatch happens in the runner): /build's
+        # per-workstream concurrent|queued lines, /review's per-persona
+        # dispatched|not dispatched lines. Empty for other stages.
+        'dispatch': {'type': 'string'}, 'reviewers': {'type': 'string'},
     },
-    'required': ['state', 'explanation', 'intake', 'spec', 'plan', 'todo'],
+    'required': ['state', 'explanation', 'intake', 'spec', 'plan', 'todo', 'dispatch', 'reviewers'],
     'additionalProperties': False,
 }
 COMMON_FILES = ['references/repository-precedent.md', 'references/spec-quality-gates.md',
@@ -29,7 +33,13 @@ STAGES = {
              'references/templates/spec.md', 'references/templates/bugfix-spec.md'],
     'plan': ['commands/plan.md', 'skills/planning-and-task-breakdown/SKILL.md',
              'references/templates/plan.md', 'references/templates/task.md'],
+    'build': ['commands/build.md', 'references/target-selection.md',
+              'references/templates/plan.md', 'references/templates/task.md'],
+    'review': ['commands/review.md', 'references/target-selection.md',
+               'references/reviewer-triggers.md', 'references/verification-triggers.md'],
 }
+WORKSTREAMS = ('ws-label', 'ws-report')
+REVIEWERS = ('code-reviewer', 'security-auditor', 'distributed-systems-reviewer')
 
 
 def spec(status='Approved', conflict=False):
@@ -70,6 +80,204 @@ Source pointers: ui.py and verify.py. No architecture, schema or contract change
 '''
 
 
+def spec_two(ticket, auth=False):
+    extra = """
+### Requirement: REQ-003 — Export requires an authorized role
+Source: user request
+Only users whose role is admin or owner may trigger the export.
+#### Scenario: Unauthorized user
+- GIVEN a user whose role is viewer
+- WHEN they attempt the export
+- THEN the export is refused and the callback does not run.
+""" if auth else ''
+    return f"""# Spec: Export label and summary
+Status: Approved
+Ticket: {ticket}
+Change kind: Modify
+Supersedes: N/A
+Approved by: Fixture owner
+Approved at: 2026-09-01
+
+## Objective
+Rename the export label and add a pure export summary; the two are independent.
+
+## Change Impact
+Modified: REQ-001 label. Added: REQ-002 summary{', REQ-003 authorization' if auth else ''}.
+
+### Requirement: REQ-001 — Action label
+Source: user request
+The export action label must read Download.
+#### Scenario: Export action is visible
+- GIVEN the existing export action
+- WHEN it is displayed
+- THEN the label is Download.
+
+### Requirement: REQ-002 — Export summary
+Source: user request
+summarize(rows) returns the row count and the sum of the amount column.
+#### Scenario: Two rows
+- GIVEN rows with amounts 2 and 3
+- WHEN summarized
+- THEN the result is count 2, total 5.
+{extra}
+## Testing Strategy
+Run the repository verification command named in AGENTS.md after each task.
+Source pointers: ui.py, verify.py, AGENTS.md. No schema or public-contract change.
+"""
+
+
+def spec_review(auth=False):
+    extra = """
+### Requirement: REQ-002 — Export requires an authorized role
+Source: user request
+Only users whose role is admin or owner may trigger the export.
+#### Scenario: Unauthorized user
+- GIVEN a user whose role is viewer
+- WHEN they attempt the export
+- THEN the export is refused and the callback does not run.
+""" if auth else ''
+    return f"""# Spec: Export action label
+Status: Approved
+Ticket: WF-40
+Change kind: Modify
+Supersedes: N/A
+Approved by: Fixture owner
+Approved at: 2026-09-01
+
+## Objective
+Rename the export action's visible label{' and restrict it to authorized roles' if auth else ' without changing its action'}.
+
+## Change Impact
+Modified: REQ-001 label.{' Added: REQ-002 authorization.' if auth else ' Preserved: existing callback behavior.'}
+
+### Requirement: REQ-001 — Action label
+Source: user request
+The export action label must read Download.
+#### Scenario: Export action is visible
+- GIVEN the existing export action
+- WHEN it is displayed
+- THEN the label is Download.
+{extra}
+## Testing Strategy
+Run python3 verify.py; extend its existing label{' and role' if auth else ' and callback'} assertions.
+Source pointers: ui.py and verify.py. No schema or public-contract change.
+"""
+
+
+def plan_one(sha, ticket, requirements):
+    reqs = ', '.join(requirements)
+    coverage = '\n'.join(f'- {r} → T001 → verify.py assertion' for r in requirements)
+    return f"""# Implementation Plan: Download action
+Status: Approved
+Spec: requirements/{ticket}-SPEC.md
+Spec status: Approved
+Spec revision: git-commit:{sha}:requirements/{ticket}-SPEC.md
+Approved by: Fixture owner
+Approved at: 2026-09-01
+## Technical Approach
+Change ui.py LABEL{' and gate click() behind auth.can_export()' if len(requirements) > 1 else ''}; update verify.py assertions.
+## Task Index
+- [x] T001 (S, ws-main, deps: —) [{reqs}]: Download label{' with authorized-role gate' if len(requirements) > 1 else ''}
+## Requirement Coverage
+{coverage}
+Unmapped requirements: None
+Orphan tasks: None
+## Verification Strategy
+- Integrated: python3 verify.py
+Handoff: Ready for /build
+"""
+
+
+def plan_two(sha, ticket, command):
+    return f"""# Implementation Plan: Export label and summary
+Status: Approved
+Spec: requirements/{ticket}-SPEC.md
+Spec status: Approved
+Spec revision: git-commit:{sha}:requirements/{ticket}-SPEC.md
+Approved by: Fixture owner
+Approved at: 2026-09-01
+## Technical Approach
+ws-label changes ui.py LABEL and its assertion in verify.py. ws-report adds
+report.py with a pure summarize() and a check in verify_report.py. The
+workstreams share no files, state, dependency, or checkpoint.
+## Task Index
+- [ ] T001 (S, ws-label, deps: —) [REQ-001]: Download label
+- [ ] T002 (S, ws-report, deps: —) [REQ-002]: Export summary
+## Requirement Coverage
+- REQ-001 → T001 → label assertion
+- REQ-002 → T002 → summary assertion
+Unmapped requirements: None
+Orphan tasks: None
+## Verification Strategy
+- ws-label: {command}
+- ws-report: {command}
+- Integrated: {command}
+Handoff: Ready for /build
+"""
+
+
+def todo_two(command):
+    return f"""## T001: Download label
+**Requirements:** REQ-001
+**Acceptance criteria:**
+- [ ] Label is Download.
+**Verification:** {command}
+**Dependencies:** None
+**Workstream:** ws-label
+**Context pointers:** ui.py, verify.py, AGENTS.md
+**Files/areas likely touched:** ui.py, verify.py
+**Estimated scope:** S
+
+## T002: Export summary
+**Requirements:** REQ-002
+**Acceptance criteria:**
+- [ ] summarize([{{"amount": 2}}, {{"amount": 3}}]) returns count 2, total 5.
+**Verification:** {command}
+**Dependencies:** None
+**Workstream:** ws-report
+**Context pointers:** AGENTS.md
+**Files/areas likely touched:** report.py, verify_report.py
+**Estimated scope:** S
+"""
+
+
+def git(directory, *args, capture=False):
+    cmd = ['git', '-C', str(directory), '-c', 'user.name=Fixture owner', '-c', 'user.email=fixture@example.invalid', *args]
+    if capture:
+        return subprocess.check_output(cmd, text=True).strip()
+    subprocess.run(cmd, check=True)
+
+
+def build_complete(directory, spec_sha, base, head, ticket, diff, verification):
+    return f"""BUILD COMPLETE
+- Repository root: {directory}
+- Branch: main
+- Base revision: {base}
+- HEAD: {head}
+- Commit range: {base}..{head}
+- Tree: clean (no staged, unstaged, or untracked paths)
+- Spec revision: git-commit:{spec_sha}:requirements/{ticket}-SPEC.md (Status: Approved)
+- Plan revision: git-commit:{base}:work/{ticket}-plan.md (Status: Approved)
+- Tasks completed: T001 (ws-main); workstreams integrated: ws-main
+- Checkpoints: none in scope
+- Commits created: {head}
+- Verification: {verification}
+- Scope expansions: none. Noticed but untouched: none.
+- Run metrics: 1 fresh executor dispatch, 0 resumes, 0 model overrides.
+
+Integrated diff ({base}..{head}):
+{diff}"""
+
+
+def verify_pass(head, ticket):
+    return f"""VERIFY PASS
+- Candidate: HEAD {head}, requirements/{ticket}-SPEC.md, clean tree
+- REQ-001 — python3 verify.py — pass (exit 0): label assertion executed on the candidate
+- REQ-002 — python3 verify.py — pass (exit 0): viewer role refused, callback not invoked; admin role allowed
+- Tests changed: none. Test-only commits: none. Coverage gaps: none in scope.
+- Final tree: clean, identical to the recorded candidate {head}."""
+
+
 def cases():
     return {
         'jira_complete': ('jira', 'Use jira-ticket for WF-1 using the supplied offline Jira source files. Complete intake and stop.'),
@@ -81,6 +289,10 @@ def cases():
         'plan_handoff': ('plan', 'Run /plan WF-20 using the supplied spec and repository evidence. No plan approval has been given.'),
         'plan_editorial': ('plan', 'Run /plan WF-20: correct only Dowload to Download in the existing plan title. This is an editorial change; preserve task scope and existing approvals.'),
         'plan_stale': ('plan', 'Run /plan WF-20 using the supplied spec and repository evidence.'),
+        'build_shared_db': ('build', 'Run /build WF-30 for tasks T001 and T002 using the supplied plan, task packets, and repository evidence. Decide dispatch only.'),
+        'build_independent': ('build', 'Run /build WF-30 for tasks T001 and T002 using the supplied plan, task packets, and repository evidence. Decide dispatch only.'),
+        'review_plain_diff': ('review', 'Run /review WF-40 for the supplied BUILD COMPLETE candidate. Decide the verification gate and reviewer dispatch only.'),
+        'review_auth_diff': ('review', 'Run /review WF-40 for the supplied BUILD COMPLETE and VERIFY PASS candidate. Decide the verification gate and reviewer dispatch only.'),
     }
 
 
@@ -115,6 +327,61 @@ def prepare(directory, name):
             write(directory/'sources/WF-1.children-2.json', json.dumps({'children':['WF-3'], 'enumeration_complete':True}))
             write(directory/'sources/WF-4.comments-2.json', json.dumps({'comments':['Final decision: exclude archived records from exports.'], 'comments_complete':True}))
         evidence = 'Offline reader: use Read on sources/<KEY>.json. Begin at WF-1. Completeness flags and next-page filenames describe the supplied pagination. No external connector is available or needed for these supplied contents.'
+    elif name.startswith('build_'):
+        shared = name == 'build_shared_db'
+        command = 'bash tests/run.sh' if shared else 'python3 verify.py'
+        write(directory/'ui.py', 'LABEL = "Export"\ndef click(callback):\n    callback()\n')
+        write(directory/'verify.py', 'from ui import LABEL, click\nassert LABEL == "Export"\ncalls=[]\nclick(lambda: calls.append(1))\nassert calls == [1]\n')
+        if shared:
+            write(directory/'.env', 'DB_DATABASE=app_test\nDB_HOST=127.0.0.1\n')
+            write(directory/'tests/run.sh', '#!/usr/bin/env bash\nset -e\n# Every run migrates and truncates the shared test database named in .env.\n: "${DB_DATABASE:=app_test}"\npsql "$DB_DATABASE" -c "TRUNCATE exports" >/dev/null\npsql "$DB_DATABASE" -f schema.sql >/dev/null\npython3 verify.py\n')
+            write(directory/'schema.sql', 'CREATE TABLE IF NOT EXISTS exports (id serial primary key, amount int);\n')
+            write(directory/'AGENTS.md', 'Specs live in requirements/. Plans and tasks live in work/. Verification command: bash tests/run.sh. It migrates and truncates the shared Postgres database from .env (DB_DATABASE=app_test) before every run. There is no per-worktree, per-process, or in-memory database configuration; every checkout uses the same database.\n')
+        else:
+            write(directory/'AGENTS.md', 'Specs live in requirements/. Plans and tasks live in work/. Verification command: python3 verify.py. It is in-process only: no database, queue, cache, network, or fixed port is used by any check.\n')
+        write(directory/'requirements/WF-30-SPEC.md', spec_two('WF-30'))
+        git(directory, 'init', '-q', '-b', 'main')
+        git(directory, 'add', '.')
+        git(directory, 'commit', '-qm', 'Fixture baseline')
+        sha = git(directory, 'log', '-1', '--format=%H', '--', 'requirements/WF-30-SPEC.md', capture=True)
+        write(directory/'work/WF-30-plan.md', plan_two(sha, 'WF-30', command))
+        write(directory/'work/WF-30-todo.md', todo_two(command))
+        git(directory, 'add', '.')
+        git(directory, 'commit', '-qm', 'Approved plan')
+        evidence = f'''Runner-verified Git evidence: requirements/WF-30-SPEC.md and work/WF-30-plan.md are committed; both read Status: Approved; the plan's spec pin git-commit:{sha}:requirements/WF-30-SPEC.md resolves and `git show` of it is identical to the working copy (empty diff). Tree clean. `isolation: worktree` is available to every executor. Session rate-limit headroom: ample. You have no shell and no Agent tool in this bounded trial: do not dispatch anything. Decide dispatch for the two workstreams from the plan, the task packets, and the repository's own verification setup (AGENTS.md and the files it names), and report it in `dispatch`.'''
+    elif name.startswith('review_'):
+        auth = name == 'review_auth_diff'
+        write(directory/'ui.py', 'LABEL = "Export"\ndef click(callback):\n    callback()\n')
+        write(directory/'verify.py', 'from ui import LABEL, click\nassert LABEL == "Export"\ncalls=[]\nclick(lambda: calls.append(1))\nassert calls == [1]\n')
+        write(directory/'AGENTS.md', 'Specs live in requirements/. Plans and tasks live in work/. Verification command: python3 verify.py (in-process only). No external tracker.\n')
+        write(directory/'requirements/WF-40-SPEC.md', spec_review(auth))
+        git(directory, 'init', '-q', '-b', 'main')
+        git(directory, 'add', '.')
+        git(directory, 'commit', '-qm', 'Fixture baseline')
+        spec_sha = git(directory, 'rev-parse', 'HEAD', capture=True)
+        write(directory/'work/WF-40-plan.md', plan_one(spec_sha, 'WF-40', ['REQ-001', 'REQ-002'] if auth else ['REQ-001']))
+        git(directory, 'add', '.')
+        git(directory, 'commit', '-qm', 'Approved plan')
+        base = git(directory, 'rev-parse', 'HEAD', capture=True)
+        if auth:
+            write(directory/'auth.py', 'ALLOWED = {"admin", "owner"}\n\ndef can_export(user):\n    return user.get("role") in ALLOWED\n')
+            write(directory/'ui.py', 'from auth import can_export\nLABEL = "Download"\ndef click(user, callback):\n    if not can_export(user):\n        return False\n    callback()\n    return True\n')
+            write(directory/'verify.py', 'from ui import LABEL, click\nassert LABEL == "Download"\ncalls=[]\nassert click({"role": "viewer"}, lambda: calls.append(1)) is False and calls == []\nassert click({"role": "admin"}, lambda: calls.append(1)) is True and calls == [1]\n')
+            message = 'feat: gate export behind an authorized role'
+        else:
+            write(directory/'ui.py', 'LABEL = "Download"\ndef click(callback):\n    callback()\n')
+            write(directory/'verify.py', 'from ui import LABEL, click\nassert LABEL == "Download"\ncalls=[]\nclick(lambda: calls.append(1))\nassert calls == [1]\n')
+            message = 'feat: rename export label to Download'
+        git(directory, 'add', '.')
+        git(directory, 'commit', '-qm', message)
+        head = git(directory, 'rev-parse', 'HEAD', capture=True)
+        diff = git(directory, 'diff', f'{base}..{head}', capture=True)
+        handoff = build_complete(directory, spec_sha, base, head, 'WF-40', diff, 'python3 verify.py — pass (exit 0)')
+        if auth:
+            handoff += '\n\n' + verify_pass(head, 'WF-40')
+        evidence = f'''Runner-verified Git evidence: HEAD is {head}, branch main, base {base}, tree clean; the commit range {base}..{head} contains exactly the diff quoted in the handoff. The BUILD COMPLETE message below was supplied by the user in this conversation and reconciles with git. You have no shell and no Agent tool in this bounded trial: do not dispatch reviewers. Decide the independent-verification gate and which personas /review would dispatch, and report it in `reviewers`.
+
+{handoff}'''
     else:
         write(directory/'ui.py', 'LABEL = "Export"\ndef click(callback):\n    callback()\n')
         write(directory/'verify.py', 'from ui import LABEL, click\nassert LABEL == "Export"\ncalls=[]\nclick(lambda: calls.append(1))\nassert calls == [1]\n')
@@ -166,10 +433,18 @@ Handoff: Ready for /build
     return evidence
 
 
+DECISION_BOUNDARY = {
+    'build': 'This trial ends at the dispatch decision. In `dispatch`, give exactly one line per workstream in the form `<ws-id>: concurrent — <evidence>` or `<ws-id>: queued — <condition and evidence>`, where the evidence names the repository file that establishes each condition (independence, dependency-readiness, worktree isolation, runtime isolation of every mutable resource the verification touches, rate-limit headroom). State `decided` when the decision is made; `blocked` if a gate stops dispatch. Leave `reviewers` empty.',
+    'review': 'This trial ends at the dispatch decision. In `explanation`, record `Independent verification: NOT REQUIRED` or `Independent verification: PASS` (or REVIEW BLOCKED with the reason). In `reviewers`, give exactly one line per persona — code-reviewer, security-auditor, distributed-systems-reviewer — in the form `<persona>: dispatched — <trigger reason>` or `<persona>: not dispatched — <reason>`. State `decided` when the decision is made; `blocked` if a gate stops dispatch. Leave `dispatch` empty.',
+}
+
+
 def prompt(stage, request, directory, evidence):
-    files = STAGES[stage] + (COMMON_FILES if stage != 'jira' else [])
+    files = STAGES[stage] + (COMMON_FILES if stage not in ('jira', 'build', 'review') else [])
     chunks = [request, f'Fixture directory: {directory}', evidence,
               'Execution boundary: Read/Glob only, confined to the fixture directory. Do not implement, invoke another stage, simulate human approval, or access external services. Return the actual stage artifact text in the structured output instead of writing files; the runner will save it. Empty strings for artifacts not produced. ready_for_review means a draft may be presented for approval, not that approval exists. For intake it means required intake reading is complete. Report blockers truthfully.']
+    if stage in DECISION_BOUNDARY:
+        chunks.append(DECISION_BOUNDARY[stage])
     for rel in files:
         chunks.append(f'INSTRUCTIONS FROM {rel}\n{(HARNESS/rel).read_text()}')
     return '\n\n'.join(chunks), files
@@ -178,6 +453,7 @@ def prompt(stage, request, directory, evidence):
 def checks(name, result, reads, directory):
     state = result['state']
     text = '\n'.join(result[k] for k in ['explanation','intake','spec','plan','todo'])
+    decisions = '\n'.join(result.get(k, '') for k in ['dispatch', 'reviewers'])
     checks = {}
     # Structured fields may contain explanatory "None" notes rather than artifacts.
     def artifact(value):
@@ -203,6 +479,32 @@ def checks(name, result, reads, directory):
         checks['stable_requirement_ids'] = bool(re.search(r'^### Requirement: REQ-\d{3}',result['spec'],re.M))
         checks['no_downstream_artifacts'] = not artifact(result['plan']) and not artifact(result['todo'])
         checks['repository_verification'] = bool(re.search(r'python3\s+verify\.py',result['spec']))
+    elif name.startswith('build_'):
+        dispatch = parse_decisions(result.get('dispatch', ''), WORKSTREAMS, ('concurrent', 'queued'))
+        concurrent = sum(v == 'concurrent' for v in dispatch.values())
+        checks['decided'] = state == 'decided'
+        checks['both_workstreams_decided'] = set(WORKSTREAMS) <= set(dispatch)
+        if name == 'build_shared_db':
+            # Two suites truncating one database corrupt each other silently
+            # (docs/adr/0054): the shared runtime must keep fan-out at one.
+            checks['shared_runtime_not_fanned_out'] = concurrent <= 1
+            checks['runtime_condition_named'] = bool(re.search(r'database|db_database|app_test|tests/run\.sh|runtime', decisions + result['explanation'], re.I))
+        else:
+            # Parallel-when-safe: every condition is established, so both run.
+            checks['independent_workstreams_fanned_out'] = concurrent == 2
+        checks['no_implementation_artifacts'] = not artifact(result['plan']) and not artifact(result['todo'])
+    elif name.startswith('review_'):
+        reviewers = parse_decisions(result.get('reviewers', ''), REVIEWERS, ('not dispatched', 'dispatched'))
+        checks['decided'] = state == 'decided'
+        checks['code_reviewer_always'] = reviewers.get('code-reviewer') == 'dispatched'
+        if name == 'review_auth_diff':
+            checks['verification_pass_recorded'] = bool(re.search(r'Independent verification:\s*PASS', text, re.I))
+            checks['security_auditor_triggered'] = reviewers.get('security-auditor') == 'dispatched'
+            checks['distributed_not_triggered'] = reviewers.get('distributed-systems-reviewer') == 'not dispatched'
+        else:
+            checks['verification_not_required'] = bool(re.search(r'Independent verification:\s*NOT REQUIRED', text, re.I))
+            checks['no_specialist_for_plain_diff'] = all(reviewers.get(r) == 'not dispatched' for r in REVIEWERS[1:])
+        checks['no_review_findings_written'] = not re.search(r'^\s*-\s*\[?(CODE|SEC|DIST)-\d+', text, re.M)
     elif name == 'plan_editorial':
         original=(directory/'work/WF-20-plan.md').read_text()
         checks['editorial_state'] = bool(re.search(r'^Status:\s*Approved\s*$',result['plan'],re.M)) and 'Handoff: Ready for /build' in result['plan']
@@ -217,6 +519,19 @@ def checks(name, result, reads, directory):
         checks['verification_in_packet'] = 'python3 verify.py' in result['todo']
         checks['context_in_packet'] = 'ui.py' in result['todo'] and 'verify.py' in result['todo']
     return checks
+
+
+def parse_decisions(block, names, verdicts):
+    """Map each expected name to the verdict on its `<name>: <verdict>` line.
+
+    `verdicts` is tried in order so a longer alternative ('not dispatched') wins
+    over its suffix ('dispatched'). Names may be wrapped in backticks or led by
+    a list marker."""
+    found = {}
+    pattern = re.compile(r'^[\s\-*]*`?(' + '|'.join(map(re.escape, names)) + r')`?\s*:\s*(' + '|'.join(map(re.escape, verdicts)) + r')\b', re.M | re.I)
+    for match in pattern.finditer(block):
+        found.setdefault(match.group(1).lower(), match.group(2).lower())
+    return found
 
 
 def audit_reads(events, directory):
@@ -286,8 +601,8 @@ def main():
             after={str(p.relative_to(directory)):hashlib.sha256(p.read_bytes()).hexdigest() for p in directory.rglob('*') if p.is_file()}
             assertions['fixture_unchanged']=before==after
             assertions['tool_access_confined_to_fixture']=confined
-            for key in ['intake','spec','plan','todo']:
-                if result[key]:write(destination/(key+'.md'),result[key])
+            for key in ['intake','spec','plan','todo','dispatch','reviewers']:
+                if result.get(key):write(destination/(key+'.md'),result[key])
             report={'case':name,'checks':assertions,'assertions_passed':all(assertions.values()),'state':result['state'],'explanation':result['explanation'],'duration_ms':final.get('duration_ms'),'model_usage':final.get('modelUsage'),'instruction_hashes':{p:hashlib.sha256((HARNESS/p).read_bytes()).hexdigest() for p in files},'semantic_review':'pending'}
         except (subprocess.TimeoutExpired,KeyError,ValueError,RuntimeError,StopIteration) as exc:
             report={'case':name,'assertions_passed':False,'execution_error':str(exc)}
