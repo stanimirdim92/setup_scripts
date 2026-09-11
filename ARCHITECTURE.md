@@ -99,6 +99,10 @@ Codex tools must be available in its own session.
   temporary destination, without touching real links.
 - `tools/test-hooks.sh` exercises the Claude command hooks with fixtures;
   `tools/test-handoff-hook.sh` does the same for the `SubagentStop` handoff gate.
+- `tools/validate-artifact-paths.py` fails when any pipeline file spells a
+  spec/capability-map/plan/todo artifact path differently from the canonical
+  set (the drift class fixed in c4584dd); `tools/validate-artifact-paths-test.py`
+  covers the allow and deny cases.
 - [Workflow checks](tools/tests/workflow/README.md) document the isolated
   Jira/spec/plan/build/review runner, its invocation, and what its evidence
   does not cover.
