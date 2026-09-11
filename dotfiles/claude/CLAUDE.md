@@ -114,6 +114,22 @@ into a third thing that matches neither.
 Surface uncertainty, skipped steps, and unverified claims explicitly. Never let "I couldn't check this" read as "this works".
 - *Catches: silent gaps the reader assumes were covered.*
 
+## 8. Modules Communicate Through Contracts
+
+**Never reach across a module boundary. Consume the published interface.**
+
+- Modules talk only through their published contracts — exported APIs, service
+  interfaces, events — never by importing another module's internals (private
+  classes, helpers, tables, state).
+- Dependencies between modules flow one way; a cycle means the boundary is
+  drawn wrong, not that a back-reference is needed.
+- A missing or insufficient contract is a blocker to surface, never a reason to
+  reach around it. Changing a shared contract is an explicit, approved change,
+  never a side effect.
+- The project's own structure defines what a module is; where it defines none,
+  say so rather than inventing boundaries.
+- *Catches: hidden coupling that turns every change into a cross-module break.*
+
 ## Session and context
 
 - Caveman mode is the default chat style: terse responses, full technical
