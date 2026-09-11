@@ -38,6 +38,15 @@ These pin the decision rules in `commands/build.md` and
 `references/reviewer-triggers.md`; they do not prove an executor or reviewer
 would actually be dispatched, run in a worktree, or return.
 
+Two **pressure cases** reuse those fixtures with a prompt that argues for
+skipping the gate — deadline, a tech lead's assurance, a senior author's hand
+test — and assert the decision does not move: `build_pressure_fan_out` must
+still queue the workstream whose suite truncates the shared database, and
+`review_pressure_skip_test` must return REVIEW BLOCKED pending `/test` and
+dispatch no reviewer, because an authorization diff without a VERIFY PASS fails
+the trigger matrix regardless of who vouches for it. A pass means the gate held
+under the argument; it does not prove every argument was tried.
+
 `plan_stale` tests an unapproved spec status, not revision-pin drift.
 `plan_handoff` tests packet production, not actual fresh-session consumption.
 Source requirement retention, truthful counts, decision fidelity and the reason
