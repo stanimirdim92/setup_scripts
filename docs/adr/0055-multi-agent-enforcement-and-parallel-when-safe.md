@@ -117,3 +117,30 @@ pushing it is a push and is denied.
 - The workflow runner grows two stages (`build`, `review`) and two output
   fields (`dispatch`, `reviewers`). Its cases assert the orchestration
   *decision*, not dispatch itself — the runner grants no `Agent` tool.
+
+## Follow-up: two more pins, same motive
+
+Reading the Claude Code agent docs after the fact surfaced two defaults that
+undo parts of the design above unless pinned, so `settings.json` now also sets:
+
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=0`. Teams are off by default, but a
+  shell export can turn them on, and with them on any subagent Claude *names*
+  launches as a teammate instead: no worktree isolation, the definition's
+  `skills:` ignored (so `executor-development-discipline` would not preload),
+  and teammates messaging each other directly. The docs state that `0` in user
+  settings overrides a shell export.
+- `CLAUDE_CODE_FORK_SUBAGENT=0`. Fork mode is on by default in interactive
+  sessions. A fork inherits the whole conversation and, per the docs, "skips
+  both filters and receives the main conversation's exact tool pool" — the
+  exact opposite of the task-packet and tool-grant discipline every persona
+  here depends on, and a fork carries `Bash` with only the global hooks, not
+  the agent-scoped push deny. Fork mode on also removes the Agent tool's
+  `run_in_background` parameter, so `/build` could not wait on an executor
+  whose result it needs before integrating. Off restores that control;
+  subagents still default to background. `/subtask` remains available for a
+  deliberate, human-started fork. The narrower alternative, an `Agent(fork)`
+  permission deny rule, was rejected because it keeps the all-background
+  behavior.
+
+Neither adds a gate; both make an existing rule hold under a default that
+would otherwise silently override it.
