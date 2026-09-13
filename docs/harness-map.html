@@ -476,7 +476,7 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
 <section id="tests">
   <div class="plate-head">
     <div class="eyebrow">Layer 7 · The harness testing itself</div>
-    <h2>Five suites, all local, none in CI yet</h2>
+    <h2>Six suites, all local, none in CI yet</h2>
     <p>Deterministic checks run in seconds and cost nothing; the workflow runner drives the real model and is run on demand. There is no <code>.github/</code> in this repo — these run when someone remembers.</p>
   </div>
   <div class="scroll">
@@ -485,6 +485,7 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
     <tbody>
       <tr><td><code>tools/test-hooks.sh</code></td><td>the three PreToolUse hooks: deny / ask / allow, aliases, typos, global options, quoted targets</td><td class="num">100</td><td>free</td></tr>
       <tr><td><code>tools/test-handoff-hook.sh</code></td><td>SubagentStop gate: complete, partial, claim-only, second attempt, unknown agent, unreadable transcript</td><td class="num">12</td><td>free</td></tr>
+      <tr><td><code>tools/test-run-metrics.sh</code></td><td>the transcript metrics' large-result section: threshold default and override, time window, subagent exclusion, string and array-form results</td><td class="num">17</td><td>free</td></tr>
       <tr><td><code>tools/validate-artifact-paths.py</code> + test</td><td>canonical spec/plan/todo spellings across 24 pipeline files; replays the <code>-spec.md</code> drift once shipped</td><td class="num">24 files · 11</td><td>free</td></tr>
       <tr><td><code>tools/tests/workflow/test_runner.py</code></td><td>the runner's own assertion logic and fixture construction</td><td class="num">15</td><td>free</td></tr>
       <tr><td><code>tools/tests/workflow/run.py</code></td><td>stage decisions against the real model: jira ×3, spec ×2, plan ×4, build ×2, review ×2, pressure ×2</td><td class="num">15</td><td>tokens</td></tr>

@@ -31,9 +31,14 @@ expose it.
   assistant turn carries `message.usage` with `input_tokens`, `output_tokens`,
   `cache_read_input_tokens`, and `cache_creation_input_tokens`.
 
-`tools/run-metrics.sh` in this repo reports batching, tokens, and the
-main-session/subagent split from a transcript, with `--since`/`--until` to scope
-one BUILD.
+`tools/run-metrics.sh` in this repo reports batching, tokens, the
+main-session/subagent split, and the main-session tool results over a line
+threshold (`--large-lines`, default 350) from a transcript, with
+`--since`/`--until` to scope one BUILD. The large-result count is the
+inline-read signal ADR 0051's revisit clause depends on: whole files the
+orchestrator took into context where a bounded check or a `repo-recon`
+dispatch should have kept them out. It is measured from the result text in
+the transcript, never from the file on disk.
 
 **Counting tool batching correctly.** Parallel tool calls are written as
 separate assistant records that share one `requestId`. Counting calls per record
@@ -66,6 +71,8 @@ After roughly 10–20 comparable tickets, look for:
 - model overrides that materially improved outcomes
 - defects that repeatedly escape BUILD into VERIFY
 - reviewer findings that repeatedly should have been caught earlier
+- main-session tool results over the line threshold, and whether the areas
+  they came from were ones a bounded check or recon was meant to cover
 
 Use the evidence to change task sizing, workstream rules, model defaults, or
 verification gates. Do not change global policy from one unusual run.

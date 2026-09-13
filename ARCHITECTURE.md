@@ -108,6 +108,9 @@ authoritative.
   temporary destination, without touching real links.
 - `tools/test-hooks.sh` exercises the Claude command hooks with fixtures;
   `tools/test-handoff-hook.sh` does the same for the `SubagentStop` handoff gate.
+- `tools/test-run-metrics.sh` runs `tools/run-metrics.sh` on a fabricated
+  transcript and checks its large-result section: threshold default and
+  override, time window, subagent exclusion, string and array-form results.
 - `tools/validate-artifact-paths.py` fails when any pipeline file spells a
   spec/capability-map/plan/todo artifact path differently from the canonical
   set (the drift class fixed in c4584dd); `tools/validate-artifact-paths-test.py`
