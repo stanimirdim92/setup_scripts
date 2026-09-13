@@ -1,0 +1,529 @@
+<title>Harness v1 Map</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F3F4F1; --paper-2:#E9EBE6; --ink:#1B2028; --ink-2:#4A515B; --rule:#8A9099; --rule-2:#C9CDC7;
+  --gate:#C77A12; --gate-soft:#F6E4C7; --writer:#3D6B8E; --writer-soft:#D9E6F0; --ro:#5E6672;
+  --display:"Bricolage Grotesque","Archivo",system-ui,sans-serif;
+  --body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#141820; --paper-2:#1C222C; --ink:#E6E8E3; --ink-2:#AEB4BC; --rule:#6F7680; --rule-2:#2E3540;
+    --gate:#E0973A; --gate-soft:#3A2B14; --writer:#6FA3C9; --writer-soft:#1D2F3E; --ro:#98A0AA;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141820; --paper-2:#1C222C; --ink:#E6E8E3; --ink-2:#AEB4BC; --rule:#6F7680; --rule-2:#2E3540;
+  --gate:#E0973A; --gate-soft:#3A2B14; --writer:#6FA3C9; --writer-soft:#1D2F3E; --ro:#98A0AA;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding:0 clamp(16px,4vw,48px);padding-block:32px 72px}
+a{color:inherit}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;font-weight:700;letter-spacing:-0.01em}
+h1{font-size:clamp(34px,5vw,56px);line-height:1.02}
+h2{font-size:clamp(22px,2.6vw,30px);line-height:1.15}
+h3{font-size:17px;font-weight:600}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:var(--mono);font-size:0.92em}
+code{background:var(--paper-2);padding:1px 5px;border-radius:3px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-2)}
+.sheet{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+header.title{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;border-bottom:2px solid var(--ink);padding-bottom:20px}
+header .lede{max-width:62ch;color:var(--ink-2);margin-top:12px}
+.meta{font-family:var(--mono);font-size:12px;color:var(--ink-2);display:grid;gap:4px;text-align:right}
+.meta b{color:var(--ink);font-weight:500}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+nav.toc a{text-decoration:none;border-bottom:1px solid var(--rule-2);padding-bottom:1px}
+nav.toc a:hover,nav.toc a:focus-visible{border-color:var(--gate);color:var(--ink);outline:none}
+section{display:flex;flex-direction:column;gap:18px}
+.plate-head{display:grid;grid-template-columns:1fr;gap:6px;border-top:1px solid var(--rule-2);padding-top:14px}
+.plate-head p{color:var(--ink-2)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:12px;color:var(--ink-2);font-family:var(--mono)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:14px;height:14px;border:1.5px solid var(--ink);display:inline-block}
+.sw.gate{background:var(--gate-soft);border-color:var(--gate);transform:rotate(45deg);width:11px;height:11px}
+.sw.writer{background:var(--writer-soft);border-color:var(--writer)}
+.sw.ro{border-style:dashed;border-color:var(--ro)}
+figure{margin:0;display:flex;flex-direction:column;gap:10px}
+figure svg{max-width:100%;height:auto;display:block;color:var(--ink)}
+figcaption{font-size:13px;color:var(--ink-2);max-width:78ch}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--rule-2)}
+th{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-2);font-weight:500;border-bottom:1px solid var(--rule)}
+td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+td .mono,th .mono{white-space:nowrap}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:1px 7px;border:1px solid var(--rule);border-radius:2px;white-space:nowrap}
+.tag.writer{border-color:var(--writer);color:var(--writer);background:var(--writer-soft)}
+.tag.ro{border-style:dashed;color:var(--ro)}
+.tag.gate{border-color:var(--gate);color:var(--gate);background:var(--gate-soft)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.tile{border:1px solid var(--rule-2);padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:var(--paper)}
+.tile h3{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.tile h3 small{font-family:var(--mono);font-size:11px;color:var(--ink-2);font-weight:400}
+.tile ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:13.5px}
+.tile li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:baseline}
+.tile li code{white-space:nowrap}
+.tile li span{color:var(--ink-2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--mono);font-size:12px;padding:3px 9px;border:1px solid var(--rule-2);border-radius:2px;background:var(--paper-2)}
+.chip.dmi::after{content:" ·explicit";color:var(--gate)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px 24px;counter-reset:rule}
+.rules li{list-style:none;display:grid;grid-template-columns:28px 1fr;gap:8px;font-size:13.5px;color:var(--ink-2)}
+.rules li b{color:var(--ink);font-weight:600}
+.rules li::before{counter-increment:rule;content:counter(rule);font-family:var(--mono);color:var(--gate);font-size:12px;padding-top:2px}
+.pins{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.pin{border-left:3px solid var(--gate);padding:6px 12px;font-size:13.5px;display:grid;gap:2px}
+.pin code{background:none;padding:0;font-size:12.5px}
+.pin span{color:var(--ink-2)}
+.open{border:1px dashed var(--gate);padding:14px 16px;display:grid;gap:6px;font-size:13.5px}
+.open .eyebrow{color:var(--gate)}
+footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px solid var(--rule-2);padding-top:14px}
+@media (max-width:640px){header.title{grid-template-columns:1fr}.meta{text-align:left}}
+@media (prefers-reduced-motion: no-preference){nav.toc a{transition:border-color .15s}}
+</style>
+
+<div class="sheet">
+<header class="title">
+  <div>
+    <div class="eyebrow">stanimirdim92/setup_scripts · dotfiles/claude</div>
+    <h1>Harness v1 Map</h1>
+    <p class="lede">Every layer of the Claude Code harness as it stands on <code>main</code>: what loads at session start, how the five gate commands hand work to six personas, which rules are enforced by the host rather than by prose, and what tests the harness itself.</p>
+  </div>
+  <div class="meta">
+    <div>commit <b>0757d83</b> · tag <b>harness-v1</b> (local)</div>
+    <div>6 commands · 6 personas · 19 skills</div>
+    <div>14 references + 4 templates · 4 hooks</div>
+    <div>55 ADRs · 5 self-test suites</div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#pipeline">Pipeline</a><a href="#boot">Session boot</a><a href="#personas">Personas</a><a href="#enforcement">Enforcement</a><a href="#references">References</a><a href="#skills">Skills</a><a href="#artifacts">Artifacts &amp; trace</a><a href="#tests">Harness tests</a><a href="#records">Records &amp; open items</a>
+</nav>
+
+<!-- ============================================================ PIPELINE -->
+<section id="pipeline">
+  <div class="plate-head">
+    <div class="eyebrow">Layer 1 · Flow</div>
+    <h2>Five gates, one direction, one loop</h2>
+    <p>Commands orchestrate; personas never dispatch personas (enforced: spawn depth 1). Every arrow to the right is a completion message a human can read; every amber diamond is a decision only a human may make.</p>
+  </div>
+  <div class="legend">
+    <span><i class="sw gate"></i> human decision</span>
+    <span><i class="sw writer"></i> persona that can change files</span>
+    <span><i class="sw ro"></i> read-only persona (Read · Grep · Glob)</span>
+    <span>solid arrow = handoff message · dashed = conditional</span>
+  </div>
+  <figure>
+  <svg viewBox="0 0 1230 560" role="img" aria-label="The pipeline: /spec, /plan, /build, /review, /ship left to right, with /test as a conditional loop under /review. Human approval diamonds sit after /spec and /plan and at the push after /ship. Each command dispatches its personas below it and produces the artifact shown at the bottom." font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12">
+    <defs>
+      <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+      <marker id="arw-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--gate)"/></marker>
+    </defs>
+
+    <!-- lane labels -->
+    <text x="14" y="76" fill="var(--ink-2)" font-size="10" letter-spacing="1.5" transform="rotate(-90 14 76)" text-anchor="middle">GATE</text>
+    <text x="14" y="330" fill="var(--ink-2)" font-size="10" letter-spacing="1.5" transform="rotate(-90 14 330)" text-anchor="middle">DISPATCHES</text>
+    <text x="14" y="495" fill="var(--ink-2)" font-size="10" letter-spacing="1.5" transform="rotate(-90 14 495)" text-anchor="middle">PRODUCES</text>
+
+    <!-- command boxes y=40 h=56 -->
+    <g fill="var(--paper)" stroke="currentColor" stroke-width="1.5">
+      <rect x="30" y="40" width="190" height="56"/>
+      <rect x="270" y="40" width="190" height="56"/>
+      <rect x="510" y="40" width="190" height="56"/>
+      <rect x="750" y="40" width="190" height="56"/>
+      <rect x="990" y="40" width="190" height="56"/>
+    </g>
+    <g fill="currentColor" text-anchor="middle" font-weight="500" font-size="15">
+      <text x="125" y="63">/spec</text><text x="365" y="63">/plan</text><text x="605" y="63">/build</text><text x="845" y="63">/review</text><text x="1085" y="63">/ship</text>
+    </g>
+    <g fill="var(--ink-2)" text-anchor="middle" font-size="10.5">
+      <text x="125" y="84">DEFINE</text><text x="365" y="84">PLAN</text><text x="605" y="84">BUILD · integrate</text><text x="845" y="84">REVIEW · decide VERIFY</text><text x="1085" y="84">SHIP · synthesis only</text>
+    </g>
+
+    <!-- main arrows y=68 -->
+    <g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#arw)">
+      <line x1="220" y1="68" x2="268" y2="68"/>
+      <line x1="460" y1="68" x2="508" y2="68"/>
+      <line x1="700" y1="68" x2="748" y2="68"/>
+      <line x1="940" y1="68" x2="988" y2="68"/>
+    </g>
+    <!-- human gate diamonds on arrows -->
+    <g fill="var(--gate-soft)" stroke="var(--gate)" stroke-width="1.5">
+      <rect x="236" y="60" width="16" height="16" transform="rotate(45 244 68)"/>
+      <rect x="476" y="60" width="16" height="16" transform="rotate(45 484 68)"/>
+    </g>
+    <g fill="var(--gate)" text-anchor="middle" font-size="10.5">
+      <text x="244" y="30">approve spec</text>
+      <text x="484" y="30">approve plan</text>
+    </g>
+    <g fill="var(--ink-2)" text-anchor="middle" font-size="10.5">
+      <text x="724" y="30">BUILD COMPLETE</text>
+      <text x="964" y="30">findings + dispositions</text>
+    </g>
+
+    <!-- ship -> human push -->
+    <line x1="1085" y1="96" x2="1085" y2="128" stroke="var(--gate)" stroke-width="1.5" marker-end="url(#arw-g)"/>
+    <rect x="1077" y="130" width="16" height="16" transform="rotate(45 1085 138)" fill="var(--gate-soft)" stroke="var(--gate)" stroke-width="1.5"/>
+    <text x="1085" y="168" fill="var(--gate)" text-anchor="middle" font-size="10.5">GO → human pushes</text>
+    <text x="1085" y="182" fill="var(--ink-2)" text-anchor="middle" font-size="10.5">never push, tag-push, deploy</text>
+
+    <!-- /test loop under /review -->
+    <rect x="750" y="150" width="190" height="48" fill="var(--paper)" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="845" y="170" fill="currentColor" text-anchor="middle" font-weight="500" font-size="15">/test</text>
+    <text x="845" y="188" fill="var(--ink-2)" text-anchor="middle" font-size="10.5">VERIFY · only when triggered</text>
+    <line x1="822" y1="96" x2="822" y2="148" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arw)"/>
+    <line x1="878" y1="150" x2="878" y2="98" stroke="currentColor" stroke-width="1.5" marker-end="url(#arw)"/>
+    <text x="812" y="126" fill="var(--ink-2)" font-size="10" text-anchor="end">trigger</text>
+    <text x="812" y="138" fill="var(--ink-2)" font-size="10" text-anchor="end">matched</text>
+    <text x="930" y="126" fill="var(--ink-2)" font-size="10" text-anchor="end">VERIFY</text>
+    <text x="930" y="138" fill="var(--ink-2)" font-size="10" text-anchor="end">PASS</text>
+    <!-- feedback loop label -->
+    <text x="500" y="112" fill="var(--ink-2)" text-anchor="middle" font-size="10.5">SPEC CONFLICT / production fix → back to /spec or /build</text>
+    <path d="M700,118 L 300,118 L 300,100" fill="none" stroke="var(--rule)" stroke-width="1" stroke-dasharray="3 4" marker-end="url(#arw)"/>
+
+    <!-- lane rule -->
+    <line x1="30" y1="215" x2="1180" y2="215" stroke="var(--rule-2)" stroke-width="1"/>
+
+    <!-- DISPATCH lane: y from 232 -->
+    <!-- spec: repo-recon -->
+    <rect x="30" y="232" width="190" height="40" fill="none" stroke="var(--ro)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="125" y="249" text-anchor="middle" fill="currentColor" font-size="11.5">repo-recon</text>
+    <text x="125" y="264" text-anchor="middle" fill="var(--ink-2)" font-size="9.5">evidence-triggered · maxTurns 40</text>
+    <!-- plan: repo-recon reused -->
+    <rect x="270" y="232" width="190" height="40" fill="none" stroke="var(--ro)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="365" y="249" text-anchor="middle" fill="currentColor" font-size="11.5">repo-recon</text>
+    <text x="365" y="264" text-anchor="middle" fill="var(--ink-2)" font-size="9.5">reuses recon · pins the spec sha</text>
+    <!-- build: executors -->
+    <g fill="var(--writer-soft)" stroke="var(--writer)" stroke-width="1.5">
+      <rect x="518" y="240" width="190" height="40"/>
+      <rect x="514" y="236" width="190" height="40"/>
+      <rect x="510" y="232" width="190" height="40"/>
+    </g>
+    <text x="605" y="249" text-anchor="middle" fill="currentColor" font-size="11.5">executor × N</text>
+    <text x="605" y="264" text-anchor="middle" fill="var(--ink-2)" font-size="9.5">one per workstream · own worktree</text>
+    <text x="605" y="302" text-anchor="middle" fill="var(--ink-2)" font-size="10.5">parallel when every condition holds:</text>
+    <text x="605" y="316" text-anchor="middle" fill="var(--ink-2)" font-size="10.5">independent · dependency-ready · worktree</text>
+    <text x="605" y="330" text-anchor="middle" fill="var(--ink-2)" font-size="10.5">· isolated runtime (DB/queue/port) · headroom</text>
+    <text x="605" y="344" text-anchor="middle" fill="var(--ink-2)" font-size="10.5">any unmet or unproven → queued</text>
+    <!-- review: reviewers -->
+    <rect x="750" y="232" width="190" height="40" fill="none" stroke="var(--ro)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="845" y="249" text-anchor="middle" fill="currentColor" font-size="11.5">code-reviewer</text>
+    <text x="845" y="264" text-anchor="middle" fill="var(--ink-2)" font-size="10">always · maxTurns 60</text>
+    <rect x="750" y="282" width="190" height="40" fill="none" stroke="var(--ro)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="845" y="299" text-anchor="middle" fill="currentColor" font-size="11.5">security-auditor</text>
+    <text x="845" y="314" text-anchor="middle" fill="var(--ink-2)" font-size="10">trust-boundary trigger</text>
+    <rect x="750" y="332" width="190" height="40" fill="none" stroke="var(--ro)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="845" y="349" text-anchor="middle" fill="currentColor" font-size="11">distributed-systems-reviewer</text>
+    <text x="845" y="364" text-anchor="middle" fill="var(--ink-2)" font-size="10">failure-semantics trigger</text>
+    <rect x="750" y="382" width="190" height="40" fill="var(--writer-soft)" stroke="var(--writer)" stroke-width="1.5"/>
+    <text x="845" y="399" text-anchor="middle" fill="currentColor" font-size="11.5">test-engineer</text>
+    <text x="845" y="414" text-anchor="middle" fill="var(--ink-2)" font-size="10">via /test · test-only commits</text>
+    <text x="845" y="440" text-anchor="middle" fill="var(--ink-2)" font-size="10.5">≤ 2 reviewers concurrently · findings never shared between them</text>
+    <!-- ship: none -->
+    <text x="1085" y="252" text-anchor="middle" fill="var(--ink-2)" font-size="11">no dispatch</text>
+    <text x="1085" y="267" text-anchor="middle" fill="var(--ink-2)" font-size="10">synthesizes the REVIEW handoff</text>
+
+    <!-- lane rule -->
+    <line x1="30" y1="462" x2="1180" y2="462" stroke="var(--rule-2)" stroke-width="1"/>
+
+    <!-- PRODUCES lane y 480 -->
+    <g fill="currentColor" text-anchor="middle" font-size="11">
+      <text x="125" y="486">docs/specs/[TICKET]-SPEC.md</text>
+      <text x="365" y="486">docs/tasks/[TICKET]-plan.md</text>
+      <text x="605" y="486">scoped local commits</text>
+      <text x="845" y="486">BLOCKER · REQUIRED · ADVISORY</text>
+      <text x="1085" y="486">GO · NO-GO · SHIP BLOCKED</text>
+    </g>
+    <g fill="var(--ink-2)" text-anchor="middle" font-size="10">
+      <text x="125" y="502">Draft → Approved → Needs reapproval</text>
+      <text x="125" y="516">REQ-### ids, never renumbered</text>
+      <text x="365" y="502">+ [TICKET]-todo.md task packets</text>
+      <text x="365" y="516">T-### → REQ-### coverage map</text>
+      <text x="605" y="502">local tags allowed · push denied by hook</text>
+      <text x="605" y="516">BUILD COMPLETE names the candidate</text>
+      <text x="845" y="502">per-REQ evidence · confidence travels</text>
+      <text x="845" y="516">suspected vs confirmed blockers</text>
+      <text x="1085" y="502">rollback plan mandatory</text>
+      <text x="1085" y="516">readiness attestations</text>
+    </g>
+  </svg>
+  <figcaption>The gates read left to right; only <code>/test</code> loops, and only when <code>references/verification-triggers.md</code> matches the candidate. A candidate that changes after REVIEW invalidates the review and returns to <code>/build</code>; a behavior conflict returns to <code>/spec</code>.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ BOOT -->
+<section id="boot">
+  <div class="plate-head">
+    <div class="eyebrow">Layer 0 · Ambient</div>
+    <h2>What every session — and every subagent — loads</h2>
+    <p><code>~/.claude/CLAUDE.md</code> is injected into the main session and into every persona's context. <code>settings.json</code> pins three defaults that would otherwise silently undo the design.</p>
+  </div>
+  <div class="grid">
+    <div class="tile" style="grid-column:1/-1">
+      <h3>CLAUDE.md — eight rules <small>each names the failure it catches</small></h3>
+      <ol class="rules">
+        <li><b>Think before coding</b> — ask only when ambiguity changes contracts, schema, security, or is irreversible</li>
+        <li><b>Simplicity first</b> — nothing speculative</li>
+        <li><b>Surgical changes</b> — inspect <code>git diff --cached</code> before every commit</li>
+        <li><b>Goal-driven execution</b> — cheapest meaningful verification per change type</li>
+        <li><b>Deterministic before probabilistic</b> — plain code where <code>if/else</code> suffices</li>
+        <li><b>Surface conflicts, don't average them</b></li>
+        <li><b>Fail loud</b> — "couldn't check" never reads as "works"</li>
+        <li><b>Modules communicate through contracts</b> — never import another module's internals; a missing contract is a blocker</li>
+      </ol>
+      <p style="font-size:13px;color:var(--ink-2)">Plus sections on session/context hygiene (caveman chat mode), worktrees (one per ticket, <code>.claude/worktrees/</code>, runtime isolation warning), agent orchestration (packets, no persona-to-persona dispatch, parallel when safe), models (persona defaults, escalate upward only), and the durable-records split (<code>IDEAS.md</code> / <code>adr/</code> / <code>MEMORY.md</code>).</p>
+    </div>
+    <div class="tile">
+      <h3>settings.json — enforcement pins <small>env</small></h3>
+      <div class="pins">
+        <div class="pin"><code>CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1</code><span>no subagent can spawn another; "personas never dispatch personas" is structural</span></div>
+        <div class="pin"><code>CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=0</code><span>a named subagent never becomes a teammate (which would drop worktree isolation and ignore <code>skills:</code>)</span></div>
+        <div class="pin"><code>CLAUDE_CODE_FORK_SUBAGENT=0</code><span>no conversation forks that inherit the full context and tool pool; restores <code>run_in_background</code> control to <code>/build</code></span></div>
+      </div>
+    </div>
+    <div class="tile">
+      <h3>settings.json — the rest <small>defaults</small></h3>
+      <ul>
+        <li><code>model</code><span>sonnet · effort medium · advisor opus</span></li>
+        <li><code>permissions</code><span>defaultMode auto · deny list for rm -rf, sudo, force-push, reset --hard, credential files</span></li>
+        <li><code>hooks.PreToolUse</code><span>matcher Bash → <code>block-destructive-bash.sh</code>, <code>warn-force-push.sh</code></span></li>
+        <li><code>env</code><span>telemetry + OTLP exporters · 500k auto-compact window · tool search on</span></li>
+        <li><code>enabledPlugins</code><span>context7 · typescript-lsp · playwright · qdrant-skills · llm-application-dev · episodic-memory · phpstorm</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ PERSONAS -->
+<section id="personas">
+  <div class="plate-head">
+    <div class="eyebrow">Layer 2 · Workers</div>
+    <h2>Six personas, two of which can write</h2>
+    <p>Read-only is a tool grant, not an instruction: four personas hold only <code>Read · Grep · Glob</code>. The two writers carry agent-scoped hooks that deny pushing and gate their handoff report.</p>
+  </div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Persona</th><th>Role · dispatched by</th><th>Tools</th><th>Model · effort</th><th>maxTurns</th><th>Hooks</th><th>Preloaded skill</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag ro">repo-recon</span></td><td>read-only survey → pointers, "No precedent found for", "Not surveyed" · <code>/spec</code>, <code>/plan</code></td><td class="mono">Read Grep Glob</td><td>sonnet-5 · medium</td><td class="num">40</td><td>—</td><td>—</td></tr>
+      <tr><td><span class="tag writer">executor</span></td><td>implements one task, resumable per workstream, scoped local commits · <code>/build</code> only</td><td class="mono">Read Edit Write Bash Grep Glob Skill</td><td>sonnet-5 · medium</td><td class="num">—</td><td><code>PreToolUse</code> block-agent-push · <code>Stop</code> require-handoff-report</td><td class="mono">executor-development-discipline</td></tr>
+      <tr><td><span class="tag writer">test-engineer</span></td><td>independent verifier; test-only commits, never production code · <code>/test</code></td><td class="mono">Read Edit Write Bash Grep Glob Skill mcp__chrome-devtools__*</td><td>sonnet-5 · medium</td><td class="num">—</td><td>same two hooks</td><td>—</td></tr>
+      <tr><td><span class="tag ro">code-reviewer</span></td><td>five-axis review, Critical/Important/Suggestion + confidence · every <code>/review</code></td><td class="mono">Read Grep Glob</td><td>sonnet-5 · —</td><td class="num">60</td><td>—</td><td>defers to <code>code-review-and-quality</code></td></tr>
+      <tr><td><span class="tag ro">security-auditor</span></td><td>trust-boundary review, SEC-# · triggered by <code>reviewer-triggers.md</code></td><td class="mono">Read Grep Glob</td><td>sonnet-5 · medium</td><td class="num">60</td><td>—</td><td>—</td></tr>
+      <tr><td><span class="tag ro">distributed-systems-reviewer</span></td><td>retries, idempotency, ordering, CAP, queues, DIST-# · triggered</td><td class="mono">Read Grep Glob</td><td>sonnet-5 · <b>high</b></td><td class="num">60</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:13px;color:var(--ink-2)">All six list <code>tools:</code> explicitly, which is also what keeps <code>SendMessage</code> and <code>Agent</code> out of their hands. A capped run (maxTurns) is reported as partial under "Not surveyed" / "Not verified", never as complete.</p>
+</section>
+
+<!-- ============================================================ ENFORCEMENT -->
+<section id="enforcement">
+  <div class="plate-head">
+    <div class="eyebrow">Layer 3 · Guards</div>
+    <h2>Where each rule stops being a sentence</h2>
+    <p>Five moments in a subagent's life, and the mechanism that holds at each one. Amber boxes are host-enforced; everything else is instruction the tests below exercise.</p>
+  </div>
+  <figure>
+  <svg viewBox="0 0 980 470" role="img" aria-label="Five stages of a subagent's life down the left — session start, dispatch, persona runs, tool call, persona finishes — each connected to the guard that applies at that moment on the right: env pins, trigger matrices and packets, tool grants and turn caps, PreToolUse hooks, and the SubagentStop handoff gate." font-family="IBM Plex Mono, ui-monospace, monospace" font-size="12">
+    <defs><marker id="arw2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+    <!-- spine -->
+    <line x1="170" y1="68" x2="170" y2="392" stroke="currentColor" stroke-width="1.5" marker-end="url(#arw2)"/>
+    <!-- stages -->
+    <g fill="var(--paper)" stroke="currentColor" stroke-width="1.5">
+      <rect x="30" y="20" width="280" height="48"/><rect x="30" y="110" width="280" height="48"/><rect x="30" y="200" width="280" height="48"/><rect x="30" y="290" width="280" height="48"/><rect x="30" y="392" width="280" height="48"/>
+    </g>
+    <g fill="currentColor" font-size="13" font-weight="500">
+      <text x="46" y="40">session start</text><text x="46" y="130">command dispatches a persona</text><text x="46" y="220">persona runs</text><text x="46" y="310">every Bash call</text><text x="46" y="412">persona tries to finish</text>
+    </g>
+    <g fill="var(--ink-2)" font-size="10.5">
+      <text x="46" y="57">CLAUDE.md + settings.json load</text><text x="46" y="147">/spec /plan /build /test /review</text><text x="46" y="237">frontmatter applied by the host</text><text x="46" y="327">PreToolUse, global then agent-scoped</text><text x="46" y="429">Stop → SubagentStop at runtime</text>
+    </g>
+    <!-- connectors -->
+    <g stroke="var(--rule)" stroke-width="1" fill="none">
+      <line x1="310" y1="44" x2="380" y2="44"/><line x1="310" y1="134" x2="380" y2="134"/><line x1="310" y1="224" x2="380" y2="224"/><line x1="310" y1="314" x2="380" y2="314"/><line x1="310" y1="416" x2="380" y2="416"/>
+    </g>
+    <!-- guards -->
+    <g stroke-width="1.5">
+      <rect x="380" y="14" width="570" height="60" fill="var(--gate-soft)" stroke="var(--gate)"/>
+      <rect x="380" y="104" width="570" height="60" fill="none" stroke="var(--rule)"/>
+      <rect x="380" y="194" width="570" height="60" fill="var(--gate-soft)" stroke="var(--gate)"/>
+      <rect x="380" y="284" width="570" height="60" fill="var(--gate-soft)" stroke="var(--gate)"/>
+      <rect x="380" y="386" width="570" height="60" fill="var(--gate-soft)" stroke="var(--gate)"/>
+    </g>
+    <g fill="currentColor" font-size="11.5">
+      <text x="394" y="36">SPAWN_DEPTH=1 · AGENT_TEAMS=0 · FORK_SUBAGENT=0</text>
+      <text x="394" y="126">task packet (outcome · criteria · REQ ids · verification · pointers)</text>
+      <text x="394" y="216">tools: Read Grep Glob for reviewers · maxTurns 40 / 60 · model per persona</text>
+      <text x="394" y="306">block-destructive-bash · warn-force-push  (all sessions)</text>
+      <text x="394" y="408">require-handoff-report — blocks once unless the report carries</text>
+    </g>
+    <g fill="var(--ink-2)" font-size="10.5">
+      <text x="394" y="54">no nesting · no teammates · no context-inheriting forks</text>
+      <text x="394" y="144">verification-triggers · reviewer-triggers · repository-precedent · target-selection decide who runs</text>
+      <text x="394" y="234">writers get Bash + Edit + Write; a cap ends in a marked-partial report</text>
+      <text x="394" y="324">block-agent-push: every spelling of git push, gh pr create/merge, release create  (executor, test-engineer)</text>
+      <text x="394" y="426">verification commands + outcomes · commit id or explicit no-commit · working-tree state</text>
+    </g>
+  </svg>
+  <figcaption>Amber = enforced by the host (env pins, tool grants, hooks) — the persona cannot talk its way past it. The dispatch stage stays instruction-based by design: which reviewer runs is a judgment the trigger matrices constrain and the workflow runner tests.</figcaption>
+  </figure>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Policy (the sentence)</th><th>Mechanism</th><th>Scope</th><th>Test</th></tr></thead>
+    <tbody>
+      <tr><td>Never rm -rf /, reset --hard, clean -f, branch -D, checkout .</td><td><code>hooks/block-destructive-bash.sh</code> → deny</td><td>every Bash call, all sessions</td><td><code>tools/test-hooks.sh</code></td></tr>
+      <tr><td>Confirm before force-push to main; confirm any push in a local IDE session</td><td><code>hooks/warn-force-push.sh</code> → ask; expands <code>.gitconfig</code> aliases and push typos first</td><td>every Bash call, all sessions</td><td><code>tools/test-hooks.sh</code></td></tr>
+      <tr><td>Writers commit and tag locally; they never push or publish</td><td><code>hooks/block-agent-push.sh</code> → deny</td><td>executor, test-engineer (frontmatter)</td><td><code>tools/test-hooks.sh</code> (27 cases)</td></tr>
+      <tr><td>Completion claims require executed evidence</td><td><code>hooks/require-handoff-report.sh</code> → block once</td><td>executor, test-engineer (Stop)</td><td><code>tools/test-handoff-hook.sh</code> (12)</td></tr>
+      <tr><td>Personas never dispatch personas</td><td>env pin depth 1 + explicit <code>tools:</code></td><td>all subagents</td><td>—</td></tr>
+      <tr><td>Reviewers are read-only</td><td>tool grant <code>Read Grep Glob</code></td><td>4 personas</td><td>frontmatter parse in commit checks</td></tr>
+      <tr><td>Spec/plan/todo paths never drift</td><td><code>tools/validate-artifact-paths.py</code> (24 guarded files)</td><td>repo</td><td><code>validate-artifact-paths-test.py</code> (11)</td></tr>
+      <tr><td>Parallel only when safe; specialists only when triggered; gates hold under pressure</td><td>decision rules in <code>build.md</code>, <code>reviewer-triggers.md</code>, <code>verification-triggers.md</code></td><td>orchestrator judgment</td><td>workflow runner cases (below)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============================================================ REFERENCES -->
+<section id="references">
+  <div class="plate-head">
+    <div class="eyebrow">Layer 4 · Policy files</div>
+    <h2>References: single sources the commands point at</h2>
+    <p>Nothing in <code>references/</code> loads on its own; a command, skill, or task packet points at it. Each matrix exists once so five consumers cannot drift apart.</p>
+  </div>
+  <div class="grid">
+    <div class="tile"><h3>Decision matrices <small>read on nearly every run</small></h3><ul>
+      <li><code>verification-triggers.md</code><span>when <code>/review</code> must require <code>/test</code></span></li>
+      <li><code>reviewer-triggers.md</code><span>when security-auditor / distributed-systems-reviewer join</span></li>
+      <li><code>target-selection.md</code><span>how a gate resolves its candidate; gate-handoff message rules</span></li>
+      <li><code>repository-precedent.md</code><span>reuse → bounded check → dispatch recon; "no precedent ≠ forbidden"</span></li>
+      <li><code>repository-precedent-example.md</code><span>a filled-in recon report</span></li>
+    </ul></div>
+    <div class="tile"><h3>Quality gates <small>approval, ids, invariants</small></h3><ul>
+      <li><code>spec-quality-gates.md</code><span>approval-check assertions · Status transitions · REQ-### trace · invariant proof · lifecycle</span></li>
+      <li><code>plan-quality-gates.md</code><span>spec pin, stale-plan rule, id ownership table (REQ/DEC/TD/T/CP)</span></li>
+      <li><code>definition-of-done.md</code><span>what "done" means at each stage</span></li>
+      <li><code>documentation-practices.md</code><span>project doc ownership; ADR vs IDEAS split</span></li>
+      <li><code>agent-run-metrics.md</code><span>what to measure from transcripts; <code>tools/run-metrics.sh</code></span></li>
+    </ul></div>
+    <div class="tile"><h3>Knowledge <small>loaded by role, not by default</small></h3><ul>
+      <li><code>security-checklist.md</code><span>security-auditor: auth, input, data, infra sections</span></li>
+      <li><code>ai-security.md</code><span>LLM / agent / RAG surfaces</span></li>
+      <li><code>supply-chain.md</code><span>package-manager install-script policy</span></li>
+      <li><code>testing-patterns.md</code><span>JS/TS illustrations of the TDD principles</span></li>
+    </ul></div>
+    <div class="tile"><h3>Templates <small>the load-bearing headings</small></h3><ul>
+      <li><code>templates/spec.md</code><span>full form; compact form for bounded work</span></li>
+      <li><code>templates/bugfix-spec.md</code><span>leads with reproduction; preserved behavior explicit</span></li>
+      <li><code>templates/plan.md</code><span>SPEC CONFLICT block, checkpoints, coverage map</span></li>
+      <li><code>templates/task.md</code><span>the executor packet</span></li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- ============================================================ SKILLS -->
+<section id="skills">
+  <div class="plate-head">
+    <div class="eyebrow">Layer 5 · Methodology</div>
+    <h2>Nineteen skills, grouped by who invokes them</h2>
+    <p>Skills own reusable method; personas own roles; commands own routing. Three are marked <span class="tag" style="border-color:var(--gate);color:var(--gate)">explicit</span> — <code>disable-model-invocation</code> — so only a command or you can start them.</p>
+  </div>
+  <div class="grid">
+    <div class="tile"><h3>Owned by the pipeline</h3><div class="chips">
+      <span class="chip">spec-driven-development</span><span class="chip">planning-and-task-breakdown</span><span class="chip">executor-development-discipline</span><span class="chip dmi">code-review-and-quality</span><span class="chip dmi">test-driven-development</span><span class="chip dmi">incremental-implementation</span><span class="chip">jira-ticket</span>
+    </div><p style="font-size:13px;color:var(--ink-2)"><code>/spec</code> → SDD (+ jira-ticket intake) · <code>/plan</code> → planning · <code>/build</code> preloads executor-development-discipline into every executor · code-reviewer defers to code-review-and-quality as canonical.</p></div>
+    <div class="tile"><h3>Selected by <code>/build</code> per task</h3><div class="chips">
+      <span class="chip">api-and-interface-design</span><span class="chip">deprecation-and-migration</span><span class="chip">security-and-hardening</span><span class="chip">browser-testing-with-devtools</span>
+    </div><p style="font-size:13px;color:var(--ink-2)">Added to <code>required_skills</code> only when the task's methodology needs it: shared contract, migration, trust boundary, real-browser behavior.</p></div>
+    <div class="tile"><h3>Domain &amp; project</h3><div class="chips">
+      <span class="chip">c4-architecture</span><span class="chip">laravel-worktree-isolation</span><span class="chip">adr-recording</span><span class="chip">project-docs</span><span class="chip">context-engineering</span><span class="chip">git-workflow-and-versioning</span>
+    </div></div>
+    <div class="tile"><h3>Harness-internal</h3><div class="chips">
+      <span class="chip">dotfiles-sync</span><span class="chip">caveman</span>
+    </div><p style="font-size:13px;color:var(--ink-2)"><code>dotfiles-sync</code>: how a new file reaches <code>~/.claude</code> via <code>tools/link_dotfiles.sh</code>. <code>caveman</code>: the default terse chat style. Vendored sets carry their license files alongside.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================ ARTIFACTS -->
+<section id="artifacts">
+  <div class="plate-head">
+    <div class="eyebrow">Layer 6 · Records a stage leaves behind</div>
+    <h2>Artifacts and the REQ-### trace</h2>
+    <p>One id per requirement, assigned by <code>/spec</code> and never renumbered. Every later stage reports against it, so a dropped requirement or an orphan task is caught at <code>/plan</code>, not in production.</p>
+  </div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Stage</th><th>Reads</th><th>Writes / emits</th><th>Obligation on REQ-###</th><th>Human gate</th></tr></thead>
+    <tbody>
+      <tr><td><code>/spec</code></td><td>intake · recon report · existing spec</td><td><code>docs/specs/[TICKET]-SPEC.md</code> (Draft) · <code>[TICKET]-CAPABILITY-MAP.md</code> + <code>[TICKET]-SPEC-&lt;module&gt;.md</code> for multi-capability work</td><td>assigns id + <code>Source:</code>; OPEN QUESTION → DEC-###</td><td><span class="tag gate">Approved</span> set only by you</td></tr>
+      <tr><td><code>/plan</code></td><td>Approved, committed spec (pinned by sha)</td><td><code>docs/tasks/[TICKET]-plan.md</code> + <code>[TICKET]-todo.md</code>; <code>SPEC CONFLICT</code> when the spec contradicts the code</td><td>every REQ → ≥1 task; every task → ≥1 REQ; TD-### for technical decisions</td><td><span class="tag gate">plan approval</span></td></tr>
+      <tr><td><code>/build</code></td><td>plan header, task packets, checkpoints</td><td>scoped local commits (+ local tags) · <code>BUILD COMPLETE</code> with candidate identity, verification, run metrics</td><td>ids in each executor packet</td><td>—</td></tr>
+      <tr><td><code>/test</code></td><td>BUILD COMPLETE message</td><td>test-only commits · <code>VERIFY PASS / FAIL / BLOCKED</code></td><td>evidence per id, per scenario</td><td>—</td></tr>
+      <tr><td><code>/review</code></td><td>BUILD COMPLETE (+ VERIFY PASS)</td><td>findings with source, severity, confidence, disposition; per-REQ evidence lines</td><td>each finding tagged with the id it bears on</td><td>—</td></tr>
+      <tr><td><code>/ship</code></td><td>REVIEW result for the exact candidate</td><td><code>GO / NO-GO / SHIP BLOCKED</code> + rollback plan + attestations</td><td>NO-GO while any id lacks implementation or verification evidence</td><td><span class="tag gate">you push</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============================================================ TESTS -->
+<section id="tests">
+  <div class="plate-head">
+    <div class="eyebrow">Layer 7 · The harness testing itself</div>
+    <h2>Five suites, all local, none in CI yet</h2>
+    <p>Deterministic checks run in seconds and cost nothing; the workflow runner drives the real model and is run on demand. There is no <code>.github/</code> in this repo — these run when someone remembers.</p>
+  </div>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Suite</th><th>Exercises</th><th>Cases</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td><code>tools/test-hooks.sh</code></td><td>the three PreToolUse hooks: deny / ask / allow, aliases, typos, global options, quoted targets</td><td class="num">100</td><td>free</td></tr>
+      <tr><td><code>tools/test-handoff-hook.sh</code></td><td>SubagentStop gate: complete, partial, claim-only, second attempt, unknown agent, unreadable transcript</td><td class="num">12</td><td>free</td></tr>
+      <tr><td><code>tools/validate-artifact-paths.py</code> + test</td><td>canonical spec/plan/todo spellings across 24 pipeline files; replays the <code>-spec.md</code> drift once shipped</td><td class="num">24 files · 11</td><td>free</td></tr>
+      <tr><td><code>tools/tests/workflow/test_runner.py</code></td><td>the runner's own assertion logic and fixture construction</td><td class="num">15</td><td>free</td></tr>
+      <tr><td><code>tools/tests/workflow/run.py</code></td><td>stage decisions against the real model: jira ×3, spec ×2, plan ×4, build ×2, review ×2, pressure ×2</td><td class="num">15</td><td>tokens</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p style="font-size:13px;color:var(--ink-2)">Also: <code>tools/test-install-skills.py</code> (Codex link installer), <code>tools/run-metrics.sh</code> (transcript metrics), and <code>tools/link_dotfiles.sh</code>, which is how any of this reaches <code>~/.claude</code>.</p>
+</section>
+
+<!-- ============================================================ RECORDS -->
+<section id="records">
+  <div class="plate-head">
+    <div class="eyebrow">Layer 8 · Memory of the harness</div>
+    <h2>Records and open items</h2>
+  </div>
+  <div class="grid">
+    <div class="tile"><h3>Decision record <small>docs/adr/</small></h3><ul>
+      <li><code>55 ADRs</code><span>MADR-style, superseding chains kept explicit; 0055 covers the multi-agent enforcement and parallel-when-safe</span></li>
+      <li><code>ARCHITECTURE.md</code><span>host enforcement vs. instruction; verification list</span></li>
+      <li><code>dotfiles/claude/docs/agents.md</code><span>synced orchestration doc: personas, pipeline, context discipline</span></li>
+      <li><code>README.md</code><span>the synced-files inventory and per-hook rationale</span></li>
+    </ul></div>
+    <div class="tile"><h3>Also synced <small>beyond the pipeline</small></h3><ul>
+      <li><code>AGENTS.md</code><span>cross-tool instruction file</span></li>
+      <li><code>mcp/setup.sh</code><span><code>claude mcp add</code> commands instead of syncing <code>~/.claude.json</code></span></li>
+      <li><code>statusline.sh</code> <code>subagent-statusline.sh</code><span>cost / duration / context readouts</span></li>
+      <li><code>remote-settings.json</code><span>web-session variant</span></li>
+      <li><code>dotfiles/codex/</code><span>adapters exposing the same commands and skills to Codex</span></li>
+    </ul></div>
+    <div class="open">
+      <div class="eyebrow">Open at this commit</div>
+      <div>· The four decision cases and two pressure cases in the workflow runner have never been run against the real model — first observation task.</div>
+      <div>· <code>harness-v1</code> tag exists only in the session container; push it from your machine.</div>
+      <div>· No CI: the five suites above run only by hand.</div>
+      <div>· <code>maxTurns</code> values (40 / 60) are first guesses awaiting <code>run-metrics.sh</code> data.</div>
+      <div>· First real ticket in flight: <code>llms/portfolio/docs/specs/DOCLIB-SPEC.md</code>, Draft, three open questions.</div>
+    </div>
+  </div>
+</section>
+
+<footer>Drawn from the tree at 0757d83 (2026-09-13). Counts are file counts; "cases" are assertion counts reported by each suite's last run.</footer>
+</div>

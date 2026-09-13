@@ -91,6 +91,15 @@ or architecture skill does not establish a working connection. The Claude
 [MCP setup script](dotfiles/claude/mcp/setup.sh) is separate from link installation;
 Codex tools must be available in its own session.
 
+## Map
+
+[docs/harness-map.html](docs/harness-map.html) draws every layer -- pipeline,
+personas, enforcement, references, skills, artifacts, self-tests -- as one sheet.
+Open it in a browser; GitHub will not render it. It is a snapshot stamped with
+the commit it was drawn from, so when a persona, hook, command, or pin changes,
+either redraw it in the same change or delete it: a stale map reads as
+authoritative.
+
 ## Verification and maintenance
 
 - `python3 dotfiles/codex/install-skills.py --check` checks installed link targets.
