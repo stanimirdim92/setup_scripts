@@ -1,5 +1,10 @@
 # Specialist reviewers moved to Sonnet/medium with narrowed triggers
 
+> **Partially superseded by [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md).**
+> The tier reduction is reversed — both specialists return to Opus, at `xhigh`.
+> The narrowed triggers and the narrowed reference loading stand unchanged, and
+> the risk this ADR recorded is what 0056 acts on.
+
 **Decision.** `security-auditor` and `distributed-systems-reviewer` now default
 to `model: claude-sonnet-5`, `effort: medium` instead of `claude-opus-5`,
 `effort: high`. `references/reviewer-triggers.md` was narrowed from file/feature

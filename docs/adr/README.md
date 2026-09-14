@@ -43,7 +43,7 @@ that explanation here, just the index.
 | [0033](0033-canonical-disposition-and-scoped-commit-authority.md) | Canonical release disposition, scoped commit authority, gate-state integrity | Clarified by [0038](0038-verify-pass-test-only-candidate-identity.md); local tags allowed and push hook-denied by [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) |
 | [0034](0034-spec-driven-development-narrowed-to-define.md) | `spec-driven-development` narrowed to the DEFINE stage | Accepted |
 | [0035](0035-independent-verify-made-risk-triggered.md) | Independent VERIFY made risk-triggered; `/review` owns the decision | Clarified by [0038](0038-verify-pass-test-only-candidate-identity.md) |
-| [0036](0036-specialist-reviewers-to-sonnet-and-narrowed-triggers.md) | Specialist reviewers to Sonnet/medium with narrowed triggers | Accepted |
+| [0036](0036-specialist-reviewers-to-sonnet-and-narrowed-triggers.md) | Specialist reviewers to Sonnet/medium with narrowed triggers | Partially superseded by [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md) (tier reversed to Opus/xhigh; narrowed triggers and reference loading stand) |
 | [0037](0037-fixed-session-context-reduced.md) | Fixed session context reduced: compact prompts and settings | Partially superseded by [0043](0043-automatic-memory-and-compaction-window-restored.md) (both settings changes reversed; the prompt compression stands) |
 | [0038](0038-verify-pass-test-only-candidate-identity.md) | VERIFY PASS test-only commits may advance the BUILD candidate | Accepted |
 | [0039](0039-runtime-catalog-narrowed-by-observed-use.md) | Runtime plugins narrowed; standalone engineering skills retained | Partially superseded by [0043](0043-automatic-memory-and-compaction-window-restored.md) (automatic memory no longer disabled) |
@@ -63,6 +63,7 @@ that explanation here, just the index.
 | [0053](0053-plan-guidance-consolidated-around-behavioral-tasks.md) | Plan guidance consolidated around behavioral tasks | Accepted |
 | [0054](0054-executor-concurrency-condition-gated-not-capped.md) | Executor concurrency gated by conditions, not a fixed cap | Partially superseded by [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) (sequential default replaced by parallel-when-safe; conditions unchanged) |
 | [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) | Multi-agent rules enforced by the harness; parallel-when-safe replaces sequential-by-default | Accepted |
+| [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md) | Models tiered by role; blind reviewer; recon width; writer isolation structural | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

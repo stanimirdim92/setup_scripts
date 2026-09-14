@@ -1,6 +1,8 @@
 ---
 name: jira-ticket
 description: "Jira ticket intake only. Use when the user asks to work on a Jira ticket. Fetch requirements and relevant context, surface and record blockers, and hand off to /spec without invoking it. A Jira key used only as context or an example does not trigger this skill."
+model: claude-opus-5
+effort: xhigh
 ---
 
 # Jira Ticket — Intake Only

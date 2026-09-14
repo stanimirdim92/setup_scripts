@@ -37,6 +37,9 @@ only named files for a bounded familiar change, or dispatch `repo-recon` when
 the area is unfamiliar, broad, cross-module, high-risk, or missing evidence.
 The dispatched agent reads widely but reports only pointers, verification,
 constraints, and explicit unknowns; its reads stay out of the caller's context.
+When the evidence spans several separately bounded areas, the stage dispatches
+one recon per area concurrently — width, never depth, and only over areas it
+has established are disjoint (`../references/repository-precedent.md` §1).
 
 `/plan` starts from the spec's pointers and reuses any report for the same
 unchanged area instead of repeating `/spec`'s survey.

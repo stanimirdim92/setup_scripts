@@ -97,7 +97,7 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
     <div>commit <b>0757d83</b> · tag <b>harness-v1</b> (local)</div>
     <div>6 commands · 6 personas · 19 skills</div>
     <div>14 references + 4 templates · 4 hooks</div>
-    <div>55 ADRs · 5 self-test suites</div>
+    <div>56 ADRs · 8 self-test suites</div>
   </div>
 </header>
 
@@ -310,12 +310,13 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
   <table>
     <thead><tr><th>Persona</th><th>Role · dispatched by</th><th>Tools</th><th>Model · effort</th><th>maxTurns</th><th>Hooks</th><th>Preloaded skill</th></tr></thead>
     <tbody>
-      <tr><td><span class="tag ro">repo-recon</span></td><td>read-only survey → pointers, "No precedent found for", "Not surveyed" · <code>/spec</code>, <code>/plan</code></td><td class="mono">Read Grep Glob</td><td>sonnet-5 · medium</td><td class="num">40</td><td>—</td><td>—</td></tr>
-      <tr><td><span class="tag writer">executor</span></td><td>implements one task, resumable per workstream, scoped local commits · <code>/build</code> only</td><td class="mono">Read Edit Write Bash Grep Glob Skill</td><td>sonnet-5 · medium</td><td class="num">—</td><td><code>PreToolUse</code> block-agent-push · <code>Stop</code> require-handoff-report</td><td class="mono">executor-development-discipline</td></tr>
-      <tr><td><span class="tag writer">test-engineer</span></td><td>independent verifier; test-only commits, never production code · <code>/test</code></td><td class="mono">Read Edit Write Bash Grep Glob Skill mcp__chrome-devtools__*</td><td>sonnet-5 · medium</td><td class="num">—</td><td>same two hooks</td><td>—</td></tr>
-      <tr><td><span class="tag ro">code-reviewer</span></td><td>five-axis review, Critical/Important/Suggestion + confidence · every <code>/review</code></td><td class="mono">Read Grep Glob</td><td>sonnet-5 · —</td><td class="num">60</td><td>—</td><td>defers to <code>code-review-and-quality</code></td></tr>
-      <tr><td><span class="tag ro">security-auditor</span></td><td>trust-boundary review, SEC-# · triggered by <code>reviewer-triggers.md</code></td><td class="mono">Read Grep Glob</td><td>sonnet-5 · medium</td><td class="num">60</td><td>—</td><td>—</td></tr>
-      <tr><td><span class="tag ro">distributed-systems-reviewer</span></td><td>retries, idempotency, ordering, CAP, queues, DIST-# · triggered</td><td class="mono">Read Grep Glob</td><td>sonnet-5 · <b>high</b></td><td class="num">60</td><td>—</td><td>—</td></tr>
+      <tr><td><span class="tag ro">repo-recon</span></td><td>read-only survey → pointers, "No precedent found for", "Not surveyed" · <code>/spec</code>, <code>/plan</code></td><td class="mono">Read Grep Glob</td><td>sonnet-5 · xhigh</td><td class="num">40</td><td>—</td><td>—</td></tr>
+      <tr><td><span class="tag writer">executor</span></td><td>implements one task, resumable per workstream, scoped local commits · <code>/build</code> only</td><td class="mono">Read Edit Write Bash Grep Glob Skill</td><td>sonnet-5 · xhigh · <b>worktree</b></td><td class="num">—</td><td><code>PreToolUse</code> block-agent-push · <code>Stop</code> require-handoff-report</td><td class="mono">executor-development-discipline</td></tr>
+      <tr><td><span class="tag writer">test-engineer</span></td><td>independent verifier; test-only commits, never production code · <code>/test</code></td><td class="mono">Read Edit Write Bash Grep Glob Skill mcp__chrome-devtools__*</td><td>sonnet-5 · xhigh · <b>worktree</b></td><td class="num">—</td><td>same two hooks</td><td>—</td></tr>
+      <tr><td><span class="tag ro">code-reviewer</span></td><td>five-axis review, Critical/Important/Suggestion + confidence · every <code>/review</code></td><td class="mono">Read Grep Glob</td><td><b>opus-5</b> · xhigh</td><td class="num">60</td><td>—</td><td>defers to <code>code-review-and-quality</code></td></tr>
+      <tr><td><span class="tag ro">blind-reviewer</span></td><td>reads the diff with <b>no</b> goal, criteria or evidence; reports behavior found + intent-dependent findings, BLIND-# · every <code>/review</code></td><td class="mono">Read Grep Glob</td><td><b>opus-5</b> · xhigh</td><td class="num">60</td><td>—</td><td>—</td></tr>
+      <tr><td><span class="tag ro">security-auditor</span></td><td>trust-boundary review, SEC-# · triggered by <code>reviewer-triggers.md</code></td><td class="mono">Read Grep Glob</td><td><b>opus-5</b> · xhigh</td><td class="num">60</td><td>—</td><td>—</td></tr>
+      <tr><td><span class="tag ro">distributed-systems-reviewer</span></td><td>retries, idempotency, ordering, CAP, queues, DIST-# · triggered</td><td class="mono">Read Grep Glob</td><td><b>opus-5</b> · xhigh</td><td class="num">60</td><td>—</td><td>—</td></tr>
     </tbody>
   </table>
   </div>
@@ -505,7 +506,7 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
   </div>
   <div class="grid">
     <div class="tile"><h3>Decision record <small>docs/adr/</small></h3><ul>
-      <li><code>55 ADRs</code><span>MADR-style, superseding chains kept explicit; 0055 covers the multi-agent enforcement and parallel-when-safe</span></li>
+      <li><code>56 ADRs</code><span>MADR-style, superseding chains kept explicit; 0055 covers the multi-agent enforcement, 0056 the role-tiered models, blind review, recon width and writer isolation</span></li>
       <li><code>ARCHITECTURE.md</code><span>host enforcement vs. instruction; verification list</span></li>
       <li><code>dotfiles/claude/docs/agents.md</code><span>synced orchestration doc: personas, pipeline, context discipline</span></li>
       <li><code>README.md</code><span>the synced-files inventory and per-hook rationale</span></li>

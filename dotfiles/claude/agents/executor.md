@@ -5,7 +5,8 @@ tools: Read, Edit, Write, Bash, Grep, Glob, Skill
 skills:
   - executor-development-discipline
 model: claude-sonnet-5
-effort: medium
+effort: xhigh
+isolation: worktree
 hooks:
   PreToolUse:
     - matcher: Bash

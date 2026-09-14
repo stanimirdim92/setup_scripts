@@ -37,6 +37,32 @@ Use the first adequate option:
    a source-supported command or precedent; or a prior report is stale or marked
    **Not surveyed** where evidence is now needed.
 
+### Dispatching more than one recon
+
+One recon surveys one area. When the evidence you need genuinely spans several
+areas that can be named and bounded separately — distinct modules, a backend
+surface and the frontend that consumes it, an implementation area and the test
+infrastructure around it — dispatch one recon per area, concurrently. Width is
+the only reason to dispatch more than one; it never buys depth on a single area,
+and a second recon over ground the first covered is pure duplication.
+
+Two conditions, both established before dispatching, not assumed:
+
+- **The areas are disjoint.** Overlapping packets make two agents read the same
+  files and return the same pointers at double the cost. If you cannot state
+  where one area ends and the next begins, you have one area, not two.
+- **Each area is separately surveyable.** An area whose findings you would need
+  in order to write the next area's packet is a dependency, not a sibling:
+  survey it first and dispatch the rest afterwards.
+
+Recons never see each other's packets or reports; each answers its own area and
+returns to you. Reconciling them is the caller's work, and it is real work —
+where two reports disagree about a shared convention, that disagreement is
+evidence about the repository (rule 6: surface the conflict, do not average it),
+not noise to smooth over. The same partial-report rules apply to each report
+independently: a capped or narrowed survey is marked, never merged into the
+others as though complete.
+
 Do not turn a bounded check into an inline repository survey. Whatever path is
 used, distinguish verified facts from inference and surface:
 

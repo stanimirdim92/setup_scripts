@@ -33,14 +33,22 @@ CLAUDE = ROOT / 'dotfiles/claude'
 AGENTS = CLAUDE / 'agents'
 SETTINGS = CLAUDE / 'settings.json'
 
-# Personas that may write. They keep Bash; the hooks are what bound them.
+# Personas that may write. They keep Bash; the hooks are what bound them, and
+# 0056 makes their checkout isolation structural rather than /build's to
+# remember.
 WRITERS = {'executor', 'test-engineer'}
 WRITER_HOOKS = ('block-agent-push.sh', 'require-handoff-report.sh')
 
+# Reviewers run on the high tier (0056): review is the judgment-heaviest work in
+# the pipeline and the place a miss is most expensive.
+REVIEWERS = {'code-reviewer', 'blind-reviewer', 'security-auditor',
+             'distributed-systems-reviewer'}
+REVIEWER_MODEL = 'claude-opus-5'
+DEFAULT_MODEL = 'claude-sonnet-5'
+
 # Personas that must never mutate anything. 0055: "reviewers read-only by tool
 # grant". Bash counts as a write tool here -- a reviewer with a shell can commit.
-READ_ONLY = {'repo-recon', 'code-reviewer', 'security-auditor',
-             'distributed-systems-reviewer'}
+READ_ONLY = REVIEWERS | {'repo-recon'}
 MUTATING_TOOLS = {'Write', 'Edit', 'NotebookEdit', 'Bash'}
 
 # Tools that would let a persona dispatch or talk to another one. Depth is
@@ -91,8 +99,13 @@ def check_agent(name, text):
         problems.append(f'{name}: frontmatter name is {scalar(block, "name")!r}, expected {name!r}')
     if not scalar(block, 'description'):
         problems.append(f'{name}: no description (it is what routes dispatch)')
-    if not scalar(block, 'model'):
+    model = scalar(block, 'model')
+    if not model:
         problems.append(f'{name}: no model')
+    else:
+        expected = REVIEWER_MODEL if name in REVIEWERS else DEFAULT_MODEL
+        if model != expected:
+            problems.append(f'{name}: model is {model!r}, expected {expected!r} (adr/0056)')
 
     tools = tool_list(block)
     if tools is None:
@@ -113,6 +126,8 @@ def check_agent(name, text):
         for hook in WRITER_HOOKS:
             if hook not in block:
                 problems.append(f'{name}: frontmatter does not reference {hook} -- the gate is not attached (adr/0055)')
+        if scalar(block, 'isolation') != 'worktree':
+            problems.append(f'{name}: no `isolation: worktree` -- a writer without its own checkout can collide with another (adr/0056)')
 
     return problems
 
@@ -131,6 +146,13 @@ def check_settings(text):
             problems.append(f'settings.json: {key} is unset -- the default undoes adr/0055')
         elif str(actual) != expected:
             problems.append(f'settings.json: {key} is {actual!r}, expected {expected!r}')
+
+    # `isolation: worktree` branches from the DEFAULT BRANCH unless baseRef is
+    # "head". Executors work on in-progress branches, so the default would hand
+    # each one a checkout without the ticket branch or the earlier workstream
+    # commits -- silently, since the worktree is created successfully (adr/0056).
+    if data.get('worktree', {}).get('baseRef') != 'head':
+        problems.append('settings.json: worktree.baseRef is not "head" -- writer worktrees would branch from the default branch and lose in-progress work (adr/0056)')
 
     hooks = json.dumps(data.get('hooks', {}))
     for hook in ('block-destructive-bash.sh', 'warn-force-push.sh'):

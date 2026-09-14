@@ -51,24 +51,34 @@ Do not re-run `/test` inline and do not duplicate the trigger matrix here.
 
 ## 3. Dispatch reviewers
 
-Always dispatch `code-reviewer` with:
+Two reviewers always run, on the same diff, from opposite directions.
+
+Dispatch `code-reviewer` with:
 
 - the integrated diff;
 - a one-line goal;
 - the relevant acceptance criteria;
 - the build/verify evidence needed to understand what was checked.
 
-Do not send the full spec or plan.
+Dispatch `blind-reviewer` with **the integrated diff and nothing else**. No
+goal, no acceptance criteria, no build evidence, no ticket id in the packet
+text. Assembling this packet is a deliberate act of withholding: everything you
+naturally reach for is exactly what must not go in. A reviewer told what the
+change is for reads the code as confirming it, which is what `code-reviewer`
+is for; this one asks only what the code does.
+
+Do not send either reviewer the full spec or plan.
 
 Use `../references/reviewer-triggers.md` to decide whether
 `security-auditor` and/or `distributed-systems-reviewer` are also required.
 
 Run at most **2 reviewers concurrently**. Reviewers form judgments
-independently; do not pass one reviewer's findings to another.
+independently; do not pass one reviewer's findings to another — least of all
+`code-reviewer`'s to `blind-reviewer`.
 
-Use each persona's configured model by default. Escalate a specialist to a
-higher reasoning tier only when the matched risk is both high-impact and
-materially ambiguous; ordinary triggered reviews stay on the default model.
+Use each persona's configured model and effort. The reviewers already sit at
+the highest tier their definitions declare; raise a specialist beyond it only
+when the matched risk is both high-impact and materially ambiguous.
 
 ## 4. Report
 
@@ -79,12 +89,32 @@ Preserve every reviewer's native severity and add the canonical disposition:
 | `code-reviewer` | Critical | BLOCKER |
 |  | Important | REQUIRED |
 |  | Suggestion | ADVISORY |
+| `blind-reviewer` | Critical | BLOCKER |
+|  | Important | REQUIRED |
+|  | Suggestion | ADVISORY |
+|  | Intent-dependent | resolve here — see below |
 | `security-auditor` | Critical, High | BLOCKER |
 |  | Medium | REQUIRED |
 |  | Low, Info | ADVISORY |
 | `distributed-systems-reviewer` | Critical | BLOCKER |
 |  | Important | REQUIRED |
 |  | Suggestion | ADVISORY |
+
+`blind-reviewer` also returns two things no other reviewer produces, and both
+are yours to resolve because you are the only participant holding the diff
+*and* the intent:
+
+- **"What this change appears to do"** — its reading of the diff without the
+  goal. Compare it against the actual goal. A material mismatch is a finding in
+  its own right at the severity the gap warrants: either the code does not do
+  what was asked, or it does but says so badly enough that a careful reader
+  cannot tell.
+- **Intent-dependent findings** — where correctness genuinely turns on
+  information the reviewer was not given. Settle each against the acceptance
+  criteria you hold: close it as answered, or promote it to its warranted
+  severity when the criteria confirm the defect. Never pass one through
+  unresolved; an unresolved intent-dependent finding is work you skipped, not a
+  finding you reported.
 
 Every finding keeps a stable id, source, native severity, confidence,
 disposition, file/location, and resolution state. Confidence travels with the

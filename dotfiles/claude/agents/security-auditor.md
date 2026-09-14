@@ -2,8 +2,8 @@
 name: security-auditor
 description: Security engineer for changes that materially alter trust boundaries, permissions, secrets, sensitive input/data, dependencies, or security-sensitive integrations.
 tools: Read, Grep, Glob
-model: claude-sonnet-5
-effort: medium
+model: claude-opus-5
+effort: xhigh
 maxTurns: 60
 ---
 

@@ -24,6 +24,8 @@ name: executor
 description: Implements one planned task end-to-end.
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill
 model: claude-sonnet-5
+effort: xhigh
+isolation: worktree
 hooks:
   PreToolUse:
     - matcher: Bash
@@ -41,8 +43,17 @@ name: repo-recon
 description: Read-only repository reconnaissance.
 tools: Read, Grep, Glob
 model: claude-sonnet-5
-effort: medium
+effort: xhigh
 maxTurns: 40
+"""
+
+REVIEWER = """
+name: blind-reviewer
+description: Reviews a diff with no knowledge of what it was supposed to do.
+tools: Read, Grep, Glob
+model: claude-opus-5
+effort: xhigh
+maxTurns: 60
 """
 
 SETTINGS_OK = """{
@@ -51,6 +62,7 @@ SETTINGS_OK = """{
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "0",
     "CLAUDE_CODE_FORK_SUBAGENT": "0"
   },
+  "worktree": {"baseRef": "head"},
   "hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [
     {"type": "command", "command": "$HOME/.claude/hooks/block-destructive-bash.sh"},
     {"type": "command", "command": "$HOME/.claude/hooks/warn-force-push.sh"}
@@ -72,6 +84,9 @@ class AllowCases(unittest.TestCase):
     def test_settings_pins_present_passes(self):
         self.assertEqual(vf.check_settings(SETTINGS_OK), [])
 
+    def test_reviewer_on_opus_passes(self):
+        self.assertEqual(vf.check_agent('blind-reviewer', agent('blind-reviewer', REVIEWER)), [])
+
 
 class DenyCases(unittest.TestCase):
     def test_missing_frontmatter(self):
@@ -89,8 +104,8 @@ class DenyCases(unittest.TestCase):
         self.assertTrue(any('read-only persona grants Bash' in p for p in problems))
 
     def test_reviewer_granted_edit(self):
-        body = RECON.replace('tools: Read, Grep, Glob', 'tools: Read, Grep, Glob, Edit, Write')
-        problems = vf.check_agent('code-reviewer', agent('code-reviewer', body).replace('repo-recon', 'code-reviewer'))
+        body = REVIEWER.replace('tools: Read, Grep, Glob', 'tools: Read, Grep, Glob, Edit, Write')
+        problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
         self.assertTrue(any('Edit' in p and 'Write' in p for p in problems))
 
     def test_persona_granted_agent_tool(self):
@@ -124,6 +139,29 @@ class DenyCases(unittest.TestCase):
     def test_settings_fork_re_enabled(self):
         problems = vf.check_settings(SETTINGS_OK.replace('"CLAUDE_CODE_FORK_SUBAGENT": "0"', '"CLAUDE_CODE_FORK_SUBAGENT": "1"'))
         self.assertTrue(any('FORK_SUBAGENT' in p for p in problems))
+
+    def test_reviewer_left_on_the_default_model(self):
+        body = REVIEWER.replace('model: claude-opus-5', 'model: claude-sonnet-5')
+        problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
+        self.assertTrue(any("expected 'claude-opus-5'" in p for p in problems))
+
+    def test_non_reviewer_escalated_to_opus(self):
+        body = RECON.replace('model: claude-sonnet-5', 'model: claude-opus-5')
+        problems = vf.check_agent('repo-recon', agent('repo-recon', body))
+        self.assertTrue(any("expected 'claude-sonnet-5'" in p for p in problems))
+
+    def test_writer_without_worktree_isolation(self):
+        body = EXECUTOR.replace('isolation: worktree\n', '')
+        problems = vf.check_agent('executor', agent('executor', body))
+        self.assertTrue(any('isolation: worktree' in p for p in problems))
+
+    def test_settings_worktree_base_ref_missing(self):
+        problems = vf.check_settings(SETTINGS_OK.replace('"worktree": {"baseRef": "head"},\n  ', ''))
+        self.assertTrue(any('baseRef' in p for p in problems))
+
+    def test_settings_worktree_base_ref_fresh(self):
+        problems = vf.check_settings(SETTINGS_OK.replace('"baseRef": "head"', '"baseRef": "fresh"'))
+        self.assertTrue(any('baseRef' in p for p in problems))
 
     def test_settings_invalid_json(self):
         problems = vf.check_settings('{"env": ')

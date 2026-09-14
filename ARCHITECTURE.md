@@ -113,9 +113,10 @@ authoritative.
   override, time window, subagent exclusion, string and array-form results.
 - `tools/validate-frontmatter.py` fails when a persona loses its explicit
   `tools:` line, a read-only persona gains a mutating or dispatching tool, a
-  writing persona stops referencing its two agent-scoped hooks, or a
-  `settings.json` pin from ADR 0055 is missing; `tools/validate-frontmatter-test.py`
-  covers the allow and deny cases.
+  writing persona stops referencing its two agent-scoped hooks or its
+  `isolation: worktree`, a persona drifts off the model tier its role calls for,
+  or a `settings.json` pin from ADR 0055 or 0056 is missing;
+  `tools/validate-frontmatter-test.py` covers the allow and deny cases.
 - `tools/validate-artifact-paths.py` fails when any pipeline file spells a
   spec/capability-map/plan/todo artifact path differently from the canonical
   set (the drift class fixed in c4584dd); `tools/validate-artifact-paths-test.py`

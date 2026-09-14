@@ -2,7 +2,8 @@
 name: code-reviewer
 description: Senior code reviewer that evaluates changes across five dimensions — correctness, readability, architecture, security, and performance. Use for thorough code review before merge.
 tools: Read, Grep, Glob
-model: claude-sonnet-5
+model: claude-opus-5
+effort: xhigh
 maxTurns: 60
 ---
 
