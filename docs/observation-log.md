@@ -108,10 +108,23 @@ when it was put to them they made it. `repository-precedent.md` §2 says to rais
 an `OPEN QUESTION` rather than silently decide where the evidence is mixed —
 the first run broke that rule and the second kept it.
 
-Open, and for the approver rather than the log: 23 requirements and 8 blocking
-questions on a ticket that shipped may be thoroughness or may be
-over-specification. Nothing here settles which, and the first ticket where a
-spec blocks on a question that did not need asking is the evidence to record.
+**Settled the same day, by review rather than by count.** The question left open
+here was whether 23 requirements and 8 blocking questions on an already-shipped
+ticket were thoroughness or over-specification. The approver read the spec
+against the implementation that shipped two weeks ago and reported: every open
+question valid, most of them *not* caught during that implementation; the
+requirements valid; and the spec identified work missing from what actually went
+to production.
+
+That is a stronger result than the comparison that produced it. The re-run was
+measured against the earlier spec, which is a test of consistency. This is a
+test against reality — the spec found real gaps in shipped code that a human
+team, working the same tickets, did not. It is one ticket and one reviewer, so
+it does not generalise on its own; it does mean the 0056 tiering is no longer
+resting only on the papers it was argued from.
+
+The gaps it named are live work: LD-381, LD-382 and LD-383 are In Progress and
+LD-386 (QA) is still To Do.
 
 It does **not** establish anything about repository evidence or `repo-recon`:
 the project was an empty fixture, so there was nothing to survey and no
