@@ -27,7 +27,7 @@ a gate that should have fired and did not).
 | Date | Ticket | Stage / persona | What failed | Cost | Repeated? | Fix or status |
 |---|---|---|---|---|---|---|
 | 2026-09-14 | LD-380 | `jira-ticket` | Two cross-ticket contradictions not surfaced. LD-238 says the user "receives an email once the advertiser is ready"; LD-380 says "No email or other notification is sent" — flat contradiction, unflagged. LD-362's comment thread decides the `list content not complete` frame becomes the incomplete-Google-data fallback (`—` / "No category"); that decision reached neither the intake nor LD-380's state table. The third contradiction, Outscraper vs Google Places, **was** caught and routed to `/spec`. | None — found by reading the run, not by the harness. Would have surfaced in `/review` or QA at the earliest. | first | Open. §2 asks for requirement-bearing comments to be *retained*; it never asks for conflicting statements across tickets to be *reconciled*. One caught of three suggests the behavior is incidental, not instructed. |
-| 2026-09-14 | LD-380 | `/plan` | Ran its full precondition check and wrote its report having never read `plan-quality-gates.md`, `templates/plan.md` or `templates/task.md` — all three denied (`is_error`) on every route it tried: the `.claude/*` symlink path, the resolved absolute path, `cat` via Bash, then a repeat `Read`. 15 of the stage's 23 tool results were denials. It disclosed this, but as a "secondary (non-blocking) note" under a blocker that happened to be fatal anyway. Had the primary blocker been absent, it would have written a plan shaped only by the skill body, with no template and no quality gates, and nothing would have flagged it. | None this run — the primary block was correct and stopped everything. The cost is latent: a degraded stage discloses in a footnote and proceeds. | first | Open. Nothing verifies that a stage's own references were readable before trusting its output. `tools/check-references.py` now catches the static half (a reference that does not resolve); the runtime half — a reference that resolves but is refused — is still unguarded. |
+| 2026-09-14 | LD-380 | `/plan` | Ran its full precondition check and wrote its report having never read `plan-quality-gates.md`, `templates/plan.md` or `templates/task.md` — all three denied (`is_error`) on every route it tried: the `.claude/*` symlink path, the resolved absolute path, `cat` via Bash, then a repeat `Read`. 15 of the stage's 23 tool results were denials. It disclosed this, but as a "secondary (non-blocking) note" under a blocker that happened to be fatal anyway. Had the primary blocker been absent, it would have written a plan shaped only by the skill body, with no template and no quality gates, and nothing would have flagged it. | None. The primary block was correct and stopped everything. | first | **Cause was the fixture, not the harness.** The fixture mounted `.claude/` as symlinks into the dotfiles checkout and the nested session was never given that directory, so the resolved paths sat outside its working directory. A real install links `~/.claude`, which Claude Code reads natively. Verified on the approver's own machine the same day: `Read ~/.claude/references/plan-quality-gates.md` from an unrelated project returns the file, no denial. The three shipped tickets ran with their gates intact. What survives as a harness observation is narrower and unproven in production: a stage that loses a reference discloses it in a footnote and keeps going. `tools/check-references.py` covers references that do not resolve; nothing covers one that resolves and is refused, and there is now no evidence that happens outside a misbuilt fixture. |
 
 - **Stage / persona** — `/spec`, `/plan`, `/build`, `/review`, `/ship`, `/test`,
   or the persona name when it is a subagent failure.
@@ -67,8 +67,8 @@ Draft to Approved with the approver's name and date, and left an unrelated
 working-tree modification alone rather than sweeping it in. `/plan` then
 verified all four preconditions — Approved status, stable ids, clean tree, and
 a spec revision pin (`git-commit:fc1f6dc...`) — and blocked on the one that
-failed, writing no artifact. It did so without access to its own references;
-see the failure row above.
+failed, writing no artifact. It did so without access to its own references — a
+fixture defect, see the failure row above.
 
 **The strongest signal is external to the run.** LD-380 is live, and the
 approver reports that the spec produced here matches the one written about two
@@ -91,7 +91,10 @@ mistakes.** An earlier revision of this file claimed `/plan` "reported an access
 blocker that did not happen." That was wrong. The check behind it counted
 `tool_use` attempts and never read `is_error` on the results; every one of those
 reads had failed. `/plan`'s report was accurate in full. The finding above
-replaces it.
+replaces it — and was itself then narrowed, once the approver ran the same read
+on a real install and got the file: the denial was the fixture's doing, not the
+harness's. Two corrections to one row in one day is the honest cost of a log
+that records what happened rather than what was assumed.
 
 Source every number:
 
