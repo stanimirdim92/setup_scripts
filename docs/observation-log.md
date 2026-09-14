@@ -108,6 +108,28 @@ when it was put to them they made it. `repository-precedent.md` §2 says to rais
 an `OPEN QUESTION` rather than silently decide where the evidence is mixed —
 the first run broke that rule and the second kept it.
 
+**Corrected once more, by the artifact neither run could see.** The comparison
+above set two repo-less specs against each other. The spec actually approved on
+2026-09-06 was written with the codebase in front of it, and it dissolves two of
+the three "contradictions" the re-run was credited with catching. LD-238's email
+belongs to the pre-existing `/v1/advertiser-request` endpoint, which this ticket
+does not touch — its DEC-005 says so, with the repository as evidence. The
+provider question it decided outright (DEC-001), because the approver had
+decided it in session. Raising a question you cannot settle is right; resolving
+one you can is better, and the comparison scored the weaker behaviour as the win.
+
+Worse for the re-run: LD-382 lists four duplicate signals, and
+`AdvertiserRepository::exists()` implements two. The re-run's spec specified all
+four, phone scenario included, and would have sent an executor to build a
+matching path the approver had explicitly declined. The 2026-09-06 spec narrowed
+it and recorded DEC-006. No care in a repo-less run substitutes for reading the
+code; `repo-recon` remains the untested half of this harness and this is what it
+is for.
+
+What survives from the comparison: on the same evidence, the 0056 harness read
+the comment threads more thoroughly than its predecessor. What does not survive
+is the implication that it produced a better spec than the one that shipped.
+
 **Settled the same day, by review rather than by count.** The question left open
 here was whether 23 requirements and 8 blocking questions on an already-shipped
 ticket were thoroughness or over-specification. The approver read the spec
