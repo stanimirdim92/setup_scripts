@@ -3,7 +3,6 @@ name: test-engineer
 description: QA engineer specialized in test strategy, test writing, and coverage analysis. Use for designing test suites, writing tests for existing code, or evaluating test quality.
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill, mcp__chrome-devtools__*
 model: claude-sonnet-5
-effort: xhigh
 isolation: worktree
 hooks:
   PreToolUse:

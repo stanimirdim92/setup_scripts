@@ -5,15 +5,27 @@
 four directions: this harness was spending the same resources on judgment and on
 retrieval, and reading every change exactly once.
 
-1. **Models are tiered by role, not uniform.** Every persona ran
-   `claude-sonnet-5`; the four reviewers now run `claude-opus-5`, and `/spec`,
-   `/plan` and the `jira-ticket` skill declare it too. Everything else —
-   `repo-recon`, `executor`, `test-engineer`, and the main session for
-   `/build`, `/review`, `/test`, `/ship` — stays on `claude-sonnet-5`. Effort is
-   `xhigh` throughout, including `modelSettings` for both models in
-   `settings.json`. Slash commands and skills accept `model:` and `effort:`
-   because commands are skills; that is what makes the three non-persona stages
-   reachable at all.
+1. **Models are tiered by role, not uniform, and the session runs the high
+   tier.** Every persona ran `claude-sonnet-5`. The four reviewers now run
+   `claude-opus-5`, and `/spec`, `/plan` and the `jira-ticket` skill declare it
+   too — slash commands and skills accept `model:` because commands are skills,
+   which is what makes those three non-persona stages reachable at all.
+   `repo-recon`, `executor` and `test-engineer` stay on `claude-sonnet-5`.
+   `settings.json`'s `model` moves from the floating `sonnet` alias to
+   `claude-opus-5`, so the stages that live in the main session — `/build`,
+   `/review`, `/test`, `/ship` — inherit the high tier without each declaring
+   one, and the pinned form follows [0002](0002-model-split-sonnet-orchestrator-tiered-subagents.md)'s
+   rule that delegation targets a version deliberately chosen rather than
+   whatever an alias floats to.
+
+   **Effort is left at its default.** No persona, command or skill declares
+   `effort:`, and the per-model `modelSettings` overrides are gone; the
+   top-level `effortLevel` in `settings.json` governs everything. An earlier
+   draft of this decision set `xhigh` across the board. That was a second
+   variable moved in the same change as the model tiers, with nothing able to
+   attribute an outcome to either — and the tier is the lever with evidence
+   behind it. One variable at a time; raise effort later from log data if the
+   tier alone does not deliver.
 2. **`blind-reviewer` is added and always runs.** It receives the integrated
    diff and nothing else — no goal, no acceptance criteria, no build evidence.
    `/review` now dispatches two reviewers on every run, from opposite
@@ -174,8 +186,10 @@ established as the guarantee rather than an instruction. `/test` and
 
 ## Consequences
 
-- Review costs more per run: two reviewers minimum, both on the expensive tier,
-  where one mid-tier reviewer ran before. The trade is deliberate and the
+- Everything costs more per run, not only review: the main session now runs the
+  high tier too, so `/build`, `/review`, `/test` and `/ship` are on it whether
+  or not they dispatch anything. Review compounds that — two reviewers minimum,
+  both on the expensive tier, where one mid-tier reviewer ran before. The trade is deliberate and the
   numbers belong in `docs/observation-log.md`.
 - `/review` gains real work it cannot skip. Intent-dependent findings must be
   settled against the acceptance criteria, and "what this change appears to do"

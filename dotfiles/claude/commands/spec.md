@@ -2,7 +2,6 @@
 description: Start spec-driven development — write a structured specification before writing code
 argument-hint: "[ticket or feature description]"
 model: claude-opus-5
-effort: xhigh
 ---
 
 Invoke the `spec-driven-development` skill before drafting; its methodology is

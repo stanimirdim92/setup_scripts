@@ -3,7 +3,6 @@ name: repo-recon
 description: Read-only repository reconnaissance. Discovers a project's instruction sources, conventions, architectural chain, test setup, and closest precedents for one feature area, and reports pointers rather than file contents. Use before specifying or planning work in an unfamiliar area.
 tools: Read, Grep, Glob
 model: claude-sonnet-5
-effort: xhigh
 maxTurns: 40
 ---
 

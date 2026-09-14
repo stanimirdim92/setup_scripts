@@ -24,7 +24,6 @@ name: executor
 description: Implements one planned task end-to-end.
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill
 model: claude-sonnet-5
-effort: xhigh
 isolation: worktree
 hooks:
   PreToolUse:
@@ -43,7 +42,6 @@ name: repo-recon
 description: Read-only repository reconnaissance.
 tools: Read, Grep, Glob
 model: claude-sonnet-5
-effort: xhigh
 maxTurns: 40
 """
 
@@ -52,11 +50,11 @@ name: blind-reviewer
 description: Reviews a diff with no knowledge of what it was supposed to do.
 tools: Read, Grep, Glob
 model: claude-opus-5
-effort: xhigh
 maxTurns: 60
 """
 
 SETTINGS_OK = """{
+  "model": "claude-opus-5",
   "env": {
     "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "0",
@@ -140,15 +138,24 @@ class DenyCases(unittest.TestCase):
         problems = vf.check_settings(SETTINGS_OK.replace('"CLAUDE_CODE_FORK_SUBAGENT": "0"', '"CLAUDE_CODE_FORK_SUBAGENT": "1"'))
         self.assertTrue(any('FORK_SUBAGENT' in p for p in problems))
 
-    def test_reviewer_left_on_the_default_model(self):
+    def test_persona_drifted_off_the_model(self):
         body = REVIEWER.replace('model: claude-opus-5', 'model: claude-sonnet-5')
         problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
         self.assertTrue(any("expected 'claude-opus-5'" in p for p in problems))
 
-    def test_non_reviewer_escalated_to_opus(self):
+    def test_floating_alias_is_not_the_pinned_model(self):
+        body = REVIEWER.replace('model: claude-opus-5', 'model: opus')
+        problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
+        self.assertTrue(any("expected 'claude-opus-5'" in p for p in problems))
+
+    def test_sonnet_persona_escalated_to_opus(self):
         body = RECON.replace('model: claude-sonnet-5', 'model: claude-opus-5')
         problems = vf.check_agent('repo-recon', agent('repo-recon', body))
         self.assertTrue(any("expected 'claude-sonnet-5'" in p for p in problems))
+
+    def test_settings_session_model_drifted(self):
+        problems = vf.check_settings(SETTINGS_OK.replace('"model": "claude-opus-5"', '"model": "sonnet"'))
+        self.assertTrue(any('settings.json: model' in p for p in problems))
 
     def test_writer_without_worktree_isolation(self):
         body = EXECUTOR.replace('isolation: worktree\n', '')

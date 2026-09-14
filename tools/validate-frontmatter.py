@@ -39,12 +39,18 @@ SETTINGS = CLAUDE / 'settings.json'
 WRITERS = {'executor', 'test-engineer'}
 WRITER_HOOKS = ('block-agent-push.sh', 'require-handoff-report.sh')
 
-# Reviewers run on the high tier (0056): review is the judgment-heaviest work in
-# the pipeline and the place a miss is most expensive.
+# Models are tiered by role (0056), and pinned rather than floating for the
+# reason 0002 gives: delegation should target a version deliberately chosen, not
+# whatever `opus` resolves to after the next release. The session itself runs
+# the high tier, so the stages that live in it -- /build, /review, /test, /ship
+# -- inherit it without each declaring a model.
+OPUS = 'claude-opus-5'
+SONNET = 'claude-sonnet-5'
+SESSION_MODEL = OPUS
+
 REVIEWERS = {'code-reviewer', 'blind-reviewer', 'security-auditor',
              'distributed-systems-reviewer'}
-REVIEWER_MODEL = 'claude-opus-5'
-DEFAULT_MODEL = 'claude-sonnet-5'
+SONNET_PERSONAS = {'repo-recon', 'executor', 'test-engineer'}
 
 # Personas that must never mutate anything. 0055: "reviewers read-only by tool
 # grant". Bash counts as a write tool here -- a reviewer with a shell can commit.
@@ -103,7 +109,7 @@ def check_agent(name, text):
     if not model:
         problems.append(f'{name}: no model')
     else:
-        expected = REVIEWER_MODEL if name in REVIEWERS else DEFAULT_MODEL
+        expected = SONNET if name in SONNET_PERSONAS else OPUS
         if model != expected:
             problems.append(f'{name}: model is {model!r}, expected {expected!r} (adr/0056)')
 
@@ -153,6 +159,9 @@ def check_settings(text):
     # commits -- silently, since the worktree is created successfully (adr/0056).
     if data.get('worktree', {}).get('baseRef') != 'head':
         problems.append('settings.json: worktree.baseRef is not "head" -- writer worktrees would branch from the default branch and lose in-progress work (adr/0056)')
+
+    if data.get('model') != SESSION_MODEL:
+        problems.append(f'settings.json: model is {data.get("model")!r}, expected {SESSION_MODEL!r} -- the session tier the main-session stages inherit (adr/0056)')
 
     hooks = json.dumps(data.get('hooks', {}))
     for hook in ('block-destructive-bash.sh', 'warn-force-push.sh'):
