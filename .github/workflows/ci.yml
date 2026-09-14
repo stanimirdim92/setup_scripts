@@ -67,6 +67,12 @@ jobs:
           python3 tools/check-references.py
           python3 tools/check-references-test.py
 
+      # Spec eval: the judging half only. Producing a spec drives the real
+      # model and stays manual.
+      - name: Spec-eval judging logic
+        working-directory: tools/tests/spec-eval
+        run: python3 test_judge.py
+
       # Orchestration: the workflow runner's own assertion and fixture logic.
       # NOT the live cases — those spend tokens and stay manual.
       - name: Workflow runner logic

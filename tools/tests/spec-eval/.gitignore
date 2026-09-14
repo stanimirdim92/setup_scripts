@@ -1,0 +1,4 @@
+# Fixtures hold real ticket content -- names, links, comment threads -- and this
+# repository is public. Keep them local; commit only the example.
+fixtures/*
+!fixtures/example/

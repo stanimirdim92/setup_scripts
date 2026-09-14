@@ -477,7 +477,7 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
 <section id="tests">
   <div class="plate-head">
     <div class="eyebrow">Layer 7 · The harness testing itself</div>
-    <h2>Eight suites, every deterministic one in CI</h2>
+    <h2>Nine suites, every deterministic one in CI</h2>
     <p>Deterministic checks run in seconds and cost nothing; the workflow runner drives the real model and is run on demand. <code>.github/workflows/ci.yml</code> runs every deterministic suite on every push and deliberately excludes the live runner, which spends tokens.</p>
   </div>
   <div class="scroll">
@@ -491,6 +491,8 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
       <tr><td><code>tools/test-run-metrics.sh</code></td><td>the transcript metrics' large-result section: threshold default and override, time window, subagent exclusion, string and array-form results</td><td class="num">17</td><td>free</td></tr>
       <tr><td><code>tools/validate-artifact-paths.py</code> + test</td><td>canonical spec/plan/todo spellings across 24 pipeline files; replays the <code>-spec.md</code> drift once shipped</td><td class="num">24 files · 11</td><td>free</td></tr>
       <tr><td><code>tools/tests/workflow/test_runner.py</code></td><td>the runner's own assertion logic and fixture construction</td><td class="num">15</td><td>free</td></tr>
+      <tr><td><code>tools/tests/spec-eval/test_judge.py</code></td><td>the spec eval's judging logic: co-occurrence windows, absent-regex, severity, semantic expectations</td><td class="num">17</td><td>free</td></tr>
+      <tr><td><code>tools/tests/spec-eval/run.py</code></td><td>re-runs <code>/spec</code> on a known-answer ticket; asserts the findings a human validated survive. LD-380: 9 checks, 2 for review</td><td class="num">9 + 2</td><td>tokens</td></tr>
       <tr><td><code>tools/tests/workflow/run.py</code></td><td>stage decisions against the real model: jira ×3, spec ×2, plan ×4, build ×2, review ×2, pressure ×2</td><td class="num">15</td><td>tokens</td></tr>
     </tbody>
   </table>

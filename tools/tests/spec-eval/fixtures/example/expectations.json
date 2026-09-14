@@ -1,0 +1,38 @@
+{
+  "ticket": "EX-1",
+  "note": "Invented tickets, committed to document the format. Real fixtures sit beside this one and are gitignored. Every expectation here is one a real fixture would carry; the content is fake.",
+  "intake": "intake.md",
+  "expectations": [
+    {
+      "id": "contradiction-retention",
+      "why": "EX-2 says records are purged after 30 days; EX-1 says they are kept indefinitely. A spec that does not notice has left the implementer to pick one silently.",
+      "near": ["EX-2", "30 days"],
+      "within_lines": 4
+    },
+    {
+      "id": "vendor-choice-not-self-decided",
+      "why": "The spike left the vendor open. Choosing one in a DEC block takes a decision that belongs to the approver; repository-precedent.md section 2 requires an OPEN QUESTION instead.",
+      "absent_regex": "^### DEC-\\d+[^\\n]*vendor"
+    },
+    {
+      "id": "no-invented-stack",
+      "why": "The fixture has no application source. A spec naming a framework or a table has invented it.",
+      "regex": "No precedent found|Not established"
+    },
+    {
+      "id": "draft-only",
+      "why": "Only a human sets Approved. A spec that approves itself has bypassed the gate.",
+      "regex": "^Status:\\s*Draft\\s*$"
+    },
+    {
+      "id": "requirement-ids",
+      "why": "REQ-### ids are grepped by /plan, /build and /ship. Losing them breaks the trace.",
+      "regex": "^### Requirement: REQ-\\d{3}"
+    },
+    {
+      "id": "open-questions-all-warranted",
+      "kind": "semantic",
+      "why": "Every open question must be genuinely unanswerable from the tickets. A spec that blocks on something the tickets answer is over-blocking, and no regex can tell the difference."
+    }
+  ]
+}

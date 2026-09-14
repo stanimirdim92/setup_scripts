@@ -121,6 +121,13 @@ authoritative.
   spec/capability-map/plan/todo artifact path differently from the canonical
   set (the drift class fixed in c4584dd); `tools/validate-artifact-paths-test.py`
   covers the allow and deny cases.
+- [Spec eval](tools/tests/spec-eval/README.md) re-runs `/spec` against a ticket
+  whose right answer is known from a human reading its spec against what
+  shipped, and checks the known findings survive. It is the only check here
+  that can tell whether a harness change moved spec *quality* rather than
+  shape. Its judging half is deterministic and runs in CI; producing a spec
+  costs tokens and is run deliberately. Fixtures carry real ticket content and
+  are gitignored.
 - [Workflow checks](tools/tests/workflow/README.md) document the isolated
   Jira/spec/plan/build/review runner, its invocation, and what its evidence
   does not cover.
