@@ -27,6 +27,7 @@ a gate that should have fired and did not).
 | Date | Ticket | Stage / persona | What failed | Cost | Repeated? | Fix or status |
 |---|---|---|---|---|---|---|
 | 2026-09-14 | LD-380 | `jira-ticket` | Two cross-ticket contradictions not surfaced. LD-238 says the user "receives an email once the advertiser is ready"; LD-380 says "No email or other notification is sent" — flat contradiction, unflagged. LD-362's comment thread decides the `list content not complete` frame becomes the incomplete-Google-data fallback (`—` / "No category"); that decision reached neither the intake nor LD-380's state table. The third contradiction, Outscraper vs Google Places, **was** caught and routed to `/spec`. | None — found by reading the run, not by the harness. Would have surfaced in `/review` or QA at the earliest. | first | Open. §2 asks for requirement-bearing comments to be *retained*; it never asks for conflicting statements across tickets to be *reconciled*. One caught of three suggests the behavior is incidental, not instructed. |
+| 2026-09-14 | LD-380 | `/plan` | Reported an access blocker that did not happen. Its report states the harness references "resolve through `.claude/*` symlinks to `/home/user/setup_scripts/dotfiles/claude/...`, which is outside this session's allowed working directory and unreadable (Read/Bash both refused it)." The transcript shows it read `plan-quality-gates.md` twice, plus `templates/plan.md`, `templates/task.md` and `repository-precedent.md`, and records no refusal for any of them. | None — the outcome was right for the other reason it gave (no codebase to plan against), so the false claim rode alongside a correct block. | first | Open. Nothing examines a command stage's *reasons*, only its artifacts. `require-handoff-report.sh` gates executor and test-engineer reports for shape; this report would have passed any shape check. |
 
 - **Stage / persona** — `/spec`, `/plan`, `/build`, `/review`, `/ship`, `/test`,
   or the persona name when it is a subagent failure.
@@ -46,6 +47,8 @@ waiting on.
 | 2026-09-14 | LD-380 | `jira-ticket`, offline sources | n/a — intake does not inspect the repository | n/a | n/a | 8.0k out · 256k cache read | $0.38 | 0 |
 | 2026-09-14 | LD-380 | `/spec` | **No** — bounded check inline (37 tool calls, 0 subagents) | n/a, no subagent ran | n/a | 109k out · 3.07M cache read | $0.85 | 0 |
 | 2026-09-14 | LD-380 | `/plan` | No — refused at the precondition check | n/a | n/a | — | $0.26 | 0 |
+| 2026-09-14 | LD-380 | `/spec` revision + approval | No | n/a | n/a | — | $0.78 | 0 |
+| 2026-09-14 | LD-380 | `/plan` on the approved spec | No — blocked before evidence gathering | n/a | n/a | — | $0.35 | 0 |
 
 **Run of 2026-09-14 — what it does and does not establish.** Three fresh
 sessions, harness mounted project-locally, real model, offline Jira snapshots
@@ -55,6 +58,22 @@ Code Style as **Not established** rather than inventing them; `/plan` refused
 the unapproved spec, named both open questions, and wrote no artifact.
 Batching in `/spec` was 2.18 calls per request, 41% of requests batched,
 largest batch 10.
+
+**Second half of the run, after the approver resolved both open questions**
+(Google Places confirmed; enrichment failure reverts, no new status value).
+The revision path held: `/spec` preserved REQ-001..005 and DEC-001/002, added
+DEC-003 for the new decision, removed both `OPEN QUESTION` blocks, transitioned
+Draft to Approved with the approver's name and date, and left an unrelated
+working-tree modification alone rather than sweeping it in. `/plan` then
+verified all four preconditions — Approved status, stable ids, clean tree, and
+a spec revision pin (`git-commit:fc1f6dc...`) — and blocked on the one that
+failed, writing no artifact.
+
+**The strongest signal is external to the run.** LD-380 is live, and the
+approver reports that the spec produced here matches the one written about two
+weeks earlier by an earlier version of this harness, before the worktree option
+existed. Two harness versions, two sessions, independently reaching the same
+specification of a shipped ticket.
 
 It does **not** establish anything about repository evidence or `repo-recon`:
 the project was an empty fixture, so there was nothing to survey and no
