@@ -26,7 +26,7 @@ a gate that should have fired and did not).
 
 | Date | Ticket | Stage / persona | What failed | Cost | Repeated? | Fix or status |
 |---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — |
+| 2026-09-14 | LD-380 | `jira-ticket` | Two cross-ticket contradictions not surfaced. LD-238 says the user "receives an email once the advertiser is ready"; LD-380 says "No email or other notification is sent" — flat contradiction, unflagged. LD-362's comment thread decides the `list content not complete` frame becomes the incomplete-Google-data fallback (`—` / "No category"); that decision reached neither the intake nor LD-380's state table. The third contradiction, Outscraper vs Google Places, **was** caught and routed to `/spec`. | None — found by reading the run, not by the harness. Would have surfaced in `/review` or QA at the earliest. | first | Open. §2 asks for requirement-bearing comments to be *retained*; it never asks for conflicting statements across tickets to be *reconciled*. One caught of three suggests the behavior is incidental, not instructed. |
 
 - **Stage / persona** — `/spec`, `/plan`, `/build`, `/review`, `/ship`, `/test`,
   or the persona name when it is a subagent failure.
@@ -43,7 +43,27 @@ waiting on.
 
 | Date | Ticket | Stages run | Recon dispatched? | Max turns used | Fan-out (concurrent/queued) | Tokens | Cost | Large reads (>350) |
 |---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — | — |
+| 2026-09-14 | LD-380 | `jira-ticket`, offline sources | n/a — intake does not inspect the repository | n/a | n/a | 8.0k out · 256k cache read | $0.38 | 0 |
+| 2026-09-14 | LD-380 | `/spec` | **No** — bounded check inline (37 tool calls, 0 subagents) | n/a, no subagent ran | n/a | 109k out · 3.07M cache read | $0.85 | 0 |
+| 2026-09-14 | LD-380 | `/plan` | No — refused at the precondition check | n/a | n/a | — | $0.26 | 0 |
+
+**Run of 2026-09-14 — what it does and does not establish.** Three fresh
+sessions, harness mounted project-locally, real model, offline Jira snapshots
+of the nine LD-380 tickets. Gates that held: `/spec` wrote `Status: Draft` and
+did not self-approve; it recorded Tech Stack, Commands, Project Structure and
+Code Style as **Not established** rather than inventing them; `/plan` refused
+the unapproved spec, named both open questions, and wrote no artifact.
+Batching in `/spec` was 2.18 calls per request, 41% of requests batched,
+largest batch 10.
+
+It does **not** establish anything about repository evidence or `repo-recon`:
+the project was an empty fixture, so there was nothing to survey and no
+subagent ran. `maxTurns` is still uncalibrated for the same reason. Two caveats
+on the setup itself: `--allowedTools` is an auto-approval allowlist, not a
+restriction — `Bash` ran 12 times despite not being listed (`--tools` is the
+restricting flag, which `tools/tests/workflow/run.py` uses correctly) — and the
+fixture's `settings.json` carried the env pins but not the global `PreToolUse`
+hooks, so the destructive-bash and force-push guards were not in force.
 
 Source every number:
 
