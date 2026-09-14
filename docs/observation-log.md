@@ -27,7 +27,7 @@ a gate that should have fired and did not).
 | Date | Ticket | Stage / persona | What failed | Cost | Repeated? | Fix or status |
 |---|---|---|---|---|---|---|
 | 2026-09-14 | LD-380 | `jira-ticket` | Two cross-ticket contradictions not surfaced. LD-238 says the user "receives an email once the advertiser is ready"; LD-380 says "No email or other notification is sent" — flat contradiction, unflagged. LD-362's comment thread decides the `list content not complete` frame becomes the incomplete-Google-data fallback (`—` / "No category"); that decision reached neither the intake nor LD-380's state table. The third contradiction, Outscraper vs Google Places, **was** caught and routed to `/spec`. | None — found by reading the run, not by the harness. Would have surfaced in `/review` or QA at the earliest. | first | Open. §2 asks for requirement-bearing comments to be *retained*; it never asks for conflicting statements across tickets to be *reconciled*. One caught of three suggests the behavior is incidental, not instructed. |
-| 2026-09-14 | LD-380 | `/plan` | Reported an access blocker that did not happen. Its report states the harness references "resolve through `.claude/*` symlinks to `/home/user/setup_scripts/dotfiles/claude/...`, which is outside this session's allowed working directory and unreadable (Read/Bash both refused it)." The transcript shows it read `plan-quality-gates.md` twice, plus `templates/plan.md`, `templates/task.md` and `repository-precedent.md`, and records no refusal for any of them. | None — the outcome was right for the other reason it gave (no codebase to plan against), so the false claim rode alongside a correct block. | first | Open. Nothing examines a command stage's *reasons*, only its artifacts. `require-handoff-report.sh` gates executor and test-engineer reports for shape; this report would have passed any shape check. |
+| 2026-09-14 | LD-380 | `/plan` | Ran its full precondition check and wrote its report having never read `plan-quality-gates.md`, `templates/plan.md` or `templates/task.md` — all three denied (`is_error`) on every route it tried: the `.claude/*` symlink path, the resolved absolute path, `cat` via Bash, then a repeat `Read`. 15 of the stage's 23 tool results were denials. It disclosed this, but as a "secondary (non-blocking) note" under a blocker that happened to be fatal anyway. Had the primary blocker been absent, it would have written a plan shaped only by the skill body, with no template and no quality gates, and nothing would have flagged it. | None this run — the primary block was correct and stopped everything. The cost is latent: a degraded stage discloses in a footnote and proceeds. | first | Open. Nothing verifies that a stage's own references were readable before trusting its output. `tools/check-references.py` now catches the static half (a reference that does not resolve); the runtime half — a reference that resolves but is refused — is still unguarded. |
 
 - **Stage / persona** — `/spec`, `/plan`, `/build`, `/review`, `/ship`, `/test`,
   or the persona name when it is a subagent failure.
@@ -67,7 +67,8 @@ Draft to Approved with the approver's name and date, and left an unrelated
 working-tree modification alone rather than sweeping it in. `/plan` then
 verified all four preconditions — Approved status, stable ids, clean tree, and
 a spec revision pin (`git-commit:fc1f6dc...`) — and blocked on the one that
-failed, writing no artifact.
+failed, writing no artifact. It did so without access to its own references;
+see the failure row above.
 
 **The strongest signal is external to the run.** LD-380 is live, and the
 approver reports that the spec produced here matches the one written about two
@@ -82,7 +83,15 @@ on the setup itself: `--allowedTools` is an auto-approval allowlist, not a
 restriction — `Bash` ran 12 times despite not being listed (`--tools` is the
 restricting flag, which `tools/tests/workflow/run.py` uses correctly) — and the
 fixture's `settings.json` carried the env pins but not the global `PreToolUse`
-hooks, so the destructive-bash and force-push guards were not in force.
+hooks, so the destructive-bash and force-push guards were not in force (added
+before the approval and plan stages).
+
+**A correction, recorded because the log is worth nothing if it launders its own
+mistakes.** An earlier revision of this file claimed `/plan` "reported an access
+blocker that did not happen." That was wrong. The check behind it counted
+`tool_use` attempts and never read `is_error` on the results; every one of those
+reads had failed. `/plan`'s report was accurate in full. The finding above
+replaces it.
 
 Source every number:
 

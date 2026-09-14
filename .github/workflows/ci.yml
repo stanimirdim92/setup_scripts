@@ -60,6 +60,13 @@ jobs:
           python3 tools/validate-artifact-paths.py
           python3 tools/validate-artifact-paths-test.py
 
+      # Pipeline: every cross-reference between harness files resolves. A stage
+      # that cannot read its own reference proceeds from the skill body alone.
+      - name: Harness cross-references
+        run: |
+          python3 tools/check-references.py
+          python3 tools/check-references-test.py
+
       # Orchestration: the workflow runner's own assertion and fixture logic.
       # NOT the live cases — those spend tokens and stay manual.
       - name: Workflow runner logic
