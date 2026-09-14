@@ -49,6 +49,8 @@ waiting on.
 | 2026-09-14 | LD-380 | `/plan` | No — refused at the precondition check | n/a | n/a | — | $0.26 | 0 |
 | 2026-09-14 | LD-380 | `/spec` revision + approval | No | n/a | n/a | — | $0.78 | 0 |
 | 2026-09-14 | LD-380 | `/plan` on the approved spec | No — blocked before evidence gathering | n/a | n/a | — | $0.35 | 0 |
+| 2026-09-14 | LD-380 **re-run**, adr/0056 harness | `jira-ticket` (opus) | n/a | n/a | n/a | — | $0.85 | 0 |
+| 2026-09-14 | LD-380 **re-run**, adr/0056 harness | `/spec` (opus) | **No** — bounded check inline (22 tool calls, 0 subagents) | n/a | n/a | — | $1.38 | 0 |
 
 **Run of 2026-09-14 — what it does and does not establish.** Three fresh
 sessions, harness mounted project-locally, real model, offline Jira snapshots
@@ -75,6 +77,41 @@ approver reports that the spec produced here matches the one written about two
 weeks earlier by an earlier version of this harness, before the worktree option
 existed. Two harness versions, two sessions, independently reaching the same
 specification of a shipped ticket.
+
+**Re-run on the 0056 harness, same ticket, same offline intake, same empty
+fixture.** The only variables were the model tiers and the session default.
+Draft against draft:
+
+| | old (sonnet) | new (opus) |
+|---|---|---|
+| Requirements | 5 | 23 |
+| Scenarios | 19 | 62 |
+| Spec size | 23.9 KB | 50.0 KB |
+| `DEC-` blocks | 2 | **0** |
+| Open questions | 2 | 8 |
+| Cost, jira + spec | $1.24 | **$2.23** (1.8x) |
+| Wall clock | 514 s | **369 s** (0.7x) |
+
+The result that matters is not the size. Three contradictions are buried in the
+LD-362 and LD-238 comment threads; the first run caught one, the re-run caught
+all three. It names the notification conflict outright — "This contradicts
+LD-238, which states the user is emailed when the advertiser is ready" — which
+the first run missed entirely, and it recovered the incomplete-provider-data
+fallback that was decided in an LD-362 comment and never reached the story,
+writing it as its own scenario.
+
+The behavioral change underneath is the `DEC-` count falling to zero. The first
+run resolved the Outscraper-versus-Google-Places question itself, citing
+LD-381's title, and recorded `DEC-001`. The re-run refused and raised it as an
+open question instead. The re-run was right: that call was the approver's, and
+when it was put to them they made it. `repository-precedent.md` §2 says to raise
+an `OPEN QUESTION` rather than silently decide where the evidence is mixed —
+the first run broke that rule and the second kept it.
+
+Open, and for the approver rather than the log: 23 requirements and 8 blocking
+questions on a ticket that shipped may be thoroughness or may be
+over-specification. Nothing here settles which, and the first ticket where a
+spec blocks on a question that did not need asking is the evidence to record.
 
 It does **not** establish anything about repository evidence or `repo-recon`:
 the project was an empty fixture, so there was nothing to survey and no
