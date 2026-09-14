@@ -118,13 +118,28 @@ provider question it decided outright (DEC-001), because the approver had
 decided it in session. Raising a question you cannot settle is right; resolving
 one you can is better, and the comparison scored the weaker behaviour as the win.
 
-Worse for the re-run: LD-382 lists four duplicate signals, and
-`AdvertiserRepository::exists()` implements two. The re-run's spec specified all
-four, phone scenario included, and would have sent an executor to build a
-matching path the approver had explicitly declined. The 2026-09-06 spec narrowed
-it and recorded DEC-006. No care in a repo-less run substitutes for reading the
-code; `repo-recon` remains the untested half of this harness and this is what it
-is for.
+**And that correction was itself half wrong — corrected again by the approver.**
+It read DEC-006 and DEC-002 as findings the 2026-09-06 spec made by reading the
+code. They are not: both `Source:` lines say "user decision, 2026-09-06". The
+approver confirms that run *also* specified the ticket's four duplicate signals
+and its pending status, and was then told to drop them; the `exists()` path was
+narrowed to one existing method by hand. The ticket was flawed, and that was
+settled with the product owner, not discovered in the repository.
+
+So the re-run specifying four signals and a phone scenario was not a defect. It
+is what LD-382 says, and faithfulness to the ticket is the job. Two runs, two
+harness versions, same reading — the approver caught the flaw both times.
+
+What the repository does buy is narrower and still real: the 2026-09-06 spec
+could *see* the disagreement and wrote it down, naming the ticket's "four
+independent signals" against `exists()` inside DEC-006, with the alternatives it
+rejected. The repo-less run had nothing to compare the ticket against. That is
+now the one expectation in `fixtures/LD-380` that separates having the code from
+not having it — and whether the mismatch is then resolved as a decision or
+handed back as an open question depends only on whether a decision exists yet.
+
+Three corrections to one comparison in one day. Each came from evidence the
+previous version could not see, and each is recorded rather than edited away.
 
 What survives from the comparison: on the same evidence, the 0056 harness read
 the comment threads more thoroughly than its predecessor. What does not survive
