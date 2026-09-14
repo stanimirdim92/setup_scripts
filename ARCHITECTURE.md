@@ -111,6 +111,11 @@ authoritative.
 - `tools/test-run-metrics.sh` runs `tools/run-metrics.sh` on a fabricated
   transcript and checks its large-result section: threshold default and
   override, time window, subagent exclusion, string and array-form results.
+- `tools/validate-frontmatter.py` fails when a persona loses its explicit
+  `tools:` line, a read-only persona gains a mutating or dispatching tool, a
+  writing persona stops referencing its two agent-scoped hooks, or a
+  `settings.json` pin from ADR 0055 is missing; `tools/validate-frontmatter-test.py`
+  covers the allow and deny cases.
 - `tools/validate-artifact-paths.py` fails when any pipeline file spells a
   spec/capability-map/plan/todo artifact path differently from the canonical
   set (the drift class fixed in c4584dd); `tools/validate-artifact-paths-test.py`
@@ -118,6 +123,12 @@ authoritative.
 - [Workflow checks](tools/tests/workflow/README.md) document the isolated
   Jira/spec/plan/build/review runner, its invocation, and what its evidence
   does not cover.
+- `.github/workflows/ci.yml` runs every check above on each push. The live
+  workflow runner is excluded on purpose: it drives the real model and spends
+  tokens, so it stays a deliberate manual run.
+- `docs/observation-log.md` records what real runs actually cost and where they
+  failed. It is the evidence the uncalibrated numbers — `maxTurns` above all —
+  are waiting on, and the input the ADRs are meant to be argued from.
 - Changed instructions need focused behavioral checks when their decisions or
   orchestration change; syntax and valid paths alone do not establish behavior.
 

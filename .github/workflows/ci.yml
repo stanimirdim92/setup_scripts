@@ -1,0 +1,75 @@
+# Every deterministic check in this repo, on every push.
+#
+# These suites cost nothing and run in seconds, and until now they ran only
+# when someone remembered. The one suite deliberately absent is
+# tools/tests/workflow/run.py: it drives the real model and spends tokens, so
+# it stays a manual run (tools/tests/workflow/README.md). Its assertion logic
+# is covered here through test_runner.py.
+#
+# Runner deps: bash, git, jq and python3 are all preinstalled on ubuntu-latest.
+# The preflight step fails loudly if that ever stops being true, so a missing
+# tool cannot read as a failing test.
+name: checks
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preflight — required tools
+        run: |
+          for tool in bash git jq python3; do
+            command -v "$tool" >/dev/null || { echo "missing: $tool"; exit 1; }
+          done
+          jq --version && python3 --version && git --version
+
+      # Enforcement: the three PreToolUse hooks, deny/ask/allow, including the
+      # alias, typo, global-option and quoted-target bypasses (adr/0049).
+      - name: Hooks — deny, ask, and allow cases
+        run: bash tools/test-hooks.sh
+
+      # Enforcement: the SubagentStop handoff gate — complete, partial,
+      # claim-only, second attempt, unknown agent, unreadable transcript.
+      - name: Hooks — handoff report gate
+        run: bash tools/test-handoff-hook.sh
+
+      # Declarations: persona tool grants, writer hook attachment, settings pins.
+      - name: Frontmatter and settings pins
+        run: |
+          python3 tools/validate-frontmatter.py
+          python3 tools/validate-frontmatter-test.py
+
+      # Pipeline: canonical spec/plan/todo artifact paths across 24 files.
+      - name: Artifact paths
+        run: |
+          python3 tools/validate-artifact-paths.py
+          python3 tools/validate-artifact-paths-test.py
+
+      # Orchestration: the workflow runner's own assertion and fixture logic.
+      # NOT the live cases — those spend tokens and stay manual.
+      - name: Workflow runner logic
+        working-directory: tools/tests/workflow
+        run: python3 -m unittest -q test_runner
+
+      # Installation: preflight conflict detection and injected-failure rollback.
+      - name: Codex skill installer
+        run: python3 tools/test-install-skills.py
+
+      # Measurement: the transcript metrics' large-result section.
+      - name: Run metrics
+        run: bash tools/test-run-metrics.sh
