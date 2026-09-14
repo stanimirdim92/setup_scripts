@@ -21,6 +21,31 @@ Never in CI. It drives the real model and spends tokens; run it when the
 harness changes in a way that could move spec quality — a model, a template, a
 quality gate, `spec-driven-development`.
 
+## Two kinds of fixture, and why it matters
+
+A fixture fixes the *evidence available*, and that changes what the right answer
+is. LD-380 exists twice:
+
+- **`LD-380-no-repo`** — empty project. Measures how `/spec` behaves when
+  repository evidence is absent: does it record absence honestly, escalate what
+  it cannot settle, and decline to decide what belongs to the approver.
+- **`LD-380`** — requires the application repository. Measures what only
+  repository evidence can establish, and its expectations are in places the
+  *inverse* of the other fixture's.
+
+That inversion is the lesson, not an inconsistency. With no repository, the
+contradiction between a spike promising an email and a story forbidding one is
+a question to raise. With the repository, it is answerable — the email belongs
+to a different, pre-existing endpoint — and raising it instead of resolving it
+is the weaker spec. Likewise: absent evidence must be recorded as absent, and
+present evidence must be read.
+
+The sharpest single expectation is `duplicate-signals-match-the-code`. The
+ticket lists four duplicate signals; the code being reused implements two. A
+spec written without reading that code specifies all four faithfully and sends
+an executor to build a path nobody asked for. Only a repository-backed run can
+catch that, and no amount of care in a repo-less one substitutes.
+
 ## Fixtures
 
 A fixture is a directory under `fixtures/`:
