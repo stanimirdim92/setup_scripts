@@ -54,6 +54,11 @@ jobs:
       - name: Hooks — worktree base guards
         run: bash tools/test-worktree-hooks.sh
 
+      # Enforcement: the isolated test-runner gate, evidence-gated on the
+      # project shipping bin/worktree-test.sh and more than one live worktree.
+      - name: Hooks — isolated test runner
+        run: bash tools/test-isolated-test-runner.sh
+
       # Declarations: persona tool grants, writer hook attachment, settings pins.
       - name: Frontmatter and settings pins
         run: |

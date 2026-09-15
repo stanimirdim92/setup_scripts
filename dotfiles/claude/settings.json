@@ -112,6 +112,10 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/warn-force-push.sh"
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/require-isolated-test-runner.sh"
           }
         ]
       }

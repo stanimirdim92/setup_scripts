@@ -96,8 +96,8 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
   <div class="meta">
     <div>commit <b>4a30b57</b> · tag <b>harness-v1</b> (at 0757d83)</div>
     <div>6 commands · 7 personas · 19 skills</div>
-    <div>14 references + 4 templates · 6 hooks</div>
-    <div>57 ADRs · 13 self-test suites</div>
+    <div>14 references + 4 templates · 7 hooks</div>
+    <div>57 ADRs · 14 self-test suites</div>
   </div>
 </header>
 
@@ -292,7 +292,7 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
         <li><code>model</code><span><code>claude-opus-5</code> pinned · effort default · advisor opus</span></li>
         <li><code>worktree</code><span><code>baseRef: head</code> — both worktree levels branch from local HEAD (adr/0056, 0057)</span></li>
         <li><code>permissions</code><span>defaultMode auto · deny list for rm -rf, sudo, force-push, reset --hard, credential files</span></li>
-        <li><code>hooks.PreToolUse</code><span>matcher Bash → <code>block-destructive-bash.sh</code>, <code>warn-force-push.sh</code></span></li>
+        <li><code>hooks.PreToolUse</code><span>matcher Bash → <code>block-destructive-bash.sh</code>, <code>warn-force-push.sh</code>, <code>require-isolated-test-runner.sh</code></span></li>
         <li><code>hooks.SessionStart</code><span>matcher startup|resume → <code>warn-stale-base.sh</code></span></li>
         <li><code>hooks.SubagentStart</code><span>matcher executor|test-engineer → <code>require-worktree-for-writers.sh</code></span></li>
         <li><code>env</code><span>telemetry + OTLP exporters · 500k auto-compact window · tool search on</span></li>
@@ -386,6 +386,7 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
       <tr><td>Writers commit and tag locally; they never push or publish</td><td><code>hooks/block-agent-push.sh</code> → deny</td><td>executor, test-engineer (frontmatter)</td><td><code>tools/test-hooks.sh</code> (27 cases)</td></tr>
       <tr><td>Completion claims require executed evidence</td><td><code>hooks/require-handoff-report.sh</code> → block once</td><td>executor, test-engineer (Stop)</td><td><code>tools/test-handoff-hook.sh</code> (12)</td></tr>
       <tr><td>A ticket never branches from a stale base</td><td><code>hooks/warn-stale-base.sh</code> → warn, on the default branch behind origin (<code>git pull</code>) or a worktree branch with no commits of its own behind origin (<code>merge --ff-only</code>); quiet once it carries work</td><td>SessionStart, startup/resume</td><td><code>tools/test-worktree-hooks.sh</code> (11)</td></tr>
+      <tr><td>A suite never runs against another worktree's test database</td><td><code>hooks/require-isolated-test-runner.sh</code> → deny bare <code>php artisan test</code>/<code>phpunit</code>; gated on the project shipping <code>bin/worktree-test.sh</code> AND &gt;1 live worktree</td><td>every Bash call, all sessions</td><td><code>tools/test-isolated-test-runner.sh</code> (33)</td></tr>
       <tr><td>A writer never works straight onto the default branch</td><td><code>hooks/require-worktree-for-writers.sh</code> → block; allows any worktree or non-default branch</td><td>SubagentStart, executor + test-engineer</td><td><code>tools/test-worktree-hooks.sh</code> (11)</td></tr>
       <tr><td>Personas never dispatch personas</td><td>env pin depth 1 + explicit <code>tools:</code></td><td>all subagents</td><td>—</td></tr>
       <tr><td>Reviewers are read-only</td><td>tool grant <code>Read Grep Glob</code></td><td>4 personas</td><td>frontmatter parse in commit checks</td></tr>
@@ -500,6 +501,7 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
       <tr><td><code>tools/tests/spec-eval/test_judge.py</code></td><td>the spec eval's judging logic: co-occurrence windows, absent-regex, severity, semantic expectations</td><td class="num">17</td><td>free</td></tr>
       <tr><td><code>tools/tests/spec-eval/run.py</code></td><td>re-runs <code>/spec</code> on a known-answer ticket; asserts the findings a human validated survive. LD-380: 9 checks, 2 for review</td><td class="num">9 + 2</td><td>tokens</td></tr>
       <tr><td><code>tools/test-link-dotfiles.sh</code></td><td><code>link_dotfiles.sh</code>'s confirmation gate against a throwaway <code>$HOME</code>: decline, non-terminal stdin, dry run, <code>--yes</code>, whole-directory backup, silent no-op re-run. Checks the filesystem after, not the wording</td><td class="num">32</td><td>free</td></tr>
+      <tr><td><code>tools/test-isolated-test-runner.sh</code></td><td>the bare-test-runner gate: both evidence gates, command-position anchor, <code>test:</code> boundary, and the allow cases that keep it from denying a grep</td><td class="num">33</td><td>free</td></tr>
       <tr><td><code>tools/test-batch-spec.sh</code></td><td><code>batch-spec.sh</code>'s decisions with <code>claude</code> stubbed: manifest parsing, already-specced skip, decline, non-terminal stdin, dry run, job failure, <code>.worktreeinclude</code> copying, and that each job runs <em>inside</em> its worktree</td><td class="num">50</td><td>free</td></tr>
       <tr><td><code>tools/tests/workflow/run.py</code></td><td>stage decisions against the real model: jira ×3, spec ×2, plan ×4, build ×2, review ×2, pressure ×2</td><td class="num">15</td><td>tokens</td></tr>
     </tbody>
