@@ -5,8 +5,12 @@
 fourth decision quietly depends on:
 
 1. **`hooks/warn-stale-base.sh`** — `SessionStart`, matcher `startup|resume`.
-   Warns when the checkout sits *on* the remote default branch and is behind
-   it. Prints to stdout, which becomes context; exits 0 unconditionally.
+   Warns in the two arrangements that put a ticket on a stale base: the
+   checkout sits *on* the remote default branch and is behind it
+   (`git pull`), or a linked worktree's branch carries no commits of its own
+   and is behind it — `claude --worktree` just branched off a stale local
+   default (`git merge --ff-only origin/<default>`). Prints to stdout, which
+   becomes context; exits 0 unconditionally.
 2. **`hooks/require-worktree-for-writers.sh`** — `SubagentStart`, matcher
    `executor|test-engineer`. Refuses the dispatch (exit 2) when the session is
    on the default branch in the main checkout. Allows everywhere else: in a
@@ -46,11 +50,11 @@ work has been done in the wrong place.
 The two cases differ in what the harness can know, and the mechanism follows.
 
 Being behind origin is often fine. Mid-ticket it is normal, on a feature branch
-it means nothing, and a five-minute-old fetch is not a problem. Only one
-combination is worth a word — sitting on the default branch, behind it, which is
-the moment before a ticket starts — and even then the human may have a reason.
-A hook that cannot tell a real problem from an ordinary state must not block,
-and `SessionStart` cannot block anyway. So: a warning, on the one combination.
+it means nothing, and a five-minute-old fetch is not a problem. Only the moment
+a ticket's base is fixed is worth a word — and even then the human may have a
+reason. A hook that cannot tell a real problem from an ordinary state must not
+block, and `SessionStart` cannot block anyway. So: a warning, on the two
+arrangements where that moment is observable.
 
 Dispatching a writer onto the default branch of the main checkout has no
 legitimate reading. There is no workflow in this harness where the right place
@@ -61,7 +65,7 @@ without saying how to proceed gets deleted within a week.
 
 ## Why the allow cases carry the test weight
 
-Thirteen of the eighteen fixture cases assert that nothing happens. That ratio is
+Fourteen of the twenty-two fixture cases assert that nothing happens. That ratio is
 the point. Both hooks fail in the direction that destroys them: a session-start
 warning that fires when nothing is wrong is ignored inside a week, and a gate
 that refuses a legitimate dispatch is removed rather than debugged. The block
@@ -79,6 +83,29 @@ exactly like a passing hook here — git answering "no such branch" and a hook
 staying silent are the same observation — and the first version of this suite
 did precisely that in two cases before the assertion was added.
 
+## Correction: the first condition missed the primary flow
+
+As first written, the warning fired only on "sitting on the default branch and
+behind it". That covers a moment the intended workflow does not have.
+`claude --worktree <ticket>` creates the worktree and drops the session
+straight into it, already on the ticket branch — the session never sits on the
+default branch, so the condition never matched. The warning was silent on
+exactly the case that motivated it, and `inside_a_worktree` asserted that
+silence as correct behavior.
+
+The gap came from writing the condition against where staleness is *visible*
+(a checkout on the default branch, behind origin) rather than against where it
+is *fixed* (the instant a ticket branch's base is chosen). The second framing
+produces both arrangements from one idea and is why the conditions now read as
+they do.
+
+The fix is narrow on purpose: in a linked worktree, warn only while the branch
+carries **no commits of its own**. That is true from creation until the first
+commit, which is the whole window in which the base is still free to move, and
+false for the rest of the ticket — when being behind origin is the ordinary
+state of every branch and a warning would be noise. It fires once, at the only
+moment the advice is both cheap and correct.
+
 ## The fetch window
 
 `warn-stale-base.sh` refreshes `origin/<default>` when the last fetch is over
@@ -87,10 +114,14 @@ network is unavailable. A cached ref is only as fresh as the last fetch, so
 without this the hook would report "up to date" while being days behind — it
 would be a check that reliably says nothing.
 
-An hour rather than a day because the hook only reaches the fetch while sitting
-on the default branch, which is the moment a ticket is about to start. Five
-seconds spent there is worth it; spent on every session start it would not be,
-and the branch check upstream is what makes the narrow window affordable.
+An hour rather than a day because the conditions upstream have already
+established that a ticket's base is being fixed. Five seconds spent there is
+worth it; spent on every session start it would not be, and those conditions are
+what make the narrow window affordable. The commit-count pre-filter matters for
+the same reason: a mid-ticket session in a worktree must not pay for a fetch,
+and a cached zero own-commit count can only stay zero once origin moves forward,
+so the cheap test is safe to gate the expensive one. `FETCH_HEAD` lives in the
+common git dir, so a worktree and its main checkout share one window.
 
 ## Rejected alternatives
 
@@ -122,9 +153,15 @@ all the guard is protecting.
 
 ## Consequences
 
-- Starting a ticket from a stale default branch now costs one line of context
-  and up to five seconds; this is the only place in the harness where a hook
-  touches the network.
+- Starting a ticket from a stale default branch now costs a few lines of
+  context and up to five seconds; this is the only place in the harness where a
+  hook touches the network.
+- The two warnings give different advice on purpose. `git pull` is right on the
+  default branch and wrong on a ticket branch, where it merges the default
+  branch in rather than moving the branch point. A fresh ticket branch has
+  nothing to rebase, so `--ff-only` can only fast-forward and refuses if
+  anything would be lost. Two fixture cases assert the advice does not get
+  swapped.
 - `/build` from the main checkout on the default branch now fails at dispatch
   rather than succeeding into the wrong branch. The refusal is the intended
   behavior, and the message carries both fixes.

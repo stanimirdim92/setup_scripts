@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# SessionStart hook (matcher: startup|resume). Warns when the checkout you are
-# about to start a ticket from is behind its remote default branch.
+# SessionStart hook (matcher: startup|resume). Warns when the base a ticket is
+# about to be built on is behind the remote default branch.
 #
 # Why this exists: settings.json sets `worktree.baseRef: "head"`, which the
 # level below requires -- a subagent with `isolation: worktree` branches from
@@ -11,10 +11,19 @@
 # days behind, silently, because the worktree is created successfully either
 # way (docs/adr/0056, 0057).
 #
-# Deliberately narrow, because a warning that fires when nothing is wrong gets
-# ignored: only when the checkout sits ON the default branch and is behind it.
-# Being behind origin/main on a ticket branch is normal mid-ticket and says
-# nothing.
+# Two arrangements put you on a stale base, and they need different advice:
+#
+#   on-default    the checkout sits ON the default branch and is behind it.
+#                 The moment before a ticket starts: `git pull` fixes it.
+#   fresh-ticket  a linked worktree whose branch carries no commits of its own
+#                 and is behind the default branch -- `claude --worktree` just
+#                 branched it off a stale local main. This is the primary flow
+#                 and the session never touches the default branch, so the
+#                 on-default test alone never sees it.
+#
+# Everything else stays quiet, because a warning that fires when nothing is
+# wrong gets ignored: a ticket branch that carries its own commits is behind
+# origin as a matter of course, and that says nothing.
 #
 # SessionStart cannot block; plain stdout becomes context. Exit 0 always --
 # a session must never fail to start because this hook had a bad day.
@@ -39,25 +48,56 @@ fi
 [ -n "$default" ] || exit 0
 
 branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null)" || exit 0
-[ "$branch" = "$default" ] || exit 0   # on a ticket branch: nothing to say
+
+# In a linked worktree, --git-dir points inside <common>/worktrees/<name>; in
+# the main checkout the two resolve to the same directory.
+git_dir="$(cd "$(git rev-parse --git-dir 2>/dev/null)" && pwd -P)" || exit 0
+common_dir="$(cd "$(git rev-parse --git-common-dir 2>/dev/null)" && pwd -P)" || exit 0
+
+# `own` counts commits on this branch that origin's default branch lacks. The
+# cached origin ref can only be behind the real one, and fetching moves it
+# forward, so a cached zero stays zero -- which makes this a safe pre-filter
+# for the fetch below and keeps the network out of every mid-ticket session.
+own() { git rev-list --count "origin/$default..HEAD" 2>/dev/null || echo 1; }
+
+if [ "$branch" = "$default" ]; then
+  mode=on-default
+elif [ "$git_dir" != "$common_dir" ] && [ "$(own)" = 0 ]; then
+  mode=fresh-ticket
+else
+  exit 0                               # mid-ticket, or a branch of your own
+fi
 
 # A cached origin ref is only as fresh as the last fetch, so a stale cache
 # would report "up to date" while being days behind. Refresh when the last
 # fetch is over an hour old, capped at 5s the way Claude Code caps its own
 # `fresh` base resolution, falling back to the cache when the network is gone.
-# An hour rather than a day because this only runs while sitting on the default
-# branch -- which is when a ticket is about to start, and the one moment the
-# five seconds is worth spending.
-fetch_head="$(git rev-parse --git-common-dir 2>/dev/null)/FETCH_HEAD"
+# An hour rather than a day because the checks above have already established
+# that a ticket is about to start, which is the one moment the five seconds is
+# worth spending. FETCH_HEAD lives in the common dir, so a worktree and its
+# main checkout share one window.
+fetch_head="$common_dir/FETCH_HEAD"
 if [ ! -f "$fetch_head" ] || [ -n "$(find "$fetch_head" -mmin +60 2>/dev/null)" ]; then
   timeout 5 git fetch --quiet origin "$default" >/dev/null 2>&1 || true
 fi
 
 behind="$(git rev-list --count "HEAD..origin/$default" 2>/dev/null)" || exit 0
 [ "${behind:-0}" -gt 0 ] 2>/dev/null || exit 0
+# Re-test against the refreshed ref: the fetch may have revealed that this
+# branch's commits are already on the default branch.
+[ "$mode" = fresh-ticket ] && { [ "$(own)" = 0 ] || exit 0; }
 
-printf 'Worktree base: this checkout is on %s and is %s commit(s) behind origin/%s.\n' \
-  "$branch" "$behind" "$default"
-printf 'A ticket worktree branches from local HEAD (worktree.baseRef: head), so starting one now\n'
-printf 'produces a ticket branch behind by the same %s commit(s). Run `git pull` first.\n' "$behind"
+if [ "$mode" = on-default ]; then
+  printf 'Worktree base: this checkout is on %s and is %s commit(s) behind origin/%s.\n' \
+    "$branch" "$behind" "$default"
+  printf 'A ticket worktree branches from local HEAD (worktree.baseRef: head), so starting one now\n'
+  printf 'produces a ticket branch behind by the same %s commit(s). Run `git pull` first.\n' "$behind"
+else
+  printf 'Worktree base: %s has no commits of its own yet and is %s commit(s) behind origin/%s.\n' \
+    "$branch" "$behind" "$default"
+  printf 'It was branched from a local %s that was already behind (worktree.baseRef: head), so the\n' "$default"
+  printf 'ticket starts %s commit(s) stale. Nothing to rebase yet -- move it forward now:\n' "$behind"
+  printf '\n    git merge --ff-only origin/%s\n\n' "$default"
+  printf 'and `git pull` on %s before the next `claude --worktree`.\n' "$default"
+fi
 exit 0

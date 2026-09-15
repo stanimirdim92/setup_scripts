@@ -155,10 +155,13 @@ Ticket-scoped work defaults to one isolated worktree per ticket.
   ticket branch, the spec commit, and earlier workstream commits; the default
   `fresh` would branch each one from the remote default branch and lose all
   three (docs/adr/0056). One setting, both levels.
-- Two hooks guard the two ways this goes wrong silently (docs/adr/0057): a
-  session-start warning when the checkout is on the default branch and behind
-  it, and a refusal to dispatch `executor` or `test-engineer` from the default
-  branch of the main checkout. Any worktree or any other branch is allowed.
+- Two hooks guard the ways this goes wrong silently (docs/adr/0057). A
+  session-start warning when the base is stale — on the default branch and
+  behind it (`git pull`), or a worktree branch with no commits of its own and
+  behind it (`git merge --ff-only origin/<default>`); it goes quiet once the
+  branch carries work. And a refusal to dispatch `executor` or `test-engineer`
+  from the default branch of the main checkout; any worktree or any other
+  branch is allowed.
 - Claude Code places managed worktrees in `.claude/worktrees/`, which belongs in
   the project's `.gitignore`. Prefer that location: `.worktreeinclude`,
   subagent `isolation: worktree`, and the cleanup sweep only apply there.

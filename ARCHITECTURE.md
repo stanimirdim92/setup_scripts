@@ -110,10 +110,10 @@ authoritative.
   `tools/test-handoff-hook.sh` does the same for the `SubagentStop` handoff gate.
 - `tools/test-worktree-hooks.sh` covers the two worktree-base guards (ADR 0057)
   against real git fixtures -- a bare origin, a main checkout, a linked
-  worktree, a feature branch -- since both hooks read git state. Most of its
-  cases assert silence: a session-start warning that fires when nothing is
-  wrong gets ignored, and a gate that refuses a legitimate dispatch gets
-  deleted.
+  worktree, a feature branch -- since both hooks read git state. Fourteen of its
+  twenty-two cases assert silence: a session-start warning that fires when
+  nothing is wrong gets ignored, and a gate that refuses a legitimate dispatch
+  gets deleted. Two more assert the two warnings do not swap advice.
 - `tools/test-run-metrics.sh` runs `tools/run-metrics.sh` on a fabricated
   transcript and checks its large-result section: threshold default and
   override, time window, subagent exclusion, string and array-form results.

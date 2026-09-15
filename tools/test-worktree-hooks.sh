@@ -54,7 +54,11 @@ move_origin_ahead() {
     && git "${G[@]}" push -q origin main && cd "$TMP"
 }
 force_fetch_next_time() {  # age FETCH_HEAD past the 60-minute window
-  local f="$1/.git/FETCH_HEAD"; [ -f "$f" ] && touch -d '3 hours ago' "$f"
+  # In a worktree `.git` is a file, and FETCH_HEAD lives in the common dir.
+  local c; c="$(git -C "$1" rev-parse --git-common-dir 2>/dev/null)" || return 0
+  case "$c" in /*) ;; *) c="$1/$c" ;; esac
+  [ -f "$c/FETCH_HEAD" ] && touch -d '3 hours ago' "$c/FETCH_HEAD"
+  return 0
 }
 
 warn_out() {  # cwd -> stdout of the SessionStart hook
@@ -72,23 +76,43 @@ check_quiet()  { local o; o="$(warn_out "$2")"; check "$1" "" "${o:+SOMETHING}";
 check_warns()  { local o; o="$(warn_out "$2")"; case "$o" in *"behind origin/main"*) check "$1" warn warn ;; *) check "$1" warn "${o:-nothing}" ;; esac; }
 
 # ---------------------------------------------------- warn-stale-base: quiet
-check_quiet  not_a_git_repo           "$TMP"
-check_quiet  no_remote_configured     "$TMP/no-remote"
-check_quiet  on_main_and_current      "$TMP/main-checkout"
-check_quiet  missing_cwd              "$TMP/does-not-exist"
+check_quiet  not_a_git_repo              "$TMP"
+check_quiet  no_remote_configured        "$TMP/no-remote"
+check_quiet  on_main_and_current         "$TMP/main-checkout"
+check_quiet  missing_cwd                 "$TMP/does-not-exist"
+check_quiet  fresh_worktree_off_current  "$TMP/wt-LD-1"
 
 move_origin_ahead
 force_fetch_next_time "$TMP/main-checkout"
 
 # ---------------------------------------------------- warn-stale-base: warns
-check_warns  on_main_and_behind       "$TMP/main-checkout"
+check_warns  on_main_and_behind          "$TMP/main-checkout"
+
+# The primary flow: `claude --worktree` branched this off a local main that was
+# already behind. The session never touches the default branch, so the
+# on-default test above never sees it -- this is the case the first version of
+# the hook asserted silence for.
+force_fetch_next_time "$TMP/wt-LD-1"
+check_warns  fresh_worktree_off_stale    "$TMP/wt-LD-1"
+
+# ...and the advice must differ: `git pull` on a ticket branch merges the
+# default branch into it, which is not what a fresh branch needs.
+ff="$(warn_out "$TMP/wt-LD-1")"
+case "$ff" in *"--ff-only"*) check fresh_ticket_advice_is_ff y y ;; *) check fresh_ticket_advice_is_ff y n ;; esac
+case "$(warn_out "$TMP/main-checkout")" in *"git pull"*) check on_default_advice_is_pull y y ;; *) check on_default_advice_is_pull y n ;; esac
 
 # ...and stays quiet where being behind means nothing
 git -C main-checkout "${G[@]}" checkout -q feature/x
 force_fetch_next_time "$TMP/main-checkout"
-check_quiet  on_feature_branch_behind "$TMP/main-checkout"
+check_quiet  on_feature_branch_behind    "$TMP/main-checkout"
 git -C main-checkout "${G[@]}" checkout -q main
-check_quiet  inside_a_worktree        "$TMP/wt-LD-1"
+
+# Mid-ticket: the branch carries its own work, so being behind origin is the
+# normal state of every ticket branch and warning about it trains you to skip
+# the line.
+( cd "$TMP/wt-LD-1" && echo work > t.txt && git "${G[@]}" add -A && git "${G[@]}" commit -qm work )
+force_fetch_next_time "$TMP/wt-LD-1"
+check_quiet  worktree_with_own_commits   "$TMP/wt-LD-1"
 
 # ------------------------------------------- require-worktree-for-writers
 check writer_on_main_blocked          2 "$(block_rc "$TMP/main-checkout" executor)"
