@@ -6,3 +6,6 @@
 /dotfiles/claude/skills/synced/
 /dotfiles/claude/skills/session-start-hook/
 __pycache__/
+
+# batch-spec.sh run logs and metadata
+/.spec-batch/

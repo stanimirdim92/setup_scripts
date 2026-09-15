@@ -1,0 +1,31 @@
+# batch-spec.sh manifest — tickets, optional slug. One line = one /spec run.
+# Tickets that touch the same files go on ONE line: separate specs over one
+# code path each propose their own helper (CLAUDE.md rule 6).
+#
+# Dropped by the assignee: LD-92, LD-229, LD-1.
+# LD-380 and its sub-tasks (381/382/383) shipped; not here.
+
+# --- clusters: one spec, several REQs ---------------------------------------
+LD-223,LD-224,LD-225,LD-226   website-url-normalization
+LD-234,LD-235                 google-ads-region-data
+LD-197,LD-236                 webhook-queue-handling
+LD-321,LD-378,LD-413,LD-422   crm-id
+LD-388,LD-415,LD-429          meta-ads
+
+# --- on its own: a refactor, not a feature ----------------------------------
+# "Current state works but a lot of duplication" — the spec's job is to
+# enumerate the duplication and pin the target shape, with no behavior change.
+LD-199                        pagespeed-website-relationship
+
+# --- standalone --------------------------------------------------------------
+LD-103                        expired-google-place-ids
+LD-159                        organic-social-profile-sync
+LD-183                        brightdata-facebook-streaming
+LD-209                        tech-stack-detection
+LD-416                        ad-studio-quick-create
+LD-8                          rebuild-frontend-before-deploy
+LD-9                          fail2ban
+LD-32                         admin-only-snapshot-edit
+LD-145                        snyk-sonarqube
+LD-158                        c4-architecture-docs
+LD-258                        smads-to-fnk-spike

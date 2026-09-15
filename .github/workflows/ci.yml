@@ -93,6 +93,10 @@ jobs:
       - name: Dotfile linker confirmation
         run: bash tools/test-link-dotfiles.sh
 
+      # The batch spec runner's decisions, with `claude` stubbed.
+      - name: Batch spec runner
+        run: bash tools/test-batch-spec.sh
+
       # Measurement: the transcript metrics' large-result section.
       - name: Run metrics
         run: bash tools/test-run-metrics.sh

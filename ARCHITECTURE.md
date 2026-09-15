@@ -111,6 +111,11 @@ authoritative.
   it changed nothing rather than prove it printed a warning. Covers decline,
   non-terminal stdin, dry run, `--yes`, whole-directory backup, and the
   silent no-op re-run.
+- `tools/test-batch-spec.sh` covers `batch-spec.sh` with `claude` stubbed --
+  manifest parsing, the already-specced skip, decline, non-terminal stdin, dry
+  run, per-job failure, and that each job runs *inside* its worktree. That last
+  one caught the real bug: the branch was created and the spec written to the
+  main checkout.
 - `tools/test-hooks.sh` exercises the Claude command hooks with fixtures;
   `tools/test-handoff-hook.sh` does the same for the `SubagentStop` handoff gate.
 - `tools/test-worktree-hooks.sh` covers the two worktree-base guards (ADR 0057)

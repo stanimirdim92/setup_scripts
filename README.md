@@ -15,6 +15,12 @@ marks those `BACKUP` with their entry count. `--dry-run` prints the plan and
 stops; `--yes` skips the prompt and is required when stdin is not a terminal.
 A re-run with nothing to do says so and does not prompt.
 
+`tools/batch-spec.sh` runs `/spec` for many tickets at once, one worktree per
+job, reading `tools/spec-batch.txt`. Tickets that share files go on one line so
+they get one spec rather than four competing ones. It stops at the spec gate:
+every job ends with a Draft spec, uncommitted, awaiting a human. `--dry-run`
+prints the plan, `--parallel N` widens it, `--budget` caps each job.
+
 `tools/run-metrics.sh` reports measured run metrics from a Claude Code
 transcript — tool-call batching, token totals, main-session vs subagent split,
 and main-session tool results over a line threshold (whole files read inline)
