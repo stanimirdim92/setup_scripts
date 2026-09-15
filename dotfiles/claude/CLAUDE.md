@@ -146,9 +146,15 @@ Surface uncertainty, skipped steps, and unverified claims explicitly. Never let 
 Ticket-scoped work defaults to one isolated worktree per ticket.
 
 - Start it with `claude --worktree <ticket>` (Codex: choose Worktree in a new
-  chat). Both create a managed worktree branched from the remote default
-  branch. `worktree.baseRef` selects the base: `fresh` (default) branches from
-  the remote default branch, `head` from local `HEAD`.
+  chat). `worktree.baseRef` is `head` here, so the worktree branches from the
+  local `HEAD` you start from. **Pull first:** starting from a stale `main`
+  gives a ticket branch stale by the same amount, and the worktree is created
+  successfully either way.
+- `head` is set for the level below. A subagent with `isolation: worktree`
+  branches from *its session's* worktree HEAD, so an executor inherits the
+  ticket branch, the spec commit, and earlier workstream commits; the default
+  `fresh` would branch each one from the remote default branch and lose all
+  three (docs/adr/0056). One setting, both levels.
 - Claude Code places managed worktrees in `.claude/worktrees/`, which belongs in
   the project's `.gitignore`. Prefer that location: `.worktreeinclude`,
   subagent `isolation: worktree`, and the cleanup sweep only apply there.
