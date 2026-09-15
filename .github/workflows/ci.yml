@@ -48,6 +48,12 @@ jobs:
       - name: Hooks — handoff report gate
         run: bash tools/test-handoff-hook.sh
 
+      # Enforcement: the two worktree-base guards (adr/0057). Real git
+      # fixtures -- bare origin, main checkout, linked worktree, feature
+      # branch -- because both hooks decide from git state.
+      - name: Hooks — worktree base guards
+        run: bash tools/test-worktree-hooks.sh
+
       # Declarations: persona tool grants, writer hook attachment, settings pins.
       - name: Frontmatter and settings pins
         run: |

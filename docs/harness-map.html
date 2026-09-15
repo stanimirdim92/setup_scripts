@@ -91,13 +91,13 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
   <div>
     <div class="eyebrow">stanimirdim92/setup_scripts · dotfiles/claude</div>
     <h1>Harness v1 Map</h1>
-    <p class="lede">Every layer of the Claude Code harness as it stands on <code>main</code>: what loads at session start, how the five gate commands hand work to six personas, which rules are enforced by the host rather than by prose, and what tests the harness itself.</p>
+    <p class="lede">Every layer of the Claude Code harness as it stands on <code>main</code>: what loads at session start, how the five gate commands hand work to seven personas, which rules are enforced by the host rather than by prose, and what tests the harness itself.</p>
   </div>
   <div class="meta">
     <div>commit <b>0757d83</b> · tag <b>harness-v1</b> (local)</div>
-    <div>6 commands · 6 personas · 19 skills</div>
-    <div>14 references + 4 templates · 4 hooks</div>
-    <div>56 ADRs · 8 self-test suites</div>
+    <div>6 commands · 7 personas · 19 skills</div>
+    <div>14 references + 4 templates · 6 hooks</div>
+    <div>57 ADRs · 11 self-test suites</div>
   </div>
 </header>
 
@@ -289,9 +289,12 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
     <div class="tile">
       <h3>settings.json — the rest <small>defaults</small></h3>
       <ul>
-        <li><code>model</code><span>sonnet · effort medium · advisor opus</span></li>
+        <li><code>model</code><span><code>claude-opus-5</code> pinned · effort default · advisor opus</span></li>
+        <li><code>worktree</code><span><code>baseRef: head</code> — both worktree levels branch from local HEAD (adr/0056, 0057)</span></li>
         <li><code>permissions</code><span>defaultMode auto · deny list for rm -rf, sudo, force-push, reset --hard, credential files</span></li>
         <li><code>hooks.PreToolUse</code><span>matcher Bash → <code>block-destructive-bash.sh</code>, <code>warn-force-push.sh</code></span></li>
+        <li><code>hooks.SessionStart</code><span>matcher startup|resume → <code>warn-stale-base.sh</code></span></li>
+        <li><code>hooks.SubagentStart</code><span>matcher executor|test-engineer → <code>require-worktree-for-writers.sh</code></span></li>
         <li><code>env</code><span>telemetry + OTLP exporters · 500k auto-compact window · tool search on</span></li>
         <li><code>enabledPlugins</code><span>context7 · typescript-lsp · playwright · qdrant-skills · llm-application-dev · episodic-memory · phpstorm</span></li>
       </ul>
@@ -361,14 +364,14 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
       <text x="394" y="36">SPAWN_DEPTH=1 · AGENT_TEAMS=0 · FORK_SUBAGENT=0</text>
       <text x="394" y="126">task packet (outcome · criteria · REQ ids · verification · pointers)</text>
       <text x="394" y="216">tools: Read Grep Glob for reviewers · maxTurns 40 / 60 · model per persona</text>
-      <text x="394" y="306">block-destructive-bash · warn-force-push  (all sessions)</text>
+      <text x="394" y="306">block-destructive-bash · warn-force-push · warn-stale-base  (all sessions)</text>
       <text x="394" y="408">require-handoff-report — blocks once unless the report carries</text>
     </g>
     <g fill="var(--ink-2)" font-size="10.5">
       <text x="394" y="54">no nesting · no teammates · no context-inheriting forks</text>
       <text x="394" y="144">verification-triggers · reviewer-triggers · repository-precedent · target-selection decide who runs</text>
       <text x="394" y="234">writers get Bash + Edit + Write; a cap ends in a marked-partial report</text>
-      <text x="394" y="324">block-agent-push: every spelling of git push, gh pr create/merge, release create  (executor, test-engineer)</text>
+      <text x="394" y="324">block-agent-push + require-worktree-for-writers  (executor, test-engineer)</text>
       <text x="394" y="426">verification commands + outcomes · commit id or explicit no-commit · working-tree state</text>
     </g>
   </svg>
@@ -382,6 +385,8 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
       <tr><td>Confirm before force-push to main; confirm any push in a local IDE session</td><td><code>hooks/warn-force-push.sh</code> → ask; expands <code>.gitconfig</code> aliases and push typos first</td><td>every Bash call, all sessions</td><td><code>tools/test-hooks.sh</code></td></tr>
       <tr><td>Writers commit and tag locally; they never push or publish</td><td><code>hooks/block-agent-push.sh</code> → deny</td><td>executor, test-engineer (frontmatter)</td><td><code>tools/test-hooks.sh</code> (27 cases)</td></tr>
       <tr><td>Completion claims require executed evidence</td><td><code>hooks/require-handoff-report.sh</code> → block once</td><td>executor, test-engineer (Stop)</td><td><code>tools/test-handoff-hook.sh</code> (12)</td></tr>
+      <tr><td>A ticket never branches from a stale base</td><td><code>hooks/warn-stale-base.sh</code> → warn, only when ON the default branch and behind it</td><td>SessionStart, startup/resume</td><td><code>tools/test-worktree-hooks.sh</code> (7)</td></tr>
+      <tr><td>A writer never works straight onto the default branch</td><td><code>hooks/require-worktree-for-writers.sh</code> → block; allows any worktree or non-default branch</td><td>SubagentStart, executor + test-engineer</td><td><code>tools/test-worktree-hooks.sh</code> (11)</td></tr>
       <tr><td>Personas never dispatch personas</td><td>env pin depth 1 + explicit <code>tools:</code></td><td>all subagents</td><td>—</td></tr>
       <tr><td>Reviewers are read-only</td><td>tool grant <code>Read Grep Glob</code></td><td>4 personas</td><td>frontmatter parse in commit checks</td></tr>
       <tr><td>Spec/plan/todo paths never drift</td><td><code>tools/validate-artifact-paths.py</code> (24 guarded files)</td><td>repo</td><td><code>validate-artifact-paths-test.py</code> (11)</td></tr>
@@ -486,8 +491,9 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
     <tbody>
       <tr><td><code>tools/test-hooks.sh</code></td><td>the three PreToolUse hooks: deny / ask / allow, aliases, typos, global options, quoted targets</td><td class="num">100</td><td>free</td></tr>
       <tr><td><code>tools/test-handoff-hook.sh</code></td><td>SubagentStop gate: complete, partial, claim-only, second attempt, unknown agent, unreadable transcript</td><td class="num">12</td><td>free</td></tr>
-      <tr><td><code>tools/check-references.py</code> + test</td><td>every relative cross-reference between harness files resolves (the class <code>/plan</code> could not read on 2026-09-14)</td><td class="num">57 files · 11</td><td>free</td></tr>
-      <tr><td><code>tools/validate-frontmatter.py</code> + test</td><td>persona tool grants (reviewers read-only, no <code>Agent</code>), writer hook attachment, <code>maxTurns</code> presence, and the three settings pins</td><td class="num">7 files · 17</td><td>free</td></tr>
+      <tr><td><code>tools/test-worktree-hooks.sh</code></td><td>the two worktree-base guards against real git fixtures — bare origin, main checkout, linked worktree, feature branch, no-remote repo. 13 of 18 assert silence</td><td class="num">18</td><td>free</td></tr>
+      <tr><td><code>tools/check-references.py</code> + test</td><td>every relative cross-reference between harness files resolves (the class <code>/plan</code> could not read on 2026-09-14)</td><td class="num">58 files · 11</td><td>free</td></tr>
+      <tr><td><code>tools/validate-frontmatter.py</code> + test</td><td>persona tool grants (reviewers read-only, no <code>Agent</code>), writer hook attachment, <code>isolation: worktree</code>, the model tier each role calls for, and the settings pins</td><td class="num">8 files · 25</td><td>free</td></tr>
       <tr><td><code>tools/test-run-metrics.sh</code></td><td>the transcript metrics' large-result section: threshold default and override, time window, subagent exclusion, string and array-form results</td><td class="num">17</td><td>free</td></tr>
       <tr><td><code>tools/validate-artifact-paths.py</code> + test</td><td>canonical spec/plan/todo spellings across 24 pipeline files; replays the <code>-spec.md</code> drift once shipped</td><td class="num">24 files · 11</td><td>free</td></tr>
       <tr><td><code>tools/tests/workflow/test_runner.py</code></td><td>the runner's own assertion logic and fixture construction</td><td class="num">15</td><td>free</td></tr>

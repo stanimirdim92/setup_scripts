@@ -64,6 +64,7 @@ that explanation here, just the index.
 | [0054](0054-executor-concurrency-condition-gated-not-capped.md) | Executor concurrency gated by conditions, not a fixed cap | Partially superseded by [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) (sequential default replaced by parallel-when-safe; conditions unchanged) |
 | [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) | Multi-agent rules enforced by the harness; parallel-when-safe replaces sequential-by-default | Accepted |
 | [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md) | Models tiered by role; blind reviewer; recon width; writer isolation structural | Accepted |
+| [0057](0057-worktree-base-guards-at-the-session-level.md) | The cost of `worktree.baseRef: head` is paid at the session level, and guarded there | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

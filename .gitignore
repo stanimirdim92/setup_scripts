@@ -5,3 +5,4 @@
 # synced" list for the same category of auto-regenerated files.
 /dotfiles/claude/skills/synced/
 /dotfiles/claude/skills/session-start-hook/
+__pycache__/
