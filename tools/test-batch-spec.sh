@@ -108,6 +108,28 @@ check    skip_all_rc            0 "$RC"
 check    skip_all_no_calls      0 "$(wc -l < "$STUB_CALLS" | tr -d ' ')"
 contains skip_all_says_nothing  "nothing to do" "$OUT"
 
+# A project declaring .worktreeinclude needs those ignored files in every
+# worktree. `git worktree add` does not do the managed-worktree copy, so the
+# script must; leadbuster's .env.testing is the case that matters.
+D="$(new_repo includes)"
+printf '.env\n.env.testing\n' > "$D/.worktreeinclude"
+printf '.env\n.env.testing\nnode_modules/\n' > "$D/.gitignore"
+printf 'APP_ENV=local\n' > "$D/.env"
+printf 'DB_DATABASE=leadbuster_test\n' > "$D/.env.testing"
+mkdir -p "$D/node_modules" && echo junk > "$D/node_modules/x.js"
+( cd "$D" && git "${G[@]}" add -A && git "${G[@]}" commit -qm ignore )
+run "$D" -m jobs.txt --yes
+check    include_copies_env       1 "$([ -f "$D/.claude/worktrees/pair/.env" ] && echo 1 || echo 0)"
+check    include_copies_testing   1 "$([ -f "$D/.claude/worktrees/pair/.env.testing" ] && echo 1 || echo 0)"
+check    include_content_matches  "DB_DATABASE=leadbuster_test" "$(cat "$D/.claude/worktrees/pair/.env.testing" 2>/dev/null)"
+check    include_skips_unlisted   0 "$([ -e "$D/.claude/worktrees/pair/node_modules" ] && echo 1 || echo 0)"
+check    include_both_worktrees   1 "$([ -f "$D/.claude/worktrees/LD-3/.env" ] && echo 1 || echo 0)"
+
+# No .worktreeinclude is the ordinary case and must not break a job.
+D="$(new_repo no_includes)"
+run "$D" -m jobs.txt --yes
+check    no_include_still_works   0 "$RC"
+
 # ------------------------------------------------------------------- failures
 D="$(new_repo failing)"
 STUB_FAIL=1 run "$D" -m jobs.txt --yes

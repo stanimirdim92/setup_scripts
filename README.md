@@ -19,7 +19,10 @@ A re-run with nothing to do says so and does not prompt.
 job, reading `tools/spec-batch.txt`. Tickets that share files go on one line so
 they get one spec rather than four competing ones. It stops at the spec gate:
 every job ends with a Draft spec, uncommitted, awaiting a human. `--dry-run`
-prints the plan, `--parallel N` widens it, `--budget` caps each job.
+prints the plan, `--parallel N` widens it, `--budget` caps each job. Where the
+project declares `.worktreeinclude`, the matching ignored files are copied into
+each worktree — `git worktree add` is not `claude --worktree` and does not do
+that itself.
 
 `tools/run-metrics.sh` reports measured run metrics from a Claude Code
 transcript — tool-call batching, token totals, main-session vs subagent split,

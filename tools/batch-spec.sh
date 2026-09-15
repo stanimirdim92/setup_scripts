@@ -97,6 +97,20 @@ fi
 
 mkdir -p "$OUT"
 
+# ------------------------------------------------- .worktreeinclude, by hand
+# `git worktree add` is not `claude --worktree`: the managed-worktree copy of
+# ignored files does not run for it. A project that declares .worktreeinclude
+# means those files are needed, so do it here rather than leave a worktree
+# subtly different from the one the same project gets interactively.
+copy_worktree_includes() {
+  local dir="$1" f
+  [ -f "$ROOT/.worktreeinclude" ] || return 0
+  while IFS= read -r -d '' f; do
+    mkdir -p "$dir/$(dirname "$f")"
+    cp -p "$ROOT/$f" "$dir/$f"
+  done < <(git -C "$ROOT" ls-files -z --others --ignored --exclude-from=.worktreeinclude 2>/dev/null)
+}
+
 # --------------------------------------------------------------- one job
 run_job() {
   local slug="$1" tickets="$2"
@@ -107,6 +121,7 @@ run_job() {
       echo "worktree exists, reusing: $dir"
     else
       git worktree add -q -b "feature/$slug" "$dir" || { echo "worktree add failed"; exit 1; }
+      copy_worktree_includes "$dir"
     fi
     # Run INSIDE the worktree. Without this the spec lands in the main
     # checkout -- the branch is created, nothing writes to it, and the file
