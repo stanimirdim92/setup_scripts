@@ -65,9 +65,21 @@ warn_out() {  # cwd -> stdout of the SessionStart hook
   jq -nc --arg c "$1" '{hook_event_name:"SessionStart",source:"startup",cwd:$c}' \
     | bash "$WARN" 2>/dev/null
 }
-block_rc() {  # cwd, agent_type -> exit code of the SubagentStart hook
-  jq -nc --arg c "$1" --arg a "$2" '{hook_event_name:"SubagentStart",agent_type:$a,cwd:$c}' \
-    | bash "$BLOCK" >/dev/null 2>&1; echo $?
+# The guard is a PreToolUse hook on the dispatch tool, so what it returns is a
+# permissionDecision -- exit status is always 0. Asserting the exit code, as
+# the first version of this suite did, would pass against a hook that decided
+# nothing.
+block_rc() {  # cwd, agent_type -> "deny" or "allow"
+  local out; out="$(jq -nc --arg c "$1" --arg a "$2" \
+    '{hook_event_name:"PreToolUse",tool_name:"Agent",tool_input:{subagent_type:$a},cwd:$c}' \
+    | bash "$BLOCK" 2>/dev/null | jq -r '.hookSpecificOutput.permissionDecision // "allow"' 2>/dev/null)"
+  echo "${out:-allow}"
+}
+block_rc_task() {  # same, dispatched as Task
+  local out; out="$(jq -nc --arg c "$1" --arg a "$2" \
+    '{hook_event_name:"PreToolUse",tool_name:"Task",tool_input:{subagent_type:$a},cwd:$c}' \
+    | bash "$BLOCK" 2>/dev/null | jq -r '.hookSpecificOutput.permissionDecision // "allow"' 2>/dev/null)"
+  echo "${out:-allow}"
 }
 check() { # label, expected, actual
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); FAILED+=("[$1] expected $2, got $3"); fi
@@ -115,21 +127,30 @@ force_fetch_next_time "$TMP/wt-LD-1"
 check_quiet  worktree_with_own_commits   "$TMP/wt-LD-1"
 
 # ------------------------------------------- require-worktree-for-writers
-check writer_on_main_blocked          2 "$(block_rc "$TMP/main-checkout" executor)"
-check tester_on_main_blocked          2 "$(block_rc "$TMP/main-checkout" test-engineer)"
-check writer_in_worktree_allowed      0 "$(block_rc "$TMP/wt-LD-1" executor)"
-check tester_in_worktree_allowed      0 "$(block_rc "$TMP/wt-LD-1" test-engineer)"
+check writer_on_main_blocked          deny  "$(block_rc "$TMP/main-checkout" executor)"
+check tester_on_main_blocked          deny  "$(block_rc "$TMP/main-checkout" test-engineer)"
+check writer_via_task_blocked         deny  "$(block_rc_task "$TMP/main-checkout" executor)"
+check writer_in_worktree_allowed      allow "$(block_rc "$TMP/wt-LD-1" executor)"
+check tester_in_worktree_allowed      allow "$(block_rc "$TMP/wt-LD-1" test-engineer)"
 git -C main-checkout "${G[@]}" checkout -q feature/x
-check writer_on_feature_allowed       0 "$(block_rc "$TMP/main-checkout" executor)"
+check writer_on_feature_allowed       allow "$(block_rc "$TMP/main-checkout" executor)"
 git -C main-checkout "${G[@]}" checkout -q main
-check reviewer_never_blocked          0 "$(block_rc "$TMP/main-checkout" code-reviewer)"
-check recon_never_blocked             0 "$(block_rc "$TMP/main-checkout" repo-recon)"
-check writer_outside_git_allowed      0 "$(block_rc "$TMP" executor)"
-check writer_missing_cwd_allowed      0 "$(block_rc "$TMP/does-not-exist" executor)"
-check no_remote_repo_on_main_blocked  2 "$(block_rc "$TMP/no-remote" executor)"
+check reviewer_never_blocked          allow "$(block_rc "$TMP/main-checkout" code-reviewer)"
+check blind_reviewer_never_blocked    allow "$(block_rc "$TMP/main-checkout" blind-reviewer)"
+check recon_never_blocked             allow "$(block_rc "$TMP/main-checkout" repo-recon)"
+check writer_outside_git_allowed      allow "$(block_rc "$TMP" executor)"
+check writer_missing_cwd_allowed      allow "$(block_rc "$TMP/does-not-exist" executor)"
+check no_remote_repo_on_main_blocked  deny  "$(block_rc "$TMP/no-remote" executor)"
+check no_agent_type_allowed           allow "$(block_rc "$TMP/main-checkout" "")"
+
+# The decision must be a real permissionDecision, not an exit code: a hook that
+# exits 2 from an event that cannot block refuses nothing.
+raw="$(jq -nc --arg c "$TMP/main-checkout" '{hook_event_name:"PreToolUse",tool_name:"Agent",tool_input:{subagent_type:"executor"},cwd:$c}' | bash "$BLOCK" 2>/dev/null)"
+check decision_is_json                deny "$(jq -r '.hookSpecificOutput.permissionDecision // "none"' <<<"$raw" 2>/dev/null)"
+check decision_names_the_event        PreToolUse "$(jq -r '.hookSpecificOutput.hookEventName // "none"' <<<"$raw" 2>/dev/null)"
 
 # the refusal must name the fix, or it teaches nobody anything
-reason="$(jq -nc --arg c "$TMP/main-checkout" '{hook_event_name:"SubagentStart",agent_type:"executor",cwd:$c}' | bash "$BLOCK" 2>&1 >/dev/null)"
+reason="$(jq -r '.hookSpecificOutput.permissionDecisionReason // ""' <<<"$raw" 2>/dev/null)"
 case "$reason" in *"--worktree"*) check refusal_names_the_fix y y ;; *) check refusal_names_the_fix y n ;; esac
 
 echo "worktree hooks: $PASS passed, $FAIL failed"

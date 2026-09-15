@@ -39,8 +39,18 @@ cwd="$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null)"
 # reintroduces the shared database this hook exists to prevent.
 assign='[A-Za-z_][A-Za-z0-9_]*=("[^"]*"|'"'"'[^'"'"']*'"'"'|[^[:space:]]*)[[:space:]]+'
 sep="(^|[;&|(])[[:space:]]*(env[[:space:]]+)?($assign)*"
-artisan="${sep}(php[[:space:]]+([^;&|()]*[[:space:]]+)?)?\.?/?artisan[[:space:]]+test([[:space:]]|$)"
-phpunit="${sep}(\.?/)?(vendor/bin/)?phpunit([[:space:]]|$)"
+# A PHP interpreter by any spelling: `php`, `php8.2`, `/usr/bin/php`,
+# `./bin/php`. Anchoring on the literal word `php` missed every absolute path,
+# which is what a CI script or a multi-version box actually writes.
+php="([A-Za-z0-9_./-]*/)?php[0-9.]*[[:space:]]+"
+# The command ends at whitespace, a shell metacharacter, or end of string.
+# `([[:space:]]|$)` alone let `php artisan test; echo done` through -- the very
+# first thing anyone types after a test command is another command.
+end='([[:space:];&|<>)]|$)'
+artisan="${sep}($php([^;&|()]*[[:space:]]+)?)?\.?/?artisan[[:space:]]+test${end}"
+# phpunit and paratest are the same shared database by another entry point,
+# and both are commonly run through the interpreter: `php vendor/bin/phpunit`.
+phpunit="${sep}($php)?(\.?/)?([A-Za-z0-9_./-]*/)?(phpunit|paratest)${end}"
 echo "$command" | grep -Eq "$artisan|$phpunit" || exit 0
 
 # `test:foo` is a different artisan command and never matches above; the

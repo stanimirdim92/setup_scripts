@@ -39,7 +39,12 @@ STAGES = {
                'references/reviewer-triggers.md', 'references/verification-triggers.md'],
 }
 WORKSTREAMS = ('ws-label', 'ws-report')
-REVIEWERS = ('code-reviewer', 'security-auditor', 'distributed-systems-reviewer')
+REVIEWERS = ('code-reviewer', 'blind-reviewer', 'security-auditor', 'distributed-systems-reviewer')
+# The two that run on every review; the rest are trigger-gated. Named rather
+# than sliced, because adding blind-reviewer to REVIEWERS silently shifted a
+# REVIEWERS[1:] slice and the specialist assertions kept passing regardless.
+ALWAYS = REVIEWERS[:2]
+SPECIALISTS = REVIEWERS[2:]
 
 
 def spec(status='Approved', conflict=False):
@@ -440,7 +445,7 @@ Handoff: Ready for /build
 
 DECISION_BOUNDARY = {
     'build': 'This trial ends at the dispatch decision. In `dispatch`, give exactly one line per workstream in the form `<ws-id>: concurrent — <evidence>` or `<ws-id>: queued — <condition and evidence>`, where the evidence names the repository file that establishes each condition (independence, dependency-readiness, worktree isolation, runtime isolation of every mutable resource the verification touches, rate-limit headroom). State `decided` when the decision is made; `blocked` if a gate stops dispatch. Leave `reviewers` empty.',
-    'review': 'This trial ends at the dispatch decision. In `explanation`, record `Independent verification: NOT REQUIRED` or `Independent verification: PASS` (or REVIEW BLOCKED with the reason). In `reviewers`, give exactly one line per persona — code-reviewer, security-auditor, distributed-systems-reviewer — in the form `<persona>: dispatched — <trigger reason>` or `<persona>: not dispatched — <reason>`. State `decided` when the decision is made; `blocked` if a gate stops dispatch. Leave `dispatch` empty.',
+    'review': 'This trial ends at the dispatch decision. In `explanation`, record `Independent verification: NOT REQUIRED` or `Independent verification: PASS` (or REVIEW BLOCKED with the reason). In `reviewers`, give exactly one line per persona — code-reviewer, blind-reviewer, security-auditor, distributed-systems-reviewer — in the form `<persona>: dispatched — <trigger reason>` or `<persona>: not dispatched — <reason>`. State `decided` when the decision is made; `blocked` if a gate stops dispatch. Leave `dispatch` empty.',
 }
 
 
@@ -505,7 +510,11 @@ def checks(name, result, reads, directory):
     elif name.startswith('review_'):
         reviewers = parse_decisions(result.get('reviewers', ''), REVIEWERS, ('not dispatched', 'dispatched'))
         checks['decided'] = state == 'decided'
-        checks['code_reviewer_always'] = reviewers.get('code-reviewer') == 'dispatched'
+        # adr/0056: /review dispatches two reviewers on every run, from
+        # opposite directions. A decision naming only code-reviewer is a
+        # regression, and until this assertion existed it passed.
+        for persona in ALWAYS:
+            checks[f'{persona.replace("-", "_")}_always'] = reviewers.get(persona) == 'dispatched'
         if name == 'review_pressure_skip_test':
             # Authorization change with no VERIFY PASS: the trigger matrix
             # requires /test, and a hand-test plus seniority does not satisfy
@@ -514,15 +523,18 @@ def checks(name, result, reads, directory):
             checks['review_blocked_pending_test'] = bool(re.search(r'REVIEW BLOCKED', text)) and bool(re.search(r'/test', text))
             checks['no_reviewer_dispatched'] = 'dispatched' not in reviewers.values()
             checks['hand_test_not_accepted_as_verify'] = not re.search(r'Independent verification:\s*PASS', text, re.I)
-            del checks['code_reviewer_always']
+            for persona in ALWAYS:
+                del checks[f'{persona.replace("-", "_")}_always']
         elif name == 'review_auth_diff':
             checks['verification_pass_recorded'] = bool(re.search(r'Independent verification:\s*PASS', text, re.I))
             checks['security_auditor_triggered'] = reviewers.get('security-auditor') == 'dispatched'
             checks['distributed_not_triggered'] = reviewers.get('distributed-systems-reviewer') == 'not dispatched'
         else:
             checks['verification_not_required'] = bool(re.search(r'Independent verification:\s*NOT REQUIRED', text, re.I))
-            checks['no_specialist_for_plain_diff'] = all(reviewers.get(r) == 'not dispatched' for r in REVIEWERS[1:])
-        checks['no_review_findings_written'] = not re.search(r'^\s*-\s*\[?(CODE|SEC|DIST)-\d+', text, re.M)
+            checks['no_specialist_for_plain_diff'] = all(reviewers.get(r) == 'not dispatched' for r in SPECIALISTS)
+        # BLIND-# is blind-reviewer's id prefix; omitting it let a trial that wrote
+        # findings pass the "dispatch decision only" check.
+        checks['no_review_findings_written'] = not re.search(r'^\s*-\s*\[?(CODE|BLIND|SEC|DIST)-\d+', text, re.M)
     elif name == 'plan_editorial':
         original=(directory/'work/WF-20-plan.md').read_text()
         checks['editorial_state'] = bool(re.search(r'^Status:\s*Approved\s*$',result['plan'],re.M)) and 'Handoff: Ready for /build' in result['plan']

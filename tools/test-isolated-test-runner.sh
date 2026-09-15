@@ -60,6 +60,20 @@ check env_prefix_two            deny 'DB_DATABASE="$DB" REDIS_PREFIX="$S-" php a
 check env_word_prefix           deny 'env APP_ENV=testing php artisan test'   "$ISO"
 check env_prefix_phpunit        deny 'XDEBUG_MODE=off vendor/bin/phpunit'     "$ISO"
 check env_prefix_after_and      deny 'cd m && FOO=1 php artisan test'         "$ISO"
+# Reported by an external review: the command boundary was whitespace-or-end,
+# so anything chained after the test command slipped past -- and chaining is
+# the first thing anyone does. The interpreter was matched as the literal word
+# `php`, so every absolute path and versioned binary slipped past too.
+check trailing_semicolon        deny 'php artisan test; echo done'            "$ISO"
+check trailing_and              deny 'php artisan test&&echo x'               "$ISO"
+check trailing_pipe             deny 'php artisan test|tee out.txt'           "$ISO"
+check trailing_redirect         deny 'php artisan test>out.txt'               "$ISO"
+check trailing_paren            deny '(php artisan test)'                     "$ISO"
+check absolute_php              deny '/usr/bin/php artisan test'              "$ISO"
+check versioned_php             deny 'php8.2 artisan test'                    "$ISO"
+check php_runs_phpunit          deny 'php vendor/bin/phpunit'                 "$ISO"
+check paratest                  deny 'php vendor/bin/paratest'                "$ISO"
+check absolute_phpunit          deny '/app/vendor/bin/phpunit --filter=X'     "$ISO"
 check inside_a_worktree         deny 'php artisan test'                       "$TMP/wt1"
 
 # ------------------------------------------------------------------- allows
@@ -71,6 +85,12 @@ check artisan_test_colon        allow 'php artisan test:coverage'             "$
 check artisan_migrate           allow 'php artisan migrate'                   "$ISO"
 check env_prefix_migrate        allow 'APP_ENV=testing php artisan migrate'   "$ISO"
 check env_prefix_composer       allow 'XDEBUG_MODE=off composer test'         "$ISO"
+# The widened interpreter and boundary must not start matching neighbours.
+check artisan_test_colon_chain  allow 'php artisan test:coverage; echo done'  "$ISO"
+check phpstan_not_phpunit       allow 'vendor/bin/phpstan analyse'            "$ISO"
+check php_cs_fixer              allow 'php vendor/bin/php-cs-fixer fix'       "$ISO"
+check php_version               allow 'php -v'                                "$ISO"
+check composer_chain            allow 'composer install && composer test'     "$ISO"
 check artisan_tinker            allow 'php artisan tinker'                    "$ISO"
 check artisan_route_list        allow 'php artisan route:list'                "$ISO"
 check yarn_test                 allow 'yarn run test'                         "$ISO"

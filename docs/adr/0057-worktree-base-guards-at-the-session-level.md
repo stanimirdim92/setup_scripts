@@ -11,10 +11,11 @@ fourth decision quietly depends on:
    and is behind it — `claude --worktree` just branched off a stale local
    default (`git merge --ff-only origin/<default>`). Prints to stdout, which
    becomes context; exits 0 unconditionally.
-2. **`hooks/require-worktree-for-writers.sh`** — `SubagentStart`, matcher
-   `executor|test-engineer`. Refuses the dispatch (exit 2) when the session is
-   on the default branch in the main checkout. Allows everywhere else: in a
-   linked worktree, on any non-default branch, outside a git repository.
+2. **`hooks/require-worktree-for-writers.sh`** — `PreToolUse`, matcher
+   `Agent|Task`, keyed on `tool_input.subagent_type`. Denies the dispatch when
+   the session is on the default branch in the main checkout. Allows everywhere
+   else: in a linked worktree, on any non-default branch, outside a git
+   repository.
 
 Both are wired in `settings.json` and tested by
 `tools/test-worktree-hooks.sh` against real git fixtures.
@@ -62,6 +63,28 @@ for an executor's commits is the branch the human is editing from, and the fix
 is one command. `SubagentStart` can block, the condition is unambiguous, so it
 blocks — and names both fixes in the refusal, because a gate that stops the work
 without saying how to proceed gets deleted within a week.
+
+## Correction: the guard was on an event that may not block
+
+As first written this was a `SubagentStart` hook exiting 2, and its tests
+asserted that exit code. An external review pointed out that `SubagentStart`'s
+ability to block is not established: the published table marks `PreToolUse`
+"Can block? Yes" and does not say so for `SubagentStart`. The claim could not
+be settled from primary sources here — the docs page truncates mid-table and
+the CLI is a compiled bundle — and that is reason enough. A guard whose refusal
+*might* be advisory is not a guard, and a test asserting `exit 2` passes either
+way: it verifies the script's opinion, never that anything was prevented.
+
+It is now `PreToolUse` on the dispatch tool, returning the same
+`permissionDecision: "deny"` as the harness's three other enforcing hooks —
+blocking by documented contract, on the mechanism already proven by 100 cases
+in `tools/test-hooks.sh`. The tests assert the decision rather than the exit
+status, and two cases now check that the output *is* a `permissionDecision`
+naming `PreToolUse`, so a future move back to an exit code fails.
+
+The general lesson is the one this ADR already makes about allow cases, applied
+to mechanism: a test that observes the hook's own output, rather than the
+effect on the thing being guarded, cannot tell enforcement from opinion.
 
 ## Why the allow cases carry the test weight
 

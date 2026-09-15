@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# SubagentStart hook (matcher: executor|test-engineer). Blocks a writing
-# persona from spawning while the session sits on the default branch of the
-# main checkout.
+# PreToolUse hook (matcher: Agent|Task). Denies dispatching a writing persona
+# while the session sits on the default branch of the main checkout.
 #
 # The failure it prevents: with `isolation: worktree` on both writers, an
 # executor dispatched from the main checkout gets a sub-worktree branched from
@@ -10,23 +9,34 @@
 # and that is the checkout the human has open in their IDE. Nothing else in the
 # harness notices: every individual step succeeds.
 #
+# This was a SubagentStart hook returning exit 2 until an external review
+# pointed out that the event's ability to block is not established -- the
+# published table is "Can block? Yes" for PreToolUse and does not say so for
+# SubagentStart, and a hook whose refusal might be advisory is not a guard.
+# PreToolUse on the dispatch tool blocks by documented contract, uses the same
+# JSON decision as the harness's three other enforcing hooks, and is testable
+# end to end. See docs/adr/0057.
+#
 # Narrow on purpose. A writer is allowed when the session is in a linked
 # worktree (the intended ticket flow), or on any branch that is not the default
 # one (a deliberate branch-without-worktree flow, which lands work somewhere
 # recoverable). Only "writing straight onto main" is refused, and the fix is a
 # single command, named in the message.
 #
-# Exit 2 blocks the spawn and feeds stderr back as the reason; any other
-# failure allows, because a broken hook must not wedge a build.
+# Exit 0 always; the decision is JSON on stdout, per
+# https://code.claude.com/docs/en/hooks. Any failure allows, because a broken
+# hook must not wedge a build.
 set -uo pipefail
 
 input="$(cat 2>/dev/null)" || exit 0
 cwd="$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null)"
-agent="$(jq -r '.agent_type // empty' <<<"$input" 2>/dev/null)"
+# Agent and Task both carry the persona in subagent_type; agent_type is
+# accepted too so the hook keeps working if it is ever dispatched differently.
+agent="$(jq -r '.tool_input.subagent_type // .tool_input.agent_type // .agent_type // empty' <<<"$input" 2>/dev/null)"
 
 case "$agent" in
   executor|test-engineer) ;;
-  *) exit 0 ;;                      # matcher should have filtered; belt and braces
+  *) exit 0 ;;
 esac
 
 [ -n "$cwd" ] && [ -d "$cwd" ] || exit 0
@@ -51,7 +61,7 @@ fi
 branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null)" || exit 0
 [ "$branch" = "$default" ] || exit 0        # on a feature branch: allowed
 
-cat >&2 <<MSG
+jq -n --arg reason "$(cat <<MSG
 Refusing to dispatch $agent: this session is on '$branch', the default branch, in the
 main checkout -- not a ticket worktree and not a feature branch.
 
@@ -68,4 +78,11 @@ or, if you meant to work without one, create the branch first:
 
     git checkout -b <branch>
 MSG
-exit 2
+)" '{
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse",
+    permissionDecision: "deny",
+    permissionDecisionReason: $reason
+  }
+}'
+exit 0

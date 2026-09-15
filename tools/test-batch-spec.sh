@@ -130,11 +130,62 @@ D="$(new_repo no_includes)"
 run "$D" -m jobs.txt --yes
 check    no_include_still_works   0 "$RC"
 
+# A worktree inherits whatever specs the base commit carried, so an existing
+# *-SPEC.md is not evidence this job produced anything. Reported by an external
+# review: a job whose CLI exited 3 was reported ok, citing an inherited spec.
+D="$(new_repo inherited)"
+mkdir -p "$D/docs/specs" && echo old > "$D/docs/specs/OLD-9-SPEC.md"
+( cd "$D" && git "${G[@]}" add -A && git "${G[@]}" commit -qm inherited )
+STUB_FAIL=1 run "$D" -m jobs.txt --yes
+check    inherited_not_counted_ok  1 "$RC"
+contains inherited_reported_failed "FAILED" "$OUT"
+absent   inherited_not_cited_ok    "OLD-9-SPEC.md" "$OUT"
+
+# ...and a spec for some *other* ticket does not count either, even when the
+# CLI succeeds.
+D="$(new_repo wrongspec)"
+cat > "$TMP/bin/claude" <<'STUB2'
+#!/usr/bin/env bash
+mkdir -p docs/specs; printf 'Status: Draft
+' > docs/specs/UNRELATED-SPEC.md
+echo '{"total_cost_usd":0.5}'
+STUB2
+chmod +x "$TMP/bin/claude"
+run "$D" -m jobs.txt --yes
+check    wrong_spec_rc             1 "$RC"
+contains wrong_spec_reported       "NO SPEC" "$OUT"
+# restore the good stub
+cat > "$TMP/bin/claude" <<'STUB3'
+#!/usr/bin/env bash
+prompt=""; next=0
+for a in "$@"; do [ "$next" = 1 ] && { prompt="$a"; next=0; }; [ "$a" = "-p" ] && next=1; done
+echo "$prompt" >> "$STUB_CALLS"
+[ -n "${STUB_FAIL:-}" ] && { echo '{"total_cost_usd":0}'; exit 3; }
+mkdir -p docs/specs
+for t in ${prompt#/spec }; do printf 'Status: Draft
+# %s
+' "$t" > "docs/specs/$t-SPEC.md"; done
+echo '{"total_cost_usd":1.25,"duration_ms":1000}'
+STUB3
+chmod +x "$TMP/bin/claude"
+
+# A worker that dies before reporting used to vanish from the results and the
+# run still exited 0. Every scheduled job must produce exactly one row.
+D="$(new_repo deadworker)"
+git -C "$D" "${G[@]}" branch feature/pair          # blocks `git worktree add -b`
+run "$D" -m jobs.txt --yes
+check    dead_worker_rc            1 "$RC"
+contains dead_worker_reported      "pair" "$OUT"
+check    dead_worker_has_a_row     1 "$(grep -c '^pair|' "$D/.spec-batch/results.txt" 2>/dev/null || echo 0)"
+contains dead_worker_other_job_ok  "ok" "$OUT"
+
 # ------------------------------------------------------------------- failures
 D="$(new_repo failing)"
 STUB_FAIL=1 run "$D" -m jobs.txt --yes
 check    failure_rc             1 "$RC"
-contains failure_named          "NO SPEC" "$OUT"
+# FAILED (the CLI exited non-zero) is distinct from NO SPEC (it exited 0 but
+# wrote nothing for this ticket); wrong_spec_reported above covers the latter.
+contains failure_named          "FAILED" "$OUT"
 contains failure_points_at_log  ".log" "$OUT"
 
 # ---------------------------------------------------------------------- flags

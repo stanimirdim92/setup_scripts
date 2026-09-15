@@ -112,9 +112,14 @@ copy_worktree_includes() {
 }
 
 # --------------------------------------------------------------- one job
+# Every scheduled job emits exactly one terminal row. The worker used to run
+# under `set -e` with the work in a subshell, so a failed `git worktree add`
+# aborted the function before it printed anything -- the job vanished from the
+# report and the run still exited 0. A job that produced nothing must say so.
 run_job() {
-  local slug="$1" tickets="$2"
+  local slug="$1" tickets="$2" status=0
   local dir="$ROOT/.claude/worktrees/$slug" log="$OUT/$slug.log"
+  set +e
   (
     echo "=== $slug: $tickets"
     if [ -d "$dir" ]; then
@@ -132,9 +137,22 @@ run_job() {
     "$CLAUDE_BIN" -p "/spec $tickets" \
       --permission-mode acceptEdits \
       --max-budget-usd "$BUDGET" \
-      --output-format json > "$OUT/$slug.json" 2>&1 || echo "claude exited $?"
+      --output-format json > "$OUT/$slug.json" 2>&1 || { rc=$?; echo "claude exited $rc"; exit "$rc"; }
   ) > "$log" 2>&1
-  local spec; spec="$(ls "$dir"/docs/specs/*-SPEC.md 2>/dev/null | head -1 || true)"
+  status=$?
+  set -e
+
+  if [ "$status" -ne 0 ]; then echo "$slug|FAILED|$log"; return 0; fi
+
+  # The worktree inherits whatever specs the base commit carried, so "a file
+  # matching docs/specs/*-SPEC.md exists" is not evidence this job produced
+  # anything: the first run of this script reported an inherited OLD-1-SPEC.md
+  # as success for a job whose own CLI call had exited 3. Require a spec named
+  # for a ticket this job actually asked for.
+  local spec="" t
+  for t in $tickets; do
+    if [ -f "$dir/docs/specs/$t-SPEC.md" ]; then spec="$dir/docs/specs/$t-SPEC.md"; break; fi
+  done
   if [ -n "$spec" ]; then echo "$slug|ok|$spec"; else echo "$slug|NO SPEC|$log"; fi
 }
 
@@ -152,11 +170,23 @@ wait
 # --------------------------------------------------------------- report
 echo
 failed=0
+seen=0
 while IFS='|' read -r slug state where; do
   [ -n "$slug" ] || continue
+  seen=$((seen+1))
   printf '  %-8s %-26s %s\n' "$state" "$slug" "$where"
   [ "$state" = ok ] || failed=$((failed+1))
 done < "$RESULTS"
+
+# A worker that dies without reporting is the failure this catches: the row is
+# absent, not FAILED, so counting rows is the only way to notice.
+missing=$(( ${#SLUGS[@]} - seen ))
+if [ "$missing" -gt 0 ]; then
+  for i in "${!SLUGS[@]}"; do
+    grep -q "^${SLUGS[$i]}|" "$RESULTS" || printf '  %-8s %-26s %s\n' "NO RESULT" "${SLUGS[$i]}" "$OUT/${SLUGS[$i]}.log"
+  done
+  failed=$((failed+missing))
+fi
 
 python3 - "$OUT" <<'PY' 2>/dev/null || true
 import json, pathlib, sys
