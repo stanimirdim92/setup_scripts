@@ -59,7 +59,13 @@ echo "$command" | grep -Eq "$artisan|$phpunit" || exit 0
 cd "$cwd" 2>/dev/null || exit 0
 top="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 [ -x "$top/bin/worktree-test.sh" ] || [ -f "$top/bin/worktree-test.sh" ] || exit 0
-[ "$(git worktree list 2>/dev/null | wc -l)" -gt 1 ] || exit 0
+# Count live worktrees only. `git worktree list` keeps listing one whose
+# directory was deleted with `rm -rf` instead of `git worktree remove` -- a
+# mistake the project's own CLAUDE.md warns about, which would otherwise leave
+# this gate denying a legitimate test run in a repo with one real checkout.
+live="$(git worktree list --porcelain 2>/dev/null \
+  | awk '/^worktree /{n++} /^prunable /{n--} END{print n+0}')"
+[ "${live:-1}" -gt 1 ] || exit 0
 
 jq -n --arg reason "$(cat <<'MSG'
 Use `composer test`, not a bare test run: more than one worktree is live here.

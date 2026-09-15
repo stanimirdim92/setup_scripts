@@ -135,6 +135,18 @@ check tester_in_worktree_allowed      allow "$(block_rc "$TMP/wt-LD-1" test-engi
 git -C main-checkout "${G[@]}" checkout -q feature/x
 check writer_on_feature_allowed       allow "$(block_rc "$TMP/main-checkout" executor)"
 git -C main-checkout "${G[@]}" checkout -q main
+# States a real checkout reaches that a pristine fixture never does. Detached
+# HEAD has no branch to compare against the default one, and a worktree deleted
+# with `rm -rf` instead of `git worktree remove` lingers in `git worktree list`
+# as prunable. Both hooks must read these as "nothing to say", not guess.
+git -C main-checkout "${G[@]}" checkout -q --detach HEAD
+check writer_detached_head_allowed   allow "$(block_rc "$TMP/main-checkout" executor)"
+check_quiet  detached_head_quiet     "$TMP/main-checkout"
+git -C main-checkout "${G[@]}" checkout -q main
+git -C main-checkout "${G[@]}" worktree add -q -b stale-wt "$TMP/wt-stale" >/dev/null 2>&1
+rm -rf "$TMP/wt-stale"                 # prunable from here on
+check writer_on_main_still_blocked   deny  "$(block_rc "$TMP/main-checkout" executor)"
+
 check reviewer_never_blocked          allow "$(block_rc "$TMP/main-checkout" code-reviewer)"
 check blind_reviewer_never_blocked    allow "$(block_rc "$TMP/main-checkout" blind-reviewer)"
 check recon_never_blocked             allow "$(block_rc "$TMP/main-checkout" repo-recon)"

@@ -23,8 +23,19 @@ contains() { # label, needle, haystack
   case "$3" in *"$2"*) check "$1" y y ;; *) check "$1" y n ;; esac
 }
 
-fresh_home() {  # -> a clean throwaway HOME
-  local h="$TMP/home-$1"; rm -rf "$h"; mkdir -p "$h"; echo "$h"
+# Not an empty HOME: a real one already holds files this script does not
+# manage, and "it linked the right things" is only half the claim -- the other
+# half is that it left everything else alone. Every case now carries two
+# bystanders, asserted untouched at the end.
+fresh_home() {  # -> a throwaway HOME with unmanaged content
+  local h="$TMP/home-$1"; rm -rf "$h"; mkdir -p "$h/.claude" "$h/.codex"
+  printf 'mine\n' > "$h/.claude/settings.local.json"
+  printf 'notes\n' > "$h/.codex/notes.md"
+  echo "$h"
+}
+bystanders_intact() {  # HOME -> y when the unmanaged files are untouched
+  [ "$(cat "$1/.claude/settings.local.json" 2>/dev/null)" = mine ] \
+    && [ "$(cat "$1/.codex/notes.md" 2>/dev/null)" = notes ] && echo y || echo n
 }
 run() {         # HOME, args... -> combined output; sets RC. stdin is a pipe.
   local h="$1"; shift
@@ -108,6 +119,27 @@ check  rerun_rc                  0 "$RC"
 contains rerun_is_a_noop         "nothing to do"                 "$OUT"
 case "$OUT" in *"Proceed?"*) check rerun_does_not_prompt n y ;; *) check rerun_does_not_prompt n n ;; esac
 
+# A second run must not destroy the first run's backup. preflight refuses, and
+# refuses before touching anything.
+H="$(fresh_home twice)"
+mkdir -p "$H/.claude" && echo real > "$H/.claude/CLAUDE.md" && echo older > "$H/.claude/CLAUDE.md.bak"
+run "$H" --yes
+check  existing_bak_rc           1 "$RC"
+contains existing_bak_named      "Refusing to overwrite existing backup" "$OUT"
+check  existing_bak_kept         "older" "$(cat "$H/.claude/CLAUDE.md.bak")"
+check  existing_bak_orig_kept    "real"  "$(cat "$H/.claude/CLAUDE.md")"
+check  existing_bak_nothing_done 0 "$(linked "$H")"
+
+# A symlink whose target no longer exists is still a symlink: relink, not
+# backup. `[ -e ]` is false for it, so a naive check would call it new.
+H="$(fresh_home dangling)"
+mkdir -p "$H/.claude" && ln -s /nowhere/missing "$H/.claude/settings.json"
+run "$H" --dry-run
+contains dangling_is_relink      "relink    ~/.claude/settings.json" "$OUT"
+run "$H" --yes
+check  dangling_relinked         1 "$([ "$(readlink "$H/.claude/settings.json")" = "$REPO/dotfiles/claude/settings.json" ] && echo 1 || echo 0)"
+check  dangling_no_bak           0 "$([ -e "$H/.claude/settings.json.bak" ] && echo 1 || echo 0)"
+
 # ------------------------------------------------------------------ flags
 H="$(fresh_home flags)"
 run "$H" --help
@@ -119,6 +151,12 @@ run "$H" --bogus
 check  unknown_flag_rc           1 "$RC"
 contains unknown_flag_names_it   "unknown option --bogus"        "$OUT"
 check  unknown_flag_no_change    0 "$(linked "$H")"
+
+# Nothing above may have disturbed a file the script does not manage.
+for name in plan realdir onedir pipe decline empty_answer junk_answer yes_flag tty_yes backup twice dangling flags; do
+  h="$TMP/home-$name"; [ -d "$h" ] || continue
+  check "bystanders_$name" y "$(bystanders_intact "$h")"
+done
 
 echo "link_dotfiles: $PASS passed, $FAIL failed"
 if [ "$FAIL" -gt 0 ]; then printf '\n'; for f in "${FAILED[@]}"; do echo "  FAIL $f"; done; exit 1; fi

@@ -102,6 +102,15 @@ authoritative.
 
 ## Verification and maintenance
 
+Fixtures are built in the state a working checkout is actually in, not a
+pristine one. Every repository fixture carries a spec from an earlier ticket,
+an unrelated branch, an untracked file and a prunable worktree entry; every
+`$HOME` fixture carries files the linker does not manage. Three of the five
+findings in an external review of `81515f3` hid behind clean fixtures: an
+inherited spec reported as a job's own output, a worker that vanished from the
+results, and a gate counting a `rm -rf`-ed worktree. None was reachable in a
+repository with no prior specs, no branches and no stale worktrees.
+
 - `python3 dotfiles/codex/install-skills.py --check` checks installed link targets.
 - `tools/test-install-skills.py` regression-tests the installer's preflight and
   rollback behavior (conflict detection, injected-failure rollback) in a

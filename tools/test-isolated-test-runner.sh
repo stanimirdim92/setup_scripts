@@ -105,6 +105,15 @@ check echo_mid_sentence         allow 'echo "php artisan test is wrong here"' "$
 check no_runner_in_project      allow 'php artisan test'                      "$BARE"
 check no_runner_in_worktree     allow 'php artisan test'                      "$TMP/wt-bare"
 check single_checkout           allow 'php artisan test'                      "$SOLO"
+# `git worktree list` keeps listing a worktree whose directory was deleted with
+# `rm -rf` -- the mistake the project's own CLAUDE.md warns about. Counting
+# those made the gate deny a legitimate run in a repo with one real checkout.
+git -C "$SOLO" "${G[@]}" worktree add -q -b stale "$TMP/solo-stale" >/dev/null 2>&1
+rm -rf "$TMP/solo-stale"
+check prunable_does_not_count   allow 'php artisan test'                      "$SOLO"
+git -C "$ISO" "${G[@]}" worktree add -q -b stale2 "$TMP/iso-stale" >/dev/null 2>&1
+rm -rf "$TMP/iso-stale"
+check prunable_plus_live_denies deny  'php artisan test'                      "$ISO"
 # Nothing to decide from.
 check not_a_git_repo            allow 'php artisan test'                      "$TMP"
 check missing_cwd               allow 'php artisan test'                      "$TMP/nope"
