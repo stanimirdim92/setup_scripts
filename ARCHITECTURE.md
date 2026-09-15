@@ -106,6 +106,11 @@ authoritative.
 - `tools/test-install-skills.py` regression-tests the installer's preflight and
   rollback behavior (conflict detection, injected-failure rollback) in a
   temporary destination, without touching real links.
+- `tools/test-link-dotfiles.sh` runs `link_dotfiles.sh` against a throwaway
+  `$HOME` and checks the filesystem afterwards, so a declined run has to prove
+  it changed nothing rather than prove it printed a warning. Covers decline,
+  non-terminal stdin, dry run, `--yes`, whole-directory backup, and the
+  silent no-op re-run.
 - `tools/test-hooks.sh` exercises the Claude command hooks with fixtures;
   `tools/test-handoff-hook.sh` does the same for the `SubagentStop` handoff gate.
 - `tools/test-worktree-hooks.sh` covers the two worktree-base guards (ADR 0057)

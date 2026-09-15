@@ -7,6 +7,14 @@ including right after `git clone` on a new machine:
 
     ./tools/link_dotfiles.sh
 
+It prints what each destination will become — `new`, `relink`, `backup`, or
+`ok` — and asks before touching anything. Six of the destinations are whole
+directories (`agents`, `skills`, `hooks`, `commands`, `references`, `docs`); a
+real one is moved aside to `<name>.bak` intact rather than merged, so the plan
+marks those `BACKUP` with their entry count. `--dry-run` prints the plan and
+stops; `--yes` skips the prompt and is required when stdin is not a terminal.
+A re-run with nothing to do says so and does not prompt.
+
 `tools/run-metrics.sh` reports measured run metrics from a Claude Code
 transcript — tool-call batching, token totals, main-session vs subagent split,
 and main-session tool results over a line threshold (whole files read inline)

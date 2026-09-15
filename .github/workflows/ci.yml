@@ -89,6 +89,10 @@ jobs:
       - name: Codex skill installer
         run: python3 tools/test-install-skills.py
 
+      # The dotfile linker's confirmation gate, against a throwaway $HOME.
+      - name: Dotfile linker confirmation
+        run: bash tools/test-link-dotfiles.sh
+
       # Measurement: the transcript metrics' large-result section.
       - name: Run metrics
         run: bash tools/test-run-metrics.sh

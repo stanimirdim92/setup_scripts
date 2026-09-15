@@ -28,11 +28,14 @@ description: How to add, edit, or relink files in this dotfiles/setup_scripts re
      `skills/` line enumerates what's inside, not just the directory path)
      — `CLAUDE.md` no longer keeps a separate skills-list section, so
      README's own bullets are the one place this needs to stay current.
-4. Re-run `./tools/link_dotfiles.sh` and read its output: `ok <dest>` means
+4. Re-run `./tools/link_dotfiles.sh`. It prints the plan for every
+   destination and asks before changing anything; `--dry-run` shows the plan
+   and stops, `--yes` skips the prompt. Read the output: `ok <dest>` means
    already correct, `linked <dest> -> <src>` means newly linked, `backup
    <dest> -> <dest>.bak` means something real was in the way — check the
    `.bak` before deleting it, it may hold local settings not yet migrated
-   into this repo.
+   into this repo. A `BACKUP` line in the plan is a real **directory** about
+   to be moved aside whole; its contents do not merge with the repo's.
 5. Because these are real symlinks, letting the app itself edit
    `~/.claude/settings.json`, `~/.claude/CLAUDE.md`, etc. (via `/model`, or
    any in-app edit) writes straight back into this repo. Run

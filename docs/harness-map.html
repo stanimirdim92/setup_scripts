@@ -97,7 +97,7 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
     <div>commit <b>a19df4b</b> · tag <b>harness-v1</b> (at 0757d83)</div>
     <div>6 commands · 7 personas · 19 skills</div>
     <div>14 references + 4 templates · 6 hooks</div>
-    <div>57 ADRs · 11 self-test suites</div>
+    <div>57 ADRs · 12 self-test suites</div>
   </div>
 </header>
 
@@ -499,11 +499,12 @@ footer{font-family:var(--mono);font-size:12px;color:var(--ink-2);border-top:1px 
       <tr><td><code>tools/tests/workflow/test_runner.py</code></td><td>the runner's own assertion logic and fixture construction</td><td class="num">15</td><td>free</td></tr>
       <tr><td><code>tools/tests/spec-eval/test_judge.py</code></td><td>the spec eval's judging logic: co-occurrence windows, absent-regex, severity, semantic expectations</td><td class="num">17</td><td>free</td></tr>
       <tr><td><code>tools/tests/spec-eval/run.py</code></td><td>re-runs <code>/spec</code> on a known-answer ticket; asserts the findings a human validated survive. LD-380: 9 checks, 2 for review</td><td class="num">9 + 2</td><td>tokens</td></tr>
+      <tr><td><code>tools/test-link-dotfiles.sh</code></td><td><code>link_dotfiles.sh</code>'s confirmation gate against a throwaway <code>$HOME</code>: decline, non-terminal stdin, dry run, <code>--yes</code>, whole-directory backup, silent no-op re-run. Checks the filesystem after, not the wording</td><td class="num">32</td><td>free</td></tr>
       <tr><td><code>tools/tests/workflow/run.py</code></td><td>stage decisions against the real model: jira ×3, spec ×2, plan ×4, build ×2, review ×2, pressure ×2</td><td class="num">15</td><td>tokens</td></tr>
     </tbody>
   </table>
   </div>
-  <p style="font-size:13px;color:var(--ink-2)">Also: <code>tools/test-install-skills.py</code> (Codex link installer), <code>tools/run-metrics.sh</code> (transcript metrics), and <code>tools/link_dotfiles.sh</code>, which is how any of this reaches <code>~/.claude</code>.</p>
+  <p style="font-size:13px;color:var(--ink-2)">Also: <code>tools/test-install-skills.py</code> (Codex link installer), <code>tools/run-metrics.sh</code> (transcript metrics), and <code>tools/link_dotfiles.sh</code>, which is how any of this reaches <code>~/.claude</code> — it prints a per-destination plan and asks first, since six of its targets are whole directories.</p>
 </section>
 
 <!-- ============================================================ RECORDS -->
