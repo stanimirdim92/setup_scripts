@@ -28,10 +28,17 @@ command="$(jq -r '.tool_input.command // empty' <<<"$input" 2>/dev/null)"
 cwd="$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null)"
 [ -n "$command" ] || exit 0
 
-# Command position only: a separator (or the start) then optional `php ...`.
-# `grep 'php artisan test' docs/` and `echo "php artisan test"` put it after a
-# quote, not after a separator, so they read as text and stay allowed.
-sep='(^|[;&|(])[[:space:]]*'
+# Command position only: a separator (or the start), then any env assignments
+# and an optional `env`, then the command. `grep 'php artisan test' docs/` and
+# `echo "php artisan test"` put it after a quote, not after a separator, so
+# they read as text and stay allowed.
+#
+# The env prefix is not cosmetic: `DB_DATABASE=x php artisan test` is lifted
+# straight out of bin/worktree-test.sh, so it is the most likely spelling
+# anyone reaches for after reading that script -- and it is the one that
+# reintroduces the shared database this hook exists to prevent.
+assign='[A-Za-z_][A-Za-z0-9_]*=("[^"]*"|'"'"'[^'"'"']*'"'"'|[^[:space:]]*)[[:space:]]+'
+sep="(^|[;&|(])[[:space:]]*(env[[:space:]]+)?($assign)*"
 artisan="${sep}(php[[:space:]]+([^;&|()]*[[:space:]]+)?)?\.?/?artisan[[:space:]]+test([[:space:]]|$)"
 phpunit="${sep}(\.?/)?(vendor/bin/)?phpunit([[:space:]]|$)"
 echo "$command" | grep -Eq "$artisan|$phpunit" || exit 0

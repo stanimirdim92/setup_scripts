@@ -52,6 +52,14 @@ check piped_chain               deny 'php artisan test | tee out.txt'         "$
 check phpunit_vendor            deny 'vendor/bin/phpunit'                     "$ISO"
 check phpunit_dot_vendor        deny './vendor/bin/phpunit'                   "$ISO"
 check phpunit_bare              deny 'phpunit --filter=Foo'                   "$ISO"
+# Env-prefixed forms. `DB_DATABASE=... php artisan test --parallel` is the line
+# inside bin/worktree-test.sh itself, so it is the spelling anyone reaches for
+# after reading that script -- and the one that undoes the isolation.
+check env_prefix_one            deny 'APP_ENV=testing php artisan test'       "$ISO"
+check env_prefix_two            deny 'DB_DATABASE="$DB" REDIS_PREFIX="$S-" php artisan test --parallel' "$ISO"
+check env_word_prefix           deny 'env APP_ENV=testing php artisan test'   "$ISO"
+check env_prefix_phpunit        deny 'XDEBUG_MODE=off vendor/bin/phpunit'     "$ISO"
+check env_prefix_after_and      deny 'cd m && FOO=1 php artisan test'         "$ISO"
 check inside_a_worktree         deny 'php artisan test'                       "$TMP/wt1"
 
 # ------------------------------------------------------------------- allows
@@ -61,6 +69,8 @@ check composer_test_args        allow 'composer test -- --filter=CrmId'       "$
 check worktree_test_direct      allow 'bin/worktree-test.sh'                  "$ISO"
 check artisan_test_colon        allow 'php artisan test:coverage'             "$ISO"
 check artisan_migrate           allow 'php artisan migrate'                   "$ISO"
+check env_prefix_migrate        allow 'APP_ENV=testing php artisan migrate'   "$ISO"
+check env_prefix_composer       allow 'XDEBUG_MODE=off composer test'         "$ISO"
 check artisan_tinker            allow 'php artisan tinker'                    "$ISO"
 check artisan_route_list        allow 'php artisan route:list'                "$ISO"
 check yarn_test                 allow 'yarn run test'                         "$ISO"

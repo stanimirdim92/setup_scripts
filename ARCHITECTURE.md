@@ -121,7 +121,8 @@ authoritative.
 - `tools/test-isolated-test-runner.sh` covers the gate that denies a bare
   `php artisan test`/`phpunit` when the project ships `bin/worktree-test.sh`
   and more than one worktree is live. Both evidence gates, the command-position
-  anchor and the `test:` boundary each have a case that fails when removed.
+  anchor, the env-assignment prefix and the `test:` boundary each have a case
+  that fails when removed.
 - `tools/test-worktree-hooks.sh` covers the two worktree-base guards (ADR 0057)
   against real git fixtures -- a bare origin, a main checkout, a linked
   worktree, a feature branch -- since both hooks read git state. Fourteen of its
