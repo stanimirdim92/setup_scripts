@@ -64,6 +64,27 @@ Use **one executor per workstream, not one per task**.
 - later tasks in that workstream -> resume the same executor;
 - tasks inside a workstream stay sequential and follow dependency order.
 
+### Checkout and infrastructure readiness
+
+Run sequential executors in the existing ticket checkout; omit an isolation
+argument. The executor definition deliberately has no unconditional isolation.
+For concurrent writers, explicitly set `isolation: worktree` on each dispatch
+and verify its returned checkout path before accepting implementation evidence.
+If the runtime cannot provide separate checkouts, queue the workstreams.
+The test-engineer's isolated checkout and independent review contexts are
+unchanged (docs/adr/0058).
+
+Before dispatch, establish the assigned Git checkout and branch. Refuse the main
+checkout's default branch, detached HEAD, or unverifiable Git state. When the
+project provides executable `bin/worktree-doctor.sh`, run it with
+`--infrastructure` and require exit 0. The contract is a fast, nonmutating check
+that needs no installed project dependencies; nonzero output names the repair.
+If the main registered checkout provides the doctor but the ticket checkout
+lacks it, reconcile the project runner changes first. Do not force arbitrary
+merges or refresh dependencies merely because a ticket is behind the default
+branch. Claude's dispatch hook enforces this; other runtimes must perform the
+same readiness check explicitly.
+
 ### Checkpoints gate dependency-readiness
 
 Honor every checkpoint recorded in the plan. A task ordered after a checkpoint
@@ -85,6 +106,8 @@ Send only what is needed to start correctly:
 - acceptance criteria;
 - dependencies;
 - workstream;
+- assigned checkout path and execution mode (sequential inherited checkout or
+  concurrent isolated checkout);
 - expected scope;
 - verification;
 - `required_skills`;
@@ -132,8 +155,8 @@ one that does not is never worth the time it saves.
 - the workstreams are genuinely independent (no unfinished dependency between
   them, no shared mutable state);
 - each is dependency-ready now (any gating checkpoint has already passed);
-- every concurrent writer uses `isolation: worktree` — never two writing agents
-  against the same checkout;
+- every concurrent writer explicitly requests `isolation: worktree` in the
+  dispatch call — never two writing agents against the same checkout;
 - **their verification commands do not share mutable runtime state.** A
   worktree isolates git and files; it does not isolate a database, queue,
   cache, search index, or a fixed port. Two suites migrating or truncating one

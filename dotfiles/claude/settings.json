@@ -99,7 +99,7 @@
     "defaultMode": "auto",
     "enableAllProjectMcpServers": true
   },
-  "model": "claude-opus-5",
+  "model": "opus[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -140,6 +140,9 @@
         ]
       }
     ]
+  },
+  "worktree": {
+    "baseRef": "head"
   },
   "statusLine": {
     "type": "command",
@@ -184,9 +187,11 @@
       }
     }
   },
-  "effortLevel": "medium",
-  "worktree": {
-    "baseRef": "head"
+  "effortLevel": "high",
+  "modelSettings": {
+    "claude-sonnet-5": {
+      "effortLevel": "high"
+    }
   },
   "advisorModel": "opus",
   "autoMemoryEnabled": true,

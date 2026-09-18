@@ -34,8 +34,8 @@ AGENTS = CLAUDE / 'agents'
 SETTINGS = CLAUDE / 'settings.json'
 
 # Personas that may write. They keep Bash; the hooks are what bound them, and
-# 0056 makes their checkout isolation structural rather than /build's to
-# remember.
+# 0058 keeps verifier isolation structural and makes concurrent executor
+# isolation an explicit dispatch choice; sequential executors reuse the ticket.
 WRITERS = {'executor', 'test-engineer'}
 WRITER_HOOKS = ('block-agent-push.sh', 'require-handoff-report.sh')
 
@@ -132,8 +132,10 @@ def check_agent(name, text):
         for hook in WRITER_HOOKS:
             if hook not in block:
                 problems.append(f'{name}: frontmatter does not reference {hook} -- the gate is not attached (adr/0055)')
-        if scalar(block, 'isolation') != 'worktree':
-            problems.append(f'{name}: no `isolation: worktree` -- a writer without its own checkout can collide with another (adr/0056)')
+        if name == 'test-engineer' and scalar(block, 'isolation') != 'worktree':
+            problems.append(f'{name}: no `isolation: worktree` -- verifier checkout isolation is required (adr/0058)')
+        if name == 'executor' and scalar(block, 'isolation') is not None:
+            problems.append(f'{name}: isolation belongs to concurrent dispatch; sequential executors inherit the ticket checkout (adr/0058)')
 
     return problems
 

@@ -39,9 +39,12 @@ execute project code, tests, builds, installs, or mutations. Recon reports
 discovered commands, not execution results. Test-engineer retains its test-only
 write scope; executor retains its planned implementation scope.
 
-Resume the same executor for subsequent tasks in its workstream. Default to
-sequential writers. Claude's `isolation: worktree` flag is not a Codex tool
-argument: before parallel writing, establish separate worktrees/branches and
+Resume the same executor for subsequent tasks in its workstream. Sequential
+executors use the ticket checkout. Before writing, verify its branch and run the
+project's optional `bin/worktree-doctor.sh --infrastructure` as described in
+`../../claude/commands/build.md`; Claude hooks do not enforce this in Codex.
+Claude's `isolation: worktree` flag is not a Codex tool argument: before parallel
+writing, establish separate worktrees/branches and
 bind each agent's reads, writes, and commands to its assigned checkout, then
 integrate sequentially. If that isolation cannot be enforced, stay sequential.
 Keep verifier/reviewer contexts independent from implementers and each other.

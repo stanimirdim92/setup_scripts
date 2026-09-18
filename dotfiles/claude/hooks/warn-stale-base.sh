@@ -21,7 +21,7 @@
 #                 and the session never touches the default branch, so the
 #                 on-default test alone never sees it.
 #
-# Everything else stays quiet, because a warning that fires when nothing is
+# Base warnings stay quiet elsewhere, because a warning that fires when nothing is
 # wrong gets ignored: a ticket branch that carries its own commits is behind
 # origin as a matter of course, and that says nothing.
 #
@@ -34,7 +34,16 @@ cwd="$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null)"
 [ -n "$cwd" ] && [ -d "$cwd" ] || exit 0
 cd "$cwd" 2>/dev/null || exit 0
 
-git rev-parse --git-dir >/dev/null 2>&1 || exit 0
+top="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+# Infrastructure can drift after a ticket has commits, independently of its
+# Git base. Run before the branch/remote early exits (docs/adr/0058).
+hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)" || exit 0
+if source "$hook_dir/worktree-readiness.sh"; then
+  worktree_infrastructure_ready "$top" || true
+else
+  printf 'Worktree infrastructure: readiness helper unavailable; restore the harness hooks.\n'
+fi
+
 git remote get-url origin >/dev/null 2>&1 || exit 0
 
 # The default branch as origin reports it; fall back to the usual names.

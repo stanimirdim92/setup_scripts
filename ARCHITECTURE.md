@@ -132,12 +132,10 @@ repository with no prior specs, no branches and no stale worktrees.
   and more than one worktree is live. Both evidence gates, the command-position
   anchor, the env-assignment prefix and the `test:` boundary each have a case
   that fails when removed.
-- `tools/test-worktree-hooks.sh` covers the two worktree-base guards (ADR 0057)
-  against real git fixtures -- a bare origin, a main checkout, a linked
-  worktree, a feature branch -- since both hooks read git state. Fourteen of its
-  twenty-seven cases assert silence: a session-start warning that fires when
-  nothing is wrong gets ignored, and a gate that refuses a legitimate dispatch
-  gets deleted. Two more assert the two warnings do not swap advice. The writer
+- `tools/test-worktree-hooks.sh` covers the worktree-base and infrastructure
+  readiness guards (ADR 0057/0058) against real Git fixtures and stub project
+  doctors. Cases include safe feature/linked checkouts, malformed input, missing
+  tools, detached HEAD, paths with spaces, and mid-ticket runner drift. The writer
   guard's cases assert the `permissionDecision` it returns, never an exit
   status: the first version asserted `exit 2` from a `SubagentStart` hook,
   which passes whether or not that event can block anything.
@@ -146,8 +144,9 @@ repository with no prior specs, no branches and no stale worktrees.
   override, time window, subagent exclusion, string and array-form results.
 - `tools/validate-frontmatter.py` fails when a persona loses its explicit
   `tools:` line, a read-only persona gains a mutating or dispatching tool, a
-  writing persona stops referencing its two agent-scoped hooks or its
-  `isolation: worktree`, a persona drifts off the model tier its role calls for,
+  writing persona stops referencing its two agent-scoped hooks, the verifier
+  loses `isolation: worktree`, an executor gains unconditional isolation, a
+  persona drifts off the model tier its role calls for,
   or a `settings.json` pin from ADR 0055 or 0056 is missing;
   `tools/validate-frontmatter-test.py` covers the allow and deny cases.
 - `tools/validate-artifact-paths.py` fails when any pipeline file spells a

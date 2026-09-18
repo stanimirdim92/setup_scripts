@@ -138,9 +138,10 @@ git -C main-checkout "${G[@]}" checkout -q main
 # States a real checkout reaches that a pristine fixture never does. Detached
 # HEAD has no branch to compare against the default one, and a worktree deleted
 # with `rm -rf` instead of `git worktree remove` lingers in `git worktree list`
-# as prunable. Both hooks must read these as "nothing to say", not guess.
+# as prunable. Detached writer dispatch must refuse unverifiable ownership;
+# a base warning still has nothing to say, and a prunable entry grants no pass.
 git -C main-checkout "${G[@]}" checkout -q --detach HEAD
-check writer_detached_head_allowed   allow "$(block_rc "$TMP/main-checkout" executor)"
+check writer_detached_head_blocked   deny "$(block_rc "$TMP/main-checkout" executor)"
 check_quiet  detached_head_quiet     "$TMP/main-checkout"
 git -C main-checkout "${G[@]}" checkout -q main
 git -C main-checkout "${G[@]}" worktree add -q -b stale-wt "$TMP/wt-stale" >/dev/null 2>&1
@@ -150,8 +151,8 @@ check writer_on_main_still_blocked   deny  "$(block_rc "$TMP/main-checkout" exec
 check reviewer_never_blocked          allow "$(block_rc "$TMP/main-checkout" code-reviewer)"
 check blind_reviewer_never_blocked    allow "$(block_rc "$TMP/main-checkout" blind-reviewer)"
 check recon_never_blocked             allow "$(block_rc "$TMP/main-checkout" repo-recon)"
-check writer_outside_git_allowed      allow "$(block_rc "$TMP" executor)"
-check writer_missing_cwd_allowed      allow "$(block_rc "$TMP/does-not-exist" executor)"
+check writer_outside_git_blocked      deny "$(block_rc "$TMP" executor)"
+check writer_missing_cwd_blocked      deny "$(block_rc "$TMP/does-not-exist" executor)"
 check no_remote_repo_on_main_blocked  deny  "$(block_rc "$TMP/no-remote" executor)"
 check no_agent_type_allowed           allow "$(block_rc "$TMP/main-checkout" "")"
 
@@ -164,6 +165,87 @@ check decision_names_the_event        PreToolUse "$(jq -r '.hookSpecificOutput.h
 # the refusal must name the fix, or it teaches nobody anything
 reason="$(jq -r '.hookSpecificOutput.permissionDecisionReason // ""' <<<"$raw" 2>/dev/null)"
 case "$reason" in *"--worktree"*) check refusal_names_the_fix y y ;; *) check refusal_names_the_fix y n ;; esac
+
+# Malformed dispatch and dependency outages cannot silently grant writing.
+block_raw_rc() { # JSON, optional PATH -> deny/allow
+  local out
+  out="$(printf '%s' "$1" | PATH="${2:-$PATH}" /bin/bash "$BLOCK" 2>/dev/null)"
+  if [ -z "$out" ]; then echo allow; else jq -r '.hookSpecificOutput.permissionDecision // "invalid"' <<<"$out"; fi
+}
+writer_input="$(jq -nc --arg c "$TMP/wt-LD-1" '{tool_input:{subagent_type:"executor"},cwd:$c}')"
+reader_input="$(jq -nc --arg c "$TMP/absent" '{tool_input:{subagent_type:"repo-recon"},cwd:$c}')"
+check bad_json_blocked deny "$(block_raw_rc '{"tool_input":{"subagent_type":"executor"}')"
+check nonobject_input_blocked deny "$(block_raw_rc '[]')"
+check multiple_json_objects_blocked deny "$(block_raw_rc '{"tool_input":{"subagent_type":"repo-recon"}} {}')"
+check invalid_persona_type_blocked deny "$(block_raw_rc '{"tool_input":{"subagent_type":[]}}')"
+check invalid_tool_type_blocked deny "$(block_raw_rc '{"tool_input":false}')"
+check invalid_cwd_type_blocked deny "$(block_raw_rc '{"tool_input":{"subagent_type":"executor"},"cwd":[]}')"
+check no_cwd_writer_blocked deny "$(block_raw_rc '{"tool_input":{"subagent_type":"executor"}}')"
+check reader_without_checkout_allowed allow "$(block_raw_rc "$reader_input")"
+mkdir "$TMP/no-jq" "$TMP/no-parser" "$TMP/no-git"
+for tool in cat python3 git dirname timeout; do ln -s "$(command -v "$tool")" "$TMP/no-jq/$tool"; done
+for tool in cat jq dirname timeout; do ln -s "$(command -v "$tool")" "$TMP/no-git/$tool"; done
+ln -s "$(command -v cat)" "$TMP/no-parser/cat"
+check no_jq_writer_fallback_allowed allow "$(block_raw_rc "$writer_input" "$TMP/no-jq")"
+check no_jq_reader_fallback_allowed allow "$(block_raw_rc "$reader_input" "$TMP/no-jq")"
+check no_jq_main_writer_blocked deny "$(block_raw_rc "$(jq --arg c "$TMP/main-checkout" '.cwd=$c' <<<"$writer_input")" "$TMP/no-jq")"
+check no_jq_malformed_blocked deny "$(block_raw_rc '{' "$TMP/no-jq")"
+check no_jq_invalid_persona_blocked deny "$(block_raw_rc '{"tool_input":{"subagent_type":[]}}' "$TMP/no-jq")"
+check no_jq_invalid_tool_blocked deny "$(block_raw_rc '{"tool_input":false}' "$TMP/no-jq")"
+check no_parsers_blocked deny "$(block_raw_rc "$writer_input" "$TMP/no-parser")"
+check no_git_writer_blocked deny "$(block_raw_rc "$writer_input" "$TMP/no-git")"
+check no_git_reader_allowed allow "$(block_raw_rc "$reader_input" "$TMP/no-git")"
+check parallel_dispatch_in_ticket_allowed allow "$(block_raw_rc "$(jq '.tool_input.isolation="worktree"' <<<"$writer_input")")"
+
+# Default-branch discovery must be verifiable outside a linked ticket checkout.
+git -C "$TMP/no-remote" branch -m unusual-default
+check unknown_default_blocked deny "$(block_rc "$TMP/no-remote" executor)"
+git -C "$TMP/no-remote" branch -m main
+check writer_in_bare_repo_blocked deny "$(block_rc "$TMP/origin.git" executor)"
+git -C "$TMP/wt-LD-1" checkout -q --detach HEAD
+check detached_linked_writer_blocked deny "$(block_rc "$TMP/wt-LD-1" executor)"
+git -C "$TMP/wt-LD-1" checkout -q ticket-LD-1
+
+# A main-checkout doctor introduces a readiness contract to older checkouts,
+# including external paths. Missing doctor is distinct from ordinary Git lag.
+mkdir -p "$TMP/main-checkout/bin"
+cat > "$TMP/main-checkout/bin/worktree-doctor.sh" <<'DOCTOR'
+#!/bin/bash
+[ "$#" = 1 ] && [ "$1" = --infrastructure ] || exit 9
+printf 'ready\n'
+DOCTOR
+chmod +x "$TMP/main-checkout/bin/worktree-doctor.sh"
+check old_runner_blocked deny "$(block_rc "$TMP/wt-LD-1" executor)"
+case "$(warn_out "$TMP/wt-LD-1")" in *"lacks bin/worktree-doctor.sh"*) check mid_ticket_missing_doctor_warns y y ;; *) check mid_ticket_missing_doctor_warns y n ;; esac
+check reader_with_old_runner_allowed allow "$(block_rc "$TMP/wt-LD-1" code-reviewer)"
+mkdir -p "$TMP/wt-LD-1/bin"
+cp "$TMP/main-checkout/bin/worktree-doctor.sh" "$TMP/wt-LD-1/bin/worktree-doctor.sh"
+check ready_runner_allowed allow "$(block_rc "$TMP/wt-LD-1" executor)"
+check_quiet mid_ticket_ready_runner_quiet "$TMP/wt-LD-1"
+cat > "$TMP/wt-LD-1/bin/worktree-doctor.sh" <<'DOCTOR'
+#!/bin/bash
+printf 'runner version is stale; reconcile "bin/worktree-test.sh"\n'
+exit 1
+DOCTOR
+check stale_runner_blocked deny "$(block_rc "$TMP/wt-LD-1" executor)"
+case "$(warn_out "$TMP/wt-LD-1")" in *'runner version is stale'*) check mid_ticket_stale_runner_warns y y ;; *) check mid_ticket_stale_runner_warns y n ;; esac
+reason="$(printf '%s' "$writer_input" | bash "$BLOCK" | jq -r '.hookSpecificOutput.permissionDecisionReason')"
+case "$reason" in *'reconcile "bin/worktree-test.sh"'*) check readiness_reason_keeps_quotes y y ;; *) check readiness_reason_keeps_quotes y n ;; esac
+chmod -x "$TMP/wt-LD-1/bin/worktree-doctor.sh"
+check nonexecutable_doctor_blocked deny "$(block_rc "$TMP/wt-LD-1" executor)"
+cp "$TMP/main-checkout/bin/worktree-doctor.sh" "$TMP/wt-LD-1/bin/worktree-doctor.sh"
+chmod +x "$TMP/wt-LD-1/bin/worktree-doctor.sh"
+git -C "$TMP/main-checkout" worktree add -q -b ticket-space "$TMP/wt with spaces"
+check missing_doctor_spaced_path_blocked deny "$(block_rc "$TMP/wt with spaces" executor)"
+mkdir -p "$TMP/wt with spaces/bin"
+cp "$TMP/main-checkout/bin/worktree-doctor.sh" "$TMP/wt with spaces/bin/worktree-doctor.sh"
+check ready_doctor_spaced_path_allowed allow "$(block_rc "$TMP/wt with spaces" executor)"
+# Simulate timeout's failure without sleeping in the suite.
+mkdir "$TMP/timed-out"
+for tool in cat jq git dirname; do ln -s "$(command -v "$tool")" "$TMP/timed-out/$tool"; done
+printf '#!/bin/bash\nexit 124\n' > "$TMP/timed-out/timeout"
+chmod +x "$TMP/timed-out/timeout"
+check timed_out_doctor_blocked deny "$(block_raw_rc "$writer_input" "$TMP/timed-out")"
 
 echo "worktree hooks: $PASS passed, $FAIL failed"
 if [ "$FAIL" -gt 0 ]; then printf '\n'; for f in "${FAILED[@]}"; do echo "  FAIL $f"; done; exit 1; fi

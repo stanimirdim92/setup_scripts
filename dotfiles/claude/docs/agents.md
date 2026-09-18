@@ -50,6 +50,10 @@ Source: `../commands/spec.md`, `../commands/plan.md`.
 
 - one executor per workstream;
 - resume it for later tasks in that workstream;
+- sequential executors inherit the ticket checkout; concurrent dispatch explicitly
+  requests `isolation: worktree` for each writer and verifies its checkout;
+- optional project infrastructure readiness must pass before writing, including
+  mid-ticket runner drift;
 - executor implements, tests, verifies, and makes scoped local commits;
 - parallel dispatch is the default: one executor per workstream that
   satisfies independence, dependency-readiness, worktree isolation, runtime

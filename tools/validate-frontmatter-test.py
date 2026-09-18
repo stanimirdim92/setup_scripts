@@ -24,7 +24,6 @@ name: executor
 description: Implements one planned task end-to-end.
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill
 model: claude-sonnet-5
-isolation: worktree
 hooks:
   PreToolUse:
     - matcher: Bash
@@ -157,10 +156,17 @@ class DenyCases(unittest.TestCase):
         problems = vf.check_settings(SETTINGS_OK.replace('"model": "claude-opus-5"', '"model": "sonnet"'))
         self.assertTrue(any('settings.json: model' in p for p in problems))
 
-    def test_writer_without_worktree_isolation(self):
-        body = EXECUTOR.replace('isolation: worktree\n', '')
+    def test_executor_must_inherit_ticket_checkout(self):
+        body = EXECUTOR + 'isolation: worktree\n'
         problems = vf.check_agent('executor', agent('executor', body))
+        self.assertTrue(any('isolation belongs to concurrent dispatch' in p for p in problems))
+
+    def test_verifier_still_requires_worktree_isolation(self):
+        body = EXECUTOR.replace('name: executor', 'name: test-engineer')
+        problems = vf.check_agent('test-engineer', agent('test-engineer', body))
         self.assertTrue(any('isolation: worktree' in p for p in problems))
+        body += 'isolation: worktree\n'
+        self.assertEqual(vf.check_agent('test-engineer', agent('test-engineer', body)), [])
 
     def test_settings_worktree_base_ref_missing(self):
         problems = vf.check_settings(SETTINGS_OK.replace('"worktree": {"baseRef": "head"},\n  ', ''))
