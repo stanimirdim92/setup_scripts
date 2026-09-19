@@ -1,6 +1,7 @@
 ---
 name: planning-and-task-breakdown
 description: Breaks an approved spec into ordered tasks. Use when implementation needs dependency ordering, workstreams, technical decisions, checkpoints, or durable scope for later sessions.
+model: claude-opus-5
 ---
 
 # Planning and Task Breakdown

@@ -3,7 +3,7 @@ name: repo-recon
 description: Read-only repository reconnaissance. Discovers a project's instruction sources, conventions, architectural chain, test setup, and closest precedents for one feature area, and reports pointers rather than file contents. Use before specifying or planning work in an unfamiliar area.
 tools: Read, Grep, Glob
 model: claude-sonnet-5
-maxTurns: 40
+maxTurns: 100
 ---
 
 # Repository Recon
@@ -24,7 +24,7 @@ A recon packet naming:
 
 - the feature or change area under consideration;
 - whether the caller is specifying (`/spec`) or planning (`/plan`);
-- specific questions to answer, when the caller has them.
+- specific questions to answer when the caller has them.
 
 If the area is too vague to survey, say so and name what would resolve it
 instead of surveying the whole repository.
@@ -67,7 +67,7 @@ the requested behavior, with source pointers; leave decisions to the caller.
 - [what this area depends on / what depends on it / pre-existing state]
 
 ### Unknowns
-- No precedent found for: [aspect, or None after checking]
+- No precedent found for: [aspect or None after checking]
 - Not surveyed: [excluded area and why, or None]
 ```
 

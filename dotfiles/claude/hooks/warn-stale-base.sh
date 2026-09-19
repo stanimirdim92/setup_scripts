@@ -29,22 +29,42 @@
 # a session must never fail to start because this hook had a bad day.
 set -uo pipefail
 
+if [ "${1:-}" = --report ]; then
+  output="$(bash "${BASH_SOURCE[0]}" --verbose)"
+  jq -n --arg message "$output" '{systemMessage:$message,hookSpecificOutput:{hookEventName:"SessionStart",additionalContext:$message}}'
+  exit 0
+fi
+progress() { if [ "${verbose:-0}" = 1 ]; then printf '%s\n' "$*"; fi; }
+verbose=0
+[ "${1:-}" != --verbose ] || verbose=1
+progress 'Startup: checking the current checkout.'
+
 input="$(cat 2>/dev/null)" || exit 0
 cwd="$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null)"
-[ -n "$cwd" ] && [ -d "$cwd" ] || exit 0
+[ -n "$cwd" ] && [ -d "$cwd" ] || { progress 'SKIP: checkout path is missing or unavailable.'; exit 0; }
 cd "$cwd" 2>/dev/null || exit 0
 
-top="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+top="$(git rev-parse --show-toplevel 2>/dev/null)" || { progress 'SKIP: this directory is not a Git checkout.'; exit 0; }
+progress "Checkout: $top"
 # Infrastructure can drift after a ticket has commits, independently of its
 # Git base. Run before the branch/remote early exits (docs/adr/0058).
 hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)" || exit 0
 if source "$hook_dir/worktree-readiness.sh"; then
-  worktree_infrastructure_ready "$top" || true
+  progress 'Infrastructure: checking the worktree runner against the main checkout.'
+  if worktree_infrastructure_ready "$top"; then
+    if [ -e "$top/bin/worktree-doctor.sh" ]; then
+      progress 'PASS: worktree infrastructure is current.'
+    else
+      progress 'SKIP: this project has no infrastructure checker.'
+    fi
+  else
+    progress 'FAIL: worktree infrastructure needs attention.'
+  fi
 else
   printf 'Worktree infrastructure: readiness helper unavailable; restore the harness hooks.\n'
 fi
 
-git remote get-url origin >/dev/null 2>&1 || exit 0
+git remote get-url origin >/dev/null 2>&1 || { progress 'SKIP: Git base check has no origin remote.'; exit 0; }
 
 # The default branch as origin reports it; fall back to the usual names.
 default="$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)"
@@ -54,9 +74,10 @@ if [ -z "$default" ]; then
     git show-ref --verify --quiet "refs/remotes/origin/$candidate" && { default="$candidate"; break; }
   done
 fi
-[ -n "$default" ] || exit 0
+[ -n "$default" ] || { progress 'SKIP: origin default branch could not be identified.'; exit 0; }
 
-branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null)" || exit 0
+branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null)" || { progress 'SKIP: Git base check is on detached HEAD.'; exit 0; }
+progress "Git base: checking $branch against origin/$default."
 
 # In a linked worktree, --git-dir points inside <common>/worktrees/<name>; in
 # the main checkout the two resolve to the same directory.
@@ -74,6 +95,7 @@ if [ "$branch" = "$default" ]; then
 elif [ "$git_dir" != "$common_dir" ] && [ "$(own)" = 0 ]; then
   mode=fresh-ticket
 else
+  progress 'SKIP: this is ongoing branch work; the fresh-ticket base warning does not apply.'
   exit 0                               # mid-ticket, or a branch of your own
 fi
 
@@ -87,14 +109,17 @@ fi
 # main checkout share one window.
 fetch_head="$common_dir/FETCH_HEAD"
 if [ ! -f "$fetch_head" ] || [ -n "$(find "$fetch_head" -mmin +60 2>/dev/null)" ]; then
-  timeout 5 git fetch --quiet origin "$default" >/dev/null 2>&1 || true
+  progress 'Git base: refreshing the remote reference (up to 5 seconds).'
+  timeout 5 git fetch --quiet origin "$default" >/dev/null 2>&1 || progress 'NOTICE: refresh failed; using the cached remote reference.'
+else
+  progress 'Git base: using the remote reference fetched within the last hour.'
 fi
 
 behind="$(git rev-list --count "HEAD..origin/$default" 2>/dev/null)" || exit 0
-[ "${behind:-0}" -gt 0 ] 2>/dev/null || exit 0
+[ "${behind:-0}" -gt 0 ] 2>/dev/null || { progress "PASS: checkout is not behind the checked origin/$default reference."; exit 0; }
 # Re-test against the refreshed ref: the fetch may have revealed that this
 # branch's commits are already on the default branch.
-[ "$mode" = fresh-ticket ] && { [ "$(own)" = 0 ] || exit 0; }
+[ "$mode" = fresh-ticket ] && { [ "$(own)" = 0 ] || { progress 'SKIP: refreshed reference confirms independent ticket work.'; exit 0; }; }
 
 if [ "$mode" = on-default ]; then
   printf 'Worktree base: this checkout is on %s and is %s commit(s) behind origin/%s.\n' \

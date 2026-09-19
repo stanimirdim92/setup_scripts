@@ -135,7 +135,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/.claude/hooks/warn-stale-base.sh"
+            "command": "$HOME/.claude/hooks/warn-stale-base.sh --report"
           }
         ]
       }
@@ -193,6 +193,7 @@
       "effortLevel": "high"
     }
   },
+  "teammateMode": "auto",
   "advisorModel": "opus",
   "autoMemoryEnabled": true,
   "theme": "dark-ansi",

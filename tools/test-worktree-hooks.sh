@@ -222,6 +222,10 @@ mkdir -p "$TMP/wt-LD-1/bin"
 cp "$TMP/main-checkout/bin/worktree-doctor.sh" "$TMP/wt-LD-1/bin/worktree-doctor.sh"
 check ready_runner_allowed allow "$(block_rc "$TMP/wt-LD-1" executor)"
 check_quiet mid_ticket_ready_runner_quiet "$TMP/wt-LD-1"
+report="$(jq -nc --arg c "$TMP/wt-LD-1" '{cwd:$c}' | bash "$WARN" --report)"
+check report_is_session_start SessionStart "$(jq -r '.hookSpecificOutput.hookEventName' <<<"$report")"
+check report_visible_and_context_match true "$(jq '.systemMessage == .hookSpecificOutput.additionalContext' <<<"$report")"
+case "$(jq -r '.systemMessage' <<<"$report")" in *'PASS: worktree infrastructure is current.'*'SKIP: this is ongoing branch work'*) check report_ready_and_skipped_checks y y ;; *) check report_ready_and_skipped_checks y n ;; esac
 cat > "$TMP/wt-LD-1/bin/worktree-doctor.sh" <<'DOCTOR'
 #!/bin/bash
 printf 'runner version is stale; reconcile "bin/worktree-test.sh"\n'
@@ -231,6 +235,10 @@ check stale_runner_blocked deny "$(block_rc "$TMP/wt-LD-1" executor)"
 case "$(warn_out "$TMP/wt-LD-1")" in *'runner version is stale'*) check mid_ticket_stale_runner_warns y y ;; *) check mid_ticket_stale_runner_warns y n ;; esac
 reason="$(printf '%s' "$writer_input" | bash "$BLOCK" | jq -r '.hookSpecificOutput.permissionDecisionReason')"
 case "$reason" in *'reconcile "bin/worktree-test.sh"'*) check readiness_reason_keeps_quotes y y ;; *) check readiness_reason_keeps_quotes y n ;; esac
+report="$(jq -nc --arg c "$TMP/wt-LD-1" '{cwd:$c}' | bash "$WARN" --report)"
+case "$(jq -r '.systemMessage' <<<"$report")" in *'reconcile "bin/worktree-test.sh"'*'FAIL: worktree infrastructure needs attention.'*) check report_failure_keeps_details y y ;; *) check report_failure_keeps_details y n ;; esac
+report="$(printf '{"cwd":"/nonexistent-checkout"}' | bash "$WARN" --report)"
+case "$(jq -r '.systemMessage' <<<"$report")" in *'SKIP: checkout path is missing or unavailable.'*) check report_missing_checkout y y ;; *) check report_missing_checkout y n ;; esac
 chmod -x "$TMP/wt-LD-1/bin/worktree-doctor.sh"
 check nonexecutable_doctor_blocked deny "$(block_rc "$TMP/wt-LD-1" executor)"
 cp "$TMP/main-checkout/bin/worktree-doctor.sh" "$TMP/wt-LD-1/bin/worktree-doctor.sh"
