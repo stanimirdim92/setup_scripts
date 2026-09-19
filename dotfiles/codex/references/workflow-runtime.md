@@ -22,6 +22,17 @@ from that source's own directory. Do not copy or rewrite the shared sources.
 
 ## Agent dispatch
 
+For independent top-level CLI sessions, run `codex-worktree <ticket>` from the
+project. The launcher creates/reuses `<main-checkout>/.codex/worktrees/<ticket>`
+on `codex/<ticket>`, copies matching ignored `.worktreeinclude` files, checks
+infrastructure, runs `bin/worktree-setup.sh` when provided, and starts Codex in
+that checkout. Different tickets can run concurrently in separate terminals;
+the same ticket is locked while its launcher/session runs. Use `--no-setup`
+for spec/planning only; dependencies must be reconciled before implementation
+or tests. Use `--dry-run` to inspect the plan without creating anything.
+The CLI launcher does not automatically allocate child-agent worktrees: the
+parallel writer and independent verifier rules below still apply.
+
 For a persona selected by a shared command, read its definition under
 [the shared agent directory](../../claude/agents). Use Codex's available subagent
 mechanism with the command's bounded packet, the persona file pointer, and this

@@ -68,6 +68,7 @@ that explanation here, just the index.
 | [0058](0058-sequential-ticket-checkout-and-infrastructure-readiness.md) | Sequential ticket checkout reuse and project infrastructure readiness | Codex enforcement extended by [0059](0059-codex-native-roles-and-hook-adapters.md); checkout policy retained |
 | [0059](0059-codex-native-roles-and-hook-adapters.md) | Shared AGENTS source, native Codex roles, and hook adapters | Partially superseded by [0060](0060-codex-routine-roles-terra-xhigh.md) (routine roles use Terra/xhigh) |
 | [0060](0060-codex-routine-roles-terra-xhigh.md) | Codex routine roles use Terra at xhigh | Accepted |
+| [0061](0061-codex-cli-ticket-worktree-launcher.md) | Independent Codex CLI sessions in ticket worktrees | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

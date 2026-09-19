@@ -156,8 +156,12 @@ Surface uncertainty, skipped steps, and unverified claims explicitly. Never let 
 
 Ticket-scoped work defaults to one isolated worktree per ticket.
 
-- Start it with `claude --worktree <ticket>` (Codex: choose Worktree in a new
-  chat). `worktree.baseRef` is `head` here, so the worktree branches from the
+- Start it with `claude --worktree <ticket>` or, in the Codex CLI,
+  `codex-worktree <ticket>` from the project. The Codex launcher uses
+  `.codex/worktrees/<ticket>` in the main checkout and a `codex/<ticket>` branch;
+  different tickets run as independent sessions in separate terminals. In the
+  desktop app, choose Worktree in a new chat and attach a branch before writers.
+  Claude's `worktree.baseRef` is `head` here, so the worktree branches from the
   local `HEAD` you start from. **Pull first:** starting from a stale `main`
   gives a ticket branch stale by the same amount, and the worktree is created
   successfully either way.
@@ -176,6 +180,8 @@ Ticket-scoped work defaults to one isolated worktree per ticket.
 - Claude Code places managed worktrees in `.claude/worktrees/`, which belongs in
   the project's `.gitignore`. Prefer that location: `.worktreeinclude`,
   subagent `isolation: worktree`, and the cleanup sweep only apply there.
+  The Codex CLI launcher separately manages `.codex/worktrees/`, excludes it
+  locally, copies `.worktreeinclude` files, and retains checkouts after exit.
 - Gitignored files a worktree needs — `.env`, local config, credentials
   templates — go in a project-root `.worktreeinclude` using gitignore syntax.
   Claude Code and Codex both copy matching **ignored** files into every managed
@@ -185,7 +191,8 @@ Ticket-scoped work defaults to one isolated worktree per ticket.
   or test command works until they are. Specification and planning work needs
   none of them; anything that builds, tests, or lints does.
 - Use `git worktree add` directly only to check out an existing branch or to
-  place a worktree outside the repository. Remove with `git worktree remove`,
+  place a worktree outside the repository; the Codex launcher owns creation
+  inside its dedicated directory. Remove with `git worktree remove`,
   never `rm -rf` — that strands metadata, recoverable with `git worktree prune`.
 - A branch lives in exactly one worktree. Free it with `git worktree remove`
   before checking it out elsewhere.

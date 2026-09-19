@@ -15,6 +15,33 @@ marks those `BACKUP` with their entry count. `--dry-run` prints the plan and
 stops; `--yes` skips the prompt and is required when stdin is not a terminal.
 A re-run with nothing to do says so and does not prompt.
 
+For independent Codex CLI sessions, run `codex-worktree LD-123` from anywhere
+inside a project. It creates `<main-checkout>/.codex/worktrees/LD-123` on
+`codex/LD-123`, or reopens that ticket's checkout without resetting it. Open
+another terminal and run `codex-worktree LD-124` for concurrent work. Each gets
+its own files, branch, and Codex session; a per-ticket lock prevents duplicate
+launcher sessions in the same checkout. These are persistent CLI worktrees,
+separate from the desktop app's managed worktrees.
+
+New ticket branches start from the invoking checkout's committed `HEAD`; update
+your base first. Existing ticket branches retain their own history. Uncommitted
+source changes stay in their original checkout. The launcher copies only files
+that are both ignored and selected by `.worktreeinclude`, keeps existing target
+files, and skips source symlinks. It then runs the shared infrastructure guard
+and the project's executable `bin/worktree-setup.sh`, when present, before
+starting `codex -C <ticket-checkout>`. Leadbuster's setup reconciles its own
+dependency copies; its test runner owns database/Redis isolation. Worktrees do
+not isolate development servers, fixed ports, or other shared services.
+
+Use `codex-worktree --dry-run LD-123` to inspect without changes, or
+`codex-worktree --no-setup LD-123` for specification/planning without dependency
+setup. Pass Codex arguments after `--`, e.g. `codex-worktree LD-123 -- -m gpt-6-astra`.
+Setup failures stop before Codex and retain the checkout for repair/retry.
+Worktrees remain after exit; use the project's cleanup procedure and
+`git worktree remove` when a ticket is finished. The launcher locally excludes
+`/.codex/worktrees/` through `.git/info/exclude`, without editing project files.
+See [ADR 0061](docs/adr/0061-codex-cli-ticket-worktree-launcher.md).
+
 `tools/batch-spec.sh` runs `/spec` for many tickets at once, one worktree per
 job, reading `tools/spec-batch.txt`. Tickets that share files go on one line so
 they get one spec rather than four competing ones. It stops at the spec gate:
@@ -51,6 +78,7 @@ to update selected files. The skill reads the project's source and existing
 rules; it does not copy Leadbuster's architecture into other projects.
 
 Synced:
+- `dotfiles/codex/bin/codex-worktree` -> `~/.local/bin/codex-worktree` — one independent terminal Codex session per ticket worktree; requires `~/.local/bin` on `PATH`.
 - `dotfiles/claude/AGENTS.md` -> `~/.claude/CLAUDE.md` and `~/.claude/AGENTS.md` — one canonical source for global working rules. Claude 2.1.277+ supports project `AGENTS.md`; its documented global entry point remains `~/.claude/CLAUDE.md`, which links directly to this source.
 - `dotfiles/claude/settings.json` -> `~/.claude/settings.json` — model, permissions, hooks, active plugins, and context settings. Built-in automatic memory is **enabled** (`autoMemoryEnabled: true`) alongside versioned `docs/MEMORY.md` and the episodic conversation-search plugin, and the auto-compact window is 500k — both reverse `docs/adr/0037-fixed-session-context-reduced.md`; see `docs/adr/0043-automatic-memory-and-compaction-window-restored.md` for the reversal and the precedence rule that resolves the three memory surfaces
 - `dotfiles/claude/remote-settings.json` -> `~/.claude/remote-settings.json`

@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+"""Start an independent Codex CLI session in a persistent ticket worktree.
+
+See docs/adr/0061-codex-cli-ticket-worktree-launcher.md in setup_scripts.
+"""
+
+import argparse
+import fcntl
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+
+GUARD = Path(__file__).resolve().parents[2] / "claude/hooks/require-worktree-for-writers.sh"
+
+
+def say(message):
+    print(f"codex-worktree: {message}", flush=True)
+
+
+def git(cwd, *args, input=None, allowed=(0,)):
+    result = subprocess.run(["git", "-C", str(cwd), *args], input=input,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode not in allowed:
+        raise RuntimeError(result.stderr.decode(errors="replace").strip() or "Git check failed")
+    return result.stdout
+
+
+def no_symlinks(path, root):
+    for candidate in (path, *path.parents):
+        if candidate == root:
+            return
+        if candidate.is_symlink():
+            raise RuntimeError(f"Refusing a symlink in checkout path: {candidate}")
+    raise RuntimeError(f"Path is outside the checkout: {path}")
+
+
+def registered_worktrees(source):
+    records = []
+    for block in git(source, "worktree", "list", "--porcelain", "-z").split(b"\0\0"):
+        fields = dict(line.decode(errors="surrogateescape").split(" ", 1)
+                      for line in block.split(b"\0") if b" " in line)
+        if "worktree" in fields:
+            records.append(fields)
+    return records
+
+
+def inspect_target(source, target, branch):
+    records = registered_worktrees(source)
+    for record in records:
+        path = Path(record["worktree"]).resolve()
+        if record.get("branch") == f"refs/heads/{branch}" and path != target:
+            raise RuntimeError(f"{branch} is already checked out at {path}; use that checkout")
+        if path == target:
+            if not target.is_dir() or record.get("branch") != f"refs/heads/{branch}":
+                raise RuntimeError(f"Existing ticket checkout is missing, detached, or on another branch: {target}")
+            return True
+    if target.exists():
+        raise RuntimeError(f"Refusing to replace an unregistered path: {target}")
+    return False
+
+
+def copy_includes(source, target):
+    manifest = target / ".worktreeinclude"
+    if source == target or not manifest.exists():
+        say("ignored-file copy skipped: same checkout or no .worktreeinclude")
+        return
+    no_symlinks(manifest, target)
+    say("copying matching ignored files; existing files and source symlinks are kept/skipped")
+    candidates = git(source, "ls-files", "-z", "--others", "--ignored",
+                     f"--exclude-from={manifest}", "--", ".",
+                     ":(exclude).codex/worktrees", ":(exclude).claude/worktrees")
+    # Intersect the include manifest with Git's real ignore rules. An include
+    # pattern alone must not copy ordinary untracked or committed source files.
+    ignored = git(source, "check-ignore", "-z", "--stdin", input=candidates, allowed=(0, 1)) if candidates else b""
+    copied = kept = skipped = 0
+    last_report = time.monotonic()
+    for item in ignored.split(b"\0"):
+        if not item:
+            continue
+        relative = Path(os.fsdecode(item))
+        if relative.is_absolute() or ".." in relative.parts:
+            raise RuntimeError("Git returned an unsafe copy path")
+        src, dst = source / relative, target / relative
+        if src.is_symlink() or not src.is_file():
+            skipped += 1
+            continue
+        no_symlinks(src, source)
+        no_symlinks(dst.parent, target)
+        if dst.exists() or dst.is_symlink():
+            kept += 1
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        # A cancelled copy must not leave a partial file that a retry keeps.
+        with tempfile.NamedTemporaryFile(dir=dst.parent, prefix=".codex-copy-") as staged:
+            shutil.copy2(src, staged.name)
+            try:
+                os.link(staged.name, dst)
+            except FileExistsError:
+                kept += 1
+                continue
+        copied += 1
+        if time.monotonic() - last_report >= 5:
+            say(f"copy progress: {copied} copied, {kept} kept, {skipped} skipped")
+            last_report = time.monotonic()
+    say(f"ignored files: {copied} copied, {kept} kept, {skipped} skipped")
+
+
+def check_checkout(target):
+    result = subprocess.run(["bash", str(GUARD)], input=json.dumps({
+        "cwd": str(target), "tool_input": {"agent_type": "executor"}}),
+        text=True, capture_output=True, timeout=15, check=True)
+    decision = json.loads(result.stdout) if result.stdout.strip() else {}
+    if decision:
+        raise RuntimeError(decision.get("hookSpecificOutput", {}).get(
+            "permissionDecisionReason", "Checkout readiness check failed"))
+    say("branch and infrastructure checks passed")
+
+
+def main(argv):
+    parser = argparse.ArgumentParser(
+        description="Run one independent Codex session per ticket, from anywhere inside a Git checkout.",
+        usage="%(prog)s [--dry-run] [--no-setup] TICKET [-- CODEX_ARGS...]")
+    parser.add_argument("--dry-run", action="store_true", help="show the plan without changing files or launching Codex")
+    parser.add_argument("--no-setup", action="store_true", help="skip dependency setup for specification/planning work")
+    parser.add_argument("ticket", help="ticket/name using letters, digits, underscores, and hyphens")
+    split = argv.index("--") if "--" in argv else len(argv)
+    options = parser.parse_args(argv[:split])
+    forwarded = argv[split + 1:]
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,99}", options.ticket):
+        parser.error("ticket must be 1-100 letters, digits, underscores, or hyphens, starting with a letter/digit")
+    if any(arg.startswith(("-C", "--cd=", "--remote=")) or arg in {"--cd", "--remote"} for arg in forwarded):
+        parser.error("Codex directory/remote overrides would leave the ticket checkout")
+    executable = shutil.which("codex")
+    if not executable:
+        raise RuntimeError("codex is not on PATH; install it before creating a worktree")
+    source = Path(os.fsdecode(git(Path.cwd(), "rev-parse", "--show-toplevel")).strip()).resolve()
+    records = registered_worktrees(source)
+    root = Path(records[0]["worktree"]).resolve()
+    common = Path(os.fsdecode(git(source, "rev-parse", "--path-format=absolute", "--git-common-dir")).strip())
+    target = root / ".codex/worktrees" / options.ticket
+    branch = f"codex/{options.ticket}"
+    no_symlinks(target, root)
+    exists = inspect_target(source, target, branch)
+    base = git(source, "rev-parse", "--verify", "HEAD").decode().strip()
+    branch_exists = bool(git(source, "branch", "--list", branch).strip())
+    say(f"{'reuse' if exists else 'create'} {target} on {branch}")
+    if not exists:
+        say(f"base: {'existing ticket branch' if branch_exists else base}; source checkout changes stay there")
+    say("setup: " + ("skipped by request" if options.no_setup else "run bin/worktree-setup.sh when present"))
+    if options.dry_run:
+        say("dry run; no changes and no session started")
+        return 0
+
+    locks = common / "codex-worktree-locks"
+    no_symlinks(locks, common)
+    locks.mkdir(exist_ok=True, mode=0o700)
+    lock_fd = os.open(locks / f"{options.ticket}.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(lock_fd, "w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError(f"{options.ticket} already has a launcher/session running; choose another ticket") from None
+        # Recheck after acquiring the per-ticket lock. Different tickets never
+        # share this lock and may create/setup/run their sessions concurrently.
+        exists = inspect_target(source, target, branch)
+        if not exists:
+            if git(root, "ls-files", "--", ".codex/worktrees").strip():
+                raise RuntimeError(".codex/worktrees contains tracked files; refusing to hide or replace them")
+            exclude = common / "info/exclude"
+            no_symlinks(exclude, common)
+            exclude.parent.mkdir(exist_ok=True)
+            # Append a local exclusion rather than editing project source.
+            if not git(root, "check-ignore", str(target), allowed=(0, 1)).strip():
+                with exclude.open("a") as handle:
+                    handle.write("\n/.codex/worktrees/\n")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            args = ["worktree", "add"] + ([] if branch_exists else ["-b", branch])
+            git(source, *args, str(target), branch if branch_exists else base)
+        check_checkout(target)
+        copy_includes(source, target)
+        setup = target / "bin/worktree-setup.sh"
+        if not options.no_setup and setup.exists():
+            no_symlinks(setup, target)
+            if not os.access(setup, os.X_OK):
+                raise RuntimeError(f"Setup script is not executable: {setup}")
+            say("preparing project dependencies")
+            subprocess.run([str(setup)], cwd=target, check=True)
+        elif not options.no_setup:
+            say("no project setup script; dependencies were not verified")
+        check_checkout(target)
+        say(f"starting Codex in {target}; checkout is retained when the session exits")
+        with subprocess.Popen([executable, "-C", str(target), *forwarded], cwd=target) as child:
+            while True:
+                try:
+                    return child.wait()
+                except KeyboardInterrupt:
+                    # The CLI receives Ctrl-C from the same terminal group and
+                    # decides whether to cancel a turn or exit. Keep its lock.
+                    continue
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt:
+        say("interrupted; any created checkout is retained for retry")
+        sys.exit(130)
+    except (RuntimeError, OSError, ValueError, subprocess.SubprocessError) as error:
+        print(f"codex-worktree: FAILED: {error}\nAny created checkout is retained for inspection/retry.", file=sys.stderr)
+        sys.exit(1)

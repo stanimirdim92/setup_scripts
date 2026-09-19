@@ -50,6 +50,7 @@ SOURCES=(
   "$DOTFILES/codex/hooks"
   "$DOTFILES/codex/hooks.json"
   "$DOTFILES/codex/references"
+  "$DOTFILES/codex/bin/codex-worktree"
 )
 DESTINATIONS=(
   "$HOME/.claude/CLAUDE.md"
@@ -71,6 +72,7 @@ DESTINATIONS=(
   "$HOME/.codex/hooks"
   "$HOME/.codex/hooks.json"
   "$HOME/.codex/references"
+  "$HOME/.local/bin/codex-worktree"
 )
 
 CHANGED_DESTINATIONS=()

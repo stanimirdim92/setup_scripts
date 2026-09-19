@@ -105,6 +105,7 @@ check  shared_rules_target       "$REPO/dotfiles/claude/AGENTS.md" "$(readlink "
 check  codex_agents_installed    1 "$([ -r "$H/.codex/agents/executor.toml" ] && echo 1 || echo 0)"
 check  codex_hooks_installed     1 "$([ -r "$H/.codex/hooks.json" ] && [ -r "$H/.codex/hooks/policy.py" ] && echo 1 || echo 0)"
 check  codex_reference_installed 1 "$([ -r "$H/.codex/references/workflow-runtime.md" ] && echo 1 || echo 0)"
+check  codex_launcher_installed  1 "$([ -x "$H/.local/bin/codex-worktree" ] && echo 1 || echo 0)"
 
 # Migrate the retired source filename for both clients, without recreating it.
 H="$(fresh_home renamed_rules)"

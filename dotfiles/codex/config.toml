@@ -37,8 +37,8 @@ BROWSER_USE_TINYSKY_ENABLED = "1"
 NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = ""
 NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = ""
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.915.31029"
-NODE_REPL_TRUSTED_SERVICES = '{"browser":"/home/stanimir/.codex/plugins/cache/openai-bundled/browser/26.915.31029/scripts/browser-service.mjs"}'
+BROWSER_USE_CODEX_APP_VERSION = "26.915.31945"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/home/stanimir/.codex/plugins/cache/openai-bundled/browser/26.915.31945/scripts/browser-service.mjs"}'
 CODEX_CLI_PATH = "/usr/lib/chatgpt/resources/codex"
 
 [marketplaces.openai-bundled]
@@ -93,7 +93,7 @@ js_repl = false
 memories = true
 
 [desktop]
-conversationDetailMode = "STEPS_PROSE"
+conversationDetailMode = "STEPS_COMMANDS"
 ambient-suggestions-enabled = true
 preventSleepWhileRunning = false
 enabled-reasoning-efforts = ["low", "medium", "high", "xhigh", "ultra", "max"]
@@ -109,6 +109,23 @@ appearanceTheme = "system"
 avatar-overlay-mascot-width-px = 80
 selected-avatar-id = "codex"
 worktree-upstream-refresh-mode = "best-effort"
+reduced-motion-preference = "system"
+avatar-overlay-pet-visible = true
+
+[desktop.appearanceLightChromeTheme]
+accent = "#268eef"
+accentSource = "custom"
+contrast = 67
+ink = "#1a1c1f"
+opaqueWindows = false
+surface = "#ffffff"
+
+[desktop.appearanceLightChromeTheme.fonts]
+
+[desktop.appearanceLightChromeTheme.semanticColors]
+diffAdded = "#00a240"
+diffRemoved = "#ba2623"
+skill = "#924ff7"
 
 [memories]
 generate_memories = true
@@ -167,3 +184,18 @@ trust_level = "trusted"
 
 [projects."/home/stanimir/Documents/Codex/2026-09-07/h"]
 trust_level = "trusted"
+
+[hooks.state]
+
+[hooks.state."/home/stanimir/.codex/hooks.json:pre_tool_use:0:0"]
+trusted_hash = "sha256:10bb40c0c2e1efe7bb9a560b6d3c5a6c94ffa69b02de9ac38a79d783f721e915"
+
+[hooks.state."/home/stanimir/.codex/hooks.json:session_start:0:0"]
+trusted_hash = "sha256:f7e2d1769a0fa5988fd8612ed0986032cb70100bf17b71c963cbe3af5b186026"
+
+[hooks.state."/home/stanimir/.codex/hooks.json:subagent_stop:0:0"]
+trusted_hash = "sha256:8a5b6016a4bfc467da57d1195ac1936accd7d4de1d80c2bac7966e195b9b770a"
+
+[tui]
+status_line = ["model-with-reasoning", "current-dir", "model", "reasoning", "project-name", "hostname"]
+status_line_use_colors = true
