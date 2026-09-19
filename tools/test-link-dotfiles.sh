@@ -46,7 +46,7 @@ run_tty() {     # HOME, answer, args... -> as run(), but stdin is a real pty
   OUT="$(printf '%s\n' "$answer" | HOME="$h" script -qec "bash '$LINK' $*" /dev/null 2>&1)"; RC=$?
 }
 linked() {      # HOME -> 1 when the marquee link exists and points into the repo
-  [ -L "$1/.claude/CLAUDE.md" ] && [ "$(readlink "$1/.claude/CLAUDE.md")" = "$REPO/dotfiles/claude/CLAUDE.md" ] \
+  [ -L "$1/.claude/CLAUDE.md" ] && [ "$(readlink "$1/.claude/CLAUDE.md")" = "$REPO/dotfiles/claude/AGENTS.md" ] \
     && echo 1 || echo 0
 }
 
@@ -100,6 +100,33 @@ run "$H" --yes
 check  yes_flag_rc               0 "$RC"
 check  yes_flag_linked           1 "$(linked "$H")"
 check  yes_flag_dir_linked       1 "$([ -L "$H/.claude/agents" ] && echo 1 || echo 0)"
+check  codex_rules_readable      1 "$([ -r "$H/.codex/AGENTS.md" ] && echo 1 || echo 0)"
+check  shared_rules_target       "$REPO/dotfiles/claude/AGENTS.md" "$(readlink "$H/.codex/AGENTS.md")"
+check  codex_agents_installed    1 "$([ -r "$H/.codex/agents/executor.toml" ] && echo 1 || echo 0)"
+check  codex_hooks_installed     1 "$([ -r "$H/.codex/hooks.json" ] && [ -r "$H/.codex/hooks/policy.py" ] && echo 1 || echo 0)"
+check  codex_reference_installed 1 "$([ -r "$H/.codex/references/workflow-runtime.md" ] && echo 1 || echo 0)"
+
+# Migrate the retired source filename for both clients, without recreating it.
+H="$(fresh_home renamed_rules)"
+ln -s "$REPO/dotfiles/claude/CLAUDE.md" "$H/.claude/CLAUDE.md"
+ln -s "$REPO/dotfiles/claude/CLAUDE.md" "$H/.codex/AGENTS.md"
+run "$H" --yes
+check  renamed_rules_rc         0 "$RC"
+check  renamed_claude_readable  1 "$([ -r "$H/.claude/CLAUDE.md" ] && echo 1 || echo 0)"
+check  renamed_codex_target     "$REPO/dotfiles/claude/AGENTS.md" "$(readlink "$H/.codex/AGENTS.md")"
+run "$H" --dry-run
+contains renamed_rerun_noop     "nothing to do" "$OUT"
+
+# Refuse a missing source before installing any destination.
+H="$(fresh_home missing_source)"
+FIXTURE_REPO="$TMP/incomplete-repo"
+mkdir -p "$FIXTURE_REPO/tools" "$FIXTURE_REPO/dotfiles/codex"
+cp "$LINK" "$FIXTURE_REPO/tools/link_dotfiles.sh"
+ln -s "$REPO/dotfiles/codex/install-skills.py" "$FIXTURE_REPO/dotfiles/codex/install-skills.py"
+OUT="$(HOME="$H" bash "$FIXTURE_REPO/tools/link_dotfiles.sh" --yes </dev/null 2>&1)"; RC=$?
+check  missing_source_rc        1 "$RC"
+contains missing_source_named  "Missing link source:" "$OUT"
+check  missing_source_no_link   0 "$([ -L "$H/.claude/CLAUDE.md" ] && echo 1 || echo 0)"
 
 H="$(fresh_home tty_yes)"
 run_tty "$H" y
@@ -153,7 +180,7 @@ contains unknown_flag_names_it   "unknown option --bogus"        "$OUT"
 check  unknown_flag_no_change    0 "$(linked "$H")"
 
 # Nothing above may have disturbed a file the script does not manage.
-for name in plan realdir onedir pipe decline empty_answer junk_answer yes_flag tty_yes backup twice dangling flags; do
+for name in plan realdir onedir pipe decline empty_answer junk_answer yes_flag renamed_rules missing_source tty_yes backup twice dangling flags; do
   h="$TMP/home-$name"; [ -d "$h" ] || continue
   check "bystanders_$name" y "$(bystanders_intact "$h")"
 done

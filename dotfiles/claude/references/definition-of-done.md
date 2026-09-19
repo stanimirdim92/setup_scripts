@@ -34,7 +34,7 @@ Apply this to every change before declaring it done.
 
 The full review methodology lives in `code-review-and-quality`; the pipeline's
 independent five-axis check belongs to `code-reviewer`. Implementation-time
-simplicity and scope discipline belong to `CLAUDE.md`,
+simplicity and scope discipline belong to `AGENTS.md`,
 `incremental-implementation`, and `executor-development-discipline`.
 
 ### Integration

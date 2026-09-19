@@ -43,10 +43,11 @@ WRITER_HOOKS = ('block-agent-push.sh', 'require-handoff-report.sh')
 # reason 0002 gives: delegation should target a version deliberately chosen, not
 # whatever `opus` resolves to after the next release. The session itself runs
 # the high tier, so the stages that live in it -- /build, /review, /test, /ship
-# -- inherit it without each declaring a model.
+# -- inherit it without each declaring a model. The user's explicit extended-
+# context session alias is also allowed; persona version pins remain strict.
 OPUS = 'claude-opus-5'
 SONNET = 'claude-sonnet-5'
-SESSION_MODEL = OPUS
+SESSION_MODELS = (OPUS, 'opus[1m]')
 
 REVIEWERS = {'code-reviewer', 'blind-reviewer', 'security-auditor',
              'distributed-systems-reviewer'}
@@ -162,8 +163,8 @@ def check_settings(text):
     if data.get('worktree', {}).get('baseRef') != 'head':
         problems.append('settings.json: worktree.baseRef is not "head" -- writer worktrees would branch from the default branch and lose in-progress work (adr/0056)')
 
-    if data.get('model') != SESSION_MODEL:
-        problems.append(f'settings.json: model is {data.get("model")!r}, expected {SESSION_MODEL!r} -- the session tier the main-session stages inherit (adr/0056)')
+    if data.get('model') not in SESSION_MODELS:
+        problems.append(f'settings.json: model is {data.get("model")!r}, expected one of {SESSION_MODELS!r} -- the session tier the main-session stages inherit (adr/0056, 0059)')
 
     hooks = json.dumps(data.get('hooks', {}))
     for hook in ('block-destructive-bash.sh', 'warn-force-push.sh'):

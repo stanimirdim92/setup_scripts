@@ -43,7 +43,7 @@ ALLOWED = [re.compile(p + r'\Z') for p in (
 # Every file that produces, consumes, or describes a pipeline artifact path.
 # Absent files are skipped, not failed: this checks consistency, not presence.
 GUARDED = [
-    'CLAUDE.md',
+    'AGENTS.md',
     'commands/spec.md', 'commands/plan.md', 'commands/build.md',
     'commands/test.md', 'commands/review.md', 'commands/ship.md',
     'skills/spec-driven-development/SKILL.md',

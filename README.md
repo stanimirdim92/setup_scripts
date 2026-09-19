@@ -51,8 +51,7 @@ to update selected files. The skill reads the project's source and existing
 rules; it does not copy Leadbuster's architecture into other projects.
 
 Synced:
-- `dotfiles/claude/CLAUDE.md` -> `~/.claude/CLAUDE.md` — global working rules (Karpathy's rules + kept extensions + the document-set convention), loaded on every session unconditionally, unlike skills below
-- `dotfiles/claude/AGENTS.md` -> `~/.claude/AGENTS.md` — pointer to `CLAUDE.md`
+- `dotfiles/claude/AGENTS.md` -> `~/.claude/CLAUDE.md` and `~/.claude/AGENTS.md` — one canonical source for global working rules. Claude 2.1.277+ supports project `AGENTS.md`; its documented global entry point remains `~/.claude/CLAUDE.md`, which links directly to this source.
 - `dotfiles/claude/settings.json` -> `~/.claude/settings.json` — model, permissions, hooks, active plugins, and context settings. Built-in automatic memory is **enabled** (`autoMemoryEnabled: true`) alongside versioned `docs/MEMORY.md` and the episodic conversation-search plugin, and the auto-compact window is 500k — both reverse `docs/adr/0037-fixed-session-context-reduced.md`; see `docs/adr/0043-automatic-memory-and-compaction-window-restored.md` for the reversal and the precedence rule that resolves the three memory surfaces
 - `dotfiles/claude/remote-settings.json` -> `~/.claude/remote-settings.json`
 - `dotfiles/claude/statusline.sh` -> `~/.claude/statusline.sh` — status line script wired via `settings.json`'s `statusLine.command`: model name, cwd, git branch, context-usage bar, session cost, elapsed time
@@ -65,8 +64,11 @@ Synced:
 - `dotfiles/claude/docs/` -> `~/.claude/docs/` (whole directory) — `agents.md`: the persona/orchestration reference (roster, `/build`→`/test`→`/review` shapes, context-discipline, adding-a-persona checklist), made available at runtime instead of living only in this repo's own `docs/` (which holds repo-specific meta-documentation — ADRs, IDEAS.md, MEMORY.md — that has no reason to sync to every machine's `~/.claude/`)
 - `dotfiles/codex/config.toml` -> `~/.codex/config.toml` — `sandbox_mode = "workspace-write"` with `[sandbox_workspace_write] network_access = true`: writes confined to the workspace (`.git`/`.agents`/`.codex` read-only inside it), network kept on for npx/composer/remote MCP. The `[desktop]`, `[projects]`, `[plugins.*]` and `[mcp_servers.node_repl]` blocks are written by the Codex app itself, so they churn per machine — that's expected noise in `git status`, not config to hand-edit
 - `dotfiles/codex/rules/default.rules` -> `~/.codex/rules/default.rules` — per-command approval rules. These are convenience, not a security boundary: `sandbox_mode` is what enforces. Blanket `sed` was removed (it covers `sed -i` and GNU sed's `s///e`, which executes a shell command, and prefix matching can't express "no `-i` anywhere"), along with approvals left behind by other projects. `["codex", "mcp"]` still allows `codex mcp add` — see `docs/adr/0044-config-security-hardening-pass.md`
-- `dotfiles/claude/CLAUDE.md` -> `~/.codex/AGENTS.md` — shared global working rules for Codex and Claude.
-- `dotfiles/codex/skills/*` -> `~/.agents/skills/*` (individual links) — Codex adapters for all 19 local skills under `dotfiles/claude/skills` and all 6 commands (`$spec`, `$plan`, `$build`, `$test`, `$review`, `$ship`). They read the maintained Claude commands, skill bodies, agents, references, and templates through relative source paths. `dotfiles/codex/references/workflow-runtime.md` maps invocation, skill loading, and agent orchestration to Codex. The standalone incremental, TDD, and code-review skills retain explicit-only invocation through `agents/openai.yaml`. Claude hooks, model names, and MCP settings are not imported; tool-dependent skills require callable Codex tools. Codex's bundled `~/.codex/skills/.system` remains untouched.
+- `dotfiles/claude/AGENTS.md` -> `~/.codex/AGENTS.md` — the same shared global working rules, without a second source copy.
+- `dotfiles/codex/agents/` -> `~/.codex/agents/` — eight native Codex roles reusing the shared persona bodies. Executor, test-engineer, and repo-recon use Terra/xhigh; four reviewers and executor-high use Astra/high. Native roles disable nested delegation and attach role policies; recon/review default to a read-only sandbox.
+- `dotfiles/codex/hooks/` -> `~/.codex/hooks/` and `dotfiles/codex/hooks.json` -> `~/.codex/hooks.json` — Codex adapters for the shared destructive-command, push, worktree/readiness, isolated-test-runner, startup, and writer-handoff guards. Hooks require Codex trust review before they run; these are accident guards on supported tool paths, not a complete security boundary.
+- `dotfiles/codex/references/` -> `~/.codex/references/` — Codex invocation, model routing, independent context, hook activation, and runtime compatibility instructions.
+- `dotfiles/codex/skills/*` -> `~/.agents/skills/*` (individual links) — Codex adapters for all 19 local skills under `dotfiles/claude/skills` and all 6 commands (`$spec`, `$plan`, `$build`, `$test`, `$review`, `$ship`). They read the maintained Claude commands, skill bodies, agents, references, and templates through relative source paths. `dotfiles/codex/references/workflow-runtime.md` maps invocation, skill loading, and agent orchestration to Codex. The standalone incremental, TDD, and code-review skills retain explicit-only invocation through `agents/openai.yaml`. Claude model names and MCP settings are not imported; native Codex roles and hook adapters provide the client-specific layer. Tool-dependent skills still require callable Codex tools. Codex's bundled `~/.codex/skills/.system` remains untouched.
 
 The main `tools/link_dotfiles.sh` setup calls the Codex installer. To install
 or repeat only the Codex skill setup, run `python3 dotfiles/codex/install-skills.py`
@@ -78,6 +80,16 @@ conflicts and rolls back adapter links created by a failed run.
 without changing files; it does not test model behavior or connector access.
 Use `--dest PATH` for an isolated installation check. Links point at this checkout,
 so rerun setup on each machine at its actual checkout location.
+
+After changing native agents or hooks, start a new Codex session and review/trust
+the new definitions in CLI `/hooks`, including role-layer hooks when surfaced.
+Untrusted hooks are skipped. On a surface without a native-role selector, the
+workflow passes the model and persona explicitly, but role-specific hooks and
+sandbox defaults do not load; the runtime reference documents that limitation.
+Live parent permission overrides can also supersede role sandbox defaults.
+`python3 tools/test-codex-harness.py` checks real Git fixtures, installed hook
+commands, and role declarations without spending model tokens. See
+[ADR 0059](docs/adr/0059-codex-native-roles-and-hook-adapters.md).
 
 Superpowers, Code Simplifier, and Commit Commands remain installed/known for
 project-scoped opt-in but are not globally enabled. Qdrant and LLM Application

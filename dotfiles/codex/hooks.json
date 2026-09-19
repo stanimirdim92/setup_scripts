@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [{
+      "matcher": "startup|resume",
+      "hooks": [{"type": "command", "command": "python3 \"$HOME/.codex/hooks/policy.py\"", "timeout": 20}]
+    }],
+    "PreToolUse": [{
+      "matcher": "Bash|Agent|spawn_agent",
+      "hooks": [{"type": "command", "command": "python3 \"$HOME/.codex/hooks/policy.py\"", "timeout": 20}]
+    }],
+    "SubagentStop": [{
+      "matcher": "executor|executor-high|test-engineer",
+      "hooks": [{"type": "command", "command": "python3 \"$HOME/.codex/hooks/policy.py\"", "timeout": 5}]
+    }]
+  }
+}

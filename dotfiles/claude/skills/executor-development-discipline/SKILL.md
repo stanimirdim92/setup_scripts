@@ -137,7 +137,7 @@ preserve and report that override. Local tags (release or commit tagging) are
 allowed. It does not authorize push, deploy, release, protected-branch mutation,
 history rewriting, or unrelated changes.
 
-Apply the staged-diff and commit-content checks in `../../CLAUDE.md` §3.
+Apply the staged-diff and commit-content checks in `../../AGENTS.md` §3.
 Report directly required neighboring changes as scope expansion through the
 executor's output contract.
 

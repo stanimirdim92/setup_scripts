@@ -156,6 +156,10 @@ class DenyCases(unittest.TestCase):
         problems = vf.check_settings(SETTINGS_OK.replace('"model": "claude-opus-5"', '"model": "sonnet"'))
         self.assertTrue(any('settings.json: model' in p for p in problems))
 
+    def test_explicit_extended_context_session_alias_allowed(self):
+        settings = SETTINGS_OK.replace('"model": "claude-opus-5"', '"model": "opus[1m]"')
+        self.assertEqual(vf.check_settings(settings), [])
+
     def test_executor_must_inherit_ticket_checkout(self):
         body = EXECUTOR + 'isolation: worktree\n'
         problems = vf.check_agent('executor', agent('executor', body))

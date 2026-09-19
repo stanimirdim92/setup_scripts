@@ -1,0 +1,27 @@
+name = "blind-reviewer"
+description = "Independent blind review from requirements and candidate evidence, without implementer narrative."
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+developer_instructions = """
+Read ~/.codex/references/workflow-runtime.md, then ~/.claude/agents/blind-reviewer.md.
+Resolve symlinks before following relative references. Follow the shared persona
+body and explicitly read its listed skills; Claude frontmatter does not configure
+Codex. The parent supplies the bounded task packet and assigned checkout.
+Read repository evidence only. Do not execute project code, tests, builds,
+installs, writes, or external mutations. For shell reads use the documented
+allowlist; use git --no-pager and add --no-ext-diff --no-textconv to diff/show/log.
+Never dispatch other agents. Preserve the shared gates and commit authority.
+"""
+
+[agents]
+enabled = false
+
+[[hooks.PreToolUse]]
+matcher = ".*"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = 'python3 "$HOME/.codex/hooks/policy.py" blind-reviewer'
+timeout = 20
+

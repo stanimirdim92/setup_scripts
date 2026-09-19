@@ -31,7 +31,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES="$REPO_DIR/dotfiles"
 
 SOURCES=(
-  "$DOTFILES/claude/CLAUDE.md"
+  "$DOTFILES/claude/AGENTS.md"
   "$DOTFILES/claude/AGENTS.md"
   "$DOTFILES/claude/settings.json"
   "$DOTFILES/claude/statusline.sh"
@@ -45,7 +45,11 @@ SOURCES=(
   "$DOTFILES/claude/docs"
   "$DOTFILES/codex/config.toml"
   "$DOTFILES/codex/rules/default.rules"
-  "$DOTFILES/claude/CLAUDE.md"
+  "$DOTFILES/claude/AGENTS.md"
+  "$DOTFILES/codex/agents"
+  "$DOTFILES/codex/hooks"
+  "$DOTFILES/codex/hooks.json"
+  "$DOTFILES/codex/references"
 )
 DESTINATIONS=(
   "$HOME/.claude/CLAUDE.md"
@@ -63,6 +67,10 @@ DESTINATIONS=(
   "$HOME/.codex/config.toml"
   "$HOME/.codex/rules/default.rules"
   "$HOME/.codex/AGENTS.md"
+  "$HOME/.codex/agents"
+  "$HOME/.codex/hooks"
+  "$HOME/.codex/hooks.json"
+  "$HOME/.codex/references"
 )
 
 CHANGED_DESTINATIONS=()
@@ -127,6 +135,10 @@ link() {
 # Preflight both the main links and Codex adapters before changing anything.
 python3 "$DOTFILES/codex/install-skills.py" --preflight
 for i in "${!DESTINATIONS[@]}"; do
+  if [ ! -e "${SOURCES[$i]}" ]; then
+    echo "Missing link source: ${SOURCES[$i]}" >&2
+    exit 1
+  fi
   preflight_link "${DESTINATIONS[$i]}"
 done
 

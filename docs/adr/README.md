@@ -63,9 +63,11 @@ that explanation here, just the index.
 | [0053](0053-plan-guidance-consolidated-around-behavioral-tasks.md) | Plan guidance consolidated around behavioral tasks | Accepted |
 | [0054](0054-executor-concurrency-condition-gated-not-capped.md) | Executor concurrency gated by conditions, not a fixed cap | Partially superseded by [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) (sequential default replaced by parallel-when-safe; conditions unchanged) |
 | [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) | Multi-agent rules enforced by the harness; parallel-when-safe replaces sequential-by-default | Accepted |
-| [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md) | Models tiered by role; blind reviewer; recon width; writer isolation structural | Partially superseded by [0058](0058-sequential-ticket-checkout-and-infrastructure-readiness.md) (executor isolation only; other decisions retained) |
+| [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md) | Models tiered by role; blind reviewer; recon width; writer isolation structural | Partially superseded by [0058](0058-sequential-ticket-checkout-and-infrastructure-readiness.md) (executor isolation) and [0059](0059-codex-native-roles-and-hook-adapters.md) (session alias; Codex role tiers added) |
 | [0057](0057-worktree-base-guards-at-the-session-level.md) | The cost of `worktree.baseRef: head` is paid at the session level, and guarded there | Partially superseded by [0058](0058-sequential-ticket-checkout-and-infrastructure-readiness.md) (writer failures deny; infrastructure readiness added) |
-| [0058](0058-sequential-ticket-checkout-and-infrastructure-readiness.md) | Sequential ticket checkout reuse and project infrastructure readiness | Accepted |
+| [0058](0058-sequential-ticket-checkout-and-infrastructure-readiness.md) | Sequential ticket checkout reuse and project infrastructure readiness | Codex enforcement extended by [0059](0059-codex-native-roles-and-hook-adapters.md); checkout policy retained |
+| [0059](0059-codex-native-roles-and-hook-adapters.md) | Shared AGENTS source, native Codex roles, and hook adapters | Partially superseded by [0060](0060-codex-routine-roles-terra-xhigh.md) (routine roles use Terra/xhigh) |
+| [0060](0060-codex-routine-roles-terra-xhigh.md) | Codex routine roles use Terra at xhigh | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

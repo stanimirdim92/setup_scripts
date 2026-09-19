@@ -101,7 +101,7 @@ def produce(fixture, fixture_dir, budget):
         (project / '.claude').mkdir()
         for name in ('commands', 'agents', 'skills', 'references', 'docs', 'hooks'):
             (project / '.claude' / name).symlink_to(HARNESS / name)
-        (project / '.claude/CLAUDE.md').symlink_to(HARNESS / 'CLAUDE.md')
+        (project / 'AGENTS.md').symlink_to(HARNESS / 'AGENTS.md')
         settings = json.loads((HARNESS / 'settings.json').read_text())
         (project / '.claude/settings.json').write_text(json.dumps({
             'model': settings['model'],

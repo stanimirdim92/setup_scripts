@@ -94,6 +94,9 @@ jobs:
       - name: Codex skill installer
         run: python3 tools/test-install-skills.py
 
+      - name: Codex native roles and hook adapters
+        run: python3 tools/test-codex-harness.py
+
       # The dotfile linker's confirmation gate, against a throwaway $HOME.
       - name: Dotfile linker confirmation
         run: bash tools/test-link-dotfiles.sh
