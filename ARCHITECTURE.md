@@ -9,7 +9,7 @@ and the full synced-file inventory live in [README.md](README.md).
 
 | Source | Owns |
 |---|---|
-| [dotfiles/claude/CLAUDE.md](dotfiles/claude/CLAUDE.md) | Shared global defaults; project-local rules may be more specific |
+| [dotfiles/claude/AGENTS.md](dotfiles/claude/AGENTS.md) | Shared global defaults; project-local rules may be more specific |
 | [dotfiles/claude/commands](dotfiles/claude/commands) | Workflow entry points, orchestration, evidence gates, and stopping conditions |
 | [dotfiles/claude/skills](dotfiles/claude/skills) | Reusable methodology, including project documentation |
 | [dotfiles/claude/agents](dotfiles/claude/agents) | Persona responsibilities, Claude tool/model declarations, and report contracts |
