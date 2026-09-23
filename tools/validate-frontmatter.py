@@ -45,7 +45,7 @@ WRITER_HOOKS = ('block-agent-push.sh', 'require-handoff-report.sh')
 # the high tier, so the stages that live in it -- /build, /review, /test, /ship
 # -- inherit it without each declaring a model. The user's explicit extended-
 # context session alias is also allowed; persona version pins remain strict.
-OPUS = 'claude-opus-5'
+OPUS = 'opus[1m]'
 SONNET = 'claude-sonnet-5'
 SESSION_MODELS = (OPUS, 'opus[1m]')
 

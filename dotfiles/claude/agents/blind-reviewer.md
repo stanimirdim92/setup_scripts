@@ -2,7 +2,7 @@
 name: blind-reviewer
 description: Reviews a diff with no knowledge of what it was supposed to do — no spec, plan, acceptance criteria, goal, or build evidence. Reads the change on its own terms and reports what it actually does and where that is wrong. Use alongside code-reviewer on every review; the two see deliberately different things.
 tools: Read, Grep, Glob
-model: claude-opus-5
+model: opus[1m]
 maxTurns: 60
 ---
 

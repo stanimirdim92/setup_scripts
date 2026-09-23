@@ -6,7 +6,7 @@
 > the risk this ADR recorded is what 0056 acts on.
 
 **Decision.** `security-auditor` and `distributed-systems-reviewer` now default
-to `model: claude-sonnet-5`, `effort: medium` instead of `claude-opus-5`,
+to `model: claude-sonnet-5`, `effort: medium` instead of `opus[1m]`,
 `effort: high`. `references/reviewer-triggers.md` was narrowed from file/feature
 categories to *changed semantics*: a specialist fires only when the diff
 materially alters a trust boundary or a distributed failure boundary, not merely

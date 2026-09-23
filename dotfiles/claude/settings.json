@@ -190,16 +190,17 @@
   "effortLevel": "high",
   "modelSettings": {
     "claude-sonnet-5": {
-      "effortLevel": "high"
+      "effortLevel": "xhigh"
     }
   },
-  "teammateMode": "auto",
   "advisorModel": "opus",
   "autoMemoryEnabled": true,
   "theme": "dark-ansi",
   "editorMode": "normal",
-  "preferredNotifChannel": "terminal_bell",
+  "preferredNotifChannel": "auto",
+  "teammateMode": "auto",
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
+  "awaySummaryEnabled": true,
   "agentPushNotifEnabled": true
 }

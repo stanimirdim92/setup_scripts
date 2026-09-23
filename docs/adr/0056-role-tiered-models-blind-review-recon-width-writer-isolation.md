@@ -7,12 +7,12 @@ retrieval, and reading every change exactly once.
 
 1. **Models are tiered by role, not uniform, and the session runs the high
    tier.** Every persona ran `claude-sonnet-5`. The four reviewers now run
-   `claude-opus-5`, and `/spec`, `/plan` and the `jira-ticket` skill declare it
+   `opus[1m]`, and `/spec`, `/plan` and the `jira-ticket` skill declare it
    too — slash commands and skills accept `model:` because commands are skills,
    which is what makes those three non-persona stages reachable at all.
    `repo-recon`, `executor` and `test-engineer` stay on `claude-sonnet-5`.
    `settings.json`'s `model` moves from the floating `sonnet` alias to
-   `claude-opus-5`, so the stages that live in the main session — `/build`,
+   `opus[1m]`, so the stages that live in the main session — `/build`,
    `/review`, `/test`, `/ship` — inherit the high tier without each declaring
    one, and the pinned form follows [0002](0002-model-split-sonnet-orchestrator-tiered-subagents.md)'s
    rule that delegation targets a version deliberately chosen rather than

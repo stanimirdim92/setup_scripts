@@ -1,7 +1,7 @@
 ---
 description: Break approved requirements into ordered, verifiable implementation tasks
 argument-hint: "[ticket, module, spec path, or feature description]"
-model: claude-opus-5
+model: opus[1m]
 ---
 
 Invoke `planning-and-task-breakdown` before drafting; its methodology is

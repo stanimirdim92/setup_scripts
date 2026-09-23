@@ -1,7 +1,7 @@
 ---
 name: spec-driven-development
 description: Create or revise a specification for a feature, significant change, or bugfix before planning implementation. Use for unclear requirements, material behavior changes, or requests spanning independently testable capabilities. Owns specification and approval, not implementation.
-model: claude-opus-5
+model: opus[1m]
 ---
 
 # Spec-Driven Development

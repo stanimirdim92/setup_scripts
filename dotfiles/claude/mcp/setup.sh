@@ -54,6 +54,12 @@ add_server github --transport http https://api.githubcopilot.com/mcp/ \
   --header 'Authorization: Bearer ${GITHUB_TOKEN}' \
   --scope user
 
+echo "==> Apify MCP server (user scope, all projects)"
+warn_unset APIFY_TOKEN
+add_server apify --transport http https://mcp.apify.com/ \
+  --header 'Authorization: Bearer ${APIFY_TOKEN}' \
+  --scope user
+
 # Deliberately NOT configured: @modelcontextprotocol/server-filesystem.
 # It was previously added at user scope rooted at "$HOME", which reached
 # around settings.json's Read-deny paths (~/.ssh, ~/.aws, ~/.config/gh,

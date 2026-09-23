@@ -136,7 +136,7 @@ by hand once per machine (`./dotfiles/claude/mcp/setup.sh`, no secrets needed);
 `claude mcp add` writes into `~/.claude.json`, which mixes server config with
 per-project trust state and can carry OAuth tokens/API keys, so it belongs
 in the "not synced" list below, not linked like the rest. The script writes
-auth headers as literal `${GITHUB_TOKEN}`/`${CONTEXT7_API_KEY}` placeholders
+auth headers as literal `${GITHUB_TOKEN}`/`${APIFY_TOKEN}`/`${CONTEXT7_API_KEY}` placeholders
 that Claude Code expands at load time, so the stored config holds variable
 names rather than tokens — export those variables in the shell that starts
 Claude Code. One exception: with `CONTEXT7_API_KEY` unset, Context7 is added

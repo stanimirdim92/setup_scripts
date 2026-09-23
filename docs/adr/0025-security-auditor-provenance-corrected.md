@@ -5,7 +5,7 @@ near-verbatim copy of `addyosmani/agent-skills`' `agents/security-auditor.md`
 — confirmed by diffing this repo's file against a fresh clone of the
 upstream source. Only three differences exist:
 
-1. `tools: Read, Grep, Glob, Bash`, `model: claude-opus-5`, `effort: high`
+1. `tools: Read, Grep, Glob, Bash`, `model: opus[1m]`, `effort: high`
    added (upstream ships neither `tools` nor `model`) — the same adaptation
    [0009](0009-infra-security-reviewers-merged-into-security-auditor.md)
    already describes.

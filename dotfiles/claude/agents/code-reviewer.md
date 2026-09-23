@@ -2,7 +2,7 @@
 name: code-reviewer
 description: Senior code reviewer that evaluates changes across five dimensions — correctness, readability, architecture, security, and performance. Use for thorough code review before merge.
 tools: Read, Grep, Glob
-model: claude-opus-5
+model: opus[1m]
 maxTurns: 60
 ---
 

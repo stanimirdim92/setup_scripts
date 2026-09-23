@@ -48,12 +48,12 @@ REVIEWER = """
 name: blind-reviewer
 description: Reviews a diff with no knowledge of what it was supposed to do.
 tools: Read, Grep, Glob
-model: claude-opus-5
+model: opus[1m]
 maxTurns: 60
 """
 
 SETTINGS_OK = """{
-  "model": "claude-opus-5",
+  "model": "opus[1m]",
   "env": {
     "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "0",
@@ -138,26 +138,26 @@ class DenyCases(unittest.TestCase):
         self.assertTrue(any('FORK_SUBAGENT' in p for p in problems))
 
     def test_persona_drifted_off_the_model(self):
-        body = REVIEWER.replace('model: claude-opus-5', 'model: claude-sonnet-5')
+        body = REVIEWER.replace('model: opus[1m]', 'model: claude-sonnet-5')
         problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
-        self.assertTrue(any("expected 'claude-opus-5'" in p for p in problems))
+        self.assertTrue(any("expected 'opus[1m]'" in p for p in problems))
 
     def test_floating_alias_is_not_the_pinned_model(self):
-        body = REVIEWER.replace('model: claude-opus-5', 'model: opus')
+        body = REVIEWER.replace('model: opus[1m]', 'model: opus')
         problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
-        self.assertTrue(any("expected 'claude-opus-5'" in p for p in problems))
+        self.assertTrue(any("expected 'opus[1m]'" in p for p in problems))
 
     def test_sonnet_persona_escalated_to_opus(self):
-        body = RECON.replace('model: claude-sonnet-5', 'model: claude-opus-5')
+        body = RECON.replace('model: claude-sonnet-5', 'model: opus[1m]')
         problems = vf.check_agent('repo-recon', agent('repo-recon', body))
         self.assertTrue(any("expected 'claude-sonnet-5'" in p for p in problems))
 
     def test_settings_session_model_drifted(self):
-        problems = vf.check_settings(SETTINGS_OK.replace('"model": "claude-opus-5"', '"model": "sonnet"'))
+        problems = vf.check_settings(SETTINGS_OK.replace('"model": "opus[1m]"', '"model": "sonnet"'))
         self.assertTrue(any('settings.json: model' in p for p in problems))
 
     def test_explicit_extended_context_session_alias_allowed(self):
-        settings = SETTINGS_OK.replace('"model": "claude-opus-5"', '"model": "opus[1m]"')
+        settings = SETTINGS_OK.replace('"model": "opus[1m]"', '"model": "opus[1m]"')
         self.assertEqual(vf.check_settings(settings), [])
 
     def test_executor_must_inherit_ticket_checkout(self):

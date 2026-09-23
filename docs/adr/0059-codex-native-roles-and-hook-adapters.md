@@ -9,7 +9,7 @@ so a source rename cannot silently install dangling links again.
 
 **Decision.** Preserve the user's explicit Claude session `opus[1m]` selection.
 The frontmatter validator accepts that extended-context alias as well as the
-previous `claude-opus-5` session pin, while retaining strict version pins for
+previous `opus[1m]` session pin, while retaining strict version pins for
 personas. This narrows only the session-pin check from [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md);
 it does not turn persona model validation into a floating-alias check.
 

@@ -14,12 +14,12 @@ service_tier = "default"
 [sandbox_workspace_write]
 network_access = true
 
-  [mcp_servers.phpstorm]
-    url = "http://127.0.0.1:64443/stream"
+[mcp_servers.phpstorm]
+url = "http://127.0.0.1:64443/stream"
 
-  [mcp_servers.atlassian]
-    command = "npx"
-    args = ["-y", "mcp-remote", "https://mcp.atlassian.com/v1/mcp/authv2"]
+[mcp_servers.atlassian]
+command = "npx"
+args = ["-y", "mcp-remote", "https://mcp.atlassian.com/v1/mcp/authv2"]
 
 [mcp_servers.node_repl]
 args = []
@@ -37,9 +37,13 @@ BROWSER_USE_TINYSKY_ENABLED = "1"
 NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = ""
 NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = ""
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.915.31945"
-NODE_REPL_TRUSTED_SERVICES = '{"browser":"/home/stanimir/.codex/plugins/cache/openai-bundled/browser/26.915.31945/scripts/browser-service.mjs"}'
+BROWSER_USE_CODEX_APP_VERSION = "26.917.61114"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/home/stanimir/.codex/plugins/cache/openai-bundled/browser/26.917.61114/scripts/browser-service.mjs"}'
 CODEX_CLI_PATH = "/usr/lib/chatgpt/resources/codex"
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["-y", "chrome-devtools-mcp@latest", "--isolated"]
 
 [marketplaces.openai-bundled]
 source_type = "local"
@@ -183,6 +187,24 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/home/stanimir/Documents/Codex/2026-09-07/h"]
+trust_level = "trusted"
+
+[projects."/home/stanimir/Documents/Codex/2026-09-21/ui"]
+trust_level = "trusted"
+
+[projects."/home/stanimir/Documents/Codex/2026-09-21/new-chat"]
+trust_level = "trusted"
+
+[projects."/home/stanimir/Documents/Codex/2026-09-21/new-chat-2"]
+trust_level = "trusted"
+
+[projects."/home/stanimir/Documents/Codex/2026-09-22/echo-set-session-sql-log-bin"]
+trust_level = "trusted"
+
+[projects."/home/stanimir/Documents/Codex/2026-09-23/i-ne"]
+trust_level = "trusted"
+
+[projects."/home/stanimir/Documents/Codex/2026-09-23/https-smartico1-atlassian-net-browse-ld"]
 trust_level = "trusted"
 
 [hooks.state]
