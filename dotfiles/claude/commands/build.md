@@ -1,6 +1,6 @@
 ---
 description: Dispatch implementation for one or more planned tasks by workstream
-argument-hint: "[task number(s) from docs/tasks/[TICKET]-todo.md, or a task description]"
+argument-hint: "[task number(s) from docs/tasks/[TICKET]-todo.md, or a description naming planned task(s)]"
 ---
 
 Dispatch `executor` agents for implementation.
@@ -50,8 +50,9 @@ For each selected task resolve:
 - verification;
 - required skills.
 
-Honor `/plan`'s workstream assignment. For ad-hoc/legacy work with no assignment,
-infer one using the same rules. Stop before dispatch when the recorded workstream
+Honor `/plan`'s workstream assignment. For a task in an older approved plan that
+records no workstream, infer one using the same rules. Work with no approved
+plan is not `/build`'s input: it goes to `/plan` first. Stop before dispatch when the recorded workstream
 conflicts with dependencies, or when the task is ambiguous — meaning you cannot
 state the expected observable behavior from the packet and plan without
 inventing a decision. Report what is missing instead of guessing.
