@@ -9,3 +9,6 @@ __pycache__/
 
 # batch-spec.sh run logs and metadata
 /.spec-batch/
+
+# Codex writes TUI approvals here; machine-local by design (docs/adr/0062).
+/dotfiles/codex/rules/default.rules

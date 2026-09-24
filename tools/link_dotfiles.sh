@@ -44,7 +44,7 @@ SOURCES=(
   "$DOTFILES/claude/references"
   "$DOTFILES/claude/docs"
   "$DOTFILES/codex/config.toml"
-  "$DOTFILES/codex/rules/default.rules"
+  "$DOTFILES/codex/rules/harness.rules"
   "$DOTFILES/claude/AGENTS.md"
   "$DOTFILES/codex/agents"
   "$DOTFILES/codex/hooks"
@@ -66,7 +66,7 @@ DESTINATIONS=(
   "$HOME/.claude/references"
   "$HOME/.claude/docs"
   "$HOME/.codex/config.toml"
-  "$HOME/.codex/rules/default.rules"
+  "$HOME/.codex/rules/harness.rules"
   "$HOME/.codex/AGENTS.md"
   "$HOME/.codex/agents"
   "$HOME/.codex/hooks"
@@ -74,6 +74,20 @@ DESTINATIONS=(
   "$HOME/.codex/references"
   "$HOME/.local/bin/codex-worktree"
 )
+
+# Links an earlier layout created that must now go. Codex writes TUI approvals
+# to ~/.codex/rules/default.rules; while that was a symlink into this repo,
+# every one-off approval landed in git (docs/adr/0062). Only a symlink pointing
+# at exactly the old repo path is touched. If Codex has since written through
+# the dangling link, that file holds this machine's approvals: it moves back to
+# ~/.codex as a real file instead of being deleted.
+RETIRED_DESTINATIONS=("$HOME/.codex/rules/default.rules")
+RETIRED_SOURCES=("$DOTFILES/codex/rules/default.rules")
+
+retired_pending() {  # i -> 0 when that retired link is still in place
+  [ -L "${RETIRED_DESTINATIONS[$1]}" ] \
+    && [ "$(readlink "${RETIRED_DESTINATIONS[$1]}")" = "${RETIRED_SOURCES[$1]}" ]
+}
 
 CHANGED_DESTINATIONS=()
 CHANGE_KINDS=()
@@ -87,10 +101,12 @@ rollback() {
     dst="${CHANGED_DESTINATIONS[$i]}"
     kind="${CHANGE_KINDS[$i]}"
     old="${OLD_TARGETS[$i]}"
-    rm -f "$dst"
+    [ "$kind" = retire-moved ] || rm -f "$dst"
     case "$kind" in
       backup) mv "$dst.bak" "$dst" ;;
       relink) ln -s "$old" "$dst" ;;
+      retire-moved) mv "$dst" "$old"; ln -s "$old" "$dst" ;;
+      retire) ln -s "$old" "$dst" ;;
     esac
   done
   exit "$status"
@@ -132,6 +148,21 @@ link() {
   mkdir -p "$(dirname "$dst")"
   ln -s "$src" "$dst"
   echo "linked  $dst -> $src"
+}
+
+retire() {
+  local src="$1" dst="$2"
+  CHANGED_DESTINATIONS+=("$dst")
+  OLD_TARGETS+=("$src")
+  rm "$dst"
+  if [ -f "$src" ]; then
+    CHANGE_KINDS+=("retire-moved")
+    mv "$src" "$dst"
+    echo "retired $dst (approvals moved out of the repo into a local file)"
+  else
+    CHANGE_KINDS+=("retire")
+    echo "retired $dst (old repo link removed; Codex recreates it locally)"
+  fi
 }
 
 # Preflight both the main links and Codex adapters before changing anything.
@@ -177,6 +208,13 @@ for i in "${!DESTINATIONS[@]}"; do
   esac
 done
 
+for i in "${!RETIRED_DESTINATIONS[@]}"; do
+  if retired_pending "$i"; then
+    PLAN+=("$(printf '  retire    %s  (old link into this repo; approvals stay local)' "$(tilde "${RETIRED_DESTINATIONS[$i]}")")")
+    CHANGES=$((CHANGES+1))
+  fi
+done
+
 # The Codex adapters install separately and can have work pending on their own.
 CODEX_PENDING=0
 python3 "$DOTFILES/codex/install-skills.py" --check >/dev/null 2>&1 || CODEX_PENDING=1
@@ -219,6 +257,9 @@ if [ "$ASSUME_YES" -eq 0 ]; then
 fi
 
 trap rollback ERR
+for i in "${!RETIRED_DESTINATIONS[@]}"; do
+  retired_pending "$i" && retire "${RETIRED_SOURCES[$i]}" "${RETIRED_DESTINATIONS[$i]}"
+done
 for i in "${!DESTINATIONS[@]}"; do
   link "${SOURCES[$i]}" "${DESTINATIONS[$i]}"
 done

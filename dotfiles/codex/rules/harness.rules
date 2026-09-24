@@ -1,0 +1,38 @@
+# Curated Codex approval rules, synced to ~/.codex/rules/harness.rules.
+#
+# Codex loads every *.rules file in ~/.codex/rules/ and applies the strictest
+# matching decision. It writes the approvals you click in the TUI to
+# ~/.codex/rules/default.rules, which is deliberately NOT synced: when it was a
+# symlink into this repo, one-off approvals from other projects (and blanket
+# `sed -n`, removed once in docs/adr/0044) flowed straight back into git.
+# See docs/adr/0062-codex-rules-curated-file-separate-from-approvals.md.
+#
+# Convenience, not a boundary: sandbox_mode enforces. Add a rule here only when
+# it is generic across machines and projects; no $HOME paths, no one-off
+# commands. Test with: codex execpolicy check --pretty --rules <this file> -- <cmd>
+
+# Read-only inspection.
+prefix_rule(pattern=["pwd"], decision="allow")
+prefix_rule(pattern=["git", "status"], decision="allow")
+prefix_rule(pattern=["git", "diff"], decision="allow")
+prefix_rule(pattern=["command", "-v", "apply_patch"], decision="allow")
+prefix_rule(pattern=["rg", "--files", "-g", "AGENTS.md", "-g", "!vendor", "-g", "!node_modules", "-g", "!venv", "-g", "!\\.venv"], decision="allow")
+prefix_rule(pattern=["find", ".", "-maxdepth", "3", "-iname", "*deptrac*", "-o", "-iname", "*phpstan*", "-o", "-iname", "pest.php", "-o", "-iname", "phpunit.xml"], decision="allow")
+prefix_rule(pattern=["codex", "--help"], decision="allow")
+prefix_rule(pattern=["codex", "plugin", "list"], decision="allow")
+prefix_rule(pattern=["codex", "plugin", "install", "--help"], decision="allow")
+prefix_rule(pattern=["codex", "mcp", "list"], decision="allow")
+
+# Syncing with the remote without rewriting local work.
+prefix_rule(pattern=["git", "fetch"], decision="allow")
+prefix_rule(pattern=["git", "merge", "--ff-only"], decision="allow")
+
+# Project checks (Laravel / PHP / Yarn projects).
+prefix_rule(pattern=["php", "artisan", "test"], decision="allow")
+prefix_rule(pattern=["php", "artisan", "route:list"], decision="allow")
+prefix_rule(pattern=["vendor/bin/pint"], decision="allow")
+prefix_rule(pattern=["vendor/bin/phpstan", "analyse"], decision="allow")
+prefix_rule(pattern=["vendor/bin/deptrac", "analyse"], decision="allow")
+prefix_rule(pattern=["vendor/bin/deptrac", "analyze"], decision="allow")
+prefix_rule(pattern=["corepack", "yarn", "build"], decision="allow")
+prefix_rule(pattern=["corepack", "yarn", "lint"], decision="allow")

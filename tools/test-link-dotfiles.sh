@@ -118,6 +118,42 @@ check  renamed_codex_target     "$REPO/dotfiles/claude/AGENTS.md" "$(readlink "$
 run "$H" --dry-run
 contains renamed_rerun_noop     "nothing to do" "$OUT"
 
+# The old synced approvals link is retired, never followed or recreated
+# (docs/adr/0062). Two shapes: dangling, and one Codex has written through.
+H="$(fresh_home retired_rules)"
+mkdir -p "$H/.codex/rules"
+ln -s "$REPO/dotfiles/codex/rules/default.rules" "$H/.codex/rules/default.rules"
+run "$H" --dry-run
+contains retired_planned        "retire    ~/.codex/rules/default.rules" "$OUT"
+check  retired_dry_kept         1 "$([ -L "$H/.codex/rules/default.rules" ] && echo 1 || echo 0)"
+run "$H" --yes
+check  retired_rc               0 "$RC"
+check  retired_link_gone        0 "$([ -e "$H/.codex/rules/default.rules" ] || [ -L "$H/.codex/rules/default.rules" ] && echo 1 || echo 0)"
+check  curated_rules_linked     "$REPO/dotfiles/codex/rules/harness.rules" "$(readlink "$H/.codex/rules/harness.rules")"
+run "$H" --dry-run
+contains retired_rerun_noop     "nothing to do" "$OUT"
+
+# Written-through: approvals live at the old repo path. Use a copy of the repo
+# so the real checkout never gains the file.
+H="$(fresh_home retired_written)"
+FIXTURE_REPO="$TMP/written-repo"
+mkdir -p "$FIXTURE_REPO"
+cp -R "$REPO/dotfiles" "$REPO/tools" "$FIXTURE_REPO/"
+printf 'prefix_rule(pattern=["make"], decision="allow")\n' > "$FIXTURE_REPO/dotfiles/codex/rules/default.rules"
+mkdir -p "$H/.codex/rules"
+ln -s "$FIXTURE_REPO/dotfiles/codex/rules/default.rules" "$H/.codex/rules/default.rules"
+OUT="$(HOME="$H" bash "$FIXTURE_REPO/tools/link_dotfiles.sh" --yes </dev/null 2>&1)"; RC=$?
+check  written_rc               0 "$RC"
+check  written_now_real_file    1 "$([ -f "$H/.codex/rules/default.rules" ] && [ ! -L "$H/.codex/rules/default.rules" ] && echo 1 || echo 0)"
+contains written_kept_approvals 'pattern=["make"]' "$(cat "$H/.codex/rules/default.rules" 2>/dev/null)"
+check  written_left_repo        0 "$([ -e "$FIXTURE_REPO/dotfiles/codex/rules/default.rules" ] && echo 1 || echo 0)"
+
+# An unrelated real default.rules is the user's own and is left alone.
+H="$(fresh_home own_rules)"
+mkdir -p "$H/.codex/rules" && printf 'mine\n' > "$H/.codex/rules/default.rules"
+run "$H" --yes
+check  own_rules_untouched      mine "$(cat "$H/.codex/rules/default.rules")"
+
 # Refuse a missing source before installing any destination.
 H="$(fresh_home missing_source)"
 FIXTURE_REPO="$TMP/incomplete-repo"
@@ -181,7 +217,7 @@ contains unknown_flag_names_it   "unknown option --bogus"        "$OUT"
 check  unknown_flag_no_change    0 "$(linked "$H")"
 
 # Nothing above may have disturbed a file the script does not manage.
-for name in plan realdir onedir pipe decline empty_answer junk_answer yes_flag renamed_rules missing_source tty_yes backup twice dangling flags; do
+for name in plan realdir onedir pipe decline empty_answer junk_answer yes_flag renamed_rules retired_rules retired_written own_rules missing_source tty_yes backup twice dangling flags; do
   h="$TMP/home-$name"; [ -d "$h" ] || continue
   check "bystanders_$name" y "$(bystanders_intact "$h")"
 done
