@@ -31,8 +31,10 @@ workstream) or `reviewers` (one `dispatched|not dispatched` line per persona).
 `build_shared_db` supplies a verification script that truncates one shared
 database and asserts fan-out stays at one; `build_independent` supplies an
 in-process check and asserts both workstreams run concurrently
-(`docs/adr/0055`). `review_plain_diff` asserts `code-reviewer` alone with
-verification NOT REQUIRED; `review_auth_diff` supplies a VERIFY PASS and
+(`docs/adr/0055`). Every `review_*` case except the pressure case asserts
+`code-reviewer` and `blind-reviewer` are both dispatched (`docs/adr/0056`);
+`review_plain_diff` asserts no specialist beyond them, with verification NOT
+REQUIRED; `review_auth_diff` supplies a VERIFY PASS and
 asserts `security-auditor` is added and `distributed-systems-reviewer` is not.
 These pin the decision rules in `commands/build.md` and
 `references/reviewer-triggers.md`; they do not prove an executor or reviewer
