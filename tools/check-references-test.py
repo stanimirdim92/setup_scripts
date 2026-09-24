@@ -45,6 +45,33 @@ class Targets(unittest.TestCase):
         self.assertEqual(self.found('`/etc/x.md` and `$HOME/.claude/y.md` and `{dir}/z.md`'), [])
 
 
+class TopLevelDocs(unittest.TestCase):
+    def found(self, text):
+        return sorted(cr.candidates(text, top_level=True))
+
+    def test_repo_relative_link_counts(self):
+        self.assertEqual(self.found('| [dotfiles/claude/AGENTS.md](dotfiles/claude/AGENTS.md) |'),
+                         ['dotfiles/claude/AGENTS.md'])
+
+    def test_backticked_paths_are_prose_here(self):
+        # README names gitignored paths in backticks on purpose.
+        self.assertEqual(self.found('- `dotfiles/claude/skills/synced/` (gitignored)'), [])
+
+    def test_urls_ignored(self):
+        self.assertEqual(self.found('[ADR](https://example.com/adr.md)'), [])
+
+    def test_deleted_target_is_caught(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            doc = Path(tmp) / 'ARCHITECTURE.md'
+            (Path(tmp) / 'dotfiles').mkdir()
+            (Path(tmp) / 'dotfiles' / 'AGENTS.md').write_text('rules\n')
+            doc.write_text('[a](dotfiles/AGENTS.md) [b](dotfiles/CLAUDE.md)\n')
+            self.assertEqual(cr.broken(doc, doc.read_text(), top_level=True), ['dotfiles/CLAUDE.md'])
+
+    def test_top_level_docs_exclude_adrs(self):
+        self.assertFalse(any('adr' in p.parts for p in cr.top_level_docs()))
+
+
 class Resolution(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
