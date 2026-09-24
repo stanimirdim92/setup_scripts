@@ -10,11 +10,12 @@ and gates. Personas never dispatch other personas.
 | `repo-recon` | read-only repository survey | `/spec` and `/plan`, before specifying or planning |
 | `executor` | implementation | `/build`, one resumable instance per workstream |
 | `test-engineer` | independent verification | `/test` when risk/request warrants it |
-| `code-reviewer` | general code review | every `/review` |
+| `code-reviewer` | general code review against the goal and criteria | every `/review` |
+| `blind-reviewer` | review of the diff alone, with no goal or criteria | every `/review` |
 | `security-auditor` | security trust-boundary review | triggered `/review` only |
 | `distributed-systems-reviewer` | distributed failure-semantics review | triggered `/review` only |
 
-`repo-recon` and the three reviewers are read-only by tool grant (Read/Grep/Glob
+`repo-recon` and the four reviewers are read-only by tool grant (Read/Grep/Glob
 — no Bash), not just by instruction: they cannot run commands or modify the
 candidate. The diff and verification evidence arrive in the packet; anything a
 reviewer could not check is reported as not verified, with the command named for
@@ -85,7 +86,8 @@ complete message in this conversation or manually by the user in a new one,
 then decides whether
 independent verification is required, then dispatches:
 
-- `code-reviewer` always;
+- `code-reviewer` and `blind-reviewer` always, on the same diff; the blind
+  packet carries the diff and nothing else;
 - specialists only when `../references/reviewer-triggers.md` matches.
 
 At most two reviewers run concurrently. Reviewer findings remain separate and
@@ -114,7 +116,8 @@ dependencies/workstream, expected scope, verification, relevant rule/precedent
 pointers, and shared contracts/invariants.
 
 Review packets are smaller: integrated diff, one-line goal, relevant acceptance
-criteria, and build/verify evidence.
+criteria, and build/verify evidence. The `blind-reviewer` packet is the
+integrated diff alone.
 
 Prefer authoritative pointers over copied spec/plan text.
 
@@ -124,7 +127,8 @@ Use persona defaults for routine work. Escalate upward only when a specific
 high-impact risk is materially ambiguous.
 
 Fresh agents pay fresh context/discovery cost. Reuse the executor inside a
-workstream and avoid parallelism unless wall-clock benefit is worth that cost.
+workstream. Parallelism buys elapsed time, not fewer tokens; `/build`'s
+conditions decide when it applies (`../commands/build.md` §Parallelism).
 
 ## Direct invocation
 
