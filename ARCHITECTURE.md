@@ -168,7 +168,7 @@ repository with no prior specs, no branches and no stale worktrees.
   covers the resolution and the placeholder/URL cases it must not flag. It is the
   static half of the reference problem — a reference refused at runtime because
   it resolves outside the session's working directory is not visible to it.
-- `.github/workflows/ci.yml` runs every check above on each push. The live
+- `.github/workflows/ci.yml` runs every check above on each push to `main` and each pull request. The live
   workflow runner is excluded on purpose: it drives the real model and spends
   tokens, so it stays a deliberate manual run.
 - `docs/observation-log.md` records what real runs actually cost and where they

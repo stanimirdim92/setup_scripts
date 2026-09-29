@@ -14,10 +14,11 @@ consulted, so its higher per-token price ($10 / $50) is paid per consultation,
 not per turn. The API requires an advisor at least as capable as the model
 consulting it; Fable 5.1 satisfies that for every tier used here.
 
-**Open — effort calibration.** Sonnet 5.5 recalibrates its effort levels;
-Anthropic's guidance starts agentic coding at `medium`. The existing `xhigh`
-override is carried over unmeasured. Revisit from `docs/observation-log.md`
-run metrics (cost and turns for executor and recon runs), not by assumption.
+**Decision — effort `high`.** Sonnet 5.5 recalibrates its effort levels, so
+the `xhigh` override carried over from Sonnet 5 is lowered to `high`, the
+model's default (approver's call). Anthropic's guidance starts agentic coding at
+`medium`; revisit from `docs/observation-log.md` run metrics (cost and turns for
+executor and recon runs), not by assumption.
 
 **Rejected — floating aliases (`sonnet`, `fable`).** Same reason 0002 pinned:
 delegation should target a deliberately chosen version, not whatever an alias

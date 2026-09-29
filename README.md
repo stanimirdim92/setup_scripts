@@ -58,7 +58,7 @@ and main-session tool results over a line threshold (whole files read inline)
 `dotfiles/claude/references/agent-run-metrics.md`.
 
 `.github/workflows/ci.yml` runs every deterministic check in `tools/` on each
-push — hooks, handoff gate, persona frontmatter and settings pins, artifact
+push to `main` and each pull request — hooks, handoff gate, persona frontmatter and settings pins, artifact
 paths, workflow-runner logic, the Codex installer, and the metrics script. The
 live workflow runner is excluded; it spends tokens and stays a manual run.
 Real-run evidence — failures, cost, turns — goes in `docs/observation-log.md`.
