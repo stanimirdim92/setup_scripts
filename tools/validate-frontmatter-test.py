@@ -23,7 +23,7 @@ EXECUTOR = """
 name: executor
 description: Implements one planned task end-to-end.
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 hooks:
   PreToolUse:
     - matcher: Bash
@@ -40,7 +40,7 @@ RECON = """
 name: repo-recon
 description: Read-only repository reconnaissance.
 tools: Read, Grep, Glob
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 maxTurns: 40
 """
 
@@ -138,7 +138,7 @@ class DenyCases(unittest.TestCase):
         self.assertTrue(any('FORK_SUBAGENT' in p for p in problems))
 
     def test_persona_drifted_off_the_model(self):
-        body = REVIEWER.replace('model: opus[1m]', 'model: claude-sonnet-5')
+        body = REVIEWER.replace('model: opus[1m]', 'model: claude-sonnet-5-5')
         problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
         self.assertTrue(any("expected 'opus[1m]'" in p for p in problems))
 
@@ -148,9 +148,9 @@ class DenyCases(unittest.TestCase):
         self.assertTrue(any("expected 'opus[1m]'" in p for p in problems))
 
     def test_sonnet_persona_escalated_to_opus(self):
-        body = RECON.replace('model: claude-sonnet-5', 'model: opus[1m]')
+        body = RECON.replace('model: claude-sonnet-5-5', 'model: opus[1m]')
         problems = vf.check_agent('repo-recon', agent('repo-recon', body))
-        self.assertTrue(any("expected 'claude-sonnet-5'" in p for p in problems))
+        self.assertTrue(any("expected 'claude-sonnet-5-5'" in p for p in problems))
 
     def test_settings_session_model_drifted(self):
         problems = vf.check_settings(SETTINGS_OK.replace('"model": "opus[1m]"', '"model": "sonnet"'))

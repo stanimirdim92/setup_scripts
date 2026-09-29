@@ -46,7 +46,7 @@ WRITER_HOOKS = ('block-agent-push.sh', 'require-handoff-report.sh')
 # -- inherit it without each declaring a model. The user's explicit extended-
 # context session alias is also allowed; persona version pins remain strict.
 OPUS = 'opus[1m]'
-SONNET = 'claude-sonnet-5'
+SONNET = 'claude-sonnet-5-5'
 SESSION_MODELS = (OPUS, 'opus[1m]')
 
 REVIEWERS = {'code-reviewer', 'blind-reviewer', 'security-auditor',

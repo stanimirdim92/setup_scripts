@@ -189,11 +189,11 @@
   },
   "effortLevel": "high",
   "modelSettings": {
-    "claude-sonnet-5": {
+    "claude-sonnet-5-5": {
       "effortLevel": "xhigh"
     }
   },
-  "advisorModel": "opus",
+  "advisorModel": "claude-fable-5-1",
   "autoMemoryEnabled": true,
   "theme": "dark-ansi",
   "editorMode": "normal",

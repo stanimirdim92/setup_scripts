@@ -4,7 +4,7 @@ description: Implements one planned task end-to-end and can be resumed for later
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill
 skills:
   - executor-development-discipline
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 hooks:
   PreToolUse:
     - matcher: Bash
