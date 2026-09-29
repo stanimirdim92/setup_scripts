@@ -14,6 +14,11 @@ consulted, so its higher per-token price ($10 / $50) is paid per consultation,
 not per turn. The API requires an advisor at least as capable as the model
 consulting it; Fable 5.1 satisfies that for every tier used here.
 
+**Decision — advisor effort `high`.** Consultations are infrequent and are the
+harness's hardest judgment calls, so their cost is bounded and depth is what they
+are for; `medium` was the alternative considered (approver's choice between the
+two). Set through `modelSettings`, keyed by the pinned id.
+
 **Decision — effort `high`.** Sonnet 5.5 recalibrates its effort levels, so
 the `xhigh` override carried over from Sonnet 5 is lowered to `high`, the
 model's default (approver's call). Anthropic's guidance starts agentic coding at
