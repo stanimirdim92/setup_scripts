@@ -63,6 +63,11 @@ Send `test-engineer` a bounded packet containing:
 - tests/commands already run;
 - pointers to the changed code/tests when useful.
 
+The verifier runs in an isolated worktree branched from HEAD, so a declared
+uncommitted BUILD diff is not in its checkout. Before dispatch, have that diff
+committed through `/build`, or return **VERIFY BLOCKED**; never ask the verifier
+to reconstruct it.
+
 Include `required_skills`. Select `browser-testing-with-devtools` when an
 in-scope claim depends on actual rendering, browser APIs, navigation, console,
 or network behavior. The verifier invokes each selected skill before testing.
@@ -100,7 +105,10 @@ If a new test proves a production defect:
 
 1. preserve the reproduction as a patch/report artifact when useful;
 2. restore only uncommitted test changes introduced by `/test`;
-3. return the production fix to `/build`.
+3. decide where it goes: a production fix returns to `/build`, a behavior the
+   spec does not settle routes to `/spec`, and a plan defect to `/plan`.
+
+The verifier reports defects and artifacts to `/test`, never to another stage.
 
 Do not turn `/test` into a second implementation path.
 
