@@ -1,6 +1,6 @@
 ---
 name: context-engineering
-description: Optimizes agent context setup. Use when starting a new session, when agent output quality degrades, when switching between tasks, or when you need to configure rules files and context for a project.
+description: Optimizes agent context setup. Use when configuring rules files and context for a project, or when diagnosing context-quality problems (agent output degrading, ignoring conventions, hallucinated APIs).
 ---
 
 # Context Engineering
@@ -48,7 +48,7 @@ into a copy of every feature spec, framework guide, or historical decision.
 A good rule file answers "where is the source of truth?" as often as it answers
 the rule directly.
 
-**CLAUDE.md** (for Claude Code):
+**AGENTS.md** (one shared file; this harness links it as `~/.claude/CLAUDE.md`, `~/.claude/AGENTS.md` and `~/.codex/AGENTS.md` — make `CLAUDE.md` a symlink or `@AGENTS.md` import rather than a second copy):
 ```markdown
 # Project: [Name]
 
@@ -83,7 +83,6 @@ the rule directly.
 - `.cursorrules` or `.cursor/rules/*.md` (Cursor)
 - `.windsurfrules` (Windsurf)
 - `.github/copilot-instructions.md` (GitHub Copilot)
-- `AGENTS.md` (OpenAI Codex)
 
 ### Level 2: Specs and Architecture
 
@@ -163,26 +162,9 @@ CONSTRAINT:
 
 ### The Agent Task Packet
 
-For a coding subagent, package the task instead of dumping the session.
-
-Include:
-
-- bounded outcome;
-- acceptance criteria;
-- dependencies and workstream;
-- expected file/area scope;
-- exact verification;
-- applicable rule/module-document pointers;
-- one or two closest precedent files;
-- a shared contract/invariant or risk when it materially constrains the task.
-
-Prefer file pointers to copied content. Do not include the full spec, full plan,
-other agents' transcripts, or broad repository documentation unless the task
-actually requires all of it.
-
-When later tasks remain in the same workstream, resume the same implementation
-agent when the harness supports it. Reuse valid context; refresh only files or
-rules whose current state may have changed.
+For a coding subagent, package the task instead of dumping the session. Packet
+contents and executor reuse are owned by `../../AGENTS.md` §Agent orchestration
+and `../../commands/build.md` §Executor packet.
 
 ### The Hierarchical Summary
 
@@ -210,7 +192,7 @@ Load only the relevant section when working on a specific area.
 
 ## MCP Integrations
 
-For richer context, use Model Context Protocol servers:
+For richer context, use Model Context Protocol servers. Illustrative examples only — this harness configures its servers in `../../mcp/setup.sh`:
 
 | MCP Server | What It Provides |
 |-----------|-----------------|
@@ -231,7 +213,7 @@ Spec says:         "Use REST for all endpoints"
 Existing code has: GraphQL for the user profile query
 ```
 
-**Do NOT** silently pick one interpretation. Surface it:
+Follow `../../AGENTS.md` §1 and §6: when the choice materially changes behavior, contracts, data, security, or architecture, surface it and ask; otherwise pick one, say why, and proceed. A material conflict looks like:
 
 ```
 CONFUSION:
@@ -250,9 +232,9 @@ C) Ask — this seems like an intentional decision I shouldn't override
 
 If the spec doesn't cover a case you need to implement:
 
-1. Check existing code for precedent
-2. If no precedent exists, **stop and ask**
-3. Don't invent requirements — that's the human's job
+1. Check existing code for precedent (`../../references/repository-precedent.md`)
+2. If no precedent exists, apply `../../AGENTS.md` §1: ask only when the gap materially changes the outcome; otherwise state the assumption and proceed
+3. Don't invent requirements that materially change behavior — that's the human's job
 
 ```
 MISSING REQUIREMENT:
@@ -286,7 +268,7 @@ This catches wrong directions before you've built on them. It's a 30-second inve
 | Anti-Pattern | Problem | Fix |
 |---|---|---|
 | Context starvation | Agent invents APIs, ignores conventions | Load rules file + relevant source files before each task |
-| Context flooding | Agent loses focus when loaded with >5,000 lines of non-task-specific context. More files does not mean better output. | Include only what is relevant to the current task. Aim for <2,000 lines of focused context per task. |
+| Context flooding | Agent loses focus when loaded with large amounts of non-task-specific context. More files does not mean better output. | Include only what is relevant to the current task. |
 | Stale context | Agent references outdated patterns or deleted code | Start fresh sessions when context drifts |
 | Missing examples | Agent invents a new style instead of following yours | Include one example of the pattern to follow |
 | Implicit knowledge | Agent doesn't know project-specific rules | Write it down in rules files — if it's not written, it doesn't exist |
@@ -298,7 +280,7 @@ This catches wrong directions before you've built on them. It's a 30-second inve
 |---|---|
 | "The agent should figure out the conventions" | It can't read your mind. Write a rules file — 10 minutes that saves hours. |
 | "I'll just correct it when it goes wrong" | Prevention is cheaper than correction. Upfront context prevents drift. |
-| "More context is always better" | Research shows performance degrades with too many instructions. Be selective. |
+| "More context is always better" | Irrelevant instructions compete for attention. Be selective. |
 | "The context window is huge, I'll use it all" | Context window size ≠ attention budget. Focused context outperforms large context. |
 
 ## Red Flags

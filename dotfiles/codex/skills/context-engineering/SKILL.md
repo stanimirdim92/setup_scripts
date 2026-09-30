@@ -1,6 +1,6 @@
 ---
 name: context-engineering
-description: "Optimizes agent context setup. Use when starting a new session, when agent output quality degrades, when switching between tasks, or when you need to configure rules files and context for a project."
+description: "Optimizes agent context setup. Use when configuring rules files and context for a project, or when diagnosing context-quality problems (agent output degrading, ignoring conventions, hallucinated APIs)."
 ---
 
 Resolve this file's symlink before opening the relative links below.

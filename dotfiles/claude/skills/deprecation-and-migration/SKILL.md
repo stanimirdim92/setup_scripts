@@ -20,6 +20,8 @@ Most engineering organizations are good at building things. Few are good at remo
 - Planning the lifecycle of a new system (deprecation planning starts at design time)
 - Deciding whether to maintain a legacy system or invest in migration
 
+Removal is limited to the approved task. Report other dead or zombie code you notice; don't delete it (`../../AGENTS.md` §3).
+
 ## Core Principles
 
 ### Code Is a Liability
@@ -180,11 +182,11 @@ the old one            the app                  a later, separate deploy
 4. **Switch reads.** Point the app at `full_name`, keep writing both. Deploy and bake.
 5. **Contract.** Stop writing `name`, then — in a *separate, later* deploy — drop the column.
 
-Each step is independently deployable and reversible: if step 4 misbehaves, roll the code back and `full_name` is still being populated. Treat each phase as a thin vertical slice — see the `incremental-implementation` skill.
+Each step is independently deployable and reversible: if step 4 misbehaves, roll the code back and `full_name` is still being populated. Treat each phase as a thin vertical slice — see `executor-development-discipline` §Implement Thin Behavioral Slices.
 
 **Rules:**
 - **Additive first, destructive last and alone.** Adds (new nullable column, new table, new index) are safe in any deploy; drops and renames get their own deploy *after* no code references the old shape.
-- **Every migration has a tested down path.** A migration you can't reverse is a deploy you can't roll back. Write and run the `down` before merging.
+- **Every migration has a tested down path.** A migration you can't reverse is a deploy you can't roll back. Write and run the `down` before merging. For destructive contract steps, record that the data cannot be restored and require a backup/verification step.
 - **Backfill in batches, off the hot path.** A single `UPDATE` over millions of rows locks the table; chunk it and throttle.
 - **Build large indexes without blocking writes** (e.g. Postgres `CREATE INDEX CONCURRENTLY`).
 - **Decouple from code by feature flag** when the cutover is risky, exactly as in the Feature Flag Migration pattern above.

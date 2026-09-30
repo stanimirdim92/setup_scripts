@@ -62,6 +62,8 @@ If you can't name the trust boundaries for a feature, you're not ready to secure
 - Modifying rate limiting or throttling
 - Granting elevated permissions or roles
 
+Inside a `/build` executor, an approved spec or plan item that covers the change satisfies Ask First; otherwise stop and report a blocker.
+
 ### Never Do
 
 - **Never commit secrets** to version control (API keys, passwords, tokens)
@@ -107,7 +109,7 @@ app.use(session({
   cookie: {
     httpOnly: true,     // Not accessible via JavaScript
     secure: true,       // HTTPS only
-    sameSite: 'lax',    // CSRF protection
+    sameSite: 'lax',    // CSRF defense in depth; see checklist §CSRF
     maxAge: 24 * 60 * 60 * 1000,  // 24 hours
   },
 }));
@@ -349,13 +351,9 @@ app.use('/api/auth/', rateLimit({
   *.key
 ```
 
-**Always check before committing:**
-```bash
-# Check for accidentally staged secrets
-git diff --cached | grep -i "password\|secret\|api_key\|token"
-```
+**Always check before committing:** see `../../references/security-checklist.md` §Pre-Commit & Secrets.
 
-**If a secret is ever committed, rotate it.** Deleting the line or rewriting history is not enough — assume it's compromised the moment it reaches a remote. Revoke and reissue the key first, then purge it from history.
+**If a secret is ever committed, rotate it.** Deleting the line or rewriting history is not enough — assume it's compromised the moment it reaches a remote. Revoke and reissue the key first, then purge it from history — history rewriting requires explicit human approval.
 
 ## Data Privacy & Compliance
 

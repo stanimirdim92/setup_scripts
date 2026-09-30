@@ -147,13 +147,10 @@ Stage only files belonging to the current logical commit:
 
 ```bash
 git add -- path/to/file1 path/to/file2
+git add -p -- path/to/file   # only some hunks of a file belong
 ```
 
-Then inspect exactly what will be committed:
-
-```bash
-git diff --staged
-```
+Then apply the staged-diff and commit-content checks in `../../AGENTS.md` §3.
 
 Do not use:
 
@@ -224,13 +221,10 @@ changes
 
 ## Pre-Commit Verification
 
-Before committing:
-
-1. Inspect `git diff --staged`.
-2. Verify only intended files are staged.
-3. Run the project's required quality gates.
-4. Confirm those commands actually passed.
-5. Check the staged diff for secrets or sensitive data.
+Before committing, apply `../../AGENTS.md` §3 (staged diff against authorized
+files and hunks, isolate the commit, inspect the result; `git add -p` for
+partial files), run the project's required quality gates, confirm they passed,
+and check the staged diff for secrets or sensitive data.
 
 Discover verification commands from project sources such as:
 
@@ -274,6 +268,13 @@ patch/report policy and must not enter the candidate.
 
 Commits and normal pushes may proceed without asking when the surrounding
 workflow already authorizes publishing changes.
+
+Harness personas (executor, test-engineer) never push. Neither `/build`,
+`/test`, nor a `/ship` GO authorizes a push; the orchestrator or human pushes.
+
+### Codex CLI (`codex-worktree` ticket sessions)
+
+Same rule: harness personas never push; the orchestrator or human pushes.
 
 Do not infer authorization for destructive history rewriting.
 
@@ -339,8 +340,10 @@ Do not discard unrelated changes while resolving conflicts.
 
 ## Worktrees
 
-Use worktrees when parallel agents or independent workstreams need isolated
-branches.
+Create ticket worktrees per `../../AGENTS.md` §Worktrees (`claude --worktree` /
+`codex-worktree`, `.claude/worktrees/`, `.worktreeinclude`, pull first). Use
+raw `git worktree add` only for an existing branch or a path outside the repo.
+Remove with `git worktree remove`, never `rm -rf`.
 
 Before creating or removing one:
 
@@ -350,7 +353,7 @@ git worktree list
 
 Rules:
 
-- one active branch per worktree
+- a branch lives in exactly one worktree
 - do not reuse another agent's worktree
 - do not remove a worktree with unknown changes
 - verify `git status --short` inside the worktree before removal

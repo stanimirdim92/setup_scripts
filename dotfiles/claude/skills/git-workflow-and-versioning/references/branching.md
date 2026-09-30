@@ -53,7 +53,8 @@ Typical flow:
 
 1. Branch from the default branch.
 2. Make focused commits.
-3. Push the branch.
+3. Push the branch (orchestrator or human only; harness personas never push —
+   see `../SKILL.md` §Commit and Push Authorization).
 4. Open a PR.
 5. Review and verify CI.
 6. Merge according to repository policy.

@@ -28,21 +28,19 @@ git branch -a
 git worktree list
 ```
 
-Create a new branch and worktree:
+Create ticket worktrees per `../../../AGENTS.md` §Worktrees: `claude --worktree
+<ticket>` or `codex-worktree <ticket>`, under `.claude/worktrees/` with
+`.worktreeinclude`, after pulling the base branch first.
+
+Raw `git worktree add` is for attaching an existing branch or placing a
+worktree outside the repository:
 
 ```bash
-git worktree add -b feature/LD-329-social-classification \
-  ../project-LD-329 \
-  <base-branch>
+git worktree add ../project-<ticket> feature/<ticket>-short-name
 ```
 
-Or attach an existing branch:
-
-```bash
-git worktree add ../project-LD-329 feature/LD-329-social-classification
-```
-
-Use the repository's actual base branch and naming convention.
+Use the repository's actual base branch and naming convention. Remove with
+`git worktree remove`, never `rm -rf`.
 
 ## Ownership
 
@@ -67,9 +65,8 @@ Use a separate branch for each independent task.
 Good:
 
 ```text
-project/
-project-LD-329/   → feature/LD-329-social-classification
-project-LD-500/   → fix/LD-500-profile-image
+.claude/worktrees/<ticket-a>/   → feature/<ticket-a>-short-name
+.claude/worktrees/<ticket-b>/   → fix/<ticket-b>-short-name
 ```
 
 Avoid multiple agents sharing one branch unless the workflow explicitly
@@ -139,7 +136,7 @@ Worktree isolation does not automatically isolate runtime infrastructure.
 Before cleanup:
 
 ```bash
-cd ../project-LD-329
+cd .claude/worktrees/<ticket>
 git status --short
 git branch --show-current
 ```
@@ -149,8 +146,8 @@ Confirm there is no uncommitted or untracked work that must be preserved.
 Then return to another directory before removing it:
 
 ```bash
-cd ../project
-git worktree remove ../project-LD-329
+cd "$(git worktree list --porcelain | sed -n '1s/^worktree //p')"   # the main checkout
+git worktree remove .claude/worktrees/<ticket>
 ```
 
 Do not use forced removal to bypass unknown changes.
@@ -173,17 +170,18 @@ Do not prune as a substitute for understanding active worktrees.
 After a branch is merged and no longer required:
 
 ```bash
-git branch -d feature/LD-329-social-classification
+git branch -d <ticket-branch>
 ```
 
 Use safe delete (`-d`) by default.
 
 Do not use `-D` merely because Git says the branch is unmerged.
 
-Remote branch deletion should follow project/user authorization:
+Remote branch deletion is a push: never from a harness persona, and otherwise
+only with project/user authorization:
 
 ```bash
-git push origin --delete feature/LD-329-social-classification
+git push origin --delete <ticket-branch>
 ```
 
 ## Failure Recovery

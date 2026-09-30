@@ -9,7 +9,7 @@ description: Guides stable API and interface design. Use when designing APIs, mo
 
 Design stable, well-documented interfaces that are hard to misuse. Good interfaces make the right thing easy and the wrong thing hard. This applies to REST APIs, GraphQL schemas, module boundaries, function and type contracts between components, the tool/function schemas an LLM is given, and any surface where one piece of code — or one system — talks to another.
 
-The principles here are language- and transport-independent. Examples appear in several languages (TypeScript, Python, Rust) and as LLM tool schemas; each illustrates a principle that holds regardless of the stack. When you apply the skill, follow the repository's own language and conventions — the principle is the rule, the example is only a picture of it.
+The principles here are language- and transport-independent. Examples appear in TypeScript, Python, and Rust, plus an LLM tool-result shape; each illustrates a principle that holds regardless of the stack. When you apply the skill, follow the repository's own language and conventions — the principle is the rule, the example is only a picture of it.
 
 ## When to Use
 
@@ -22,7 +22,7 @@ The principles here are language- and transport-independent. Examples appear in 
 
 ## Core Principles
 
-These nine principles are the substance of the skill. Everything below them is illustration.
+These principles are the substance of the skill. Everything below them is illustration.
 
 ### Hyrum's Law
 
@@ -32,7 +32,7 @@ Every public behavior — undocumented quirks, error-message text, field orderin
 
 - **Be intentional about what you expose.** Every observable behavior is a potential commitment.
 - **Don't leak implementation details.** If a consumer can observe it, something will depend on it.
-- **Plan for deprecation at design time.** See `deprecation-and-migration` for removing things consumers depend on.
+- **Plan for deprecation at design time.** See `deprecation-and-migration` (when /build selected it) for removing things consumers depend on.
 - **Tests are not enough.** Even with perfect contract tests, "safe" changes can break real consumers who depend on behavior you never promised.
 
 Hyrum's Law has a companion — the **Law of Leaky Abstractions**: every non-trivial abstraction leaks some of what it sits on top of. You cannot seal an interface perfectly; some implementation detail (an error, a timing, an ordering, a limit) will always show through. Hyrum's Law then says consumers *will* depend on whatever leaks. Together they set the design stance: since something always leaks and anything observable becomes a commitment, choose deliberately *what* you let leak, and treat those leaks as part of the contract rather than pretending they aren't there.
@@ -45,7 +45,7 @@ Avoid forcing consumers to choose between multiple live versions of the same dep
 
 Define the interface before implementing it. The contract is the spec; the implementation follows it. Write the signatures, types, errors, and semantics — then build to them.
 
-The contract is the same idea in any stack: named operations, their inputs, their outputs, and what each promises. Below, the same task API expressed four ways.
+The contract is the same idea in any stack: named operations, their inputs, their outputs, and what each promises. Below, the same task API expressed two ways.
 
 ```typescript
 // TypeScript
@@ -132,7 +132,7 @@ Trust internal code; validate at the edges where external input enters. Inside t
 ```python
 # Validate once, at the boundary; internal code then trusts the parsed type.
 def create_task_endpoint(raw: dict) -> Response:
-    parsed = CreateTaskSchema.validate(raw)      # raises ValidationError on bad input
+    parsed = CreateTaskSchema.validate(raw)      # non-raising: returns .value or .errors
     if parsed.errors:
         return Response(422, {"error": {"code": "VALIDATION_ERROR", "details": parsed.errors}})
     task = task_service.create(parsed.value)     # service trusts the validated type
@@ -233,6 +233,14 @@ Two supporting habits in the same spirit:
 - **Separate input from output types.** What the caller provides (no server-generated fields) is a different type from what the system returns (ids, timestamps, computed fields). Don't force one type to do both with a scatter of optional fields.
 - **Give identifiers distinct types where the language allows.** A `TaskId` and a `UserId` that are both bare strings will eventually be swapped by accident. Branded types (TS), newtypes (Rust `struct UserId(String)`), or `NewType` (Python) make that a compile-time or checker error.
 
+```typescript
+type TaskId = string & { readonly __brand: 'TaskId' };
+type UserId = string & { readonly __brand: 'UserId' };
+
+// Prevents accidentally passing a UserId where a TaskId is expected
+function getTask(id: TaskId): Promise<Task> { ... }
+```
+
 ### 9. Idempotency for State-Changing Operations
 
 Any operation that can be retried — and across a network, all of them can — needs a defined answer to "what if this runs twice?" Accepting an idempotency key is the *contract*; honouring it is the *implementation*, and it is where money is lost. A key the server accepts but handles carelessly is worse than no key, because the client now believes retrying is safe.
@@ -296,14 +304,6 @@ Three list/mutation habits that are cheap at design time and expensive to retrof
 - **Paginate every list from the start.** An endpoint or method that returns "all" items becomes a problem the moment a consumer has hundreds. Return a page plus metadata (page/size/total, or a cursor).
 - **Filter and sort via explicit parameters**, not by returning everything and letting the caller filter.
 - **Support partial update** where it fits: accept only the fields that change rather than requiring the caller to resubmit the whole object.
-
-```typescript
-type TaskId = string & { readonly __brand: 'TaskId' };
-type UserId = string & { readonly __brand: 'UserId' };
-
-// Prevents accidentally passing a UserId where a TaskId is expected
-function getTask(id: TaskId): Promise<Task> { ... }
-```
 
 ## Common Rationalizations
 
