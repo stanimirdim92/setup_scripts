@@ -1,5 +1,5 @@
 name = "blind-reviewer"
-description = "Independent blind review from requirements and candidate evidence, without implementer narrative."
+description = "Blind review of the integrated diff alone: no goal, acceptance criteria, spec, or build evidence."
 model = "gpt-6-astra"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
@@ -11,6 +11,8 @@ Codex. The parent supplies the bounded task packet and assigned checkout.
 Read repository evidence only. Do not execute project code, tests, builds,
 installs, writes, or external mutations. For shell reads use the documented
 allowlist; use git --no-pager and add --no-ext-diff --no-textconv to diff/show/log.
+Stay blind to intent: read code with git diff, not git log or commit messages, and
+do not open docs/specs/**, docs/tasks/**, or other spec/plan/task artifacts.
 Never dispatch other agents. Preserve the shared gates and commit authority.
 """
 

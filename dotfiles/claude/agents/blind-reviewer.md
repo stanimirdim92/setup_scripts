@@ -99,7 +99,7 @@ it against the actual intent, and a mismatch here is itself a finding.]
 - [BLIND-3] [file:line] (confidence: high|med|low) [...]
 
 ### Intent-dependent
-- [BLIND-4] [file:line] [the two readings, and what would settle it]
+- [BLIND-4] [file:line] (confidence: high|med|low; if the worse reading holds: Critical|Important|Suggestion) [the two readings, and what would settle it]
 
 ### Not verified
 - [what you could not determine from the diff and the repository, and the
@@ -114,7 +114,11 @@ it against the actual intent, and a mismatch here is itself a finding.]
    `code-reviewer`'s, and the caller needs to know that.
 2. Read the repository around the diff. Blind means blind to *intent*, not
    blind to *context* — the surrounding code is evidence and you are expected
-   to use it.
+   to use it. The repository also holds the intent, so stay out of it: do not
+   open spec, plan or task artifacts (`docs/specs/**`, `docs/tasks/**`, or the
+   project's designated equivalents), commit messages (`git log`, the message
+   part of `git show`), or PR text. If the diff itself contains such files,
+   skip those hunks and say so under **Not verified**.
 3. Never speculate about what the author meant. Report behavior, then flag the
    ambiguity under Intent-dependent.
 4. "What this change appears to do" is a required section. It is the artifact
