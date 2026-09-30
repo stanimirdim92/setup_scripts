@@ -1,6 +1,6 @@
 ---
 name: c4-architecture
-description: Generates a C4 model architecture workspace (Context and Container by default; Component, Deployment, and Dynamic views opt-in) for a codebase by inspecting it directly and writing Structurizr DSL, validated and rendered through the Structurizr MCP server. Use when asked to document, diagram, or explain a system's architecture, onboard someone to a codebase, or produce a C4 view at any of those levels. Independent of the spec/plan/build SDLC chain — this documents what already exists, it doesn't plan new work.
+description: Generates a C4 model architecture workspace (Context and Container by default; Component, Deployment, and Dynamic views opt-in) for a codebase by inspecting it directly and writing Structurizr DSL, validated and rendered through the Structurizr MCP server. Use when asked for an architecture diagram, a C4 view at any of those levels, or a Structurizr workspace. Written architecture docs (ARCHITECTURE.md and companions) belong to project-docs, which may call this skill for its diagrams. Independent of the spec/plan/build SDLC chain — this documents what already exists, it doesn't plan new work.
 argument-hint: "[target directory or repo, defaults to repo root] [--components] [--deployment] [--dynamic \"scenario\"]"
 ---
 
@@ -8,7 +8,7 @@ argument-hint: "[target directory or repo, defaults to repo root] [--components]
 
 Inspired by Seth Hobson's `c4-architecture` plugin
 (github.com/wshobson/agents, `claude-code-workflows` marketplace — the
-same source already vendored here as `llm-application-dev`),
+same marketplace as the installed `llm-application-dev` plugin),
 rewritten around the official
 [Structurizr MCP server](https://docs.structurizr.com/ai/mcp) rather than
 hand-written Markdown per level. Structurizr is the reference implementation
@@ -41,13 +41,13 @@ whatever views are needed.
 
 ## When to Use
 
-- "Document/diagram the architecture of \<project\>"
-- Onboarding someone to an unfamiliar codebase
+- "Diagram the architecture of \<project\>"
 - Producing a system context or container diagram for a design doc or ticket
 - Any request for a C4-model view, at Context, Container, or Component depth
 
-Not for: planning new work (that's `spec-driven-development` →
-`planning-and-task-breakdown` → `incremental-implementation`). This skill
+Not for: planning new work (that's `/spec` → `/plan` → `/build`), or
+written architecture docs (`ARCHITECTURE.md` and companions — that's
+`project-docs`, which calls this skill when those docs need a diagram). This skill
 documents an existing system; it doesn't decide what to build next. Also not
 for function/class-level ("Code" level) questions — read the source directly
 for those instead of maintaining a diagram that will drift the next commit.
@@ -55,14 +55,14 @@ for those instead of maintaining a diagram that will drift the next commit.
 ## Prerequisites
 
 - The target codebase must actually be readable in this session. If it's a
-  different repo than the one the session is currently scoped to, attach and
-  clone it first (`add_repo`, then clone) — don't guess at a codebase's
-  architecture from its name or README alone.
-- The Structurizr MCP server must be registered (`dotfiles/claude/mcp/setup.sh`
-  adds it, user scope, one time per machine). If its tools aren't visible yet,
-  `ToolSearch` for `"structurizr"` — it's an HTTP MCP server, no local process
-  to start. If it's genuinely not registered, say so and point at
-  `mcp/setup.sh` rather than falling back to hand-validating DSL yourself.
+  different repo than the one the session is currently scoped to, attach the
+  repository if the host supports it and clone it — don't guess at a
+  codebase's architecture from its name or README alone.
+- The Structurizr MCP server must be registered — see this machine's MCP
+  setup. It's an HTTP MCP server, no local process to start; if its tools are
+  deferred, load them through the host's tool discovery first. If it's
+  genuinely not registered, say so and point at the MCP setup rather than
+  falling back to hand-validating DSL yourself.
 
 ## Workflow
 
@@ -127,7 +127,9 @@ blending the two silently.
 
 ### 3. Draft the DSL
 
-Write `C4-Documentation/workspace.dsl`:
+Write `workspace.dsl` into the project's existing architecture docs location
+when one exists (e.g. `docs/architecture/`), otherwise into
+`C4-Documentation/` (see Output):
 
 ```
 workspace "System Name" "One-sentence description" {
@@ -236,8 +238,11 @@ specifically. Write each exported view alongside the DSL.
 
 ## Output
 
+Default to the project's existing docs location when one exists (e.g.
+`docs/architecture/`); otherwise create `C4-Documentation/`:
+
 ```
-C4-Documentation/
+C4-Documentation/              # or the existing docs location
 ├── workspace.dsl              # the model — source of truth
 ├── context.mmd                # System Context view, exported (Mermaid)
 ├── container.mmd              # Container view, exported (Mermaid)

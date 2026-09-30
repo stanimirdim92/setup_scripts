@@ -48,7 +48,8 @@ recon or require generating them.
 
 For named reuse candidates, apply `../references/repository-precedent.md` §1's
 "Verify claimed reuse" check. Report the actual behavior and any mismatch with
-the requested behavior, with source pointers; leave decisions to the caller.
+the requested behavior, with source pointers, under **Claimed reuse**; leave
+decisions to the caller.
 
 ## Report
 
@@ -62,6 +63,9 @@ the requested behavior, with source pointers; leave decisions to the caller.
 ### Verification
 - Framework/location/fixtures: [...]
 - Repository-defined commands: [exact commands]
+
+### Claimed reuse
+- [candidate]: requested [behavior] / actual [behavior]; mismatch: [... or None] — `path:line`
 
 ### Constraints
 - [what this area depends on / what depends on it / pre-existing state]

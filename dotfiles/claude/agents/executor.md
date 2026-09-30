@@ -31,8 +31,11 @@ an independent reviewer, decide release status, or dispatch another agent.
 Expect:
 
 - outcome/task;
+- `requirements: [REQ-###, ...]` the task answers;
 - acceptance criteria;
 - dependencies/workstream;
+- assigned checkout path and execution mode (sequential inherited checkout or
+  concurrent isolated checkout);
 - expected file/area scope;
 - verification;
 - skills selected by `/build`.
@@ -112,11 +115,12 @@ Do not blind-retry an unchanged failure.
 Keep the handoff factual and concise:
 
 - behavior implemented;
+- requirements addressed (REQ-###) and how each was verified;
 - tests added/changed;
 - exact verification commands and outcomes;
 - workstream verification when applicable;
 - required checks not run and why;
-- commit messagage/id;
+- commit message/id;
 - working-tree state;
 - required scope expansion;
 - anything noticed but untouched;

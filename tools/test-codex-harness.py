@@ -211,5 +211,42 @@ class CodexHarnessTest(unittest.TestCase):
             self.assertEqual(self.decision(json.loads(result.stdout)), "deny")
 
 
+def frontmatter_description(path):
+    """Return a SKILL.md description with YAML quoting and folding normalized."""
+    lines = path.read_text().split("---", 2)[1].splitlines()
+    for i, line in enumerate(lines):
+        if line.startswith("description:"):
+            value = line[len("description:"):].strip()
+            if value in {">", ">-", "|", "|-"}:
+                value = " ".join(l.strip() for l in lines[i + 1:] if l.startswith((" ", "\t")))
+            elif value.startswith('"'):
+                value = json.loads(value)
+            elif value.startswith("'"):
+                value = value[1:-1].replace("''", "'")
+            return " ".join(value.split())
+    return None
+
+
+class CodexAdapterMetadataTest(unittest.TestCase):
+    STAGES = {"spec", "plan", "build", "test", "review", "ship"}
+    EXPLICIT_SKILLS = {"executor-development-discipline", "spec-driven-development",
+                       "planning-and-task-breakdown"}
+
+    def test_adapter_descriptions_match_shared_skills(self):
+        for adapter in sorted((CODEX / "skills").glob("*/SKILL.md")):
+            shared = ROOT / "dotfiles/claude/skills" / adapter.parent.name / "SKILL.md"
+            if shared.is_file():
+                with self.subTest(skill=adapter.parent.name):
+                    self.assertEqual(frontmatter_description(adapter), frontmatter_description(shared))
+
+    def test_stage_and_entry_adapters_are_explicit_only(self):
+        for name in sorted(self.STAGES | self.EXPLICIT_SKILLS):
+            with self.subTest(skill=name):
+                policy = CODEX / "skills" / name / "agents/openai.yaml"
+                self.assertTrue(policy.is_file())
+                self.assertRegex(policy.read_text(),
+                                 r"(?m)^policy:\n\s+allow_implicit_invocation:\s*false\s*$")
+
+
 if __name__ == "__main__":
     unittest.main()

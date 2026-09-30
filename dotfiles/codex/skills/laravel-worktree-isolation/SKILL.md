@@ -1,6 +1,6 @@
 ---
 name: laravel-worktree-isolation
-description: Set up a Laravel repository so its test suite runs isolated per git worktree, with a separate database and Redis keyspace, enabling parallel ticket work. Use when one worktree's tests corrupt another's, or when a project's test database is built from a schema dump rather than migrations.
+description: "Set up a Laravel repository so its test suite runs isolated per git worktree — separate database and Redis keyspace — enabling parallel ticket work. Use when tests in one worktree corrupt another's, when adding worktree-based parallel work to a Laravel project, or when a project's test database is built from a schema dump rather than migrations."
 ---
 
 Resolve this file's symlink before opening the relative links below.

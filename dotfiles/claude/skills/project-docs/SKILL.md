@@ -1,13 +1,14 @@
 ---
 name: project-docs
-description: Create or refresh repository documentation from the actual project. Use when asked to document a project, generate architecture and companion docs, or reconcile existing project docs with source. Does not implement features or redesign the system.
+description: Create or refresh repository documentation from the actual project. Use when asked to document a project, generate architecture and companion docs, or reconcile existing project docs with source. Does not implement features or redesign the system. Architecture diagrams (C4/Structurizr) go to c4-architecture.
 ---
 
 # Project documentation
 
 Generate useful documentation for the repository as it exists. Apply
 [document responsibilities and maintenance](../../references/documentation-practices.md#project-documentation).
-This workflow is independent of ticket spec/plan/build stages.
+This workflow is independent of ticket spec/plan/build stages. When a document
+needs an architecture diagram, use `c4-architecture` for it.
 
 ## Select scope
 
@@ -39,9 +40,7 @@ Use source pointers and bounded reads; do not dump entire directories or logs.
 Distinguish current implementation, prescribed rules, and proposed future work.
 If source violates an intentional rule, record the discrepancy without silently
 changing the rule. If two authoritative sources disagree, name both and the
-unresolved choice. Report declared, locked, and installed versions separately
-when the difference matters; prefer manifest/lockfile pointers over volatile
-version inventories.
+unresolved choice.
 
 Find exact commands in project scripts/configuration. Label commands discovered
 in source separately from commands executed successfully. Documentation generation

@@ -1,6 +1,6 @@
 ---
 name: jira-ticket
-description: Fetch a Jira ticket and its related requirements for specification. Use when asked to work on a Jira ticket; a ticket mentioned only as context does not trigger intake.
+description: "Jira ticket intake only. Use when the user asks to work on a Jira ticket. Fetch requirements and relevant context, surface and record blockers, and hand off to /spec without invoking it. A Jira key used only as context or an example does not trigger this skill."
 ---
 
 Resolve this file's symlink before opening the relative links below.

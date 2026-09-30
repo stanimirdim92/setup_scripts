@@ -86,9 +86,20 @@ reversed decision stays on the record instead of being edited away.
 6. **Reversing a prior decision?** Leave the old file's text exactly as
    it was written — don't edit its Decision or Rejected paragraphs, even
    though they're now out of date. Write a *new*, higher-numbered file
-   stating the reversal and linking back to the old one by number. Mark
-   the old row's Status column `Superseded by NNNN` in the index. The
-   old decision being wrong in hindsight is exactly the part worth
+   stating the reversal and linking back to the old one by number, and
+   restate the old choice as a `**Rejected — *(old choice).***` block in
+   the new file, with the new information that beat it — a reversed
+   decision lives on as a rejected entry on the new decision, not as a
+   deletion. Then update the old row's Status column in the index:
+   - `Superseded by NNNN` — the new decision fully replaces the old one.
+   - `Partially superseded by [NNNN](NNNN-*.md) (what changed)` — the new
+     decision reverses or narrows only part of the old one; the rest
+     still stands. The parenthetical names the part that changed, so a
+     reader knows which half of the old file to distrust.
+   - `Clarified by [NNNN](NNNN-*.md)` — the new file doesn't change the
+     old decision, only sharpens its scope or wording; the old one is
+     still fully in force.
+   The old decision being wrong in hindsight is exactly the part worth
    keeping — it's evidence for whoever reads it next, not an error to
    erase.
 7. **Decision became moot with nothing replacing it** (the feature it
@@ -174,8 +185,11 @@ actually change this call. Omit the block entirely when none exists.>
 - [ ] Contains `**Decision.**` plus at least one `**Rejected —**` block
       with a concrete reason
 - [ ] `docs/adr/README.md` has a row linking the new file
-- [ ] If this reverses a prior decision: the old file is untouched, and
-      its index row says `Superseded by NNNN`
+- [ ] If this reverses a prior decision: the old file is untouched, the
+      new file restates the old choice as a `**Rejected —**` block, and
+      the old index row says `Superseded by NNNN` (or `Partially
+      superseded by …` / `Clarified by …` when only part changed or
+      nothing was reversed)
 - [ ] If this decision is now moot with nothing replacing it: index row
       says `Deprecated`, not left as `Accepted` or wrongly marked
       `Superseded`
