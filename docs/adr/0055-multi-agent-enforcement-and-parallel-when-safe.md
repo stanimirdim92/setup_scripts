@@ -30,8 +30,10 @@ and the one lever that buys speed was pointed the wrong way.
    blocks the agent from finishing — once — unless its final report carries
    verification commands with outcomes, a commit id or an explicit no-commit
    reason, and the working-tree state.
-5. **Read-only personas have a turn cap.** `repo-recon` `maxTurns: 40`; the
-   three reviewers `maxTurns: 60`. Each persona states that a capped run is
+5. **Read-only personas have a turn cap.** `repo-recon` `maxTurns: 100`; the
+   reviewers `maxTurns: 60`. (Recon was first set at 40 and raised to 100 by the
+   approver in `c0e47a7`; both numbers are uncalibrated until
+   `docs/observation-log.md` has run metrics.) Each persona states that a capped run is
    reported as partial under its existing "Not surveyed" / "Not verified"
    section, never as complete or clean.
 

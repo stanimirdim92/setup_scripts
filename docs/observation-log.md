@@ -39,7 +39,7 @@ a gate that should have fired and did not).
 ## Run metrics
 
 One row per pipeline run, failure or not. These are what calibrate the
-uncalibrated numbers — `maxTurns` 40/60 above all — and what the freeze is
+uncalibrated numbers — `maxTurns` 100/60 above all — and what the freeze is
 waiting on.
 
 | Date | Ticket | Stages run | Recon dispatched? | Max turns used | Fan-out (concurrent/queued) | Tokens | Cost | Large reads (>350) |
@@ -194,7 +194,7 @@ Source every number:
 
 Per `references/agent-run-metrics.md`, after roughly 10–20 comparable tickets:
 
-- `maxTurns` — how close real runs come to 40 (`repo-recon`) and 60 (reviewers),
+- `maxTurns` — how close real runs come to 100 (`repo-recon`) and 60 (reviewers),
   and whether any run reported a capped partial
 - recon — how often `/spec` and `/plan` dispatch rather than bounded-check, and
   whether the bounded checks were adequate in hindsight (ADR 0051's revisit
