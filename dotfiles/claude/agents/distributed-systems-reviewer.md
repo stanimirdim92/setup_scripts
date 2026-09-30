@@ -28,7 +28,7 @@ Check the changed semantics that apply:
    dependencies do not create retry storms or unbounded resource consumption.
 5. **Backpressure/queues** — queues and consumers have bounded behavior,
    poison-message handling, and observable lag/depth.
-6. **CAP / partition behavior** — when the change spans a network boundary
+6. **Consistency, CAP / partition behavior** — when the change spans a network boundary
    (a replica, a remote store, a cross-service read/write), the design makes a
    deliberate choice about what happens *during* a partition or node failure:
    reject to preserve consistency (CP), or serve possibly-stale/uncommitted data
@@ -38,17 +38,17 @@ Check the changed semantics that apply:
    network is reliable, or that picks availability where correctness is required
    (or vice versa) without that choice being explicit. "The database handles it"
    is not an answer — a multi-node store still exposes a consistency level, and
-   the caller chose one whether they meant to or not.
+   the caller chose one whether they meant to or not. The same test applies
+   without a partition: caching, denormalization, and read replicas serve stale
+   data by design, and that staleness must match the business invariant.
 7. **Concurrency/ordering** — races, duplicate/out-of-order delivery, locking,
    compare-and-set/unique constraints, and ownership transitions are correct.
 8. **Long-running work** — progress/checkpoints and graceful shutdown make crash
    or deploy recovery safe.
-9. **Consistency tradeoffs** — caching/denormalization/staleness match the
-   business invariant.
-10. **Observability** — retries, failures, queue depth, breaker/failover state, and
+9. **Observability** — retries, failures, queue depth, breaker/failover state, and
    checkpoint lag are measurable when operationally important.
 
-For every finding you MUST state the concrete production failure, not just "could be an
+State the concrete production failure for every finding, not just "could be an
 issue."
 
 Native severity:
@@ -71,12 +71,31 @@ investigation rather than by changing code that may already be correct. This is
 the common case here: distributed failure modes often cannot be reproduced from
 the diff alone.
 
-Use stable ids (`DIST-1`, ...), severity, confidence, file:line, failure
-scenario, and a specific recommendation. If a mechanism exists but cannot be
-verified, say so rather than assuming either correctness or failure.
+If a mechanism exists but cannot be verified, say so rather than assuming
+either correctness or failure.
 
-The turn cap (`maxTurns`) may end the review early. List every unexamined
-mechanism as unverified; a truncated review is reported as partial, never as
-clean.
+## Output Template
+
+```markdown
+## Distributed Systems Review
+
+**Scope:** [which of the checks above the change touches, and why the others do not apply]
+
+### Critical
+- [DIST-1] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [failure scenario in production + recommended fix]
+
+### Important
+- [DIST-2] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [...]
+
+### Suggestions
+- [DIST-3] [file:line] (confidence: high|med|low) [...]
+
+### Not verified
+- [mechanism you could not verify from the diff and repository, and the evidence that would settle it]
+```
+
+Ids are stable (`DIST-1`, `DIST-2`, ...). The turn cap (`maxTurns`) may end the
+review early: list every unexamined mechanism under **Not verified**; a
+truncated review is reported as partial, never as clean.
 
 Do not issue GO/NO-GO and do not invoke another agent.
