@@ -33,7 +33,9 @@ task packet rather than spelling out `None`.
 # Implementation Plan: [Feature/Project Name]
 
 Status: Draft
-Spec: docs/specs/[TICKET]-SPEC.md [+ module-id if from a capability map]
+Spec: docs/specs/[TICKET]-SPEC.md
+Modules: [module ids this plan covers, or N/A without a capability map]
+Not yet planned: [remaining module ids, or None]
 Spec status: Approved
 Spec revision: git-commit:[sha]:docs/specs/[TICKET]-SPEC.md
 Approved by: —

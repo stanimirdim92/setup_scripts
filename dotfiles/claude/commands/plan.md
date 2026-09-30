@@ -10,9 +10,11 @@ required.
 ## Resolve the target
 
 Use the explicit ticket, module, or spec path, then the conversation when no
-argument identifies it. Honor project-defined artifact locations and use the
-capability map to select a module spec when applicable. If exactly one matching
-spec exists, select it; otherwise ask which candidate to use. Announce the
+argument identifies it. Honor project-defined artifact locations. When the spec
+carries a capability map, plan the module ids the argument names, or the whole
+spec when it names none (`planning-and-task-breakdown` §Capability map). If
+exactly one matching spec exists, select it; otherwise ask which candidate to
+use. Announce the
 selected spec path before drafting; never guess among multiple specs.
 
 ## Preconditions and evidence

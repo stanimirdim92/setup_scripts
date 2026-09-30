@@ -29,8 +29,8 @@ finding a command in source from executing it successfully.
 
 ## Draft or revise
 
-Use the skill's scope check, form selection, and Output Files rules, including
-per-module paths and project overrides. Read existing target artifacts before
+Use the skill's scope check, form selection, capability-map rules, and Output
+Files rules, including project overrides. Read existing target artifacts before
 writing. Revise in place only for the same work; ask if the target is ambiguous
 or belongs to different work rather than overwriting it.
 

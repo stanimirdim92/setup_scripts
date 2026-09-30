@@ -22,9 +22,6 @@ class CanonicalPathsPass(unittest.TestCase):
     def test_every_canonical_form_is_allowed(self):
         text = '\n'.join([
             'Save the spec as docs/specs/[TICKET]-SPEC.md.',
-            'The map lives at `docs/specs/[TICKET]-CAPABILITY-MAP.md`.',
-            'Module specs: `[TICKET]-SPEC-identity.md`, `[TICKET]-SPEC-billing.md`.',
-            'Pattern: docs/specs/[TICKET]-SPEC-<module-id>.md and [TICKET]-SPEC-<module-id>.md',
             'Plan: docs/tasks/[TICKET]-plan.md; tasks: docs/tasks/[TICKET]-todo.md.',
         ])
         self.assertEqual(drifted(text), [])
@@ -47,6 +44,11 @@ class DriftIsCaught(unittest.TestCase):
 
     def test_bare_ticket_drift(self):
         self.assertEqual(drifted('write [TICKET]-spec.md next to it'), ['[TICKET]-spec.md'])
+
+    def test_separate_map_and_module_spec_files_are_retired(self):
+        # adr/0065: the capability map is a section of the one spec.
+        self.assertEqual(drifted('`docs/specs/[TICKET]-CAPABILITY-MAP.md` and `[TICKET]-SPEC-identity.md`'),
+                         ['docs/specs/[TICKET]-CAPABILITY-MAP.md', '[TICKET]-SPEC-identity.md'])
 
     def test_module_spec_without_ticket_prefix(self):
         self.assertEqual(drifted('named by module id (`SPEC-identity.md`, `SPEC-billing.md`)'), ['SPEC-identity.md', 'SPEC-billing.md'])

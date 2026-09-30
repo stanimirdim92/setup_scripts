@@ -72,6 +72,7 @@ that explanation here, just the index.
 | [0062](0062-codex-rules-curated-file-separate-from-approvals.md) | Codex rules: a curated synced file, separate from the approvals file | Accepted |
 | [0063](0063-sonnet-5-5-pins-and-fable-advisor.md) | Sonnet 5.5 replaces Sonnet 5; the advisor moves to Fable 5.1 | Accepted |
 | [0064](0064-caveman-skill-dropped.md) | Caveman skill dropped | Accepted |
+| [0065](0065-one-spec-per-ticket-capability-map-as-section.md) | One spec per ticket; the capability map is a section of it | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

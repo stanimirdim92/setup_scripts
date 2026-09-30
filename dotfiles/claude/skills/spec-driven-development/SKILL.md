@@ -46,33 +46,29 @@ Most requests describe one capability. If this one does, skip this phase and go 
 - Acceptance criteria cluster into groups that could ship and be verified separately
 - One capability could be cut or replaced without rewriting the others' requirements
 
-**Propose a capability map before writing any spec.** Small and reviewable — a module table plus a build order, not a project plan:
+**Propose a capability map before writing requirements.** It is the spec's first section after Objective (`## Capability Map` in the template) — small and reviewable, a module table plus a build order, not a project plan. The initiative stays **one spec**, one file:
 
 ```markdown
-# Capability Map: [Initiative Name]
+## Capability Map
 
-| Module id | Responsibility | Depends on |
-|---|---|---|
-| identity | Accounts, sessions, SSO | — |
-| billing | Plans, invoices, payments | identity |
-| notifications | Email and webhook fan-out | identity |
-| reporting | Usage dashboards | billing, notifications |
+| Module id | Responsibility | Depends on | Requirements |
+|---|---|---|---|
+| identity | Accounts, sessions, SSO | — | REQ-001–REQ-004 |
+| billing | Plans, invoices, payments | identity | REQ-005–REQ-009 |
+| notifications | Email and webhook fan-out | identity | REQ-010–REQ-012 |
+| reporting | Usage dashboards | billing, notifications | REQ-013–REQ-015 |
 
 Build order: identity → billing, notifications → reporting
 ```
 
-- **Stable module ids.** Kebab-case, chosen once, never renamed mid-initiative. Specs, plans, and downstream commands select work by these ids instead of guessing which spec is active.
+- **Stable module ids.** Kebab-case, chosen once, never renamed mid-initiative. `/plan` selects work by these ids.
+- **The Requirements column is the one assignment.** Every `REQ-###` belongs to exactly one module, recorded only in this column — not repeated on the requirement itself. Number requirements in build order so each module's ids form a contiguous range where possible; ids stay stable afterwards, so a requirement added later takes the next free id and is listed individually.
 - **Dependency direction, no cycles.** Arrows point one way. If two modules each need the other, they are one module.
 - **Interfaces live at the boundary.** The map records that `billing` depends on `identity`; the contract between them belongs in the provider module's spec (see `api-and-interface-design` for designing it).
 
-**The map is gated like every phase.** The human reviews module boundaries, dependency direction, and build order before any module spec is written. Getting the map wrong is expensive; reviewing ten lines is not.
+**The map is gated like every phase.** The human reviews module boundaries, dependency direction, and build order before any requirement is written. Getting the map wrong is expensive; reviewing ten lines is not.
 
-**Then recurse per module.** Specify each module in dependency order. Each module
-gets its own spec, scoped to that module's objective, boundaries, and requirements.
-Save the approved map at `docs/specs/[TICKET]-CAPABILITY-MAP.md` and each module's spec alongside it, 
-named by ticket and module id (`[TICKET]-SPEC-identity.md`, `[TICKET]-SPEC-billing.md`) — the map, 
-not filename guessing, is the index of what exists.
-After specification approval, hand the module to `/plan`; do not plan or implement it inside this skill.
+**Then specify every module in the same spec**, in build order, under the one `## Requirements` section. Keep each module's requirements together so a reader and `/plan` can take one module at a time; a contract between modules belongs to the provider module's requirements (see `api-and-interface-design` for designing it). The spec is approved as a whole. After approval, `/plan` plans the module ids it is given, or the whole spec; do not plan or implement inside this skill.
 
 ### Phase 1: Specify
 
@@ -211,13 +207,12 @@ human can do that.
 
 ## Output Files
 
-- Single-capability spec: `docs/specs/[TICKET]-SPEC.md` (create `docs/specs/` if needed)
-- Multi-capability initiative: `docs/specs/[TICKET]-CAPABILITY-MAP.md` with `[TICKET]-SPEC-<module-id>.md` files alongside it — the ticket prefix keeps two initiatives that touch the same module from targeting the same file
+- Spec: `docs/specs/[TICKET]-SPEC.md` (create `docs/specs/` if needed). A multi-capability initiative is still one spec, carrying its `## Capability Map` section.
 
 Projects may designate different locations in their instruction sources; the
 project rule wins over these defaults.
 
-Read the existing target spec or capability map before writing. Revise the same
+Read the existing target spec before writing. Revise the same
 work in place, preserving stable ids and applying the approval transitions
 below. If the target belongs to different work or cannot be resolved, ask rather
 than overwriting it. New specs use the selected template's Draft header.

@@ -358,7 +358,7 @@ state and, except `/ship`, writes an artifact to a fixed path.
 
 | Command | Artifact | Terminal states |
 |---|---|---|
-| `/spec` | `docs/specs/[TICKET]-SPEC.md`, or `[TICKET]-CAPABILITY-MAP.md` + `[TICKET]-SPEC-<module-id>.md` | Draft \| Needs reapproval \| Approved |
+| `/spec` | `docs/specs/[TICKET]-SPEC.md` (a multi-capability initiative adds a `## Capability Map` section, not files) | Draft \| Needs reapproval \| Approved |
 | `/plan` | `docs/tasks/[TICKET]-plan.md` / `-todo.md`, or a bounded `SPEC CONFLICT` | Draft \| Needs replan \| Approved, Ready for `/build` |
 | `/build` | scoped local commits | **BUILD COMPLETE** \| **BUILD BLOCKED** |
 | `/test` | test-only commits | **VERIFY PASS** \| **VERIFY FAIL** \| **VERIFY BLOCKED** |

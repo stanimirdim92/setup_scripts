@@ -38,6 +38,17 @@ Approved at: —
 under Requirements below. Record out-of-scope exclusions here when the request
 could be read wider than intended.]
 
+## Capability Map
+[Only for an initiative that bundles several independently testable
+capabilities (`spec-driven-development` Phase 0); omit otherwise. Human-reviewed
+before any requirement is written.]
+
+| Module id | Responsibility | Depends on | Requirements |
+|---|---|---|---|
+| [kebab-case id] | [what it owns] | [module ids or —] | [REQ ids] |
+
+Build order: [id → id, id → id]
+
 ## Change Impact
 [What this change does to behavior that already exists. Required whenever
 Change kind is not New; for a greenfield capability, "Added behavior" alone is

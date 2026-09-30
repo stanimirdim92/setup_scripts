@@ -112,7 +112,10 @@ takes the next unused number.
 
 - Every `REQ-###` maps to at least one task, or to explicit verification-only
   evidence when the requirement is already satisfied by existing behavior that
-  the change must preserve. `Unmapped requirements: None`.
+  the change must preserve. `Unmapped requirements: None`. For a spec with a
+  capability map, "every" means every requirement of the modules the plan
+  covers; the remaining modules are listed under `Not yet planned`, never
+  silently absent.
 - **A withdrawn requirement stays in the coverage table**, marked withdrawn,
   rather than being deleted from it. Deleting the row makes a dropped
   requirement indistinguishable from one that was never specified.

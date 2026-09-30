@@ -30,12 +30,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HARNESS = ROOT / 'dotfiles/claude'
 
-# Canonical artifact paths. A module-id is kebab-case or the literal placeholder.
-MODULE_ID = r'(?:<module-id>|[a-z0-9]+(?:-[a-z0-9]+)*)'
+# Canonical artifact paths. One spec per ticket: a multi-capability initiative
+# carries its capability map as a section, so a separate map file or per-module
+# spec file is drift (docs/adr/0065).
 ALLOWED = [re.compile(p + r'\Z') for p in (
     r'docs/specs/\[TICKET\]-SPEC\.md',
-    r'docs/specs/\[TICKET\]-CAPABILITY-MAP\.md',
-    r'(?:docs/specs/)?\[TICKET\]-SPEC-' + MODULE_ID + r'\.md',
     r'docs/tasks/\[TICKET\]-plan\.md',
     r'docs/tasks/\[TICKET\]-todo\.md',
 )]

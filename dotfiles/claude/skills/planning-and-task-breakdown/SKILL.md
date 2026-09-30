@@ -156,6 +156,22 @@ Before presenting the plan for human review, confirm:
 Fix plan-level failures and rerun the check. Return behavioral conflicts to
 `/spec`. Passing this check does not grant approval.
 
+## Capability map
+
+When the spec has a `## Capability Map`, a plan covers the modules it was asked
+for, or the whole spec when none were named:
+
+- Take modules in the map's build order; refuse a module whose dependencies are
+  neither in this plan nor already built.
+- Workstreams follow module boundaries. A module's tasks depend on a checkpoint
+  proving the contract of each module it depends on.
+- Coverage is checked against the selected modules' `REQ-###` ids (the map's
+  Requirements column). The header records `Modules:` planned and
+  `Not yet planned:` for the rest.
+- One plan per ticket. Planning a later module revises the same plan in place:
+  new tasks take the next free ids, built tasks keep theirs, and the plan returns
+  to `Needs replan` for renewed approval (`../../references/plan-quality-gates.md` §1).
+
 ## Output and Handoff
 
 Save:
