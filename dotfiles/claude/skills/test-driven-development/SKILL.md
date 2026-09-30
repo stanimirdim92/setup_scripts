@@ -21,8 +21,6 @@ Write a failing test before writing the code that makes it pass. For bug fixes, 
 
 **When NOT to use:** Pure configuration changes, documentation updates, or static content changes that have no behavioral impact — validate those with the repository's appropriate check instead of a manufactured failing test.
 
-Thinking "skip TDD just this once"? Stop. That's rationalization.
-
 ## The Iron Law
 
 ```
@@ -33,15 +31,9 @@ Scope: the Iron Law applies to every change with behavioral impact — exactly
 the "Always" list above. The non-behavioral changes in "When NOT to use" are
 outside it, not exceptions to it.
 
-Wrote behavioral production code before its test? Delete that code. Start over.
-
-**Within that scope, no exceptions:**
-- Don't keep it as "reference"
-- Don't "adapt" it while writing tests
-- Don't look at it
-- Delete means delete
-
-Implement fresh from tests. Period.
+Behavioral production code written before its test is discarded and
+re-derived from the test; it is not kept as a reference or adapted while the
+test is written.
 
 ## Discover the Stack First
 
@@ -121,7 +113,7 @@ export async function createTask(input: { title: string }): Promise<Task> {
 
 **Test fails?** Fix code, not test.
 
-**Other tests fail?** Fix now.
+**Other tests fail?** Fix those your change broke; report unrelated ones.
 
 ### Step 3: REFACTOR — Clean Up
 
@@ -182,40 +174,23 @@ export async function completeTask(id: string): Promise<Task> {
 // Step 3: Test passes → bug fixed, regression guarded
 ```
 
-## The Test Pyramid
+## Choosing the Test Level
 
-Invest testing effort according to the pyramid — most tests should be small and fast, with progressively fewer tests at higher levels:
+Prefer the lowest test level that proves the behavior with sufficient
+confidence:
 
 ```
-          ╱╲
-         ╱  ╲         E2E Tests (~5%)
-        ╱    ╲        Full user flows, real browser
-       ╱──────╲
-      ╱        ╲      Feature/Integration Tests (~15%)
-     ╱          ╲     Component interactions, API boundaries
-    ╱────────────╲
-   ╱              ╲   Unit Tests (~80%)
-  ╱                ╲  Pure logic, isolated, milliseconds each
- ╱──────────────────╲
-```
+Is it pure logic with no side effects?
+  → Unit test
 
-**Important for pyramid:** The percentages are illustrative, not quotas. Prefer the lowest test level
-that proves the behavior with sufficient confidence. Integration-heavy
-applications may legitimately have a different distribution.
+Does it cross a boundary (API, database, file system)?
+  → Integration test
+
+Is it a critical user flow that must work end-to-end?
+  → E2E test — limit these to critical paths
+```
 
 **The Beyonce Rule:** If you liked it, you should have put a test on it. Infrastructure changes, refactoring, and migrations are not responsible for catching your bugs — your tests are. If a change breaks your code and you didn't have a test for it, that's on you.
-
-### Test Sizes (Resource Model)
-
-Beyond the pyramid levels, classify tests by what resources they consume:
-
-| Size | Constraints | Speed | Example |
-|------|------------|-------|---------|
-| **Small** | Single process, no I/O, no network, no database | Milliseconds | Pure function tests, data transforms |
-| **Medium** | Multi-process OK, localhost only, no external services | Seconds | API tests with test DB, component tests |
-| **Large** | Multi-machine OK, external services allowed | Minutes | E2E tests, performance benchmarks, staging integration |
-
-Small tests should make up the vast majority of your suite. They're fast, reliable, and easy to debug when they fail.
 
 ## Good Tests
 
@@ -224,19 +199,6 @@ Small tests should make up the vast majority of your suite. They're fast, reliab
 | **Minimal** | One thing. "and" in name? Split it. | `test('validates email and domain and whitespace')` |
 | **Clear** | Name describes behavior | `test('test1')` |
 | **Shows intent** | Demonstrates desired API | Obscures what code should do |
-
-### Decision Guide
-
-```
-Is it pure logic with no side effects?
-  → Unit test (small)
-
-Does it cross a boundary (API, database, file system)?
-  → Integration test (medium)
-
-Is it a critical user flow that must work end-to-end?
-  → E2E test (large) — limit these to critical paths
-```
 
 ## Writing Good Tests
 
@@ -392,7 +354,6 @@ For JavaScript/TypeScript testing patterns illustrating these principles — Jes
 | "I tested it manually" | Manual testing doesn't persist. Tomorrow's change might break it with no way to know. |
 | "The code is self-explanatory" | Tests ARE the specification. They document what the code should do, not what it does. |
 | "It's just a prototype" | Prototypes become production code. Tests from day one prevent the "test debt" crisis. |
-| "Let me run the tests again just to be extra sure" | After a clean test run, repeating the same command adds nothing unless the code has changed since. Run again after subsequent edits, not as reassurance. |
 
 ## Red Flags
 
@@ -415,7 +376,6 @@ does not apply to them):
 - Tests that test framework behavior instead of application behavior → retarget to your code
 - Test names that don't describe the expected behavior → rename
 - Skipping or disabling tests to make the suite pass → unskip and fix
-- Running the same test command twice in a row without any intervening code change → stop; act on the evidence you have
 
 ## Verification
 

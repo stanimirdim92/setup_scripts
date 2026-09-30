@@ -9,10 +9,6 @@ Apply this methodology to one bounded implementation task. The task packet owns
 the outcome, acceptance criteria, scope, dependencies, and verification commands;
 this skill owns how the executor changes code safely.
 
-Load this skill once when starting a fresh executor for a workstream. When the
-same executor is resumed for later tasks in that workstream, do not reload it —
-the discipline already in context stays in force.
-
 ## The Task Packet Is the Contract
 
 Implement the acceptance criteria as written. Do not reinterpret, weaken, or
@@ -58,25 +54,9 @@ repository's appropriate validation instead.
 
 ## Batch Independent Operations
 
-Issue independent, read-only operations together in a single turn rather than
-one per turn. Reading three files, running two greps, and inspecting git state
-are independent when no one of them needs another's result first — request them
-in one turn.
-
-Serialize only when there is a real dependency: the next call's input, path, or
-decision comes from the previous call's output. A test run that must follow an
-edit is dependent; two unrelated file reads are not.
-
-This is a cost constraint, not a style preference. Every turn re-reads the whole
-accumulated context, so a task that issues 60 tool calls one-per-turn re-reads
-context 60 times. The same 60 operations batched into 15 turns cut that roughly
-fourfold, with no loss of information. Read-only inspection at the start of a
-task — rules, precedents, sibling files, current git state — should be gathered
-in as few turns as the operations' dependencies allow.
-
-Mutating operations (edits, writes, migrations, commits) stay one per step and
-follow the TDD loop; batching applies to reads, greps, and non-mutating
-inspection, not to changes that must be verified individually.
+Issue independent read-only operations (file reads, greps, git inspection) in a
+single turn; serialize only when one call needs another's output. Mutating
+operations stay one per step and follow the TDD loop.
 
 ## Verify at the Right Cadence
 

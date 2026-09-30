@@ -13,13 +13,9 @@ Build in small, coherent slices.
 Each increment should leave the repository in a valid state and be small enough
 to understand, verify, and commit independently.
 
-This skill owns:
-
-- slice boundaries
-- scope discipline
-- keeping the repository green
-- verification cadence
-- commit cadence
+For standalone use, this skill owns slice boundaries, keeping the repository
+green, verification cadence, and commit cadence. `/build` executors use
+`executor-development-discipline` instead.
 
 `test-driven-development` owns the implementation loop **inside behavioral
 slices**.
@@ -67,7 +63,8 @@ Next slice
 5. **Verify** — run broader checks when the slice touches any risky surface
    listed under "Keep the repository valid"; otherwise the focused test from
    GREEN is the slice's verification.
-6. **Commit** — save the coherent, verified increment.
+6. **Commit** — with the user's approval (standalone use has no `/build`
+   commit authority).
 7. Move to the next slice.
 
 Do not reinterpret this as "implement first, test later."
@@ -155,35 +152,11 @@ Fail before building low-risk dependent work.
 
 ## Implementation Rules
 
-### Simplicity first
+### Simplicity and scope
 
-Implement the simplest design that satisfies the current task.
-
-Avoid:
-
-- speculative abstractions
-- generic frameworks for one use
-- configuration systems for a fixed behavior
-- future-proofing with no current requirement
-
-Prefer clear duplication over premature abstraction when the shared concept is
-not yet stable.
-
-### Scope discipline
-
-Implement only what the current task requires.
-
-Do not opportunistically:
-
-- clean unrelated code
-- modernize nearby syntax
-- refactor unrelated modules
-- add unrequested features
-- remove code you do not understand
-
-If nearby work is worth doing, report it as an "untouched observation" in the
-completion evidence (per `executor-development-discipline`'s output contract)
-rather than doing it.
+Follow `../../AGENTS.md` §2 (Simplicity First) and §3 (Surgical Changes). If
+nearby work is worth doing, mention it in your final report rather than doing
+it.
 
 ### One logical increment at a time
 
@@ -241,22 +214,7 @@ follow the project's real migration policy and production constraints.
 
 ## Working with agents
 
-When delegating an increment, provide:
-
-- the behavior/outcome
-- acceptance criteria
-- dependencies/workstream
-- expected scope
-- verification
-- whether broader workstream verification is required at completion
-- only the task-local rule/precedent/contract pointers that materially constrain it
-
-Do not ask an implementation agent to rediscover a plan that already exists.
-Do not compensate by dumping the whole plan/spec into every task either.
-
-When the orchestrator supports resumable agents, related tasks in one workstream
-should reuse the same implementation agent so already-paid discovery remains
-useful.
+When delegating an increment, follow `../../AGENTS.md` §Agent orchestration.
 
 ## Verification
 

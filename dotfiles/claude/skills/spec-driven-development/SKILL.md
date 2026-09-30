@@ -8,7 +8,7 @@ model: opus[1m]
 
 ## Overview
 
-Write a structured specification before writing any code. The spec is the shared source of truth between you and the human engineer — it defines what we're building, why, and how we'll know it's done. Code without a spec is guessing. A 15-minute spec prevents hours of rework.
+Write a structured specification before writing code for non-trivial work. The spec is the shared source of truth between you and the human engineer — it defines what we're building, why, and how we'll know it's done. Bounded low-risk changes skip it (see When NOT to use); for everything else, a 15-minute spec prevents hours of rework.
 
 ## When to Use
 
@@ -78,13 +78,7 @@ repository facts rather than presenting guesses for the user to correct.
 Surface only unresolved assumptions that materially affect the specification;
 silence does not validate them. Keep proposals distinct from accepted decisions.
 
-For ticket-backed work, the intake must be complete in the current conversation,
-either produced there or manually supplied by the user. When it is absent,
-incomplete, or stale for the requested scope, refetch the main ticket and every
-discovered ticket/subticket under `jira-ticket` §§1–3 before recon or drafting.
-Do not substitute memory or an agent summary. If Jira is unavailable and the
-user has not supplied the complete intake, report that blocker instead of
-silently specifying from partial requirements.
+For ticket-backed work, follow the Jira intake rule in `../../commands/spec.md`.
 
 **Surface unresolved choices in a fixed format.** Whenever the evidence is
 mixed, a tradeoff is unresolved, or two readings of a requirement lead to
@@ -152,10 +146,8 @@ Choose the smallest valid form:
   invariant, without task breakdown or production code.
 - **Compact:** use for bounded low-risk work with no new architecture or
   pattern, public contract or schema change, cross-row/concurrent invariant, or
-  data-lifecycle field. Include the complete header, Objective, Requirements,
-  and Testing Strategy. Add Change Impact for non-`New` work, Boundaries only
-  for a feature-specific constraint, and Material Decisions only when a
-  `DEC-###` exists. Omit every other section.
+  data-lifecycle field. Its sections are listed in
+  `../../references/templates/spec.md`.
 - **Full:** otherwise use `../../references/templates/spec.md`.
 
 In every form:
@@ -238,12 +230,9 @@ invoke later stages from this skill.
 
 ## Keeping the Spec Alive
 
-Approval lives in the saved header, under
-`../../references/spec-quality-gates.md` §2. Only explicit human approval may
-set Approved and its approval metadata. Editorial changes retain existing
-approval. Behavioral changes set Needs reapproval immediately, preserve ids,
-identify affected requirements, and require a new Approval Check and human
-approval before downstream work resumes.
+Approval state and its transitions follow
+`../../references/spec-quality-gates.md` §2; a behavioral change also requires
+a new Approval Check.
 
 For each changed behavior, search the whole spec for superseded wording and
 reconcile requirements, scenarios, boundaries, decisions, and testing strategy.

@@ -54,7 +54,7 @@ git log -1 --format=%H -- docs/specs/[TICKET]-SPEC.md
 
 Record it as `Spec revision: git-commit:<sha>:docs/specs/[TICKET]-SPEC.md`.
 Requiring the commit is not extra ceremony: `spec-driven-development`'s
-"Keeping the Spec Alive" already says the spec belongs in version control.
+"Handoff after specification" already says the spec belongs in version control.
 
 **When `/build` starts**, retrieve the pinned content and compare:
 

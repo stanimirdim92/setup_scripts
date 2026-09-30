@@ -34,7 +34,9 @@ required by the `/build` pipeline.
 3. Start from the spec's repository pointers and any current recon report. Use
    the smallest adequate evidence path in
    `../../references/repository-precedent.md`; never guess a command or repeat
-   an unchanged survey.
+   an unchanged survey. Evidence order is `spec-driven-development`'s
+   (Repository Evidence); a plan does not re-rank the order `/spec` already
+   applied.
 4. Reconcile the plan against the approved behavior. If the spec contradicts
    itself, or repository evidence makes a requirement contradictory, infeasible,
    or incomplete, write the bounded `SPEC CONFLICT` described by the plan
@@ -51,9 +53,8 @@ Use `../../references/templates/plan.md` for the plan and
 Choose the smallest valid form:
 
 - **Compact:** bounded single-workstream work with no schema change, public
-  contract, migration, or major risk. The plan contains only its header,
-  Technical Approach, Task Index, Requirement Coverage, Verification Strategy,
-  and Handoff. The todo contains the full task packets.
+  contract, migration, or major risk. Its sections are listed in the plan
+  template's Compact plan paragraph.
 - **Full:** use the template's conditional sections when contracts, stored data,
   multiple workstreams, migrations, major risks, decisions, or checkpoints
   require them. Omit inapplicable sections rather than filling them with `N/A`.
@@ -123,12 +124,8 @@ required behavior is a `SPEC CONFLICT`, not a spike. Full rules:
 
 ### Coverage and Verification Strategy
 
-- Map every `REQ-###` to one or more tasks or explicit verification-only
-  evidence for already-preserved behavior.
-- Every delivery task names at least one `REQ-###`; every spike names its
-  `TD-###` and the requirements it unblocks.
-- Report exactly `Unmapped requirements: None` and `Orphan tasks: None` before
-  handoff. A withdrawn requirement remains visible as withdrawn.
+- Requirement coverage, task shapes (delivery or spike), and risk-mitigation
+  owners follow `../../references/plan-quality-gates.md` §4.
 - Use exact repository-defined verification commands. Task checks prove the
   slice; workstream checks prove integrations within a stream; Integrated checks
   prove the selected plan as a whole. Record a focused command only when it
@@ -138,7 +135,6 @@ required behavior is a `SPEC CONFLICT`, not a spike. Full rules:
   states render, that copy strings match, and that keyboard and focus behavior
   holds are automatable; pixel-level and aesthetic parity routes to a named
   manual or QA task, subtask, or ticket, recorded as visual-only.
-- Every risk mitigation names the task or checkpoint that performs it.
 
 ## Approval Check
 

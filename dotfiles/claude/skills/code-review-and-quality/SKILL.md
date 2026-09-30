@@ -225,7 +225,7 @@ Downstream, such a finding is resolved either by a fix or by recorded evidence
 refuting its failure scenario — never by changing code that investigation shows
 to be correct, and never by dropping it.
 
-**Presumptive blockers** — for each of these, always record the finding and
+**Structural smells** — for each of these, always record the finding and
 propose the simpler design; label it Suggestion by default, escalating to
 Important when the change actively makes structure worse than before:
 
@@ -246,8 +246,7 @@ pipeline, their canonical dispositions are:
 | Important | REQUIRED |
 | Suggestion | ADVISORY |
 
-A fourth tier has nowhere to land in that mapping, and splitting optional work
-across several labels makes the blocking set ambiguous.
+Splitting optional work across more labels makes the blocking set ambiguous.
 
 ### Output Contract
 
@@ -272,8 +271,8 @@ otherwise use **APPROVE**. This is a code-review recommendation, not a release
 verdict.
 
 This skill is the full standalone review method. The `/review` pipeline uses the
-compact `code-reviewer` persona instead and maps its findings before `/ship`;
-do not automatically invoke both for the same review.
+compact `code-reviewer` and `blind-reviewer` personas instead and maps their
+findings before `/ship`; do not also load this skill for the same review.
 
 **Lead with what matters — by ordering, never by omission.** Within each
 severity section, order findings by leverage: correctness and security first,
@@ -294,44 +293,15 @@ Check the author's verification story:
 - Is there a before/after comparison?
 ```
 
-## Multi-Model Review Pattern
-
-Use different models for different review perspectives:
-
-```
-Model A writes the code
-    │
-    ▼
-Model B reviews for correctness and architecture
-    │
-    ▼
-Model A addresses the feedback
-    │
-    ▼
-Human makes the final call
-```
-
-This catches issues that a single model might miss — different models have different blind spots.
-
-**Example prompt for a review agent:**
-```
-Review this code change for correctness, security, and adherence to our
-project conventions. The spec says [X]. The change should [Y]. Report every
-issue you find, including ones you are uncertain about or consider
-low-severity — do not filter for importance or confidence; a downstream step
-does that. For each finding, include a severity label (Critical, Important,
-Suggestion) and a confidence level.
-```
-
 ## Dead Code Hygiene
 
 After any refactoring or implementation change, check for orphaned code:
 
 1. Identify code that is now unreachable or unused
-2. List it explicitly
-3. **Ask before deleting:** "Should I remove these now-unused elements: [list]?"
+2. Remove orphans your change created without asking (`../../AGENTS.md` §3)
+3. List pre-existing dead code explicitly and **ask before deleting it**
 
-Don't leave dead code lying around — it confuses future readers and agents. But don't silently delete things you're not sure about. When in doubt, ask.
+Don't leave dead code lying around — it confuses future readers and agents. But don't silently delete pre-existing code you're not sure about.
 
 ```
 DEAD CODE IDENTIFIED:
@@ -340,14 +310,6 @@ DEAD CODE IDENTIFIED:
 - LEGACY_API_URL constant in src/config.ts — no remaining references
 → Safe to remove these?
 ```
-
-## Review Speed
-
-(For human teams; an agent reviewer responds immediately.)
-
-- Slow reviews block entire teams: respond within one business day maximum; ideally shortly after the request unless deep in focused work.
-- Prioritize fast individual responses over quick final approval — a typical change should complete multiple rounds in a day.
-- Large changes: ask the author to split them rather than reviewing one massive changeset.
 
 ## Handling Disagreements
 
@@ -358,7 +320,7 @@ When resolving review disputes, apply this hierarchy:
 3. **Software design** must be evaluated on engineering principles, not personal preference
 4. **Codebase consistency** is acceptable if it doesn't degrade overall health
 
-**Don't accept a bare "I'll clean it up later."** Experience shows deferred cleanup rarely happens. Require cleanup before submission unless it's a genuine emergency. The only valid deferral is a filed ticket, self-assigned by the author, linked from the review — that is what "explicitly deferred with justification" means in the Verification checklist.
+**Don't accept a bare "I'll clean it up later."** Experience shows deferred cleanup rarely happens. Require cleanup before submission unless it's a genuine emergency. The only valid deferral is a filed ticket, self-assigned by the author, linked from the review — that is what "explicitly deferred with justification" means in the Verification checklist. Inside the pipeline, `/ship`'s resolution rules apply instead: fixed, refuted, accepted as risk, or deferred with a concrete reason.
 
 ## Honesty in Review
 
@@ -485,7 +447,7 @@ After review is complete:
 
 - [ ] Every finding from Step 3 appears in the output with an id, label, and confidence — none were silently dropped
 - [ ] All Critical issues are resolved
-- [ ] All Important issues are resolved or deferred via a filed, self-assigned, linked ticket
+- [ ] All Important issues are resolved or deferred via a filed, self-assigned, linked ticket (inside the pipeline, `/ship`'s resolution rules apply)
 - [ ] Tests pass
 - [ ] Build succeeds
 - [ ] The verification story is documented (what changed, how it was verified)
