@@ -37,7 +37,7 @@ Controls bolted on without a threat model are guesses. Before hardening, spend f
 
 4. **Write abuse cases next to use cases.** For each feature, ask "how would I misuse this?" — then make that your first test.
 
-If you can't name the trust boundaries for a feature, you're not ready to secure it. This is OWASP **A04: Insecure Design** — most breaches begin in design, not code.
+If you can't name the trust boundaries for a feature, you're not ready to secure it. This is OWASP **A06:2025 Insecure Design** — most breaches begin in design, not code.
 
 ## The Three-Tier Boundary System
 
@@ -74,7 +74,7 @@ If you can't name the trust boundaries for a feature, you're not ready to secure
 
 ## OWASP Top 10 Prevention Patterns
 
-These are prevention patterns, not a ranking. For the 2021 ordering, see the quick-reference table in `../../references/security-checklist.md`.
+These are prevention patterns, not a ranking. OWASP ids in this harness follow the Top 10:2025 table in `../../references/security-checklist.md`; cite ids from there, not from memory of the 2021 list.
 
 ### Injection (SQL, NoSQL, OS Command)
 
@@ -307,7 +307,7 @@ silently.
 
 The framing that reference assumes, and the reason it is not optional: audits
 match known advisories, so they neither catch a newly malicious or typosquatted
-package nor prove that vulnerable code is reachable (OWASP **A06**, **LLM03**).
+package nor prove that vulnerable code is reachable (OWASP **A03:2025 Software Supply Chain Failures**, **LLM03**).
 Two consequences bear repeating at the point of decision — never apply forced
 remediation automatically (`npm audit fix --force` and equivalents cross
 declared ranges), and review new dependencies, lockfile diffs, and

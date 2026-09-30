@@ -264,8 +264,9 @@ Wait for explicit approval.
 Exception: explicit invocation of this harness's `/build` or `/test` command is
 advance authorization for the scoped local commits those commands define.
 `/build` authorizes verified implementation commits; `/test` authorizes only
-passing test-only commits. That exception never authorizes push, tag, deploy,
-release, protected-branch mutation, history rewriting, or unrelated changes.
+passing test-only commits. Local tags are allowed (docs/adr/0055) and never
+pushed. That exception never authorizes push, deploy, release, protected-branch
+mutation, history rewriting, or unrelated changes.
 An intentionally failing reproduction must follow `/test`'s external
 patch/report policy and must not enter the candidate.
 
