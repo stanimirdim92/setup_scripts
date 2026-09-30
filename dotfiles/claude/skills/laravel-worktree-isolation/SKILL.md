@@ -16,6 +16,25 @@ references them by relative path, teammates and CI do not have your dotfiles,
 and a worktree checks out tracked files only — so in-repo scripts arrive in
 every worktree automatically.
 
+## The script contract
+
+The global harness looks for these exact paths. A script under any other name
+does its job when called by hand but switches the harness guards off silently.
+Commit each one executable (`chmod +x`, `git update-index --chmod=+x`).
+
+| Path | Role | Who calls it |
+|---|---|---|
+| `bin/worktree-test.sh` | Test wrapper (§3). Runs the suite with `--parallel` against the worktree's own database and Redis prefix. | `composer test`. Its presence arms the harness hook that denies a bare `php artisan test` / `phpunit` whenever more than one worktree is live. |
+| `bin/worktree-setup.sh` | Provisioning (§6). Idempotent dependency install for a fresh worktree. | `codex-worktree` runs it before starting Codex; run it yourself after `claude --worktree`. |
+| `bin/worktree-doctor.sh` | Optional readiness check. With `--infrastructure` it answers one question: is this checkout's test runner current? | The harness before any writing agent is dispatched, and at session start. |
+
+`bin/worktree-doctor.sh --infrastructure` must be fast (the harness gives it 5
+seconds), nonmutating, and runnable before dependencies are installed. Exit 0
+means ready; on nonzero, print the repair (for example "bin/worktree-test.sh is
+older than main's; merge the runner changes"). Once the main checkout ships a
+doctor, a ticket worktree without one is treated as not ready, so add it on the
+default branch and let tickets pick it up.
+
 ## 1. Establish the project's facts first
 
 Do not assume; read them:
@@ -27,6 +46,10 @@ Do not assume; read them:
   `APP_ENV=testing`, which makes Laravel load `.env.testing`; the database named
   there is the one every worktree would otherwise share.
 - **The package manager**, `npm` or `yarn`, from the lockfile actually present.
+- **The database driver**, from `DB_CONNECTION`. Everything below assumes
+  MySQL/MariaDB (`information_schema`, `mysqldump`). For `pgsql`, connect to the
+  `postgres` maintenance database to create the base database and use
+  `pg_dump`; for `sqlite`, a per-worktree file path replaces the name slug.
 - **Whether the local database is treated as production.** If it is, nothing in
   this setup may write to it — the schema snapshot is read-only.
 
@@ -45,7 +68,8 @@ env file naming the same database. §3 is what separates them.
 
 Laravel's environment repository is immutable (`Env::getRepository()` builds
 with `->immutable()`), so a real process environment variable beats the copied
-env file. A wrapper script is therefore enough — no per-worktree file editing:
+env file. A wrapper script, `bin/worktree-test.sh`, is therefore enough — no per-worktree
+file editing:
 
 - Derive a slug from the worktree directory name, stripping anything outside
   `[A-Za-z0-9]` so the result is a legal unquoted SQL identifier.
@@ -55,6 +79,8 @@ env file. A wrapper script is therefore enough — no per-worktree file editing:
 - Guard the resolved name against the project's test namespace and refuse
   anything outside it, so a mangled worktree name can never resolve to the
   production database.
+- Run the suite with `--parallel`; the harness's deny message tells agents
+  the wrapper does.
 - Point `composer.json`'s `test` script at the wrapper; composer forwards extra
   arguments, so `composer test -- --filter=X` keeps working.
 
@@ -112,9 +138,11 @@ commands against it in local development.
 ## 6. Provisioning
 
 A worktree checks out tracked files only, so dependencies are absent and every
-build, lint, and test command fails until installed. Provide an idempotent
-setup script that installs them, skips what exists, and warns when an expected
-env file did not arrive.
+build, lint, and test command fails until installed. Provide
+`bin/worktree-setup.sh`: idempotent, installs dependencies, skips what exists,
+and warns when an expected env file did not arrive. Exit nonzero on a real
+failure — `codex-worktree` stops before starting Codex and keeps the checkout
+for a retry.
 
 ## Verification
 
@@ -127,6 +155,11 @@ Claims here are cheap to test, so test them rather than reporting them:
 - The name guard refuses a database outside the test namespace.
 - The production database is untouched afterwards — compare its table count.
 - A destructive command is still blocked outside `testing`.
+- The harness sees the contract: with a second worktree live, a bare
+  `php artisan test` is denied and `composer test` runs.
+- In a fresh worktree with no dependencies installed,
+  `bin/worktree-doctor.sh --infrastructure` exits 0 within 5 seconds, and exits
+  nonzero with a repair message when the wrapper is made stale.
 
 Compare any failure against the untouched baseline before attributing it to this
 setup; a suite that already failed will keep failing for its own reasons.
