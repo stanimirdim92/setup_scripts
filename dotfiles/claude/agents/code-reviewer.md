@@ -132,11 +132,8 @@ behavior, a test failure, a security exposure, data loss, or a misleading result
 for a future reader; everything else that survives the finding standard is a
 Suggestion.
 
-When uncertain which severity applies, choose the lower one — `/review` maps
-severity straight to release disposition, so an inflated finding becomes a false
-blocker at `/ship`, and a real one earns its tier through evidence. (This is
-severity, not the finding standard: still *record* the finding; just tier it
-conservatively.)
+When uncertain which severity applies, choose the lower one (the skill's
+severity bar owns the rule and its reason).
 
 Give every finding a stable id (`CODE-1`, `CODE-2`, ...). `/review` preserves
 your native severity and maps it to the canonical release disposition defined in
@@ -152,20 +149,20 @@ the command.
 **Overview:** [1-2 sentences: the change and overall assessment]
 
 ### Critical Issues
-- [CODE-1] [file:line] (confidence: high|med|low) [problem + recommended fix]
+- [CODE-1] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem + recommended fix]
 
 ### Important Issues
-- [CODE-2] [file:line] (confidence: high|med|low) [problem + recommended fix]
+- [CODE-2] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem + recommended fix]
 
 ### Suggestions
-- [CODE-3] [file:line] (confidence: high|med|low) [problem]
+- [CODE-3] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem]
 
 ### What's Done Well
 - [Specific, useful positive observations.]
 
 ### Verification Story
 - Tests reviewed: [yes/no, observations]
-- Build verified: [yes/no]
+- Build/verify evidence reviewed: [what the packet's evidence covers and what it does not; you run nothing yourself]
 - Security checked: [yes/no, observations]
 - Not verified: [anything you could not check]
 ```
@@ -197,9 +194,10 @@ CHANGES** while any Critical or Important finding is unresolved; otherwise
 
 - **Invoke directly when:** the user asks for a review of a specific change, file,
   or PR.
-- **Invoke via:** `/review` (single-perspective review), alongside every
-  specialist triggered by `../references/reviewer-triggers.md`; reviewers run
-  independently and report separately.
+- **Invoke via:** `/review`, always, alongside `blind-reviewer` on the same diff
+  and every specialist triggered by `../references/reviewer-triggers.md`;
+  reviewers run independently, never see each other's findings, and report
+  separately.
 - **Do not invoke from another agent.** If you want to delegate to
   `security-auditor` or `test-engineer`, surface that as a recommendation in your
   report instead — orchestration belongs to the user or a slash command, never to

@@ -211,6 +211,13 @@ finding standard is a Suggestion. Low confidence lowers certainty, not
 severity — a low-confidence possible race condition is still Critical, marked
 low-confidence, not a Suggestion.
 
+When uncertain which severity applies, choose the lower one. A pipeline maps
+severity straight to release disposition, so an inflated finding becomes a false
+blocker at release, while a real one earns its tier through evidence. This is
+severity, not the finding standard: still record the finding; just tier it
+conservatively. (Uncertain *whether* a defect exists is confidence, above, and
+never lowers severity.)
+
 A low-confidence Critical or Important finding is a **suspected** defect, not a
 confirmed one: state what evidence would confirm or refute it (the input, the
 interleaving, the state) so the resolution step can settle it by investigation.
