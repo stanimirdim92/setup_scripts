@@ -116,6 +116,19 @@ class CodexHarnessTest(unittest.TestCase):
                     self.assertEqual(self.decision(self.invoke(self.payload(tool, command), role)), "deny")
         self.assertFalse((self.ticket / "marker").exists())
 
+    def test_reader_shell_allows_quoted_metacharacters_only(self):
+        # PHP searches need these characters as literal patterns.
+        for command in ["rg -n '->save(' .", "rg -n '\\$this' .", 'rg -n "fn() => 1" .',
+                        "rg -n '<?php' .", 'rg -n "a > b" .']:
+            with self.subTest(command=command):
+                self.assertEqual(self.invoke(self.payload(command=command, cwd=self.repo), "blind-reviewer"), {})
+        for command in ['rg "$(touch marker)" .', 'rg "`touch marker`" .', "rg x . > out",
+                        "rg x . < in", "rg 'open", "rg x .\\", "(rg x .)", "rg \\'x > out"]:
+            with self.subTest(command=command):
+                self.assertEqual(self.decision(self.invoke(self.payload(command=command, cwd=self.repo), "blind-reviewer")), "deny")
+        self.assertFalse((self.repo / "marker").exists())
+        self.assertFalse((self.repo / "out").exists())
+
     def test_failed_doctor_denies_writer_and_surfaces_startup_warning(self):
         (self.ticket / "bin").mkdir()
         doctor = self.ticket / "bin/worktree-doctor.sh"

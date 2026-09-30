@@ -40,10 +40,42 @@ def shared(name, payload, *arguments):
     return output
 
 
+def shell_active(command):
+    """True when the command holds a character the shell would act on.
+
+    Substitution ($, `) is live outside single quotes; redirection and
+    subshells (<, >, (, )) only outside any quotes. Quoted, they are literal
+    search text: rg '->save(' or rg '\\$this' in a PHP codebase. Newlines and an
+    unterminated quote are refused outright.
+    """
+    quote = None
+    escaped = False
+    for char in command:
+        if char == "\n":
+            return True
+        if escaped:
+            escaped = False
+        elif quote == "'":
+            if char == "'":
+                quote = None
+        elif char == "\\":
+            escaped = True
+        elif quote == '"':
+            if char == '"':
+                quote = None
+            elif char in "$`":
+                return True
+        elif char in "'\"":
+            quote = char
+        elif char in "$`<>()":
+            return True
+    return quote is not None or escaped
+
+
 def read_only_shell(command):
     # Keep read-only personas from running tests, project code, interpreters,
     # substitutions, output redirection, or executable git/search options.
-    if any(x in command for x in ("$", "`", "<", ">", "(", ")", "\n")):
+    if shell_active(command):
         return False
     lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|")
     lexer.whitespace_split = True
