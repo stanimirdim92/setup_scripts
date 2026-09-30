@@ -37,14 +37,29 @@ def main():
         elif not link.is_symlink() or link.resolve() != skill:
             errors.append(f"Refusing to replace existing path: {link}")
 
+    # A removed adapter leaves a dangling link behind. Only links that point
+    # into this repository's adapter directory at something now missing count;
+    # any other entry in the destination belongs to the user.
+    retired = []
+    if destination.is_dir():
+        for entry in sorted(destination.iterdir()):
+            if entry.is_symlink() and not entry.exists():
+                target = Path(os.readlink(entry))
+                if not target.is_absolute():
+                    target = entry.parent / target
+                if Path(os.path.normpath(target)).parent == source:
+                    retired.append(entry)
+
     # Preflight the whole set before creating anything.
     if errors:
         parser.exit(1, "\n".join(errors) + "\n")
     if args.preflight:
         print(f"{len(skills)} skill destinations preflighted; no conflicts.")
         return
-    if args.check and missing:
-        parser.exit(1, "\n".join(f"Missing: {link}" for link, _ in missing) + "\n")
+    if args.check and (missing or retired):
+        report = [f"Missing: {link}" for link, _ in missing]
+        report += [f"Retired adapter still linked: {link}" for link in retired]
+        parser.exit(1, "\n".join(report) + "\n")
     if not args.check:
         destination_existed = destination.exists()
         created = []
@@ -69,6 +84,9 @@ def main():
             if rollback_errors:
                 detail += "\nRollback failures:\n" + "\n".join(rollback_errors)
             parser.exit(1, detail + "\n")
+        for link in retired:
+            link.unlink()
+            print(f"Removed retired adapter link {link}")
 
     for skill in skills:
         print(f"OK {destination / skill.name} -> {skill}")

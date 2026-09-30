@@ -47,4 +47,25 @@ with tempfile.TemporaryDirectory() as temporary:
 
     assert not list(destination.glob("*")), "partial adapter links survived rollback"
 
-print("install-skills: preflight and rollback passed")
+# A removed adapter's dangling link is cleaned up; a user's own dangling link
+# elsewhere is not.
+with tempfile.TemporaryDirectory() as temporary:
+    destination = Path(temporary) / "skills"
+    destination.mkdir()
+    source = SCRIPT.parent / "skills"
+    retired = destination / "retired-adapter"
+    retired.symlink_to(source / "retired-adapter", target_is_directory=True)
+    foreign = destination / "users-own"
+    foreign.symlink_to(Path(temporary) / "gone", target_is_directory=True)
+    try:
+        run("--dest", destination, "--check")
+    except SystemExit as error:
+        assert error.code == 1
+    else:
+        raise AssertionError("--check passed with a retired adapter still linked")
+    assert retired.is_symlink(), "--check mutated the destination"
+    run("--dest", destination)
+    assert not retired.is_symlink(), "retired adapter link survived installation"
+    assert foreign.is_symlink(), "installer removed a link it does not own"
+
+print("install-skills: preflight, rollback and retired-link cleanup passed")

@@ -132,9 +132,6 @@ Surface uncertainty, skipped steps, and unverified claims explicitly. Never let 
 
 ## Session and context
 
-- Caveman mode is the default chat style: terse responses, full technical
-  accuracy. It never changes the quality/style of code, commits, docs, or
-  third-party messages.
 - Keep the user informed throughout active work. Announce meaningful phases:
   investigation, editing, dependency setup, builds/tests, waiting, retries,
   and completion. Use one or two plain-language sentences stating what is
