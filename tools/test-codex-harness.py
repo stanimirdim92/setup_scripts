@@ -27,7 +27,8 @@ class CodexHarnessTest(unittest.TestCase):
         self.repo = self.home / "main checkout"
         self.ticket = self.home / "ticket checkout"
         self.env = {**os.environ, "HOME": str(self.home), "GIT_CONFIG_NOSYSTEM": "1",
-                    "GIT_CONFIG_GLOBAL": os.devnull}
+                    "GIT_CONFIG_GLOBAL": os.devnull,
+                    "HARNESS_HANDOFF_STATE_DIR": str(self.home / "handoff-state")}
         self.env.pop("GIT_DIR", None)
         self.env.pop("GIT_WORK_TREE", None)
         self.git("init", "-q", "-b", "main", str(self.repo))
@@ -156,14 +157,22 @@ class CodexHarnessTest(unittest.TestCase):
             with self.subTest(payload=payload):
                 self.assertEqual(self.decision(self.invoke(payload, "repo-recon")), "deny")
 
-    def test_handoff_uses_codex_message_and_stops_after_one_retry(self):
+    def test_handoff_uses_codex_message_and_stops_after_two_retries(self):
+        complete = "Verification: pytest passed, exit 0. No commit: not authorized. Working tree: uncommitted changes."
         payload = {"hook_event_name": "SubagentStop", "agent_type": "executor",
-                   "last_assistant_message": "Done."}
+                   "agent_id": "run-a", "last_assistant_message": "Done."}
         self.assertEqual(self.invoke(payload)["decision"], "block")
-        self.assertEqual(self.invoke({**payload, "last_assistant_message": ""})["decision"], "block")
-        self.assertEqual(self.invoke({**payload, "last_assistant_message":
-            "Verification: pytest passed, exit 0. No commit: not authorized. Working tree: uncommitted changes."}), {})
-        self.assertEqual(self.invoke({**payload, "stop_hook_active": True}), {})
+        self.assertEqual(self.invoke({**payload, "stop_hook_active": True})["decision"], "block")
+        self.assertEqual(self.invoke({**payload, "stop_hook_active": True}), {})  # third stop goes through
+        self.assertEqual(self.invoke({**payload, "agent_id": "run-b", "last_assistant_message": ""})["decision"], "block")
+        self.assertEqual(self.invoke({**payload, "agent_id": "run-b", "last_assistant_message": complete}), {})
+        # Another hook's loop: active, but this hook has not blocked this run.
+        self.assertEqual(self.invoke({**payload, "agent_id": "run-c", "stop_hook_active": True}), {})
+        # An announced next step without a blocker is an early stop.
+        self.assertEqual(self.invoke({**payload, "agent_id": "run-d",
+            "last_assistant_message": complete + " Next, I'll update the docs."})["decision"], "block")
+        self.assertEqual(self.invoke({**payload, "agent_id": "run-e",
+            "last_assistant_message": complete + " Next step: /review."}), {})
         self.assertEqual(self.invoke({**payload, "agent_type": "code-reviewer"}), {})
 
     def test_registered_hooks_execute_from_installed_paths(self):

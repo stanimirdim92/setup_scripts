@@ -87,12 +87,15 @@ from its transcript and denies completion with:
 {"decision": "block", "reason": "Handoff report incomplete — add: <missing pieces>. The orchestrator accepts evidence, not a completion claim."}
 ```
 
-It checks for three things by pattern, not by meaning — a shape check, not a
+It checks four things by pattern, not by meaning — a shape check, not a
 truth check: verification language paired with an outcome word, the word
-`commit`, and working-tree language. Missing any one names it in `reason`. It
-blocks **at most once** (`stop_hook_active` guards the retry) and allows
-silently on any transcript-read failure, so a broken hook can never wedge a
-build. Scoped to `executor`/`test-engineer` only; every other persona passes
+`commit`, working-tree language, and no first-person announced next step
+("Next, I'll …") without a named blocker. Missing any one names it in
+`reason`. It blocks **at most twice** per agent run (a counter keyed by
+`agent_id` in `$HARNESS_HANDOFF_STATE_DIR`; a third stop goes through and
+resets it) and allows silently on any transcript-read failure, so a broken
+hook can never wedge a build. The Codex adapter (`policy.py`) applies the same
+contract to `last_assistant_message`. Scoped to `executor`/`test-engineer` only; every other persona passes
 through untouched.
 
 ### `SessionStart` — `{systemMessage, hookSpecificOutput: {hookEventName, additionalContext}}`

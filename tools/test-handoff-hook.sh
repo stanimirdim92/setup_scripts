@@ -5,7 +5,8 @@
 # with a SubagentStop payload, and checks the decision:
 #   block — report is missing a required section
 #   allow — report is complete, or the hook must stay out of the way
-#           (unknown agent, second attempt, unreadable transcript)
+#           (unknown agent, another hook's loop, third stop, unreadable
+#           transcript)
 #
 # Run: tools/test-handoff-hook.sh
 set -uo pipefail
@@ -15,6 +16,7 @@ command -v jq >/dev/null || { echo "test-handoff-hook: jq is required" >&2; exit
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+export HARNESS_HANDOFF_STATE_DIR="$TMP/state"
 PASS=0; FAIL=0; FAILED=()
 
 transcript() { # name, final assistant text  -> path
@@ -27,14 +29,14 @@ transcript() { # name, final assistant text  -> path
   echo "$path"
 }
 
-decision() { # agent_type, transcript, stop_hook_active
-  jq -n --arg a "$1" --arg t "$2" --argjson s "$3" \
-    '{hook_event_name:"SubagentStop",agent_type:$a,agent_transcript_path:$t,stop_hook_active:$s,cwd:"/tmp"}' \
+decision() { # agent_type, transcript, stop_hook_active, [agent_id]
+  jq -n --arg a "$1" --arg t "$2" --argjson s "$3" --arg id "${4:-id-$RANDOM$RANDOM}" \
+    '{hook_event_name:"SubagentStop",agent_type:$a,agent_id:$id,agent_transcript_path:$t,stop_hook_active:$s,cwd:"/tmp"}' \
     | bash "$HOOK" 2>/dev/null | jq -r '.decision // "allow"' 2>/dev/null || echo ERROR
 }
 
-check() { # label, expected, agent, transcript, active
-  local got; got="$(decision "$3" "$4" "$5")"; [ -z "$got" ] && got=allow
+check() { # label, expected, agent, transcript, active, [agent_id]
+  local got; got="$(decision "$3" "$4" "$5" "${6:-}")"; [ -z "$got" ] && got=allow
   if [ "$got" = "$2" ]; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); FAILED+=("[$1] expected $2, got $got"); fi
 }
 
@@ -58,7 +60,22 @@ check missing_tree        block executor      "$(transcript c5 "$MISSING_TREE")"
 check missing_outcomes    block executor      "$(transcript c6 "$MISSING_OUTCOMES")"    false
 check claim_only          block executor      "$(transcript c7 "$CLAIM_ONLY")"          false
 check claim_only_tester   block test-engineer "$(transcript c8 "$CLAIM_ONLY")"          false
-check second_attempt      allow executor      "$(transcript c9 "$CLAIM_ONLY")"          true   # stop_hook_active: no loop
+check other_hooks_loop    allow executor      "$(transcript c9 "$CLAIM_ONLY")"          true   # active, but no block of ours
+check announced_next_step block executor "$(transcript c13 "$COMPLETE
+Next, I'll update the README section.")" false
+check next_step_blocked   allow executor "$(transcript c14 "$COMPLETE
+I'll now wire the endpoint, but it is blocked on the missing API contract.")" false
+check stage_pointer       allow executor "$(transcript c15 "$COMPLETE
+Next step: /review.")" false
+
+# Two continuations, then the third stop goes through and the counter resets.
+STUCK="$(transcript c16 "$CLAIM_ONLY")"
+check retry_first_block   block executor "$STUCK" false run-1
+check retry_second_block  block executor "$STUCK" true  run-1
+check retry_third_allows  allow executor "$STUCK" true  run-1
+check retry_counter_reset block executor "$STUCK" false run-1
+check complete_clears     allow executor "$(transcript c17 "$COMPLETE")" true run-1
+check after_clear_fresh   block executor "$STUCK" false run-1
 check unknown_agent       allow repo-recon    "$(transcript c10 "$CLAIM_ONLY")"         false
 check missing_transcript  allow executor      "$TMP/does-not-exist.jsonl"               false
 printf 'not json\n' > "$TMP/garbage.jsonl"

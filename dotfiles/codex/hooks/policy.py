@@ -124,10 +124,41 @@ def read_only_shell(command):
     return True
 
 
+MAX_HANDOFF_BLOCKS = 2  # the 2-3 automatic continuations the Opus 5.5 guide recommends
+
+
+def handoff_counter(payload):
+    key = payload.get("agent_id") or payload.get("session_id") or payload.get("turn_id") or "unknown"
+    key = re.sub(r"[^A-Za-z0-9._-]", "_", str(key))
+    base = os.environ.get("HARNESS_HANDOFF_STATE_DIR") or os.path.join(
+        os.environ.get("TMPDIR", "/tmp"), "harness-handoff-hook")
+    return Path(base) / key
+
+
 def handoff(payload):
-    if payload.get("stop_hook_active") is True:
+    # Same contract as hooks/require-handoff-report.sh: block at most twice per
+    # agent run; a stop_hook_active stop with no counter is another hook's loop.
+    counter = handoff_counter(payload)
+    try:
+        blocks = int(counter.read_text().strip())
+    except (OSError, ValueError):
+        blocks = 0
+    if blocks >= MAX_HANDOFF_BLOCKS or (payload.get("stop_hook_active") is True and blocks == 0):
+        counter.unlink(missing_ok=True)
         return {}
-    report = payload.get("last_assistant_message")
+    result = handoff_check(payload.get("last_assistant_message"))
+    if result:
+        try:
+            counter.parent.mkdir(parents=True, exist_ok=True)
+            counter.write_text(str(blocks + 1))
+        except OSError:
+            pass
+    else:
+        counter.unlink(missing_ok=True)
+    return result
+
+
+def handoff_check(report):
     if not isinstance(report, str) or not report.strip():
         return {"decision": "block", "reason": "Provide verification commands/outcomes, commit identity or no-commit reason, and working-tree state."}
     missing = []
@@ -137,6 +168,9 @@ def handoff(payload):
         missing.append("commit id or an explicit no-commit reason")
     if not re.search(r"working[- ]tree|tree state|uncommitted|untracked|clean", report, re.I):
         missing.append("working-tree state")
+    if (re.search(r"next,? i('ll| will)|i('ll| will) now|now i('ll| will)|let me now|i'm going to|i am going to", report, re.I)
+            and not re.search(r"blocker|blocked|cannot proceed|can.t proceed|waiting (on|for)|needs? (your|the user|a human)", report, re.I)):
+        missing.append("the step you announced: do it now, or state the blocker that stops it")
     return {"decision": "block", "reason": "Handoff incomplete: " + "; ".join(missing)} if missing else {}
 
 
