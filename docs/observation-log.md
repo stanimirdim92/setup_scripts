@@ -183,7 +183,10 @@ on a real install and got the file: the denial was the fixture's doing, not the
 harness's. Two corrections to one row in one day is the honest cost of a log
 that records what happened rather than what was assumed.
 
-Source every number:
+Source every number. Fastest path, run from the project directory right after
+the stage: `tools/run-metrics.sh --row <TICKET> <stage> --since <start> --until <end>`
+prints a ready Run metrics row with the measured columns filled and `FILL:`
+naming the source of each one it cannot measure (cost, turn caps, fan-out).
 
 - turns, tokens, batching, large reads — `tools/run-metrics.sh --since <start> --until <end> <transcript>`
 - cost and duration — `/cost`, or the statusline payload delta across the run

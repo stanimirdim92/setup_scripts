@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Fixture tests for the LARGE TOOL RESULTS section of tools/run-metrics.sh.
+# Fixture tests for the LARGE TOOL RESULTS section of tools/run-metrics.sh,
+# and for --row, the observation-log row it prints.
 # Builds a JSONL transcript by hand — main-session Read/Bash/Grep results of
 # known sizes plus a subagent (isSidechain) result that must not count — runs
 # the script on it, and checks the printed figures:
@@ -102,6 +103,27 @@ if run --large-lines abc "$T" >/dev/null; then
   FAIL=$((FAIL+1)); FAILED+=("[bad_threshold] --large-lines abc must exit non-zero")
 else PASS=$((PASS+1)); fi
 check bad_threshold_msg     '--large-lines needs a whole number' "$(run --large-lines abc "$T")"
+
+# --row: one observation-log row; measured columns filled, the rest FILL.
+OUT="$(run --row LD-412 /spec "$T")"
+check row_shape     '| 2026-09-13 | LD-412 | `/spec` | No | FILL: subagent reports (capped?) | n/a | 25 out · 0 cache read | FILL: /cost | 2 |' "$OUT"
+check_absent row_only 'TOOL BATCHING' "$OUT"
+OUT="$(run --row LD-412 /spec --until 2026-09-13T10:04:00Z "$T")"
+check row_window    '| 1 |' "$OUT"
+
+R="$TMP/recon.jsonl"
+{
+  call 2026-09-14T09:00:00Z false q1 G Agent '{"subagent_type":"repo-recon","prompt":"survey"}'
+  call 2026-09-14T09:00:00Z false q1 H Agent '{"subagent_type":"repo-recon","prompt":"survey 2"}'
+  jq -nc '{type:"assistant",timestamp:"2026-09-14T09:10:00Z",requestId:"q2",
+           message:{role:"assistant",content:[{type:"text",text:"done"}],
+                    usage:{input_tokens:1,output_tokens:109000,cache_read_input_tokens:3070000}}}'
+} > "$R"
+OUT="$(run --row LD-380 /build "$R")"
+check row_recon     '| Yes (2) |' "$OUT"
+check row_build     '| FILL: BUILD report |' "$OUT"
+check row_tokens    '109k out · 3.07M cache read' "$OUT"
+check row_date      '| 2026-09-14 |' "$OUT"
 
 echo "run-metrics: $PASS passed, $FAIL failed"
 if [ "$FAIL" -gt 0 ]; then

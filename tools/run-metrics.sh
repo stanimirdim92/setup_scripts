@@ -12,6 +12,8 @@
 #   tools/run-metrics.sh --list               # sessions for this project
 #   tools/run-metrics.sh --since 2026-08-29T14:00 --until 2026-08-29T15:30
 #   tools/run-metrics.sh --large-lines 500    # large-result threshold (default 350)
+#   tools/run-metrics.sh --row LD-412 /build --since ... --until ...
+#                                             # one docs/observation-log.md row
 #
 # Scope one BUILD by passing --since (the /build invocation) and --until
 # (BUILD COMPLETE); without them the whole session is reported.
@@ -21,7 +23,7 @@ set -euo pipefail
 command -v jq >/dev/null || { echo "run-metrics: jq is required" >&2; exit 1; }
 
 PROJECTS="${CLAUDE_PROJECTS_DIR:-$HOME/.claude/projects}"
-SINCE="" ; UNTIL="" ; FILE="" ; LIST=0 ; LARGE=350
+SINCE="" ; UNTIL="" ; FILE="" ; LIST=0 ; LARGE=350 ; ROW_TICKET="" ; ROW_STAGE=""
 
 # Claude Code's project-dir slug replaces both "/" and "_" with "-".
 slug() { printf '%s' "$PWD" | sed 's|[/_]|-|g'; }
@@ -32,7 +34,8 @@ while [ $# -gt 0 ]; do
     --until) UNTIL="${2:?--until needs a timestamp}"; shift 2 ;;
     --large-lines) LARGE="${2:?--large-lines needs a number}"; shift 2 ;;
     --list)  LIST=1; shift ;;
-    -h|--help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --row)   ROW_TICKET="${2:?--row needs TICKET STAGE}"; ROW_STAGE="${3:?--row needs TICKET STAGE}"; shift 3 ;;
+    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "run-metrics: unknown option $1" >&2; exit 1 ;;
     *)  FILE="$1"; shift ;;
   esac
@@ -67,6 +70,40 @@ fi
 
 SPAN_FIRST=$(head -400 "$FILE" | jq -rs '[.[]|select(.timestamp)|.timestamp]|first // empty' 2>/dev/null || true)
 SPAN_LAST=$(tail -400  "$FILE" | jq -rs '[.[]|select(.timestamp)|.timestamp]|last  // empty' 2>/dev/null || true)
+
+# --row prints one Run metrics row for docs/observation-log.md and nothing
+# else. Only measured columns are filled; the rest say FILL and name their
+# source, so a guess can never pass for a measurement.
+if [ -n "$ROW_TICKET" ]; then
+  jq -rs --arg since "$SINCE" --arg until "$UNTIL" --argjson large "$LARGE" \
+         --arg ticket "$ROW_TICKET" --arg stage "$ROW_STAGE" --arg fallback "${SINCE:-$SPAN_LAST}" '
+    def inwin: (($since == "") or (.timestamp >= $since))
+           and (($until == "") or (.timestamp <= $until));
+    def main: ((.isSidechain // false) | not);
+    def human: if . >= 1000000 then "\((. / 10000 | round) / 100)M"
+               elif . >= 1000 then "\(. / 1000 | round)k" else tostring end;
+    [ .[] | select(inwin) ] as $w
+    | ([ $w[] | select(.message.usage) | .message.usage ]) as $u
+    | ([ $w[] | select(.type=="assistant" and main and (.message.content|type=="array"))
+         | .message.content[] | select(.type=="tool_use" and (.name=="Agent" or .name=="Task"))
+         | (.input.subagent_type // .input.agent_type // "") ] ) as $agents
+    | ([ $agents[] | select(. == "repo-recon") ] | length) as $recon
+    | ([ $w[] | select(.type=="assistant" and main and (.message.content|type=="array"))
+         | .message.content[] | select(.type=="tool_use") | .id ]) as $ids
+    | ([ $w[] | select(.type=="user" and main and (.message.content|type=="array"))
+         | .message.content[] | select(.type=="tool_result") | select(.tool_use_id as $i | $ids | index($i))
+         | (.content | if type=="string" then . elif type=="array" then (map(.text // "") | join("\n")) else "" end)
+         | ([scan("\n")] | length) + (if endswith("\n") or . == "" then 0 else 1 end)
+         | select(. > $large) ] | length) as $over
+    | "| \($fallback[0:10]) | \($ticket) | `\($stage)` | "
+      + (if $recon > 0 then "Yes (\($recon))" else "No" end)
+      + " | FILL: subagent reports (capped?) | "
+      + (if $stage == "/build" then "FILL: BUILD report" else "n/a" end)
+      + " | \($u | map(.output_tokens // 0) | add // 0 | human) out · \($u | map(.cache_read_input_tokens // 0) | add // 0 | human) cache read"
+      + " | FILL: /cost | \($over) |"
+  ' "$FILE"
+  exit 0
+fi
 
 echo "transcript : $FILE"
 echo "spans (UTC): ${SPAN_FIRST:-?} .. ${SPAN_LAST:-?}"
