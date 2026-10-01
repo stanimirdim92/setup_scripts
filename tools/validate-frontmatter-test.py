@@ -49,11 +49,13 @@ name: blind-reviewer
 description: Reviews a diff with no knowledge of what it was supposed to do.
 tools: Read, Grep, Glob
 model: opus[1m]
+effort: high
 maxTurns: 60
 """
 
 SETTINGS_OK = """{
   "model": "opus[1m]",
+  "effortLevel": "medium",
   "env": {
     "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "0",
@@ -141,6 +143,15 @@ class DenyCases(unittest.TestCase):
         body = REVIEWER.replace('model: opus[1m]', 'model: claude-sonnet-5-5')
         problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
         self.assertTrue(any("expected 'opus[1m]'" in p for p in problems))
+
+    def test_reviewer_effort_dropped_to_session_default(self):
+        body = REVIEWER.replace('effort: high\n', '')
+        problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
+        self.assertTrue(any("effort is None, expected 'high'" in p for p in problems))
+
+    def test_settings_session_effort_drifted(self):
+        problems = vf.check_settings(SETTINGS_OK.replace('"effortLevel": "medium"', '"effortLevel": "xhigh"'))
+        self.assertTrue(any('effortLevel' in p for p in problems))
 
     def test_floating_alias_is_not_the_pinned_model(self):
         body = REVIEWER.replace('model: opus[1m]', 'model: opus')

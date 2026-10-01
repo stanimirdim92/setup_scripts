@@ -3,6 +3,7 @@ name: distributed-systems-reviewer
 description: Reviews changes that materially alter retries, idempotency, ordering, delivery, concurrency, queue/job recovery, or other cross-process failure semantics.
 tools: Read, Grep, Glob
 model: opus[1m]
+effort: high
 maxTurns: 60
 ---
 

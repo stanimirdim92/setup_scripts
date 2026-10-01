@@ -3,6 +3,7 @@ name: security-auditor
 description: Security engineer for changes that materially alter trust boundaries, permissions, secrets, sensitive input/data, dependencies, or security-sensitive integrations.
 tools: Read, Grep, Glob
 model: opus[1m]
+effort: high
 maxTurns: 60
 ---
 

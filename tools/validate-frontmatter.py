@@ -52,6 +52,8 @@ SESSION_MODELS = (OPUS, 'opus[1m]')
 REVIEWERS = {'code-reviewer', 'blind-reviewer', 'security-auditor',
              'distributed-systems-reviewer'}
 SONNET_PERSONAS = {'repo-recon', 'executor', 'test-engineer'}
+REVIEWER_EFFORT = 'high'
+SESSION_EFFORT = 'medium'
 
 # Personas that must never mutate anything. 0055: "reviewers read-only by tool
 # grant". Bash counts as a write tool here -- a reviewer with a shell can commit.
@@ -126,6 +128,11 @@ def check_agent(name, text):
             if mutating:
                 problems.append(f'{name}: read-only persona grants {", ".join(mutating)}')
 
+    # Opus 5.5 defaults to `medium`, which the session now runs (adr/0066).
+    # Reviewers keep `high`: the review is where depth pays, and it runs once.
+    if name in REVIEWERS and scalar(block, 'effort') != REVIEWER_EFFORT:
+        problems.append(f'{name}: effort is {scalar(block, "effort")!r}, expected {REVIEWER_EFFORT!r} (adr/0066)')
+
     if name in READ_ONLY and not scalar(block, 'maxTurns'):
         problems.append(f'{name}: no maxTurns -- read-only personas are capped (adr/0055)')
 
@@ -162,6 +169,9 @@ def check_settings(text):
     # commits -- silently, since the worktree is created successfully (adr/0056).
     if data.get('worktree', {}).get('baseRef') != 'head':
         problems.append('settings.json: worktree.baseRef is not "head" -- writer worktrees would branch from the default branch and lose in-progress work (adr/0056)')
+
+    if data.get('effortLevel') != SESSION_EFFORT:
+        problems.append(f'settings.json: effortLevel is {data.get("effortLevel")!r}, expected {SESSION_EFFORT!r} -- Opus 5.5 at medium matches Opus 5 at high (adr/0066)')
 
     if data.get('model') not in SESSION_MODELS:
         problems.append(f'settings.json: model is {data.get("model")!r}, expected one of {SESSION_MODELS!r} -- the session tier the main-session stages inherit (adr/0056, 0059)')
