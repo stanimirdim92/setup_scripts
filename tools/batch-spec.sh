@@ -22,15 +22,22 @@
 #
 #   -m, --manifest FILE  job list (default: tools/spec-batch.txt)
 #   -p, --parallel N     concurrent jobs (default 1; they share one rate limit)
-#   -b, --budget USD     --max-budget-usd per job (default 5)
+#   -b, --budget USD     --max-budget-usd per CLI call (default 5); a job that
+#                        is resumed (below) can make up to three calls
 #   -o, --out DIR        logs and run metadata (default: .spec-batch/)
 #   -n, --dry-run        print the plan and exit
 #   -y, --yes            skip the confirmation
 #
+# A headless run can end its turn with a progress report and no spec -- the
+# early stop Anthropic's Opus 5.5 guide describes for unattended agents. When a
+# job exits 0 without a spec for its tickets, the same session is resumed with
+# a nudge, at most MAX_CONTINUATIONS times, so a genuinely stuck job still ends
+# and reports NO SPEC.
+#
 # Exits 1 when declined or when any job fails.
 set -Eeuo pipefail
 
-MANIFEST=""; PARALLEL=1; BUDGET=5; OUT=""; DRY=0; YES=0
+MANIFEST=""; PARALLEL=1; BUDGET=5; OUT=""; DRY=0; YES=0; MAX_CONTINUATIONS=2
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -138,6 +145,20 @@ run_job() {
       --permission-mode acceptEdits \
       --max-budget-usd "$BUDGET" \
       --output-format json > "$OUT/$slug.json" 2>&1 || { rc=$?; echo "claude exited $rc"; exit "$rc"; }
+    local attempt t sid wrote
+    for ((attempt = 1; attempt <= MAX_CONTINUATIONS; attempt++)); do
+      wrote=0
+      for t in $tickets; do [ -f "docs/specs/$t-SPEC.md" ] && wrote=1; done
+      [ "$wrote" = 1 ] && break
+      sid="$(sed -nE 's/.*"session_id"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$OUT/$slug.json" | head -n1)"
+      [ -n "$sid" ] || { echo "no spec and no session id to resume"; break; }
+      echo "no spec yet; resuming $sid ($attempt/$MAX_CONTINUATIONS)"
+      "$CLAUDE_BIN" -p "Your /spec run for $tickets ended without writing the Draft spec under docs/specs/. Continue and write it now. If something blocks it, state the blocker." \
+        --resume "$sid" \
+        --permission-mode acceptEdits \
+        --max-budget-usd "$BUDGET" \
+        --output-format json > "$OUT/$slug.json" 2>&1 || { rc=$?; echo "claude exited $rc"; exit "$rc"; }
+    done
   ) > "$log" 2>&1
   status=$?
   set -e

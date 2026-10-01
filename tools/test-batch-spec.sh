@@ -29,9 +29,16 @@ prompt=""; next=0
 for a in "$@"; do [ "$next" = 1 ] && { prompt="$a"; next=0; }; [ "$a" = "-p" ] && next=1; done
 echo "$prompt" >> "$STUB_CALLS"
 [ -n "${STUB_FAIL:-}" ] && { echo '{"total_cost_usd":0}'; exit 3; }
+# STUB_LAZY=once: the first turn reports progress and writes nothing, the
+# resumed turn writes the spec. STUB_LAZY=always: it never writes.
+case "$prompt" in /spec*) tickets="${prompt#/spec }"; echo "$tickets" > .stub-tickets ;;
+                  *) tickets="$(cat .stub-tickets 2>/dev/null)" ;; esac
+if [ "${STUB_LAZY:-}" = always ] || { [ "${STUB_LAZY:-}" = once ] && [ "${prompt#/spec}" != "$prompt" ]; }; then
+  echo '{"total_cost_usd":0.4,"session_id":"sess-123"}'; exit 0
+fi
 mkdir -p docs/specs
-for t in ${prompt#/spec }; do printf 'Status: Draft\n# %s\n' "$t" > "docs/specs/$t-SPEC.md"; done
-echo '{"total_cost_usd":1.25,"duration_ms":1000}'
+for t in $tickets; do printf 'Status: Draft\n# %s\n' "$t" > "docs/specs/$t-SPEC.md"; done
+echo '{"total_cost_usd":1.25,"duration_ms":1000,"session_id":"sess-123"}'
 STUB
 chmod +x "$TMP/bin/claude"
 cp "$TMP/bin/claude" "$TMP/claude.good"
@@ -208,6 +215,22 @@ check    killed_worker_rc          1 "$RC"
 contains killed_worker_reported    "NO RESULT" "$OUT"
 check    killed_worker_no_row      0 "$(wc -l < "$D/.spec-batch/results.txt" | tr -d ' ')"
 restore_stub
+
+# ------------------------------------------------------- early-stop recovery
+# A turn that ends with a progress report and no spec is resumed once and then
+# produces the spec; one that never writes is resumed at most twice.
+D="$(new_repo lazy)"
+printf 'LD-8\n' > "$D/jobs.txt"
+STUB_LAZY=once run "$D" -m jobs.txt --yes
+check    lazy_rc                0 "$RC"
+check    lazy_spec_written      1 "$(specs "$D")"
+check    lazy_resumed_once      1 "$(grep -c '^Your /spec run' "$STUB_CALLS")"
+D="$(new_repo stuck)"
+printf 'LD-9\n' > "$D/jobs.txt"
+STUB_LAZY=always run "$D" -m jobs.txt --yes
+check    stuck_rc               1 "$RC"
+contains stuck_reported         "NO SPEC" "$OUT"
+check    stuck_resumed_twice    2 "$(grep -c '^Your /spec run' "$STUB_CALLS")"
 
 # ------------------------------------------------------------------- failures
 D="$(new_repo failing)"
