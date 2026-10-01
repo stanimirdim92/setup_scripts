@@ -132,17 +132,11 @@ Surface uncertainty, skipped steps, and unverified claims explicitly. Never let 
 
 ## Session and context
 
-- Keep the user informed throughout active work. Announce meaningful phases:
-  investigation, editing, dependency setup, builds/tests, waiting, retries,
-  and completion. Use one or two plain-language sentences stating what is
-  happening, the latest concrete finding or result, and what comes next.
-- During sustained work, give a meaningful update roughly every 60 seconds
-  when execution allows. For long-running commands or delegated work, announce
-  the wait and use bounded status checks to relay actual progress. Say when
-  there is no new output; do not invent progress, percentages, or completion.
-  Report failures and changes of approach promptly. Keep routine per-tool
-  chatter, raw command dumps, credentials, and private reasoning out of these
-  updates. Report observable work and concise conclusions.
+- Announce meaningful phases in a plain sentence or two: what is happening,
+  the latest concrete result, what comes next. Report failures and changes of
+  approach promptly. For long waits, say what you are waiting on; never invent
+  progress, percentages, or completion. Keep per-tool chatter, raw output, and
+  credentials out of updates.
 - Keep raw tool output and resolved investigation out of active context once the
   conclusion is recorded.
 - Before compaction/session boundaries, preserve only goal/success criteria,
