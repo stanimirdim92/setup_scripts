@@ -28,6 +28,8 @@ readable by a later session or a downstream gate.
   decision, a changed contract, or a changed verification command. Fixing a typo
   or clarifying wording does not.
 - `/build` refuses to dispatch against anything other than `Approved`.
+- A task's `Status:` line (`Pending` → `Done`) is build progress, not a plan
+  change: flipping it never moves the plan out of `Approved`.
 
 ## 2. Spec revision pinning
 

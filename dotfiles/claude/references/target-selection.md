@@ -11,7 +11,8 @@ in a command.
 3. **Auto-select when exactly one candidate exists** — one active ticket under
    `docs/tasks/`, one BUILD COMPLETE handoff, one reviewed candidate.
 4. **Otherwise ask**, listing the plausible candidates (most recently modified
-   first) with enough state to choose — e.g. "3/7 tasks done", "VERIFY PASS",
+   first) with enough state to choose — e.g. "3/7 tasks done" (from the todo's
+   committed `Status:` lines), "VERIFY PASS",
    "REVIEW BLOCKED".
 
 Whatever the path, **announce the resolved target** — "Using: `<target>`" —

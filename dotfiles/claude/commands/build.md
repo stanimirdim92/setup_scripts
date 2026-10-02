@@ -41,6 +41,18 @@ pinned sha no longer resolves (rebased or squashed away), treat the plan as
 waved through without the diff defeats the check
 (`../references/plan-quality-gates.md` §2).
 
+### Resume from committed progress
+
+Read each selected task's `Status:` in the todo as committed at `HEAD` (`git
+show HEAD:<todo path>`), not the working copy. `Done` means the commit that
+completed the task is already in this branch: skip it and report it as already
+complete. `Pending` tasks are dispatched as usual. A re-run after a crash, a
+compaction, or in a fresh session therefore resumes at the first unfinished
+task instead of redoing or guessing. A `Done` task whose acceptance criteria
+the integrated verification later fails is not trusted for being marked: it
+returns to an executor like any other failure. External trackers keep their own
+status; update it at the same point instead.
+
 For each selected task resolve:
 
 - outcome and acceptance criteria;
@@ -113,6 +125,8 @@ Send only what is needed to start correctly:
 - verification;
 - `required_skills`;
 - `is_last_selected_task_in_workstream: yes|no`;
+- the todo path and task id whose `Status:` the executor sets to `Done` in its
+  completing commit;
 - workstream verification command when applicable;
 - useful pointers to project/module rules, one or two precedents, and any shared
   contract/invariant.

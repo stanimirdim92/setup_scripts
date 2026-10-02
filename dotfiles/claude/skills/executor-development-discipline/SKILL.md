@@ -128,7 +128,9 @@ Before reporting a task complete, provide evidence for:
 - behavioral slices implemented;
 - tests added or changed;
 - required focused and workstream verification;
-- commits created;
+- commits created — the commit that completes the task also changes that
+  task's `Status:` line in the todo from `Pending` to `Done` (nothing else in
+  the todo), so `/build` can resume from committed progress;
 - final working-tree state;
 - when the packet has a `Change-surface search`: the search rerun on the final
   tree, with every hit either changed by this task or listed as unchanged with

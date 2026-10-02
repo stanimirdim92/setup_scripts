@@ -14,6 +14,12 @@ independently verifiable value before the production task.
 ```markdown
 ## T001: [Short descriptive title]
 
+**Status:** Pending
+[`Pending` until the executor's commit that completes the task changes it to
+`Done`, in that same commit — so progress is committed with the code it
+describes and a crashed or fresh `/build` resumes from it. Only `/build`'s
+executor changes this line; it is progress, not a plan revision.]
+
 **Requirements:** [A delivery task names one or more `REQ-###` ids from the
 approved spec. A spike names the `TD-###` it resolves plus the `REQ-###` ids it
 unblocks. A task fitting neither is scope the spec never asked for — remove it,
