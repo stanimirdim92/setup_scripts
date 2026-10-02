@@ -53,8 +53,10 @@ that itself.
 
 `tools/run-metrics.sh` reports measured run metrics from a Claude Code
 transcript — tool-call batching, token totals, main-session vs subagent split,
-and main-session tool results over a line threshold (whole files read inline)
-— with `--since`/`--until` to scope a single `/build`. See
+main-session tool results over a line threshold (whole files read inline), and
+failure signals (errored and denied tool results, handoff-gate blocks, turn
+caps, repeated commands) — with `--since`/`--until` to scope a single `/build`
+and `--row` to print a ready observation-log row. See
 `dotfiles/claude/references/agent-run-metrics.md`.
 
 `.github/workflows/ci.yml` runs every deterministic check in `tools/` on each
@@ -80,7 +82,7 @@ rules; it does not copy Leadbuster's architecture into other projects.
 Synced:
 - `dotfiles/codex/bin/codex-worktree` -> `~/.local/bin/codex-worktree` — one independent terminal Codex session per ticket worktree; requires `~/.local/bin` on `PATH`.
 - `dotfiles/claude/AGENTS.md` -> `~/.claude/CLAUDE.md` and `~/.claude/AGENTS.md` — one canonical source for global working rules. Claude 2.1.277+ supports project `AGENTS.md`; its documented global entry point remains `~/.claude/CLAUDE.md`, which links directly to this source.
-- `dotfiles/claude/settings.json` -> `~/.claude/settings.json` — model, permissions, hooks, active plugins, and context settings. Built-in automatic memory is **enabled** (`autoMemoryEnabled: true`) alongside versioned `docs/MEMORY.md` and the episodic conversation-search plugin, and the auto-compact window is 500k — both reverse `docs/adr/0037-fixed-session-context-reduced.md`; see `docs/adr/0043-automatic-memory-and-compaction-window-restored.md` for the reversal and the precedence rule that resolves the three memory surfaces
+- `dotfiles/claude/settings.json` -> `~/.claude/settings.json` — model, permissions, hooks, active plugins, and context settings. It turns on Claude Code's Bash sandbox (`docs/adr/0068-sandbox-resumable-build-and-failure-signals.md`): shell commands run inside an OS boundary with `~/.ssh`, `~/.aws`, `~/.config/gh` and other credential files unreadable and token variables unset; DB, Docker and SSH commands are excluded because the sandbox cannot reach localhost services or SSH remotes. On Linux it needs `bubblewrap` and `socat` (`sudo apt-get install bubblewrap socat`); without them Claude Code runs commands unsandboxed, so check `/sandbox` once per machine. Built-in automatic memory is **enabled** (`autoMemoryEnabled: true`) alongside versioned `docs/MEMORY.md` and the episodic conversation-search plugin, and the auto-compact window is 500k — both reverse `docs/adr/0037-fixed-session-context-reduced.md`; see `docs/adr/0043-automatic-memory-and-compaction-window-restored.md` for the reversal and the precedence rule that resolves the three memory surfaces
 - `dotfiles/claude/remote-settings.json` -> `~/.claude/remote-settings.json`
 - `dotfiles/claude/statusline.sh` -> `~/.claude/statusline.sh` — status line script wired via `settings.json`'s `statusLine.command`: model name, cwd, git branch, context-usage bar, session cost, elapsed time
 - `dotfiles/claude/subagent-statusline.sh` -> `~/.claude/subagent-statusline.sh` — per-subagent row override wired via `settings.json`'s `subagentStatusLine.command`: status icon, name, model, token count/percentage, elapsed time

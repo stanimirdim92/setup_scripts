@@ -53,6 +53,7 @@ REVIEWERS = {'code-reviewer', 'blind-reviewer', 'security-auditor',
              'distributed-systems-reviewer'}
 SONNET_PERSONAS = {'repo-recon', 'executor', 'test-engineer'}
 REVIEWER_EFFORT = 'high'
+SANDBOX_DENIED_FILES = {'~/.ssh', '~/.aws', '~/.config/gh', '~/.git-credentials'}
 SESSION_EFFORT = 'medium'
 
 # Personas that must never mutate anything. 0055: "reviewers read-only by tool
@@ -169,6 +170,15 @@ def check_settings(text):
     # commits -- silently, since the worktree is created successfully (adr/0056).
     if data.get('worktree', {}).get('baseRef') != 'head':
         problems.append('settings.json: worktree.baseRef is not "head" -- writer worktrees would branch from the default branch and lose in-progress work (adr/0056)')
+
+    # The OS boundary under the hooks (adr/0068). The hooks match command text
+    # and can be routed around; the sandbox and its credential blocks cannot.
+    sandbox = data.get('sandbox', {})
+    if sandbox.get('enabled') is not True:
+        problems.append('settings.json: sandbox.enabled is not true -- shell commands run without the OS boundary (adr/0068)')
+    denied = {f.get('path') for f in sandbox.get('credentials', {}).get('files', []) if f.get('mode') == 'deny'}
+    for path in SANDBOX_DENIED_FILES - denied:
+        problems.append(f'settings.json: sandbox.credentials does not deny {path} to sandboxed commands (adr/0068)')
 
     if data.get('effortLevel') != SESSION_EFFORT:
         problems.append(f'settings.json: effortLevel is {data.get("effortLevel")!r}, expected {SESSION_EFFORT!r} -- Opus 5.5 at medium matches Opus 5 at high (adr/0066)')
