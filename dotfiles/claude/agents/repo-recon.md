@@ -38,7 +38,10 @@ next path. Discover rather than assume:
 - owning-module conventions, architectural chain, boundaries, and registration;
 - test framework, locations, fixtures, and repository-defined commands;
 - one to three closest precedents; and
-- for `/plan`, dependencies, affected consumers, and unusual existing state.
+- for `/plan`, dependencies, affected consumers, and unusual existing state —
+  consumers and registrations go under **Touch points** with the search that
+  found them; missing one there is the most common reason a plan's change is
+  incomplete.
 
 Consult relevant existing project docs under
 `../references/documentation-practices.md` §Project documentation. Compare their
@@ -63,6 +66,14 @@ decisions to the caller.
 ### Verification
 - Framework/location/fixtures: [...]
 - Repository-defined commands: [exact commands]
+
+### Touch points
+[For `/plan`, or whenever the area's public surface may change. Each with the
+search that found it, so `/plan` can record and rerun it.]
+- Consumers of the area's public interfaces: [callers] — `path:line` (`rg -n "..."`)
+- Registrations: [routes, service bindings, listeners, schedules, policies, config keys] — `path:line`
+- Persistence and serialization: [migrations, casts, API resources, exports] — `path:line`
+- Tests and docs that name the area: `path:line`
 
 ### Claimed reuse
 - [candidate]: requested [behavior] / actual [behavior]; mismatch: [... or None] — `path:line`
