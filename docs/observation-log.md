@@ -8,7 +8,7 @@ How this differs from the other durable records (defined in
 `IDEAS.md` holds what is undecided, `docs/adr/*.md` what was decided,
 `MEMORY.md` current durable facts. This file holds **measurements** — the
 input those three are supposed to be argued from. It is append-mostly;
-prune a row only once its finding has graduated into an ADR or a fix.
+prune a row only once its finding has graduated into an ADR or a `Fixed — <check>`.
 
 ## Why it exists
 
@@ -35,6 +35,12 @@ a gate that should have fired and did not).
   wall-clock. Measured, never estimated (`references/agent-run-metrics.md`).
 - **Repeated?** — first time, or a recurrence of a row already here. A
   recurrence is the signal that turns an observation into an ADR.
+- **Fix or status** — `Open`, or `Fixed — <check>` where `<check>` names what
+  now catches a recurrence: a hook or validator test case, a spec-eval or
+  plan-recall expectation, a workflow-runner case, or a `run-metrics.sh`
+  failure signal. An edit to prose alone is `Mitigated`, not `Fixed` — a rule
+  sentence with no check behind it is exactly what failed the first time. This
+  is the regression set: every fixed failure leaves a test behind.
 
 ## Run metrics
 
@@ -187,6 +193,8 @@ Source every number. Fastest path, run from the project directory right after
 the stage: `tools/run-metrics.sh --row <TICKET> <stage> --since <start> --until <end>`
 prints a ready Run metrics row with the measured columns filled and `FILL:`
 naming the source of each one it cannot measure (cost, turn caps, fan-out).
+Its full report ends with FAILURE SIGNALS — denied reads, hook blocks, turn
+caps, repeated commands — each a candidate failure row to record or dismiss.
 
 - turns, tokens, batching, large reads — `tools/run-metrics.sh --since <start> --until <end> <transcript>`
 - cost and duration — `/cost`, or the statusline payload delta across the run
