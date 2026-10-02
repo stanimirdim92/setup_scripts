@@ -157,6 +157,16 @@
       "git pull*",
       "ssh *"
     ],
+    "filesystem": {
+      "allowWrite": [
+        "~/.cache",
+        "~/.composer",
+        "~/.config/composer",
+        "~/.npm",
+        "~/.yarn",
+        "~/.local/share/pnpm"
+      ]
+    },
     "credentials": {
       "files": [
         { "path": "~/.ssh", "mode": "deny" },

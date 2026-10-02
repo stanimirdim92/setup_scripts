@@ -8,7 +8,8 @@ ideas do.
 **Decision — Bash sandbox on, credentials denied.** Both guides: only isolation
 protects the host, and credentials never enter the sandbox. The hooks match
 command text and can be routed around (first harness review). `settings.json`
-enables Claude Code's sandbox with `autoAllowBashIfSandboxed`, denies
+enables Claude Code's sandbox with `autoAllowBashIfSandboxed`, lets it write
+the package-manager caches (`~/.cache`, Composer, npm, Yarn, pnpm), denies
 sandboxed commands `~/.ssh`, `~/.aws`, `~/.config/gh`, `~/.git-credentials`,
 Docker, npm, Composer, Claude and Codex credential files, unsets token
 variables, and pre-allows the package and GitHub hosts. The validator pins
