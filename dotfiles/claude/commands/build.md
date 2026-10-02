@@ -229,6 +229,11 @@ environment. Browser-dependent acceptance criteria require real-browser
 evidence through `browser-testing-with-devtools`; unavailable required tooling
 blocks BUILD rather than being replaced by component tests.
 
+Rerun every selected task's `Change-surface search` on the integrated tree. A
+hit no task changed and no task lists as unchanged goes back to the owning
+executor: an integration can drop a location one workstream handled and
+another reverted.
+
 Check executor evidence against the selected acceptance criteria and shared
 invariants under the development skill's completion rules. A green command
 or executor summary alone does not establish an outcome its checks did not

@@ -130,6 +130,18 @@ takes the next unused number.
 - **Every risk mitigation names the task or checkpoint that performs it.** A
   mitigation with no owner is a hope, and a plan whose risk table is entirely
   hopes has not mitigated anything. This fails the approval check.
+- **Every task that changes a shared surface lists its whole change surface.**
+  A shared surface is a public method or interface, route, event, job, config
+  key, schema or serialized shape, or anything the framework wires by
+  registration (service bindings, listeners, schedules, policies). The task's
+  `Files/areas likely touched` names every consumer and registration point
+  found by a repository search, and `Change-surface search` records the search
+  so `/build` can rerun it. A location found but deliberately left alone is
+  listed as `unchanged — <reason>`. Agents rarely edit the wrong file; they miss
+  files that needed editing (LoLBench, arXiv 2609.37143: on 2.4M-line systems
+  agents reached only 37–65% of the files the real change touched, and a file
+  list raised solve rates by 16–22 points). A surface change without a recorded
+  search fails the approval check.
 - Every verification command comes from repository evidence — the recon report,
   package manifests, CI config — never guessed.
 - In a full plan, Open Questions reads `None`; a compact plan omits the section

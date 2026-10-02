@@ -45,9 +45,16 @@ references rather than copied documents]
 - Closest precedent: `[path]` or "None"
 - Shared contract/invariant: `[path or short named invariant]` or "None"
 
-**Files/areas likely touched:**
+**Files/areas likely touched:** [For a task that changes a shared surface,
+every consumer and registration point the search below found
+(`../plan-quality-gates.md` §4); a location found but deliberately left alone is
+listed as `unchanged — <reason>`.]
 - `src/path/to/file.ts`
 - `tests/path/to/test.ts`
+
+**Change-surface search:** [Only for a task that changes a shared surface: the
+exact repository-search commands that found the locations above, e.g.
+`rg -n "InvoiceTotals" app/ config/ routes/ tests/`. `/build` reruns them.]
 
 **Estimated scope:** [XS | S | M | L | XL — heuristic only, not a file-count gate]
 ```

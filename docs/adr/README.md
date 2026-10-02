@@ -74,6 +74,7 @@ that explanation here, just the index.
 | [0064](0064-caveman-skill-dropped.md) | Caveman skill dropped | Accepted |
 | [0065](0065-one-spec-per-ticket-capability-map-as-section.md) | One spec per ticket; the capability map is a section of it | Accepted |
 | [0066](0066-opus-5-5-effort-and-early-stop-continuations.md) | Opus 5.5: medium session effort, and bounded continuations for early stops | Accepted |
+| [0067](0067-change-surface-in-plans-and-plan-recall.md) | Change surface in plans, touch points in recon, and a plan-recall eval | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and
