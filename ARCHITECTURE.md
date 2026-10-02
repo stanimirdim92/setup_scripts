@@ -160,6 +160,10 @@ repository with no prior specs, no branches and no stale worktrees.
   shape. Its judging half is deterministic and runs in CI; producing a spec
   costs tokens and is run deliberately. Fixtures carry real ticket content and
   are gitignored.
+- [Plan recall](tools/tests/plan-recall/README.md) scores a shipped ticket's
+  plan against its merged change: the share of changed files the plan's tasks
+  named. It measures the plan's change surface (`plan-quality-gates.md` §4),
+  costs no tokens, and its scoring logic runs in CI.
 - [Workflow checks](tools/tests/workflow/README.md) document the isolated
   Jira/spec/plan/build/review runner, its invocation, and what its evidence
   does not cover.

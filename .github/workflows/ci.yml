@@ -86,6 +86,12 @@ jobs:
         working-directory: tools/tests/spec-eval
         run: python3 test_judge.py
 
+      # Plan-localization recall scoring (adr/0067). Scoring a real ticket
+      # needs its project checkout and stays manual.
+      - name: Plan-recall scoring logic
+        working-directory: tools/tests/plan-recall
+        run: python3 test_recall.py
+
       # Orchestration: the workflow runner's own assertion and fixture logic.
       # NOT the live cases — those spend tokens and stay manual.
       - name: Workflow runner logic

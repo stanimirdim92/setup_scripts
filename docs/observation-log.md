@@ -202,6 +202,9 @@ Per `references/agent-run-metrics.md`, after roughly 10–20 comparable tickets:
 - recon — how often `/spec` and `/plan` dispatch rather than bounded-check, and
   whether the bounded checks were adequate in hindsight (ADR 0051's revisit
   condition)
+- plan recall — `tools/tests/plan-recall/recall.py` on each shipped ticket:
+  existing-file recall, and whether each missed file was a consumer or
+  registration the change-surface search should have found
 - large reads — main-session whole-file reads in areas a bounded check or recon
   should have covered (the read-size gate parked in `IDEAS.md`)
 - rework loops — REVIEW → TEST → REVIEW and TEST/REVIEW → BUILD → REVIEW counts
