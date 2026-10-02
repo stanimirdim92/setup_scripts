@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fixture tests for the LARGE TOOL RESULTS section of tools/run-metrics.sh,
-# and for --row, the observation-log row it prints.
+# for --row, the observation-log row it prints, and for FAILURE SIGNALS.
 # Builds a JSONL transcript by hand — main-session Read/Bash/Grep results of
 # known sizes plus a subagent (isSidechain) result that must not count — runs
 # the script on it, and checks the printed figures:
@@ -124,6 +124,37 @@ check row_recon     '| Yes (2) |' "$OUT"
 check row_build     '| FILL: BUILD report |' "$OUT"
 check row_tokens    '109k out · 3.07M cache read' "$OUT"
 check row_date      '| 2026-09-14 |' "$OUT"
+
+# FAILURE SIGNALS: errored and denied tool results, handoff blocks, turn caps,
+# and repeated commands, from main session and subagents alike.
+S="$TMP/signals.jsonl"
+err() { # ts, sidechain, id, content
+  jq -nc --arg ts "$1" --argjson sc "$2" --arg id "$3" --arg c "$4" \
+    '{type:"user",timestamp:$ts,isSidechain:$sc,
+      message:{role:"user",content:[{type:"tool_result",tool_use_id:$id,is_error:true,content:$c}]}}'
+}
+{
+  call 2026-09-15T08:00:00Z true  s1 R1 Read '{"file_path":"/home/u/.claude/references/plan-quality-gates.md"}'
+  err  2026-09-15T08:00:01Z true  R1 "Permission to read this file was denied."
+  call 2026-09-15T08:01:00Z false s2 B1 Bash '{"command":"php artisan test"}'
+  err  2026-09-15T08:01:01Z false B1 "Tests failed: 2 errors"
+  for i in 1 2 3; do
+    call 2026-09-15T08:0${i}:30Z false "s3$i" "C$i" Bash '{"command":"yarn test"}'
+    result 2026-09-15T08:0${i}:31Z false "C$i" "1 failing"
+  done
+  jq -nc '{type:"user",timestamp:"2026-09-15T08:05:00Z",message:{role:"user",content:"Stop hook feedback: Handoff report incomplete — add: the working-tree state."}}'
+  call 2026-09-15T08:06:00Z false s4 A1 Agent '{"subagent_type":"repo-recon","prompt":"survey"}'
+  result 2026-09-15T08:07:00Z false A1 "Survey partial: reached maxTurns (100). Not surveyed: billing."
+} > "$S"
+OUT="$(run "$S")"
+check signals_errors   'errored tool results : 2  (Bash 1 · Read 1)' "$OUT"
+check signals_denials  'denials / blocks     : 1' "$OUT"
+check signals_target   'plan-quality-gates.md' "$OUT"
+check signals_handoff  'handoff-gate blocks  : 1' "$OUT"
+check signals_capped   'turn-cap mentions    : 1' "$OUT"
+check signals_repeat   '3x  yarn test' "$OUT"
+OUT="$(run "$T")"
+check signals_clean    'errored tool results : 0' "$OUT"
 
 echo "run-metrics: $PASS passed, $FAIL failed"
 if [ "$FAIL" -gt 0 ]; then

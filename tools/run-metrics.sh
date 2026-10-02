@@ -205,6 +205,42 @@ jq -rs --arg since "$SINCE" --arg until "$UNTIL" --argjson large "$LARGE" '
     end
 ' "$FILE"
 
+# Failure signals: the things a failure row in docs/observation-log.md is made
+# of, pulled from the transcript instead of noticed by eye. Main session and
+# subagents both count -- a subagent's denied read is still a failure. The
+# observation that motivated this: a /plan run had 15 of 23 tool results denied
+# and reported it as a footnote; nothing counted them.
+echo
+echo "FAILURE SIGNALS (main session + subagents)"
+jq -rs --arg since "$SINCE" --arg until "$UNTIL" '
+  def inwin: (($since == "") or (.timestamp >= $since))
+         and (($until == "") or (.timestamp <= $until));
+  def text: if type=="string" then . elif type=="array" then (map(.text // "") | join("\n")) else "" end;
+  [ .[] | select(inwin) ] as $w
+  | ([ $w[] | select(.type=="assistant" and (.message.content|type=="array"))
+       | .message.content[] | select(.type=="tool_use")
+       | {key: .id, value: {t: .name, target: ((.input.file_path // .input.command // .input.pattern // .input.subagent_type // "") | tostring | .[0:72])}} ]
+     | from_entries) as $uses
+  | [ $w[] | select(.type=="user" and (.message.content|type=="array"))
+      | .message.content[] | select(.type=="tool_result" and .is_error == true)
+      | {t: ($uses[.tool_use_id].t // "?"), target: ($uses[.tool_use_id].target // ""), c: (.content | text)} ] as $err
+  | [ $err[] | select(.c | test("denied|refus|not permitted|blocked|outside (the )?(allowed|working)"; "i")) ] as $deny
+  | ([ $w[] | (.message.content? // .content? // "") | text | select(test("Handoff report incomplete")) ] | length) as $handoff
+  | ([ $w[] | select(.type=="user" and (.message.content|type=="array")) | .message.content[]
+       | select(.type=="tool_result") | (.content | text)
+       | select(test("max(imum)?[ _-]?turns|turn (limit|cap)"; "i")) ] | length) as $capped
+  | ([ $w[] | select(.type=="assistant" and (.message.content|type=="array")) | .message.content[]
+       | select(.type=="tool_use" and .name=="Bash") | .input.command // "" ]
+     | group_by(.) | map(select(length >= 3)) | map({cmd: .[0][0:72], n: length})) as $repeats
+  | "  errored tool results : \($err|length)" + (if ($err|length) > 0 then "  (\($err | group_by(.t) | map("\(.[0].t) \(length)") | join(" · ")))" else "" end),
+    "  denials / blocks     : \($deny|length)",
+    ( $deny[:5][] | "    \(.t | .[0:6])  \(.target)" ),
+    "  handoff-gate blocks  : \($handoff)",
+    "  turn-cap mentions    : \($capped)",
+    "  repeated commands    : \($repeats|length)  (same Bash command 3+ times: a blind-retry signal)",
+    ( $repeats[:5][] | "    \(.n)x  \(.cmd)" )
+' "$FILE"
+
 cat <<'NOTE'
 
 Reading this: a mean near 1.00 with few batched requests means independent
@@ -212,6 +248,10 @@ read-only operations went out one per turn, each paying a full context re-read.
 Cost only - the same calls still execute. See
 dotfiles/claude/skills/executor-development-discipline/SKILL.md and
 dotfiles/claude/agents/repo-recon.md for the guidance this measures.
+
+Failure signals are counts, not verdicts: a denial can be a guard working as
+intended. Each one is a candidate failure row for docs/observation-log.md --
+read the run, then record it or dismiss it.
 
 Large tool results are whole files or command output the main session took
 into context. Over the threshold they are the reads a bounded check or a
