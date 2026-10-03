@@ -9,6 +9,38 @@ whether a change made specs better or worse. That question only has an answer
 where the correct output is known independently, and it is known in one place:
 a ticket that shipped, whose spec a human has read against the implementation.
 
+## Quick start: a deployed ticket
+
+You need the Jira ticket, its deployed spec, and the project checkout.
+
+```bash
+cd /var/www/html/personal/setup_scripts/dotfiles/tools/tests/spec-eval
+
+# Once per ticket: freeze the Jira intake, store the deployed spec as the
+# reference, and find the commit before the spec was written.
+python3 run.py --new LD-441 --repo /var/www/html/leadbuster \
+    --reference docs/specs/LD-441-SPEC.md
+
+# After any harness change: write a fresh spec on the old code, compare.
+python3 run.py --fixture LD-441 --repo /var/www/html/leadbuster --output ./out-441
+```
+
+`--new` runs the `jira-ticket` skill once (Jira MCP must work in a plain
+`claude` session) and saves its output as `intake.md`. Pass `--intake FILE`
+to use a saved intake instead, or `--at <commit>` when the spec file was not
+added in its own commit. The base commit is the parent of the commit that
+first added the spec, so the run sees the code as `/spec` first saw it.
+
+A run reports **reference terms named**: of the concrete terms the deployed
+spec names in backticks (parameters, columns, classes, routes), how many the
+fresh spec also names, and which it missed. It is a recall figure, like plan
+recall. It says whether a harness change made specs better or worse at naming
+the right things; it cannot say whether a spec is good. Read `out-441/` next
+to the reference.
+
+To make a finding permanent, edit `fixtures/LD-441/expectations.json`: change
+its `severity` from `should` to `must`, or delete a term that does not matter.
+
 ## Running it
 
 ```bash

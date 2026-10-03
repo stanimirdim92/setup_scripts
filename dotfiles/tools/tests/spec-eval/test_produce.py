@@ -90,5 +90,51 @@ class Arguments(unittest.TestCase):
                 run.HERE = saved
 
 
+class NewFixture(unittest.TestCase):
+    SPEC = """# LD-7 Spec
+
+**Status:** Approved
+
+### Requirement: REQ-001 Sort
+Send `srch_sort=most_relevant` and keep `srch_interval` for Latest.
+Score `paid_ads_reactivated` as 9 in `PaidAdsTickerEventGenerator::score()`.
+See `docs/specs/LD-6-SPEC.md`, `REQ-002`, `DEC-005` and the word `relevance`.
+"""
+
+    def test_reference_terms_keep_code_and_drop_ids_and_prose(self):
+        self.assertEqual(run.reference_terms(self.SPEC),
+                         ['srch_sort=most_relevant', 'srch_interval', 'paid_ads_reactivated',
+                          'PaidAdsTickerEventGenerator::score()'])
+
+    def test_new_fixture_finds_base_and_writes_expectations(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / 'app'
+            (repo / 'docs/specs').mkdir(parents=True)
+            (repo / 'a.php').write_text('<?php\n')
+            git(repo, 'init', '-q'); git(repo, 'add', '-A'); git(repo, 'commit', '-qm', 'before')
+            before = git(repo, 'rev-parse', 'HEAD')
+            (repo / 'docs/specs/LD-7-SPEC.md').write_text(self.SPEC)
+            git(repo, 'add', '-A'); git(repo, 'commit', '-qm', 'LD-7 spec')
+            intake = Path(tmp) / 'intake.md'
+            intake.write_text('### LD-7 — Sort\n')
+            saved, run.HERE = run.HERE, Path(tmp)
+            try:
+                out = run.new_fixture('LD-7', repo, 'docs/specs/LD-7-SPEC.md', intake=str(intake))
+                fixture = json.loads((out / 'expectations.json').read_text())
+                self.assertEqual(run.build_project(Path(tmp) / 'p', repo, fixture['repo']['at'])
+                                 .joinpath('a.php').is_file(), True)
+                self.assertEqual(git(repo, 'rev-parse', fixture['repo']['at']), before)
+                terms = [e for e in fixture['expectations'] if e.get('reference_term')]
+                self.assertEqual(len(terms), 4)
+                # The deployed spec itself names every term; a draft one is still Draft.
+                fresh = self.SPEC.replace('Approved', 'Draft')
+                rows, failed = run.judge(fixture, fresh)
+                self.assertEqual(failed, 0)
+                with self.assertRaises(SystemExit):
+                    run.new_fixture('LD-7', repo, 'docs/specs/LD-7-SPEC.md', intake=str(intake))
+            finally:
+                run.HERE = saved
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=1)

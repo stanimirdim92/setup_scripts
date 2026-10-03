@@ -191,11 +191,97 @@ def produce(fixture, fixture_dir, budget, repo=None, at=None):
         return spec, meta
 
 
+# ---------------------------------------------------------------- new fixture
+
+# A backticked span counts as a concrete term when it looks like code: an
+# identifier with `_ . / : = ( -` or camelCase. These are what a spec must get
+# right for an executor to build the right thing -- a parameter, a column, a
+# route -- and they can be checked without a model.
+CODE_LIKE = re.compile(r'[_./:=()\-]|[a-z][A-Z]')
+NOT_A_TERM = re.compile(r'^(REQ|DEC|SEC|DIST|BLIND|TD|CP|T)-?\d+$|^docs/|^\[TICKET\]|\s{2}')
+
+
+def reference_terms(spec, limit=80):
+    """Concrete terms the reference spec names, in order of first appearance."""
+    seen = []
+    for term in re.findall(r'`([^`\n]{3,60})`', spec):
+        term = term.strip()
+        if CODE_LIKE.search(term) and not NOT_A_TERM.search(term) and term not in seen:
+            seen.append(term)
+    return seen[:limit]
+
+
+def base_commit(repo, spec_path):
+    """The parent of the commit that first added the spec: the project as /spec first saw it."""
+    out = subprocess.run(['git', '-C', str(repo), 'log', '--diff-filter=A', '--follow', '--format=%H',
+                          '--', str(spec_path)], capture_output=True, text=True, check=True).stdout.split()
+    return f'{out[-1]}^' if out else None
+
+
+def fetch_intake(ticket, jira, repo, budget):
+    """Run the jira-ticket skill once and freeze its output."""
+    prompt = (f'Use the jira-ticket skill on {jira or ticket}. Reply with only its complete intake '
+              'summary, exactly as the skill formats it, and nothing else.')
+    result = subprocess.run(['claude', '-p', prompt, '--allowedTools', 'Skill', 'Read', 'mcp__jira',
+                             '--max-budget-usd', str(budget), '--output-format', 'json'],
+                            cwd=repo, capture_output=True, text=True, timeout=900)
+    if result.returncode != 0:
+        raise RuntimeError(f'claude exited {result.returncode}: {result.stderr[-600:]}')
+    meta = json.loads(result.stdout)
+    return meta.get('result', ''), meta
+
+
+def new_fixture(ticket, repo, reference, intake=None, jira=None, at=None, budget='3', force=False):
+    """fixtures/<ticket>/ with intake.md, reference-spec.md and expectations.json."""
+    repo = Path(repo).resolve()
+    ref = Path(reference)
+    ref = ref if ref.is_absolute() else repo / ref
+    if not ref.is_file():
+        raise SystemExit(f'spec-eval: no reference spec at {ref}')
+    at = at or base_commit(repo, ref.resolve().relative_to(repo))
+    if not at:
+        raise SystemExit(f'spec-eval: {ref} has no commit that adds it; pass --at <commit before the spec>')
+    out = HERE / 'fixtures' / ticket
+    if out.exists() and not force:
+        raise SystemExit(f'spec-eval: {out} exists; pass --force to rebuild it')
+    out.mkdir(parents=True, exist_ok=True)
+
+    spec = ref.read_text()
+    (out / 'reference-spec.md').write_text(spec)
+    if intake:
+        text, cost = Path(intake).read_text(), None
+    else:
+        text, meta = fetch_intake(ticket, jira, repo, budget)
+        cost = meta.get('total_cost_usd')
+    (out / 'intake.md').write_text(text)
+
+    terms = reference_terms(spec)
+    expectations = [
+        {'id': 'draft-only', 'why': 'Only a human sets Approved.', 'regex': r'^\**Status:?\**:?\s*Draft'},
+        {'id': 'requirement-ids', 'why': 'REQ-### ids are what /plan, /build and /ship trace.',
+         'regex': r'REQ-\d{3}'},
+    ] + [{'id': f'term:{term}', 'severity': 'should', 'reference_term': True,
+          'why': 'The deployed spec names this; a fresh spec that does not may have missed it.',
+          'regex': re.escape(term)} for term in terms]
+    (out / 'expectations.json').write_text(json.dumps({
+        'ticket': ticket, 'intake': 'intake.md', 'reference': 'reference-spec.md',
+        'repo': {'at': at}, 'expectations': expectations}, indent=2) + '\n')
+    print(f'Fixture {out}: base {at}, {len(terms)} reference terms'
+          + (f', intake ${cost:.2f}' if cost is not None else '') + '.')
+    print('Read intake.md once: it is frozen, and every run uses it as is.')
+    return out
+
+
 # ---------------------------------------------------------------- cli
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('--fixture', required=True, help='directory name under fixtures/')
+    parser.add_argument('--fixture', help='directory name under fixtures/')
+    parser.add_argument('--new', metavar='TICKET', help='build fixtures/TICKET from a deployed spec (needs --repo, --reference)')
+    parser.add_argument('--reference', help='with --new: the deployed spec, relative to --repo or absolute')
+    parser.add_argument('--intake', help='with --new: use this intake file instead of fetching from Jira')
+    parser.add_argument('--jira', help='with --new: Jira URL or key to fetch (default: the ticket)')
+    parser.add_argument('--force', action='store_true', help='with --new: rebuild an existing fixture')
     parser.add_argument('--spec', help='judge this spec file instead of producing one (free)')
     parser.add_argument('--output', help='directory to save the produced spec and run metadata')
     parser.add_argument('--budget', default='15', help='--max-budget-usd for the run (default 15)')
@@ -203,6 +289,14 @@ def main(argv=None):
                         help='project checkout, for a fixture with a "repo" block (its files at the commit, no history)')
     parser.add_argument('--at', help='commit to export; overrides the fixture\'s repo.at')
     args = parser.parse_args(argv)
+
+    if args.new:
+        if not (args.repo and args.reference):
+            parser.error('--new needs --repo and --reference')
+        new_fixture(args.new, args.repo, args.reference, args.intake, args.jira, args.at, force=args.force)
+        return 0
+    if not args.fixture:
+        parser.error('pass --fixture NAME, or --new TICKET to build one')
 
     fixture_dir = HERE / 'fixtures' / args.fixture
     definition = fixture_dir / 'expectations.json'
@@ -238,7 +332,7 @@ def main(argv=None):
     semantic = [r for r in rows if r[1] is None]
 
     for expectation, met, detail, must in rows:
-        if met is None:
+        if met is None or expectation.get('reference_term'):
             continue
         mark = 'PASS' if met else ('FAIL' if must else 'miss')
         print(f"  {mark}  {expectation['id']:<34} {detail}")
@@ -249,6 +343,15 @@ def main(argv=None):
         print('\nFor human review — not machine-checkable:')
         for expectation, _, _, _ in semantic:
             print(f"  ?     {expectation['id']:<34} {expectation['why']}")
+
+    terms = [r for r in rows if r[0].get('reference_term')]
+    if terms:
+        found = sum(1 for r in terms if r[1])
+        print(f"\nReference terms named: {found}/{len(terms)} ({found / len(terms):.0%}) -- "
+              f"compare with {fixture.get('reference', 'the reference spec')}")
+        missing = [r[0]['id'][len('term:'):] for r in terms if not r[1]]
+        if missing:
+            print('  not named: ' + ', '.join(f'`{m}`' for m in missing))
 
     checked = len(rows) - len(semantic)
     print(f'\n{checked} checked, {failed} failed, {len(semantic)} for review — '
