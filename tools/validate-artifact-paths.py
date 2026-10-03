@@ -44,7 +44,7 @@ ALLOWED = [re.compile(p + r'\Z') for p in (
 GUARDED = [
     'AGENTS.md',
     'commands/spec.md', 'commands/plan.md', 'commands/build.md',
-    'commands/test.md', 'commands/review.md', 'commands/ship.md',
+    'commands/test.md', 'commands/review.md', 'commands/ship.md', 'commands/explain.md',
     'skills/spec-driven-development/SKILL.md',
     'skills/planning-and-task-breakdown/SKILL.md',
     'references/spec-quality-gates.md', 'references/plan-quality-gates.md',

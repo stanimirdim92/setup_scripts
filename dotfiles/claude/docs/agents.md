@@ -107,6 +107,15 @@ GO / NO-GO / SHIP BLOCKED.
 
 Source: `../commands/ship.md`.
 
+### `/explain`
+
+No fan-out and no verdict. `/explain` reads the spec, plan, diff, and the gate
+messages already in the conversation. It writes one offline HTML page under
+`.git/explain/` for a person to review the candidate. It changes nothing, and
+no gate reads the page.
+
+Source: `../commands/explain.md`.
+
 ## Context discipline
 
 A subagent receives a task packet, not the parent conversation.

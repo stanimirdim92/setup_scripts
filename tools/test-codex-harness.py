@@ -237,7 +237,7 @@ def frontmatter_description(path):
 
 
 class CodexAdapterMetadataTest(unittest.TestCase):
-    STAGES = {"spec", "plan", "build", "test", "review", "ship"}
+    STAGES = {"spec", "plan", "build", "test", "review", "ship", "explain"}
     EXPLICIT_SKILLS = {"executor-development-discipline", "spec-driven-development",
                        "planning-and-task-breakdown"}
 
