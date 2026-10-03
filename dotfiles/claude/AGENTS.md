@@ -143,6 +143,26 @@ Surface uncertainty, skipped steps, and unverified claims explicitly. Never let 
   user decisions, architectural decisions, changed files, verification evidence,
   blockers, and remaining work.
 
+## Writing for humans
+
+Write prose a person reads in a simplified technical English, based on
+ASD-STE100. This applies to reports, gate results, handoffs, updates, and the
+prose in specs, plans, and ADRs. It does not apply to code, commit messages,
+identifiers, or quoted evidence.
+
+- Write one instruction per sentence. Keep it to 20 words or fewer.
+- Keep a descriptive sentence to 25 words or fewer.
+- Use the active voice and simple tenses.
+- Use one word for one thing. Do not change the term to vary the style.
+- Do not stack more than three nouns ("queue retry policy", not
+  "queue job retry backoff policy").
+- Put steps, conditions, and parallel items in a vertical list.
+- Write one topic per paragraph. Start with the result, then give the reason.
+
+Use the rule about 80% of the time. Break it when a longer sentence is
+clearer, for example to keep a condition next to its consequence.
+- *Catches: reports the reader must parse twice before they can act.*
+
 ## Worktrees
 
 Ticket-scoped work defaults to one isolated worktree per ticket.
