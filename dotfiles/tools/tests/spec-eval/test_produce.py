@@ -96,15 +96,27 @@ class NewFixture(unittest.TestCase):
 **Status:** Approved
 
 ### Requirement: REQ-001 Sort
-Send `srch_sort=most_relevant` and keep `srch_interval` for Latest.
-Score `paid_ads_reactivated` as 9 in `PaidAdsTickerEventGenerator::score()`.
+Send `sort_mode=most_relevant` and keep `date_window` for Latest.
+Score `invoice_reissued` as 9 in `InvoiceTotalsCalculator::total()`.
 See `docs/specs/LD-6-SPEC.md`, `REQ-002`, `DEC-005` and the word `relevance`.
 """
 
     def test_reference_terms_keep_code_and_drop_ids_and_prose(self):
         self.assertEqual(run.reference_terms(self.SPEC),
-                         ['srch_sort=most_relevant', 'srch_interval', 'paid_ads_reactivated',
-                          'PaidAdsTickerEventGenerator::score()'])
+                         ['sort_mode=most_relevant', 'date_window', 'invoice_reissued',
+                          'InvoiceTotalsCalculator::total()'])
+
+    def test_reference_terms_drop_trivia_seen_in_real_specs(self):
+        # Shapes from a real deployed spec: a span longer than 60 characters
+        # (it once broke backtick pairing), line references, commands, rule
+        # files, design-node ids and slash commands.
+        spec = ("Edit `Modules/Billing/app/Services/InvoiceTotalsCalculator.php:735-756` and "
+                "`OrderRepository.php:237-238`, then `OrderRepository.php:79, 222-224`. Run "
+                "`composer test -- --filter=Order`, `bin/worktree-setup.sh --build`, `./bin/schema-refresh.sh`. "
+                "Per `.ai/rules/repositories.md:9`, Figma `2:3075`, `:180-186`, `/plan`, `Tests:`. "
+                "Uses `sort_mode` and `sort_mode` and `order_lines`.")
+        self.assertEqual(run.reference_terms(spec),
+                         ['OrderRepository.php', 'sort_mode', 'InvoiceTotalsCalculator.php', 'order_lines'])
 
     def test_new_fixture_finds_base_and_writes_expectations(self):
         with tempfile.TemporaryDirectory() as tmp:

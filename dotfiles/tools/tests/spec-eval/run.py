@@ -196,19 +196,45 @@ def produce(fixture, fixture_dir, budget, repo=None, at=None):
 # A backticked span counts as a concrete term when it looks like code: an
 # identifier with `_ . / : = ( -` or camelCase. These are what a spec must get
 # right for an executor to build the right thing -- a parameter, a column, a
-# route -- and they can be checked without a model.
+# class -- and they can be checked without a model. Line references, commands,
+# rule files and design-node ids are trivia: a fresh spec citing a different
+# line is not worse, so they are normalized away or dropped.
 CODE_LIKE = re.compile(r'[_./:=()\-]|[a-z][A-Z]')
-NOT_A_TERM = re.compile(r'^(REQ|DEC|SEC|DIST|BLIND|TD|CP|T)-?\d+$|^docs/|^\[TICKET\]|\s{2}')
+NOT_A_TERM = re.compile(
+    r'^(REQ|DEC|SEC|DIST|BLIND|TD|CP|T)-?\d+$'          # pipeline ids
+    r'|^\[TICKET\]|^/\w+$'                               # placeholders, slash commands
+    r'|^(composer|yarn|npm|npx|php|git|vendor/bin|(\./)?bin/)'   # commands, project scripts
+    r'|^\.ai/|^docs/|^\.claude/'                          # rule and pipeline files
+    r'|^\d+:\d+$|^:\d|:$')                                # design nodes, bare line refs
+LINE_SUFFIX = re.compile(r'(\.\w+):\d+(?:-\d+)?(?:,\s*\d+(?:-\d+)?)*$')
 
 
-def reference_terms(spec, limit=80):
-    """Concrete terms the reference spec names, in order of first appearance."""
-    seen = []
-    for term in re.findall(r'`([^`\n]{3,60})`', spec):
-        term = term.strip()
-        if CODE_LIKE.search(term) and not NOT_A_TERM.search(term) and term not in seen:
-            seen.append(term)
-    return seen[:limit]
+def normalize_term(term):
+    """`Modules/X/TickerRepository.php:237-238` -> `TickerRepository.php`."""
+    term = LINE_SUFFIX.sub(r'\1', term.strip())
+    if '/' in term and ' ' not in term and re.search(r'\.\w+$', term):
+        term = term.rsplit('/', 1)[1]
+    return term
+
+
+def reference_terms(spec, limit=40):
+    """The reference spec's concrete terms, most used first.
+
+    Frequency is the ranking because a term the spec returns to is load-bearing;
+    one it names once in passing is not what a regression would lose."""
+    counts, first = {}, {}
+    for i, raw in enumerate(re.findall(r'`([^`\n]+)`', spec)):
+        if NOT_A_TERM.search(raw.strip()):
+            continue
+        term = normalize_term(raw)
+        if not (3 <= len(term) <= 60) or term.count(' ') > 6:
+            continue
+        if not CODE_LIKE.search(term) or NOT_A_TERM.search(term):
+            continue
+        counts[term] = counts.get(term, 0) + 1
+        first.setdefault(term, i)
+    ranked = sorted(counts, key=lambda term: (-counts[term], first[term]))
+    return ranked[:limit]
 
 
 def base_commit(repo, spec_path):
