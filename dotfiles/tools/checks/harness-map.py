@@ -613,6 +613,73 @@ def pipeline_flow(cmds, writers):
             '</figcaption></figure>')
 
 
+# The harness's shared vocabulary. Each entry names the file that defines it
+# and the exact text that must still appear there; render() fails when it does
+# not, so a renamed marker cannot leave this page describing the old one.
+# The task, decision and checkpoint ids come from plan-quality-gates.md §3.
+CONVENTIONS = [
+    ('Ids', '`ws-<name>`', 'A workstream in the plan, e.g. `ws-main`', '/plan', 'references/templates/plan.md', 'ws-'),
+    ('Ids', '`SEC-#`', 'A security finding', 'security-auditor', 'agents/security-auditor.md', 'SEC-'),
+    ('Ids', '`DIST-#`', 'A retries, ordering or concurrency finding', 'distributed-systems-reviewer', 'agents/distributed-systems-reviewer.md', 'DIST-'),
+    ('Ids', '`BLIND-#`', 'A finding from the review that never saw the goal', 'blind-reviewer', 'agents/blind-reviewer.md', 'BLIND-'),
+    ('Ids', '`NNNN-title.md`', 'An architecture decision, 4-digit, never renumbered', 'you', 'skills/adr-recording/SKILL.md', 'NNNN'),
+    ('Ids', '`~~T003~~ superseded by T007`', 'A dropped task keeps its id; the next one takes a new number', '/plan', 'references/plan-quality-gates.md', 'superseded by'),
+    ('Ids', 'marked withdrawn', 'A withdrawn requirement keeps its id', '/spec', 'references/spec-quality-gates.md', 'marked withdrawn'),
+    ('Fixed forms', '`### Requirement: REQ-001 — Title`', 'One requirement, followed by a `Source:` line', '/spec', 'references/templates/spec.md', '### Requirement: REQ-'),
+    ('Fixed forms', '`#### Scenario: Name`', 'One case, written as GIVEN / WHEN / THEN', '/spec', 'references/templates/spec.md', '#### Scenario:'),
+    ('Fixed forms', '`**Files/areas likely touched:**`', 'The places a task changes; plan recall reads this list', '/plan', 'references/templates/task.md', '**Files/areas likely touched:**'),
+    ('Fixed forms', '`**Change-surface search:**`', 'The search that finds every consumer; /build reruns it', '/plan', 'references/templates/task.md', '**Change-surface search:**'),
+    ('Fixed forms', '`path` — unchanged — reason', 'A place checked and deliberately left alone', '/plan', 'references/templates/task.md', 'unchanged — '),
+    ('Fixed forms', '`file:line`', 'How evidence and findings point at code', 'reviewers', 'agents/blind-reviewer.md', 'file:line'),
+    ('Status words', 'Draft / Approved / Needs reapproval / Superseded', 'Spec header; only a human sets Approved', '/spec', 'references/spec-quality-gates.md', 'Needs reapproval'),
+    ('Status words', 'New / Modify / Remove / Rename / Bugfix', 'Spec `Change kind`', '/spec', 'references/templates/spec.md', 'Change kind:'),
+    ('Status words', 'Pending / Done', 'Task status in the todo; flipped to Done in the commit that finishes it', 'executor', 'references/templates/task.md', '**Status:** Pending'),
+    ('Status words', 'BUILD COMPLETE / BUILD BLOCKED', 'The /build result', '/build', 'commands/build.md', 'BUILD COMPLETE'),
+    ('Status words', 'VERIFY PASS / FAIL / BLOCKED', 'The /test result', '/test', 'commands/test.md', 'VERIFY BLOCKED'),
+    ('Status words', 'BLOCKER / REQUIRED / ADVISORY', 'How serious a review finding is', '/review', 'commands/review.md', 'ADVISORY'),
+    ('Status words', 'GO / NO-GO / SHIP BLOCKED', 'The /ship decision', '/ship', 'commands/ship.md', 'SHIP BLOCKED'),
+    ('Status words', 'Open / Mitigated / Fixed — <check>', 'A failure row in the observation log; Fixed names the check that catches it', 'you', '../docs/observation-log.md', 'Fixed — <check>'),
+    ('Flags', '`OPEN QUESTION:` block', 'A choice that is yours; the spec cannot be approved while one remains', '/spec', 'skills/spec-driven-development/SKILL.md', 'OPEN QUESTION:'),
+    ('Flags', '`SPEC CONFLICT`', 'The spec promises what the code or plan cannot deliver; back to /spec', '/plan, /build', 'commands/plan.md', 'SPEC CONFLICT'),
+    ('Flags', 'Not surveyed', 'Not looked at, so not known', 'repo-recon, /spec', 'references/repository-precedent.md', 'Not surveyed'),
+    ('Flags', 'No precedent found for', 'Looked at; the repository gives no guidance', 'repo-recon, /spec', 'references/repository-precedent.md', 'No precedent found for'),
+    ('Flags', 'Not verified', 'A check that did not run; never read as "works"', 'personas', 'agents/code-reviewer.md', 'Not verified'),
+    ('Flags', '`Needs real-browser check: REQ-x — …`', 'Browser behavior the executor cannot prove; /test does it', 'executor', 'commands/build.md', 'Needs real-browser check'),
+    ('Flags', '`Handoff:`', 'The last line of a stage, naming the next one', 'each stage', 'references/templates/plan.md', 'Handoff:'),
+    ('Paths', '`docs/specs/[TICKET]-SPEC.md`', 'The one spec per ticket; any other spelling fails CI', '/spec', 'references/templates/plan.md', 'docs/specs/[TICKET]-SPEC.md'),
+    ('Paths', '`docs/tasks/[TICKET]-plan.md`, `-todo.md`', 'The plan and its task packets', '/plan', 'references/templates/plan.md', 'docs/tasks/[TICKET]-'),
+    ('Paths', '`.git/explain/<TICKET>-<sha>.html`', 'An /explain review page, outside the working tree', '/explain', 'commands/explain.md', 'git-common-dir)/explain/'),
+]
+# Seen in the target projects' history, not defined by any harness file.
+OBSERVED = [
+    ('`feat(area): … (LD-442 T002)`', 'Commit subject: conventional type, then ticket and task id. `recall.py --subject-only` relies on it.'),
+    ('`(LD-442 review R-04)`', 'Review fix commits numbered by the review run; no reviewer file defines `R-##`.'),
+]
+
+
+def id_table():
+    """Rows of plan-quality-gates.md §3, the owner table for REQ, DEC, TD, T and CP."""
+    text = read(CLAUDE / 'references/plan-quality-gates.md')
+    section = text.split('## 3.', 1)[1].split('\n## ', 1)[0]
+    rows = []
+    for line in section.splitlines():
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if len(cells) == 4 and cells[0].startswith('`') and cells[0] != '`Id`':
+            rows.append(cells)
+    if not rows:
+        raise SystemExit('harness-map: plan-quality-gates.md §3 id table not found')
+    return rows
+
+
+def conventions():
+    """CONVENTIONS, each checked against the file that defines it."""
+    missing = [f'{src}: {needle!r}' for _, _, _, _, src, needle in CONVENTIONS
+               if needle not in read((CLAUDE / src).resolve())]
+    if missing:
+        raise SystemExit('harness-map: conventions no longer found in their source:\n  ' + '\n  '.join(missing))
+    return CONVENTIONS
+
+
 LIFECYCLE = [('SessionStart', None, 'Session starts'),
              ('PreToolUse', 'Agent|Task', 'A persona is dispatched'),
              ('PreToolUse', 'Bash', 'Any shell command'),
@@ -635,8 +702,11 @@ def render():
     dispatched_by = {p['name']: [f'/{n}' for n in PIPELINE if p['name'] in cmds.get(n, {}).get('personas', [])]
                      for p in persona_rows}
 
+    ids = id_table()
+    conv = conventions()
     sections = [('pipeline', 'Pipeline', len([n for n in PIPELINE if n in cmds])),
                 ('personas', 'Personas', len(persona_rows)), ('guards', 'Guards', len(hook_rows)),
+                ('conventions', 'Conventions', len(ids) + len(conv)),
                 ('session', 'Session setup', len(rules)), ('skills', 'Skills', len(skill_rows)),
                 ('references', 'References', len(ref_rows)), ('ci', 'Self-tests', len(steps)),
                 ('decisions', 'Decisions', len(adr_rows))]
@@ -727,6 +797,29 @@ def render():
         for script, ev, mt, scope, summary, tests in rest:
             out.append(f'<tr><td class="cmdcell">{e(script)}</td><td>{e(ev)} · {e(scope)}</td><td>{e(summary)}</td>'
                        f'<td class="tested">{"<br>".join(e(t.rsplit("/", 1)[1]) for t in tests) or "—"}</td></tr>')
+    out.append('</tbody></table></div></section>')
+
+    # Conventions
+    out.append('<section id="conventions"><div class="sec-head"><h2>Conventions</h2>'
+               '<p class="summary">The ids, fixed forms, status words and flags every stage reads and writes. '
+               'Each names the file that defines it; this page fails to build if one disappears from there.</p>'
+               '</div><div class="panel tablewrap"><table><thead><tr><th>Convention</th><th>Means</th>'
+               '<th>Owner</th><th>Defined in</th></tr></thead><tbody>')
+    out.append('<tr><td class="group" colspan="4">Ids<span>never renumbered; one owner each</span></td></tr>')
+    for ident, lives, owner, meaning in ids:
+        out.append(f'<tr><td class="cmdcell nowrap">{e(ident)}</td><td>{e(meaning)} <span class="sub">in the {e(lives)}</span></td>'
+                   f'<td class="cmdcell">{e(owner)}</td><td class="cmdcell">references/plan-quality-gates.md</td></tr>')
+    group = 'Ids'
+    for grp, marker, meaning, owner, src, _ in conv:
+        if grp != group:
+            out.append(f'<tr><td class="group" colspan="4">{e(grp)}</td></tr>')
+            group = grp
+        shown = src.replace('../docs/', 'dotfiles/docs/')
+        out.append(f'<tr><td class="cmdcell">{e(marker)}</td><td>{e(meaning)}</td><td class="cmdcell">{e(owner)}</td>'
+                   f'<td class="cmdcell">{e(shown)}</td></tr>')
+    out.append('<tr><td class="group" colspan="4">Seen in project history<span>not defined by the harness</span></td></tr>')
+    for marker, meaning in OBSERVED:
+        out.append(f'<tr><td class="cmdcell">{e(marker)}</td><td colspan="3">{e(meaning)}</td></tr>')
     out.append('</tbody></table></div></section>')
 
     # Session setup
