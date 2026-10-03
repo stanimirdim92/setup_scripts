@@ -73,36 +73,37 @@ CSS = r"""
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{scroll-behavior:smooth}
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;padding-inline:clamp(16px,3vw,40px);padding-block:32px 80px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;padding-inline:clamp(16px,3vw,40px);padding-block:32px 80px}
 a{color:inherit}
 h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-0.01em}
-h1{font-size:clamp(30px,4vw,42px);line-height:1.1;font-weight:800}
-h2{font-size:22px;line-height:1.25;font-weight:700}
-h3{font-size:15px;font-weight:700}
+h1{font-size:clamp(34px,4.6vw,50px);line-height:1.1;font-weight:800}
+h2{font-size:27px;line-height:1.25;font-weight:700}
+h3{font-size:18px;font-weight:700}
 p{margin:0;max-width:70ch}
-code,.mono{font-family:var(--mono);font-size:0.86em}
+code,.mono{font-family:var(--mono);font-size:0.88em}
 code{background:var(--sunk);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
 :focus-visible{outline:2px solid var(--write);outline-offset:2px;border-radius:2px}
-.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px}
+.layout{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
 
 /* index */
-nav.index{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;display:flex;flex-direction:column;gap:2px;font-size:14px}
-nav.index .label{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+nav.index{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;display:flex;flex-direction:column;gap:2px;font-size:16px}
+nav.index .label{font-size:12.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
 nav.index a{text-decoration:none;color:var(--ink-2);padding:5px 10px;border-left:2px solid var(--line);display:flex;justify-content:space-between;gap:8px}
-nav.index a span{font-family:var(--mono);font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+nav.index a span{font-family:var(--mono);font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 nav.index a:hover,nav.index a:focus-visible{color:var(--ink);border-left-color:var(--write);outline:none}
 main{display:flex;flex-direction:column;gap:56px;min-width:0}
 
 /* header */
 header.top{display:flex;flex-direction:column;gap:10px;padding-bottom:24px;border-bottom:1px solid var(--line)}
-header.top .kicker{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
-header.top p{color:var(--ink-2);font-size:16px}
+header.top .kicker{font-family:var(--mono);font-size:13.5px;color:var(--ink-3)}
+header.top p{color:var(--ink-2);font-size:18.5px}
 .counts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-.count{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-size:13px;color:var(--ink-2)}
+.count{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 14px;font-size:15px;color:var(--ink-2)}
 .count b{color:var(--ink);font-variant-numeric:tabular-nums;margin-right:4px}
-.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--ink-2)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:15px;color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 
 /* sections */
@@ -112,54 +113,63 @@ section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px;min-w
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-width:0}
 .panel.pad{padding:18px 20px}
 .option{display:flex;flex-direction:column;gap:10px}
-.option-label{display:flex;align-items:baseline;gap:10px;font-size:13px;color:var(--ink-3)}
+.option-label{display:flex;align-items:baseline;gap:10px;font-size:15px;color:var(--ink-3)}
 .option-label b{font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink)}
 
 /* badges */
-.badge{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.badge{display:inline-block;font-size:13.5px;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
 .badge.write{color:var(--write);background:var(--write-bg)}
 .badge.read{color:var(--read);border-color:var(--line-2)}
 .badge.gate{color:var(--gate);background:var(--gate-bg)}
 .badge.cond{color:var(--ink-3);border:1px dashed var(--line-2)}
-.persona-name{font-family:var(--mono);font-size:13px;white-space:nowrap}
+.persona-name{font-family:var(--mono);font-size:15px;white-space:nowrap}
 .persona-name.write{color:var(--write)}
 .who{display:flex;flex-wrap:wrap;gap:4px 12px}
+
+/* pipeline tabs */
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line-2)}
+.tabs button{font:inherit;font-size:16px;font-weight:600;color:var(--ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:10px 16px;margin-bottom:-1px;cursor:pointer;border-radius:6px 6px 0 0}
+.tabs button:hover{color:var(--ink);background:var(--sunk)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--write)}
+.tabs button span{font-family:var(--mono);font-size:13px;color:var(--ink-3);margin-right:6px}
+.mermaid-wrap{overflow-x:auto;min-width:0}
+.mermaid-wrap svg{max-width:none!important;height:auto}
 
 /* option 1: stage list */
 ol.stages{list-style:none;margin:0;padding:0}
 ol.stages > li{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,300px);gap:6px 20px;padding:14px 20px;border-top:1px solid var(--line);align-items:baseline}
 ol.stages > li:first-child{border-top:0}
-ol.stages .cmd{font-family:var(--mono);font-size:16px;font-weight:700}
-ol.stages .does{color:var(--ink-2);font-size:14px}
+ol.stages .cmd{font-family:var(--mono);font-size:18px;font-weight:700}
+ol.stages .does{color:var(--ink-2);font-size:16px}
 ol.stages > li.cond{background:repeating-linear-gradient(135deg,transparent 0 10px,var(--sunk) 10px 11px)}
-ol.stages > li.gate{display:flex;gap:10px;align-items:center;padding:8px 20px;background:var(--gate-bg);color:var(--gate);font-weight:600;font-size:14px}
+ol.stages > li.gate{display:flex;gap:10px;align-items:center;padding:8px 20px;background:var(--gate-bg);color:var(--gate);font-weight:600;font-size:16px}
 .diamond{width:10px;height:10px;transform:rotate(45deg);background:var(--gate);display:inline-block;flex:none}
 
 /* option 2: strip */
 .strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:18px 20px}
-.strip .box{font-family:var(--mono);font-weight:700;font-size:14px;padding:8px 14px;border:1.5px solid var(--ink);border-radius:6px;background:var(--surface)}
+.strip .box{font-family:var(--mono);font-weight:700;font-size:16px;padding:8px 14px;border:1.5px solid var(--ink);border-radius:6px;background:var(--surface)}
 .strip .box.cond{border-style:dashed;color:var(--ink-2)}
 .strip .sep{color:var(--ink-3)}
 .strip .diamond{margin-inline:2px}
 
 /* option 3: mermaid */
-pre.mermaid{margin:0;padding:18px 20px;font-family:var(--mono);font-size:12px;color:var(--ink-2);white-space:pre;overflow-x:auto;background:none}
+pre.mermaid{margin:0;padding:18px 20px;font-family:var(--mono);font-size:13.5px;color:var(--ink-2);white-space:pre;overflow-x:auto;background:none}
 
 /* tables */
 .tablewrap{overflow-x:auto;min-width:0}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:16px}
+th,td{text-align:left;vertical-align:top;padding:12px 16px;border-bottom:1px solid var(--line)}
 tr:last-child td{border-bottom:0}
-th{font-size:11.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3);background:var(--sunk);border-bottom:1px solid var(--line)}
+th{font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3);background:var(--sunk);border-bottom:1px solid var(--line)}
 th:first-child{border-top-left-radius:8px}
 th:last-child{border-top-right-radius:8px}
 td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
-td .sub{display:block;font-size:13px;color:var(--ink-2);margin-top:2px;max-width:60ch}
-td.cmdcell{font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
+td .sub{display:block;font-size:15px;color:var(--ink-2);margin-top:2px;max-width:60ch}
+td.cmdcell{font-family:var(--mono);font-size:14.5px;color:var(--ink-2)}
 td.nowrap{white-space:nowrap}
-td.group{font-weight:700;background:var(--bg);font-size:13px;color:var(--ink)}
-td.group span{font-weight:400;color:var(--ink-3);font-family:var(--mono);font-size:12px;margin-left:8px}
-.tested{color:var(--ok);font-family:var(--mono);font-size:12px}
+td.group{font-weight:700;background:var(--bg);font-size:15.5px;color:var(--ink)}
+td.group span{font-weight:400;color:var(--ink-3);font-family:var(--mono);font-size:13.5px;margin-left:8px}
+.tested{color:var(--ok);font-family:var(--mono);font-size:14px}
 
 /* boot */
 .two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px}
@@ -167,15 +177,15 @@ ol.rules{margin:0;padding:6px 20px 6px 44px;display:flex;flex-direction:column}
 ol.rules li{padding:9px 0;border-top:1px solid var(--line)}
 ol.rules li:first-child{border-top:0}
 ol.rules li::marker{font-weight:700;color:var(--ink-3);font-variant-numeric:tabular-nums}
-ol.rules .sub{display:block;font-size:13px;color:var(--ink-2)}
-dl.kv{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);font-size:13.5px}
+ol.rules .sub{display:block;font-size:15px;color:var(--ink-2)}
+dl.kv{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);font-size:15.5px}
 dl.kv dt,dl.kv dd{padding:8px 16px;border-top:1px solid var(--line);margin:0;min-width:0}
 dl.kv dt:first-of-type,dl.kv dd:first-of-type{border-top:0}
-dl.kv dt{font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
-.panel-title{font-size:11.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 16px;background:var(--sunk);border-bottom:1px solid var(--line);border-radius:8px 8px 0 0}
+dl.kv dt{font-family:var(--mono);font-size:14px;color:var(--ink-2)}
+.panel-title{font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 16px;background:var(--sunk);border-bottom:1px solid var(--line);border-radius:8px 8px 0 0}
 .stack{display:flex;flex-direction:column;gap:20px;min-width:0}
-.note{font-size:13.5px;color:var(--ink-2)}
-footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padding-top:14px}
+.note{font-size:15.5px;color:var(--ink-2)}
+footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);padding-top:14px}
 
 @media (max-width:900px){
   .layout{grid-template-columns:minmax(0,1fr);gap:24px}
@@ -403,8 +413,9 @@ def persona_label(name, writers):
     return f'<span class="persona-name{" write" if name in writers else ""}">{e(name)}</span>'
 
 
-# The three pipeline views under comparison. Remove the ones not chosen.
+# The pipeline is shown three ways, as tabs; the flowchart opens first.
 PIPELINE_VIEWS = ('list', 'strip', 'mermaid')
+DEFAULT_VIEW = 'mermaid'
 
 
 def pipeline_list(cmds, writers):
@@ -442,35 +453,44 @@ def pipeline_strip(cmds, writers):
             f'<tbody>{rows}</tbody></table></div></div>')
 
 
+def mermaid_text(text):
+    """Safe inside a Mermaid quoted label."""
+    return text.replace('"', '#quot;').replace('`', "'")
+
+
 def pipeline_mermaid(cmds, writers):
-    """Mermaid source, drawn by the Mermaid script when the page is online."""
-    lines = ['flowchart LR']
-    main = [n for n in PIPELINE if n in cmds and n not in CONDITIONAL]
+    """The stage list as a diagram: one box per stage, top to bottom, holding
+    the command, what it does and who does it. Approvals are diamonds between
+    boxes; /test is a dashed detour. Drawn by the Mermaid script when the page
+    is online; the source shows otherwise. (Mermaid drops a subgraph's own
+    direction when its nodes link outside it, so personas live in the label.)"""
+    lines = ['flowchart TB']
+    order = [n for n in PIPELINE if n in cmds]
+    for name in order:
+        c = cmds[name]
+        who = ', '.join(f'{p} (writes)' if p in writers else p for p in c['personas']) or 'the session itself'
+        label = f'<b>/{name}</b><br/>{mermaid_text(c["description"])}<br/><i>Who: {mermaid_text(who)}</i>'
+        if name in CONDITIONAL:
+            label += f'<br/><i>{mermaid_text(CONDITIONAL[name])}</i>'
+        lines.append(f'  {name}["{label}"]:::{"cond" if name in CONDITIONAL else "stage"}')
+    main = [n for n in order if n not in CONDITIONAL]
     prev = None
     for name in main:
-        lines.append(f'  {name}["/{name}"]')
         if prev:
             lines.append(f'  {prev} --> {name}')
         prev = name
         if name in HUMAN_GATE_AFTER:
             gate = f'g_{name}'
-            lines.append(f'  {gate}{{"{HUMAN_GATE_AFTER[name]}"}}:::gate')
+            lines.append(f'  {gate}{{"You decide:<br/>{mermaid_text(HUMAN_GATE_AFTER[name])}"}}:::gate')
             lines.append(f'  {name} --> {gate}')
             prev = gate
-    for name, label in CONDITIONAL.items():
+    for name in CONDITIONAL:
         if name in cmds and 'review' in cmds and 'ship' in cmds:
-            lines.append(f'  {name}["/{name}"]:::cond')
-            lines.append(f'  review -. "{label}" .-> {name} -.-> ship')
-    for name in PIPELINE:
-        for i, persona in enumerate(cmds.get(name, {}).get('personas', [])):
-            node = f'p_{name}_{i}'
-            lines.append(f'  {node}(["{persona}"]):::{"write" if persona in writers else "read"}')
-            lines.append(f'  {name} --- {node}')
-    lines += ['  classDef gate fill:#FBF0DD,stroke:#A9620B,color:#7A4708',
-              '  classDef cond stroke-dasharray:5 4',
-              '  classDef write fill:#E3EDFA,stroke:#1F5FAE,color:#1F5FAE',
-              '  classDef read fill:#FFFFFF,stroke:#5A6472,color:#5A6472,stroke-dasharray:4 3']
-    return '<div class="panel"><pre class="mermaid">' + e('\n'.join(lines)) + '</pre></div>'
+            lines.append(f'  review -. "if required" .-> {name} -.-> ship')
+    lines += ['  classDef stage fill:#FFFFFF,stroke:#111827,stroke-width:1.5px,color:#111827',
+              '  classDef cond fill:#F3F5F8,stroke:#717A87,stroke-dasharray:6 4,color:#111827',
+              '  classDef gate fill:#FBF0DD,stroke:#A9620B,color:#7A4708']
+    return ('<div class="panel mermaid-wrap"><pre class="mermaid">' + e('\n'.join(lines)) + '</pre></div>')
 
 
 LIFECYCLE = [('SessionStart', None, 'Session starts'),
@@ -527,13 +547,23 @@ def render():
                '<span><span class="persona-name write">blue</span> can change files</span>'
                '<span><span class="persona-name">grey</span> read-only</span>'
                '<span><span class="badge cond">dashed</span> only when needed</span></div>')
-    views = {'list': ('Option 1', 'Stage list', pipeline_list),
-             'strip': ('Option 2', 'Horizontal strip', pipeline_strip),
-             'mermaid': ('Option 3', 'Mermaid flowchart (needs the Mermaid script online)', pipeline_mermaid)}
+    views = {'list': ('1', 'Stage list', pipeline_list),
+             'strip': ('2', 'Strip', pipeline_strip),
+             'mermaid': ('3', 'Flowchart', pipeline_mermaid)}
+    out.append('<div class="tabs" role="tablist" aria-label="Pipeline views">')
     for key in PIPELINE_VIEWS:
-        tag_, label, fn = views[key]
-        out.append(f'<div class="option"><div class="option-label"><b>{tag_}</b>{e(label)}</div>'
-                   + fn(cmds, writers) + '</div>')
+        num, label, _ = views[key]
+        on = key == DEFAULT_VIEW
+        out.append(f'<button type="button" role="tab" id="tab-{key}" aria-controls="view-{key}" '
+                   f'aria-selected="{"true" if on else "false"}" tabindex="{0 if on else -1}" data-view="{key}">'
+                   f'<span>{num}</span>{e(label)}</button>')
+    out.append('</div>')
+    for key in PIPELINE_VIEWS:
+        hidden = '' if key == DEFAULT_VIEW else ' hidden'
+        note = ('<p class="note">Needs the Mermaid script from a CDN; offline, its source shows instead.</p>'
+                if key == 'mermaid' else '')
+        out.append(f'<div role="tabpanel" id="view-{key}" aria-labelledby="tab-{key}" class="option"{hidden}>'
+                   + views[key][2](cmds, writers) + note + '</div>')
     for name in sorted(n for n in cmds if n not in PIPELINE):
         out.append(f'<p class="note">Outside the pipeline: <code>/{e(name)}</code> — {e(cmds[name]["description"])}.</p>')
     out.append('</section>')
@@ -657,9 +687,44 @@ def render():
     out.append('<footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. '
                'Do not edit by hand.</footer></main></div>')
     if 'mermaid' in PIPELINE_VIEWS:
-        out.append('<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>'
-                   '<script>if (window.mermaid) { mermaid.initialize({ startOnLoad: true, theme: '
-                   'matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "neutral" }); }</script>')
+        out.append('<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>')
+    out.append('''<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  var drawn = false;
+  function draw() {
+    if (drawn || !window.mermaid) { return; }
+    drawn = true;
+    var dark = document.documentElement.dataset.theme === 'dark' ||
+      (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+    mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'strict',
+      themeVariables: { fontSize: '17px', fontFamily: 'Hanken Grotesk, Helvetica Neue, Arial, sans-serif' },
+      flowchart: { htmlLabels: true, useMaxWidth: false, wrappingWidth: 420, nodeSpacing: 40, rankSpacing: 36 } });
+    mermaid.run({ querySelector: 'pre.mermaid' });
+  }
+  function show(key, focus) {
+    tabs.forEach(function (tab) {
+      var on = tab.dataset.view === key;
+      tab.setAttribute('aria-selected', on ? 'true' : 'false');
+      tab.tabIndex = on ? 0 : -1;
+      document.getElementById('view-' + tab.dataset.view).hidden = !on;
+      if (on && focus) { tab.focus(); }
+    });
+    if (key === 'mermaid') { draw(); }
+    try { localStorage.setItem('harness-map-view', key); } catch (err) {}
+  }
+  tabs.forEach(function (tab, i) {
+    tab.addEventListener('click', function () { show(tab.dataset.view); });
+    tab.addEventListener('keydown', function (ev) {
+      var step = ev.key === 'ArrowRight' ? 1 : ev.key === 'ArrowLeft' ? -1 : 0;
+      if (step) { ev.preventDefault(); show(tabs[(i + step + tabs.length) % tabs.length].dataset.view, true); }
+    });
+  });
+  var saved = null;
+  try { saved = localStorage.getItem('harness-map-view'); } catch (err) {}
+  show(saved && document.getElementById('view-' + saved) ? saved : '__DEFAULT_VIEW__');
+})();
+</script>'''.replace('__DEFAULT_VIEW__', DEFAULT_VIEW))
     out.append('</body>\n</html>\n')
     return '\n'.join(out)
 
