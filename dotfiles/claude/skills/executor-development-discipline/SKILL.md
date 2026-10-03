@@ -135,6 +135,9 @@ Before reporting a task complete, provide evidence for:
 - when the packet has a `Change-surface search`: the search rerun on the final
   tree, with every hit either changed by this task or listed as unchanged with
   its reason — a hit nobody accounted for is an unfinished task;
+- acceptance criteria that depend on a real browser (rendering, browser APIs,
+  navigation, console, network): do not claim them, and do not offer component
+  tests in their place. List each as `Needs real-browser check`; `/test` runs it;
 - checks not run, scope expansions, untouched observations, and blockers
   (including any task-packet conflict reported under The Task Packet Is the
   Contract).

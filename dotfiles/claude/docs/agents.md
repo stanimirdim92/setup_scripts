@@ -74,7 +74,8 @@ matches, the exact candidate must have `VERIFY PASS` before review proceeds.
 
 `/test` dispatches one `test-engineer`, which may add test-only changes but never
 production fixes. It selects unit, integration, E2E, smoke, and real-browser
-checks from the candidate's claims and risks; required browser checks block when
+checks from the candidate's claims and risks. It is the only persona with browser
+tools: `/build` hands it every `Needs real-browser check`. Required browser checks block when
 the capability is unavailable.
 
 Source: `../commands/test.md`.

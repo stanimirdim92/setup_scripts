@@ -147,6 +147,14 @@ skips it as already configured — so export the key before the first run if you
 want the higher limit. Re-running the script skips any server that already exists
 instead of aborting on the first duplicate name.
 
+The script also adds Chrome DevTools MCP (`chrome-devtools-mcp@1.10.1`,
+`--isolated`, a throwaway Chrome profile per run) for real-browser checks.
+Only `test-engineer` holds its tools; executors have none, so `/build` lists
+browser-dependent criteria as `Needs real-browser check` and `/review` routes
+them to `/test` (`docs/adr/0070-browser-checks-route-to-test-engineer.md`). It
+needs Node 20+ and a local Chrome. The Codex config pins the same version; bump
+both together.
+
 The filesystem MCP server is deliberately **not** configured. At user scope
 rooted on `$HOME` it reached around `settings.json`'s `Read` deny paths
 (`~/.ssh`, `~/.aws`, `~/.config/gh`, `~/.git-credentials`) — that deny list

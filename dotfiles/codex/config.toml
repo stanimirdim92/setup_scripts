@@ -43,7 +43,7 @@ CODEX_CLI_PATH = "/usr/lib/chatgpt/resources/codex"
 
 [mcp_servers.chrome-devtools]
 command = "npx"
-args = ["-y", "chrome-devtools-mcp@latest", "--isolated"]
+args = ["-y", "chrome-devtools-mcp@1.10.1", "--isolated"]
 
 [marketplaces.openai-bundled]
 source_type = "local"

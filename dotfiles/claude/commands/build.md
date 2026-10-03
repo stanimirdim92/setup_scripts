@@ -153,8 +153,9 @@ Typical examples:
 - compatibility/deprecation/migration -> `deprecation-and-migration`;
 - auth, permissions, secrets, or sensitive trust boundary ->
   `security-and-hardening`.
-- actual rendering, browser APIs, navigation, console, or network behavior ->
-  `browser-testing-with-devtools`.
+
+Never select `browser-testing-with-devtools` for an executor. Executors hold no
+browser tools; test-engineer does (docs/adr/0070).
 
 The executor invokes only additional skills selected by `/build`.
 
@@ -239,9 +240,14 @@ drop or rewrite required commands that cannot run.
 
 When the candidate changes a deployed runtime entrypoint or critical end-to-end
 path, run the repository-defined smoke check in the appropriate safe
-environment. Browser-dependent acceptance criteria require real-browser
-evidence through `browser-testing-with-devtools`; unavailable required tooling
-blocks BUILD rather than being replaced by component tests.
+environment.
+
+BUILD does not prove browser-dependent acceptance criteria: actual rendering,
+browser APIs, navigation, console, or network behavior. Executors have no
+browser tools. List each such criterion in the completion message as
+`Needs real-browser check: <REQ id> — <criterion>`. Do not count component
+tests as evidence for it. `/review` then requires `/test`
+(`../references/verification-triggers.md`), and test-engineer runs the check.
 
 Rerun every selected task's `Change-surface search` on the integrated tree. A
 hit no task changed and no task lists as unchanged goes back to the owning

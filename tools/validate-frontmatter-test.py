@@ -124,6 +124,19 @@ class DenyCases(unittest.TestCase):
         problems = vf.check_agent('executor', agent('executor', body))
         self.assertTrue(any('block-agent-push.sh' in p for p in problems))
 
+    def test_executor_granted_browser_tools(self):
+        body = EXECUTOR.replace('Glob, Skill', 'Glob, Skill, mcp__chrome-devtools__*')
+        problems = vf.check_agent('executor', agent('executor', body))
+        self.assertTrue(any('browser checks belong to test-engineer' in p for p in problems))
+
+    def test_test_engineer_without_browser_tools(self):
+        body = (EXECUTOR.replace('name: executor', 'name: test-engineer')
+                + 'isolation: worktree\n')
+        problems = vf.check_agent('test-engineer', agent('test-engineer', body))
+        self.assertTrue(any('real-browser checks route here' in p for p in problems))
+        body = body.replace('Glob, Skill', 'Glob, Skill, mcp__chrome-devtools__*')
+        self.assertEqual(vf.check_agent('test-engineer', agent('test-engineer', body)), [])
+
     def test_writer_missing_handoff_gate(self):
         body = EXECUTOR.replace('require-handoff-report.sh', 'some-other-hook.sh')
         problems = vf.check_agent('executor', agent('executor', body))
@@ -192,7 +205,8 @@ class DenyCases(unittest.TestCase):
         self.assertTrue(any('isolation belongs to concurrent dispatch' in p for p in problems))
 
     def test_verifier_still_requires_worktree_isolation(self):
-        body = EXECUTOR.replace('name: executor', 'name: test-engineer')
+        body = (EXECUTOR.replace('name: executor', 'name: test-engineer')
+                .replace('Glob, Skill', 'Glob, Skill, mcp__chrome-devtools__*'))
         problems = vf.check_agent('test-engineer', agent('test-engineer', body))
         self.assertTrue(any('isolation: worktree' in p for p in problems))
         body += 'isolation: worktree\n'

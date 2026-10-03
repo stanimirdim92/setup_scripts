@@ -20,6 +20,10 @@ additional context and agent cost.
   material operational, financial, security, or data impact.
 - A bug/regression fix lacks a trustworthy reproduction or has meaningful edge
   cases not covered by the implementation-time tests.
+- An acceptance criterion depends on actual rendering, browser APIs,
+  navigation, console, or network behavior. Executors have no browser tools, so
+  `/build` lists these as `Needs real-browser check`; only test-engineer can
+  produce the evidence.
 - The user explicitly asks for independent verification.
 
 Normally do **not** require `/test` for:

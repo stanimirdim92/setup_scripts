@@ -143,6 +143,11 @@ def check_agent(name, text):
                 problems.append(f'{name}: frontmatter does not reference {hook} -- the gate is not attached (adr/0055)')
         if name == 'test-engineer' and scalar(block, 'isolation') != 'worktree':
             problems.append(f'{name}: no `isolation: worktree` -- verifier checkout isolation is required (adr/0058)')
+        browser = any(t.startswith('mcp__chrome-devtools') for t in tools or [])
+        if name == 'test-engineer' and not browser:
+            problems.append(f'{name}: no mcp__chrome-devtools__* -- real-browser checks route here (adr/0070)')
+        if name == 'executor' and browser:
+            problems.append(f'{name}: grants browser tools -- browser checks belong to test-engineer (adr/0070)')
         if name == 'executor' and scalar(block, 'isolation') is not None:
             problems.append(f'{name}: isolation belongs to concurrent dispatch; sequential executors inherit the ticket checkout (adr/0058)')
 

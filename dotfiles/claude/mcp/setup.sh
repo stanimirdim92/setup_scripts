@@ -115,6 +115,16 @@ echo "==> Structurizr MCP server (user scope, all projects)"
 # tools require self-hosting instead, not used here.
 add_server structurizr --transport http https://mcp.structurizr.com/mcp --scope user
 
+echo "==> Chrome DevTools MCP server (user scope, all projects)"
+# Real-browser checks for test-engineer, the only persona whose `tools:` grants
+# mcp__chrome-devtools__* (docs/adr/0070). Executors never get it. Local stdio
+# server, no auth. --isolated gives each run a throwaway Chrome profile, so no
+# cookies or saved logins reach the agent. Pinned: `@latest` would run whatever
+# npm serves that day with full access to the machine (supply-chain.md).
+# Needs Node 20+ and a local Chrome. Bump the pin deliberately, here and in
+# dotfiles/codex/config.toml together.
+add_server chrome-devtools --scope user -- npx -y chrome-devtools-mcp@1.10.1 --isolated
+
 echo
 echo "Done. Run 'claude mcp list' and confirm each server shows Connected."
 echo "A server showing a missing-variable warning needs its token exported in the shell that starts Claude Code."

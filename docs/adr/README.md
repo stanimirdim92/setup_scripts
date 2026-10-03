@@ -77,6 +77,7 @@ that explanation here, just the index.
 | [0067](0067-change-surface-in-plans-and-plan-recall.md) | Change surface in plans, touch points in recon, and a plan-recall eval | Accepted |
 | [0068](0068-sandbox-resumable-build-and-failure-signals.md) | OS sandbox, resumable `/build`, and failure signals from transcripts | Accepted |
 | [0069](0069-plain-writing-explain-page-and-generated-map.md) | Plain writing, an `/explain` review page, a generated harness map, and ticket-scoped plan recall | Accepted |
+| [0070](0070-browser-checks-route-to-test-engineer.md) | Browser checks route to test-engineer, and the DevTools MCP is installed | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and
