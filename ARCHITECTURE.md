@@ -94,11 +94,13 @@ Codex tools must be available in its own session.
 ## Map
 
 [docs/harness-map.html](docs/harness-map.html) draws every layer -- pipeline,
-personas, enforcement, references, skills, artifacts, self-tests -- as one sheet.
-Open it in a browser; GitHub will not render it. It is a snapshot stamped with
-the commit it was drawn from, so when a persona, hook, command, or pin changes,
-either redraw it in the same change or delete it: a stale map reads as
-authoritative.
+session boot, personas, enforcement, references, skills, self-tests, records --
+as one sheet. Open it in a browser; GitHub will not render it.
+[tools/harness-map.py](tools/harness-map.py) generates it from the files that
+own each fact (agent frontmatter, command frontmatter, `settings.json`, hook
+headers, skill frontmatter, the CI workflow, the ADRs). Do not edit it by hand.
+When a persona, hook, command, skill, reference or CI step changes, run the
+generator in the same change; CI fails on a stale map.
 
 ## Verification and maintenance
 
@@ -163,7 +165,8 @@ repository with no prior specs, no branches and no stale worktrees.
 - [Plan recall](tools/tests/plan-recall/README.md) scores a shipped ticket's
   plan against its merged change: the share of changed files the plan's tasks
   named. It measures the plan's change surface (`plan-quality-gates.md` §4),
-  costs no tokens, and its scoring logic runs in CI.
+  costs no tokens, and its scoring logic runs in CI. Score with `--ticket`
+  when the range carries other work.
 - [Workflow checks](tools/tests/workflow/README.md) document the isolated
   Jira/spec/plan/build/review runner, its invocation, and what its evidence
   does not cover.

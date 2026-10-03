@@ -67,7 +67,7 @@ jobs:
           python3 tools/validate-frontmatter.py
           python3 tools/validate-frontmatter-test.py
 
-      # Pipeline: canonical spec/plan/todo artifact paths across 24 files.
+      # Pipeline: canonical spec/plan/todo artifact paths across 25 files.
       - name: Artifact paths
         run: |
           python3 tools/validate-artifact-paths.py
@@ -79,6 +79,12 @@ jobs:
         run: |
           python3 tools/check-references.py
           python3 tools/check-references-test.py
+
+      # The harness map is generated from the sources it describes; a change
+      # to a persona, hook, command, skill, reference or CI step that did not
+      # regenerate it fails here (adr/0069).
+      - name: Harness map is current
+        run: python3 tools/harness-map.py --check
 
       # Spec eval: the judging half only. Producing a spec drives the real
       # model and stays manual.

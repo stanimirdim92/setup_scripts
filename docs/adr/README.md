@@ -76,6 +76,7 @@ that explanation here, just the index.
 | [0066](0066-opus-5-5-effort-and-early-stop-continuations.md) | Opus 5.5: medium session effort, and bounded continuations for early stops | Accepted |
 | [0067](0067-change-surface-in-plans-and-plan-recall.md) | Change surface in plans, touch points in recon, and a plan-recall eval | Accepted |
 | [0068](0068-sandbox-resumable-build-and-failure-signals.md) | OS sandbox, resumable `/build`, and failure signals from transcripts | Accepted |
+| [0069](0069-plain-writing-explain-page-and-generated-map.md) | Plain writing, an `/explain` review page, a generated harness map, and ticket-scoped plan recall | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and
