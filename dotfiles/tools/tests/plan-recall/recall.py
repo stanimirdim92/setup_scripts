@@ -133,19 +133,27 @@ def parse_name_status(out, changed, origins=None, commit=None):
     return changed
 
 
-def changed_files(repo, rev_range, ticket=None, origins=None):
+def changed_files(repo, rev_range, ticket=None, origins=None, not_tickets=()):
     """{path: status} over the range, or over only the ticket's own commits.
 
     With a ticket, `origins` (when given) maps each path to the first commit
     that touched it, as 'sha7 subject', so a miss can be traced to the task,
-    review fix, or scope expansion that brought it in."""
+    review fix, or scope expansion that brought it in. A commit whose message
+    also names one of `not_tickets` is dropped: it carries the other ticket's
+    files, and they are not this plan's misses."""
     if not ticket:
         return parse_name_status(git(repo, 'diff', '--name-status', '-M', rev_range), {})
     log = git(repo, 'log', '--no-merges', '--reverse', '--format=%H %s', '-i', '-F',
               f'--grep={ticket}', rev_range).splitlines()
+    others = set()
+    for other in not_tickets:
+        others.update(git(repo, 'log', '--no-merges', '--format=%H', '-i', '-F',
+                          f'--grep={other}', rev_range).split())
     changed = {}
     for line in log:
         sha, _, subject = line.partition(' ')
+        if sha in others:
+            continue
         parse_name_status(git(repo, 'show', '--name-status', '-M', '--format=', sha), changed,
                           origins, f'{sha[:7]} {subject}')
     return changed
@@ -158,6 +166,8 @@ def main(argv=None):
     parser.add_argument('--range', required=True, help='git range of the shipped change, e.g. abc123..def456')
     parser.add_argument('--repo', type=Path, default=Path('.'))
     parser.add_argument('--ticket', help='score only commits whose message names this ticket, e.g. LD-441')
+    parser.add_argument('--not-ticket', action='append', default=[], metavar='TICKET',
+                        help='with --ticket, drop commits that also name this ticket, e.g. LD-442 (repeatable)')
     parser.add_argument('--exclude', action='append', default=[],
                         help="glob of changed files to ignore, e.g. 'docs/*' (repeatable)")
     parser.add_argument('--no-default-excludes', action='store_true',
@@ -176,7 +186,9 @@ def main(argv=None):
         print('plan-recall: no "Files/areas likely touched" entries found in the plan files', file=sys.stderr)
 
     origins = {}
-    changed = changed_files(args.repo, args.range, args.ticket, origins)
+    if args.not_ticket and not args.ticket:
+        parser.error('--not-ticket needs --ticket')
+    changed = changed_files(args.repo, args.range, args.ticket, origins, args.not_ticket)
     if args.ticket and not changed:
         print(f'plan-recall: no commits in {args.range} name {args.ticket}', file=sys.stderr)
     excludes = list(args.exclude) + ([] if args.no_default_excludes else list(DEFAULT_EXCLUDES))

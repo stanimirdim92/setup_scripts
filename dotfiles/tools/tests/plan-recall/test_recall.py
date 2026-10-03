@@ -141,6 +141,11 @@ class EndToEnd(unittest.TestCase):
             pr.changed_files(repo, f'{base}..HEAD', 'LD-441', origins)
             self.assertTrue(origins['a.php'].endswith(' LD-441: change a'))
             self.assertEqual(set(pr.changed_files(repo, f'{base}..HEAD')), {'a.php', 'b.php'})
+            # A commit naming both tickets carries the other ticket's files.
+            (repo / 'b.php').write_text('b3\n'); git('commit', '-qam', 'LD-441 LD-442: shared sort')
+            self.assertIn('b.php', pr.changed_files(repo, f'{base}..HEAD', 'LD-441'))
+            self.assertEqual(pr.changed_files(repo, f'{base}..HEAD', 'LD-441', not_tickets=['LD-442']),
+                             {'a.php': 'M'})
 
 
 if __name__ == '__main__':

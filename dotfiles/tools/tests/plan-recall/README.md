@@ -27,6 +27,9 @@ python3 dotfiles/tools/tests/plan-recall/recall.py --repo ~/code/leadbuster \
   misses. A file added and then removed inside the ticket is dropped. Each
   missed file shows the first ticket commit that touched it, so a planning
   miss can be told apart from a review fix or a scope expansion.
+- `--not-ticket LD-442` (with `--ticket`, repeatable) drops commits whose
+  message also names another ticket. Use it when two tickets were built on one
+  branch and some commits name both.
 - Pipeline artifacts and agent configuration are excluded by default
   (`docs/specs/*`, `docs/tasks/*`, `CLAUDE.md`, `AGENTS.md`, `.claude/*`,
   `.codex/*`, `.ai/*`, `.worktreeinclude`): no task plans them.
