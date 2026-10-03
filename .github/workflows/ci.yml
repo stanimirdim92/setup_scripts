@@ -90,7 +90,9 @@ jobs:
       # model and stays manual.
       - name: Spec-eval judging logic
         working-directory: dotfiles/tools/tests/spec-eval
-        run: python3 test_judge.py
+        run: |
+          python3 test_judge.py
+          python3 test_produce.py
 
       # Plan-localization recall scoring (adr/0067). Scoring a real ticket
       # needs its project checkout and stays manual.

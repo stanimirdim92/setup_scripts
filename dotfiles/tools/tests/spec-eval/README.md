@@ -15,7 +15,16 @@ a ticket that shipped, whose spec a human has read against the implementation.
 python3 run.py --fixture LD-380                      # produce, then judge (~$1.40)
 python3 run.py --fixture LD-380 --spec path/to.md    # judge an existing spec (free)
 python3 run.py --fixture LD-380 --output ./out       # keep the spec and run metadata
+python3 run.py --fixture LD-441 --repo ~/code/leadbuster   # repo-backed: the project at the fixture's commit
 ```
+
+A fixture with a `"repo": {"at": "<commit>"}` block runs against the project
+as it was at that commit. `--repo` names the checkout; `--at` overrides the
+commit. The files are exported with `git archive`: no `.git`, no history, so
+the run can see neither the shipped implementation nor the final spec.
+Gitignored files are absent, which `/spec` does not need. The project keeps its
+own `.claude/` and `CLAUDE.md`; the harness is added beside them.
+`test_produce.py` covers the layout and runs in CI.
 
 Never in CI. It drives the real model and spends tokens; run it when the
 harness changes in a way that could move spec quality — a model, a template, a
@@ -90,6 +99,30 @@ expectations are not optional to read.
 The findings a human confirmed are still there. It does **not** mean the spec
 is good. Nothing here checks whether new requirements are sound, whether the
 open questions are warranted, or whether the thing is readable. Read the spec.
+
+## Building a fixture from a shipped ticket
+
+A ticket that went through the pipeline already holds its answer key: every
+commit that revised the spec after its first draft is a correction a human
+made. A fresh `/spec` that makes those corrections on its own has improved;
+one that misses them has not.
+
+1. **Pick the commit.** The parent of the ticket's first spec commit, so the
+   project is as `/spec` first saw it:
+   `git log --reverse --format=%h --grep LD-441 -- docs/specs | head -1`, then
+   add `^`.
+2. **Freeze the intake.** Run `jira-ticket LD-441` and save its output as
+   `fixtures/LD-441/intake.md`. Do not edit it.
+3. **List the corrections.** `git log --format='%h %s' --grep LD-441 -- docs/specs`
+   shows every spec revision. `git show <sha> -- docs/specs` shows what changed.
+4. **Write one expectation per correction you still agree with**, with the
+   reason in `why`. Prefer `near` or `regex`; use `kind: semantic` when no
+   pattern can stand in for the judgment.
+5. **Check the expectations against the shipped spec**, free:
+   `run.py --fixture LD-441 --spec <final spec>`. Every `must` passes, or the
+   expectation is wrong. Then run them against the first draft
+   (`git show <first-spec-sha>:docs/specs/LD-441-SPEC.md`): the corrections
+   should fail there, or they test nothing.
 
 ## Adding a fixture
 
