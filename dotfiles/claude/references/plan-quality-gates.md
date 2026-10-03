@@ -42,7 +42,7 @@ being updated correctly, which is exactly the case this pin catches.
 used `git hash-object -w`, which writes an object no ref points at: `git prune`
 deletes it, and it is never transferred by push or clone. The plan was
 unverifiable on a second machine and could become unverifiable on the first
-(see `../../../docs/adr/0049-durable-spec-pin-and-hook-bypasses.md`).
+(see `../../docs/adr/0049-durable-spec-pin-and-hook-bypasses.md`).
 
 **When planning starts**, after confirming `Status: Approved`, require the spec
 to be committed with no uncommitted edits, then pin the commit that last

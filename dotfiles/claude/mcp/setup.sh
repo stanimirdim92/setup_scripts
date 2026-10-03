@@ -5,7 +5,7 @@
 # writes into ~/.claude.json (user scope), which also holds per-project
 # trust state and can carry OAuth tokens/API keys. Syncing that whole file
 # across machines would leak/overwrite machine-specific state, so it's
-# excluded in README.md's "Deliberately not synced" list. Run this script
+# excluded in dotfiles/README.md's "Deliberately not synced" list. Run this script
 # by hand on each machine instead:
 #
 #   ./dotfiles/claude/mcp/setup.sh
@@ -117,7 +117,7 @@ add_server structurizr --transport http https://mcp.structurizr.com/mcp --scope 
 
 echo "==> Chrome DevTools MCP server (user scope, all projects)"
 # Real-browser checks for test-engineer, the only persona whose `tools:` grants
-# mcp__chrome-devtools__* (docs/adr/0070). Executors never get it. Local stdio
+# mcp__chrome-devtools__* (dotfiles/docs/adr/0070). Executors never get it. Local stdio
 # server, no auth. --isolated gives each run a throwaway Chrome profile, so no
 # cookies or saved logins reach the agent. Pinned: `@latest` would run whatever
 # npm serves that day with full access to the machine (supply-chain.md).

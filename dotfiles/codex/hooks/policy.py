@@ -3,7 +3,7 @@
 
 Hooks are accident guards on supported tool paths, not a shell sandbox.
 Native role configs supply the trusted role argument; user tool input cannot
-grant a role. See docs/adr/0059-codex-native-roles-and-hook-adapters.md.
+grant a role. See dotfiles/docs/adr/0059-codex-native-roles-and-hook-adapters.md.
 """
 
 import json

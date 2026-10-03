@@ -71,7 +71,7 @@ Examples:
 When uncertain, inspect the project's compatibility policy before selecting a
 version bump.
 
-Plan the consumer migration with `deprecation-and-migration` (docs/adr/0010).
+Plan the consumer migration with `deprecation-and-migration` (dotfiles/docs/adr/0010).
 
 ## Conventional Commits and Versions
 

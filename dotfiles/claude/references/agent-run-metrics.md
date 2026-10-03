@@ -31,7 +31,7 @@ expose it.
   assistant turn carries `message.usage` with `input_tokens`, `output_tokens`,
   `cache_read_input_tokens`, and `cache_creation_input_tokens`.
 
-`tools/run-metrics.sh` in this repo reports batching, tokens, the
+`dotfiles/tools/run-metrics.sh` in this repo reports batching, tokens, the
 main-session/subagent split, and the main-session tool results over a line
 threshold (`--large-lines`, default 350) from a transcript, with
 `--since`/`--until` to scope one BUILD. The large-result count is the

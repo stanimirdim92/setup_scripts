@@ -1,0 +1,189 @@
+# Dotfiles harness architecture
+
+This repository maintains shared agent workflows and installs them into Claude
+Code and Codex. It contains instructions, adapters, configuration, and checking
+utilities; the host application executes the workflows. Installation instructions
+and the full synced-file inventory live in [README.md](README.md).
+
+## Source ownership
+
+| Source | Owns |
+|---|---|
+| [dotfiles/claude/AGENTS.md](claude/AGENTS.md) | Shared global defaults; project-local rules may be more specific |
+| [dotfiles/claude/commands](claude/commands) | Workflow entry points, orchestration, evidence gates, and stopping conditions |
+| [dotfiles/claude/skills](claude/skills) | Reusable methodology, including project documentation |
+| [dotfiles/claude/agents](claude/agents) | Persona responsibilities, Claude tool/model declarations, and report contracts |
+| [dotfiles/claude/references](claude/references) | Shared gate definitions, templates, and supporting guidance |
+| [dotfiles/claude/docs/agents.md](claude/docs/agents.md) | Human-readable orchestration overview, linked to the owning commands |
+| [dotfiles/codex/skills](codex/skills) | Thin Codex entry points into shared commands and skills |
+| [dotfiles/codex/references/workflow-runtime.md](codex/references/workflow-runtime.md) | Codex invocation, explicit skill loading, and persona dispatch adaptation |
+| [docs/adr](docs/adr) | This repository's accepted architectural decisions and rejected alternatives |
+
+Methodology is maintained in the shared Claude tree. Codex adapters refer to that
+source rather than maintaining a second version of the workflow. A shared edit
+therefore affects both hosts; a Codex-specific runtime translation belongs in the
+adapter/reference. Descriptions and invocation metadata still need reconciliation
+when a shared skill's discovery contract changes.
+
+## Installation and reads
+
+[dotfiles/tools/link_dotfiles.sh](tools/link_dotfiles.sh) links the Claude directories and
+configuration into the user's home and links the global rules to Codex's
+`AGENTS.md`. It preflights every destination (including the Codex adapter
+links below) before mutating anything, refuses to overwrite an existing
+`.bak`, and reverts paths changed by the current run if a later link fails.
+Its general link helper backs up existing real files and replaces old
+symlinks; review its output when moving an installation.
+
+The script calls [dotfiles/codex/install-skills.py](codex/install-skills.py)
+for individual Codex skill links under `~/.agents/skills`. That installer checks
+all destination conflicts first and refuses to replace an existing unrelated
+path. Repeated installation preserves correct links; `--check` only checks link
+state. It leaves bundled Codex system skills and other user skills in place.
+
+The resulting read paths are:
+
+```text
+Claude skill/command -> ~/.claude/... -> dotfiles/claude/... -> shared references
+Codex $skill -> ~/.agents/skills/<name> -> dotfiles/codex/skills/<name>
+            -> shared Claude source + Codex runtime conventions
+```
+
+Relative references resolve from each source file's physical directory, including
+when reached through a symlink. Keeping sources in the checkout preserves their
+sibling references, templates, and license files. Machine-specific credentials,
+logs, databases, and session state are outside this synced architecture; see the
+README's exclusions. Editing a linked runtime file edits its repository source.
+
+## Workflow and project boundaries
+
+The pipeline is `spec -> plan -> build -> review -> ship`, with independent
+`test` verification when requested or required by review. Commands own the gates;
+personas perform bounded work and do not dispatch other personas. The details,
+including executor reuse and concurrency, live in
+[the orchestration guide](claude/docs/agents.md) and its command sources.
+
+Ticket specs, plans, task packets, and project documentation belong to the target
+project. Global skills supply their workflow and shape without becoming a copy of
+project-specific facts. [project-docs](claude/skills/project-docs/SKILL.md)
+can generate or refresh a useful document set independently of the ticket stages;
+[documentation practices](claude/references/documentation-practices.md#project-documentation)
+defines document ownership and change-driven maintenance.
+
+## Host enforcement and integrations
+
+Claude's [settings](claude/settings.json) configure PreToolUse hooks from
+[dotfiles/claude/hooks](claude/hooks) and pin the subagent spawn depth
+to 1, so no persona can dispatch another; persona frontmatter declares its
+Claude tools, models, turn caps, and — for the writing personas — agent-scoped
+hooks that deny pushing and gate the handoff report. Those declarations are not Codex enforcement. Codex's
+own sandbox, approvals, and available tools determine its actual capabilities;
+the runtime adapter passes persona constraints as instructions and uses available
+Codex delegation. A textual restriction is not an OS permission boundary.
+
+Concurrent writers require separate checkouts and isolated runtimes; `/build`
+fans out whenever those conditions are established and queues a workstream
+when any is unproven. Review and verification contexts remain independent from executors.
+Missing required tools or delegation produce an explicit blocker.
+
+MCP connections and authentication remain host-specific. A linked browser, Jira,
+or architecture skill does not establish a working connection. The Claude
+[MCP setup script](claude/mcp/setup.sh) is separate from link installation;
+Codex tools must be available in its own session.
+
+## Map
+
+[dotfiles/docs/harness-map.html](docs/harness-map.html) draws every layer -- pipeline,
+session boot, personas, enforcement, references, skills, self-tests, records --
+as one sheet. Open it in a browser; GitHub will not render it.
+[dotfiles/tools/harness-map.py](tools/harness-map.py) generates it from the files that
+own each fact (agent frontmatter, command frontmatter, `settings.json`, hook
+headers, skill frontmatter, the CI workflow, the ADRs). Do not edit it by hand.
+When a persona, hook, command, skill, reference or CI step changes, run the
+generator in the same change; CI fails on a stale map.
+
+## Verification and maintenance
+
+Fixtures are built in the state a working checkout is actually in, not a
+pristine one. Every repository fixture carries a spec from an earlier ticket,
+an unrelated branch, an untracked file and a prunable worktree entry; every
+`$HOME` fixture carries files the linker does not manage. Three of the five
+findings in an external review of `81515f3` hid behind clean fixtures: an
+inherited spec reported as a job's own output, a worker that vanished from the
+results, and a gate counting a `rm -rf`-ed worktree. None was reachable in a
+repository with no prior specs, no branches and no stale worktrees.
+
+- `python3 dotfiles/codex/install-skills.py --check` checks installed link targets.
+- `dotfiles/tools/test-install-skills.py` regression-tests the installer's preflight and
+  rollback behavior (conflict detection, injected-failure rollback) in a
+  temporary destination, without touching real links.
+- `dotfiles/tools/test-link-dotfiles.sh` runs `link_dotfiles.sh` against a throwaway
+  `$HOME` and checks the filesystem afterwards, so a declined run has to prove
+  it changed nothing rather than prove it printed a warning. Covers decline,
+  non-terminal stdin, dry run, `--yes`, whole-directory backup, and the
+  silent no-op re-run.
+- `dotfiles/tools/test-batch-spec.sh` covers `batch-spec.sh` with `claude` stubbed --
+  manifest parsing, the already-specced skip, decline, non-terminal stdin, dry
+  run, per-job failure, `.worktreeinclude` copying, and that each job runs
+  *inside* its worktree. That last one caught the real bug: the branch was
+  created and the spec written to the main checkout.
+- `dotfiles/tools/test-hooks.sh` exercises the Claude command hooks with fixtures;
+  `dotfiles/tools/test-handoff-hook.sh` does the same for the `SubagentStop` handoff gate.
+- `dotfiles/tools/test-isolated-test-runner.sh` covers the gate that denies a bare
+  `php artisan test`/`phpunit` when the project ships `bin/worktree-test.sh`
+  and more than one worktree is live. Both evidence gates, the command-position
+  anchor, the env-assignment prefix and the `test:` boundary each have a case
+  that fails when removed.
+- `dotfiles/tools/test-worktree-hooks.sh` covers the worktree-base and infrastructure
+  readiness guards (ADR 0057/0058) against real Git fixtures and stub project
+  doctors. Cases include safe feature/linked checkouts, malformed input, missing
+  tools, detached HEAD, paths with spaces, and mid-ticket runner drift. The writer
+  guard's cases assert the `permissionDecision` it returns, never an exit
+  status: the first version asserted `exit 2` from a `SubagentStart` hook,
+  which passes whether or not that event can block anything.
+- `dotfiles/tools/test-run-metrics.sh` runs `dotfiles/tools/run-metrics.sh` on a fabricated
+  transcript and checks its large-result section: threshold default and
+  override, time window, subagent exclusion, string and array-form results.
+- `dotfiles/tools/validate-frontmatter.py` fails when a persona loses its explicit
+  `tools:` line, a read-only persona gains a mutating or dispatching tool, a
+  writing persona stops referencing its two agent-scoped hooks, the verifier
+  loses `isolation: worktree`, an executor gains unconditional isolation, a
+  persona drifts off the model tier its role calls for,
+  or a `settings.json` pin from ADR 0055 or 0056 is missing;
+  `dotfiles/tools/validate-frontmatter-test.py` covers the allow and deny cases.
+- `dotfiles/tools/validate-artifact-paths.py` fails when any pipeline file spells a
+  spec/capability-map/plan/todo artifact path differently from the canonical
+  set (the drift class fixed in c4584dd); `dotfiles/tools/validate-artifact-paths-test.py`
+  covers the allow and deny cases.
+- [Spec eval](tools/tests/spec-eval/README.md) re-runs `/spec` against a ticket
+  whose right answer is known from a human reading its spec against what
+  shipped, and checks the known findings survive. It is the only check here
+  that can tell whether a harness change moved spec *quality* rather than
+  shape. Its judging half is deterministic and runs in CI; producing a spec
+  costs tokens and is run deliberately. Fixtures carry real ticket content and
+  are gitignored.
+- [Plan recall](tools/tests/plan-recall/README.md) scores a shipped ticket's
+  plan against its merged change: the share of changed files the plan's tasks
+  named. It measures the plan's change surface (`plan-quality-gates.md` §4),
+  costs no tokens, and its scoring logic runs in CI. Score with `--ticket`
+  when the range carries other work.
+- [Workflow checks](tools/tests/workflow/README.md) document the isolated
+  Jira/spec/plan/build/review runner, its invocation, and what its evidence
+  does not cover.
+- `dotfiles/tools/check-references.py` resolves every relative cross-reference between
+  harness files and fails on one that no longer exists; `dotfiles/tools/check-references-test.py`
+  covers the resolution and the placeholder/URL cases it must not flag. It is the
+  static half of the reference problem — a reference refused at runtime because
+  it resolves outside the session's working directory is not visible to it.
+- `.github/workflows/ci.yml` runs every check above on each push to `main` and each pull request. The live
+  workflow runner is excluded on purpose: it drives the real model and spends
+  tokens, so it stays a deliberate manual run.
+- `dotfiles/docs/observation-log.md` records what real runs actually cost and where they
+  failed. It is the evidence the uncalibrated numbers — `maxTurns` above all —
+  are waiting on, and the input the ADRs are meant to be argued from.
+- Changed instructions need focused behavioral checks when their decisions or
+  orchestration change; syntax and valid paths alone do not establish behavior.
+
+Update this overview when ownership, installation paths, host adaptation, or
+execution boundaries change. Keep detailed policy in its existing source and
+link to it here. Record genuine new architectural choices in the ADRs.

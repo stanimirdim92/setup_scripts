@@ -179,8 +179,8 @@ Ticket-scoped work defaults to one isolated worktree per ticket.
 - Sequential executors inherit the ticket checkout. Explicitly request
   `isolation: worktree` for each concurrent writer; preserve independent
   reviewer contexts and the test-engineer's isolated checkout. `head` makes
-  those child worktrees inherit the session's ticket commits (docs/adr/0058).
-- Two hooks protect the session boundary (docs/adr/0057, 0058). Session start
+  those child worktrees inherit the session's ticket commits (dotfiles/docs/adr/0058).
+- Two hooks protect the session boundary (dotfiles/docs/adr/0057, 0058). Session start
   warns about a stale default branch or a fresh ticket without its own commits.
   Separately, an optional project `bin/worktree-doctor.sh --infrastructure`
   reports outdated runner infrastructure even mid-ticket. Writing dispatch is
@@ -222,7 +222,7 @@ Ticket-scoped work defaults to one isolated worktree per ticket.
   from skipping or weakening verification.
 - Give subagents small task packets: outcome, criteria, relevant rules,
   precedents, contracts, and verification. Prefer file pointers over copied docs.
-- Do not widen tools/permissions or seek secrets to bypass an orchestration
+- Do not widen dotfiles/tools/permissions or seek secrets to bypass an orchestration
   boundary.
 - Completion claims require executed evidence.
 

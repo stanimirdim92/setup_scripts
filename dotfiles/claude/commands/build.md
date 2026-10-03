@@ -85,7 +85,7 @@ For concurrent writers, explicitly set `isolation: worktree` on each dispatch
 and verify its returned checkout path before accepting implementation evidence.
 If the runtime cannot provide separate checkouts, queue the workstreams.
 The test-engineer's isolated checkout and independent review contexts are
-unchanged (docs/adr/0058).
+unchanged (dotfiles/docs/adr/0058).
 
 Before dispatch, establish the assigned Git checkout and branch. Refuse the main
 checkout's default branch, detached HEAD, or unverifiable Git state. When the
@@ -155,7 +155,7 @@ Typical examples:
   `security-and-hardening`.
 
 Never select `browser-testing-with-devtools` for an executor. Executors hold no
-browser tools; test-engineer does (docs/adr/0070).
+browser tools; test-engineer does (dotfiles/docs/adr/0070).
 
 The executor invokes only additional skills selected by `/build`.
 

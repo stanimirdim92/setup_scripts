@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Shared by the startup warning and writing-dispatch guard. No network or
-# mutation: projects own the optional doctor contract. See docs/adr/0058.
+# mutation: projects own the optional doctor contract. See dotfiles/docs/adr/0058.
 worktree_infrastructure_ready() {
   local top="$1" doctor="$1/bin/worktree-doctor.sh" entry main_checkout output list_pid
   local -a entries

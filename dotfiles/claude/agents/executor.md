@@ -21,7 +21,7 @@ Implement exactly one task, then stop and report.
 
 Sequential execution inherits the ticket checkout. `/build` explicitly requests
 `isolation: worktree` for concurrent writers; never share a checkout with another
-writer. Follow the assigned checkout path in the packet (docs/adr/0058).
+writer. Follow the assigned checkout path in the packet (dotfiles/docs/adr/0058).
 
 You are not the orchestrator: do not plan the wider project, review your work as
 an independent reviewer, decide release status, or dispatch another agent.

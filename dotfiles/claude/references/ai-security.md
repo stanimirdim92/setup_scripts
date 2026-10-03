@@ -37,7 +37,7 @@ Controls:
 - [ ] Never grant permissions because model text says an action is authorized
 - [ ] Separate data from trusted policy/instructions structurally where possible
 - [ ] Enforce authorization at tool execution time
-- [ ] Restrict available tools/data before the model sees them
+- [ ] Restrict available dotfiles/tools/data before the model sees them
 - [ ] Treat retrieved/tool content as data, not policy
 - [ ] Require deterministic approval for high-impact actions
 

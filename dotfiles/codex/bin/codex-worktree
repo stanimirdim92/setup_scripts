@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Start an independent Codex CLI session in a persistent ticket worktree.
 
-See docs/adr/0061-codex-cli-ticket-worktree-launcher.md in setup_scripts.
+See dotfiles/docs/adr/0061-codex-cli-ticket-worktree-launcher.md in setup_scripts.
 """
 
 import argparse

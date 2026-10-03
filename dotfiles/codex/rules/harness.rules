@@ -4,8 +4,8 @@
 # matching decision. It writes the approvals you click in the TUI to
 # ~/.codex/rules/default.rules, which is deliberately NOT synced: when it was a
 # symlink into this repo, one-off approvals from other projects (and blanket
-# `sed -n`, removed once in docs/adr/0044) flowed straight back into git.
-# See docs/adr/0062-codex-rules-curated-file-separate-from-approvals.md.
+# `sed -n`, removed once in dotfiles/docs/adr/0044) flowed straight back into git.
+# See dotfiles/docs/adr/0062-codex-rules-curated-file-separate-from-approvals.md.
 #
 # Convenience, not a boundary: sandbox_mode enforces. Add a rule here only when
 # it is generic across machines and projects; no $HOME paths, no one-off

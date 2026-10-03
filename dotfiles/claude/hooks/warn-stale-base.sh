@@ -9,7 +9,7 @@
 # a ticket worktree now branches from your LOCAL HEAD, not from origin. Start a
 # ticket from a main that is three days behind and the ticket branch is three
 # days behind, silently, because the worktree is created successfully either
-# way (docs/adr/0056, 0057).
+# way (dotfiles/docs/adr/0056, 0057).
 #
 # Two arrangements put you on a stale base, and they need different advice:
 #
@@ -47,7 +47,7 @@ cd "$cwd" 2>/dev/null || exit 0
 top="$(git rev-parse --show-toplevel 2>/dev/null)" || { progress 'SKIP: this directory is not a Git checkout.'; exit 0; }
 progress "Checkout: $top"
 # Infrastructure can drift after a ticket has commits, independently of its
-# Git base. Run before the branch/remote early exits (docs/adr/0058).
+# Git base. Run before the branch/remote early exits (dotfiles/docs/adr/0058).
 hook_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)" || exit 0
 if source "$hook_dir/worktree-readiness.sh"; then
   progress 'Infrastructure: checking the worktree runner against the main checkout.'

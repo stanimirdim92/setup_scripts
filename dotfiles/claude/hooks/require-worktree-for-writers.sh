@@ -3,7 +3,7 @@
 # feature branch and current project test infrastructure. Sequential executors
 # inherit that checkout; parallel dispatch explicitly requests isolation.
 # Invalid input/state denies dispatch; read-only personas remain unrestricted.
-# Exit 0, with a JSON permissionDecision on stdout. See docs/adr/0058.
+# Exit 0, with a JSON permissionDecision on stdout. See dotfiles/docs/adr/0058.
 set -uo pipefail
 
 # Fixed strings use this dependency-free response when no JSON parser works.

@@ -1,189 +1,24 @@
-# AI tool dotfiles (Claude Code / Codex)
+# setup_scripts
 
-`dotfiles/` holds the syncable config from `~/.claude` and `~/.codex`. On a
-machine, `tools/link_dotfiles.sh` symlinks these into place (backing up any
-existing real file as `<name>.bak` the first time). Re-run it any time,
-including right after `git clone` on a new machine:
+Server and workstation setup: web stack configuration, kernel tuning, and
+provisioning scripts.
 
-    ./tools/link_dotfiles.sh
+| Path | Contents |
+| --- | --- |
+| `nginx/` | Dockerfile, `nginx.conf`, site config, logrotate |
+| `php/fpm/` | PHP-FPM, `php.ini`, and pool configuration |
+| `redis/` | Dockerfile and `redis.conf` |
+| `database/` | MySQL `my.cnf` |
+| `linux/etc/` | `limits.conf` and network `sysctl` tuning |
+| `tools/php_update.sh` | Installs a PHP version and its extensions (run as root; `./tools/php_update.sh 8.3`) |
+| `docs/terminal.md` | Terminal tooling notes |
 
-It prints what each destination will become — `new`, `relink`, `backup`, or
-`ok` — and asks before touching anything. Six of the destinations are whole
-directories (`agents`, `skills`, `hooks`, `commands`, `references`, `docs`); a
-real one is moved aside to `<name>.bak` intact rather than merged, so the plan
-marks those `BACKUP` with their entry count. `--dry-run` prints the plan and
-stops; `--yes` skips the prompt and is required when stdin is not a terminal.
-A re-run with nothing to do says so and does not prompt.
+## AI tool dotfiles
 
-For independent Codex CLI sessions, run `codex-worktree LD-123` from anywhere
-inside a project. It creates `<main-checkout>/.codex/worktrees/LD-123` on
-`codex/LD-123`, or reopens that ticket's checkout without resetting it. Open
-another terminal and run `codex-worktree LD-124` for concurrent work. Each gets
-its own files, branch, and Codex session; a per-ticket lock prevents duplicate
-launcher sessions in the same checkout. These are persistent CLI worktrees,
-separate from the desktop app's managed worktrees.
+`dotfiles/` holds the Claude Code and Codex harness: agents, commands, skills,
+hooks, its tools and tests, its decision records, and its observation log.
+Start with [dotfiles/README.md](dotfiles/README.md) and
+[dotfiles/ARCHITECTURE.md](dotfiles/ARCHITECTURE.md).
 
-New ticket branches start from the invoking checkout's committed `HEAD`; update
-your base first. Existing ticket branches retain their own history. Uncommitted
-source changes stay in their original checkout. The launcher copies only files
-that are both ignored and selected by `.worktreeinclude`, keeps existing target
-files, and skips source symlinks. It then runs the shared infrastructure guard
-and the project's executable `bin/worktree-setup.sh`, when present, before
-starting `codex -C <ticket-checkout>`. Leadbuster's setup reconciles its own
-dependency copies; its test runner owns database/Redis isolation. Worktrees do
-not isolate development servers, fixed ports, or other shared services.
-
-Use `codex-worktree --dry-run LD-123` to inspect without changes, or
-`codex-worktree --no-setup LD-123` for specification/planning without dependency
-setup. Pass Codex arguments after `--`, e.g. `codex-worktree LD-123 -- -m gpt-6-astra`.
-Setup failures stop before Codex and retain the checkout for repair/retry.
-Worktrees remain after exit; use the project's cleanup procedure and
-`git worktree remove` when a ticket is finished. The launcher locally excludes
-`/.codex/worktrees/` through `.git/info/exclude`, without editing project files.
-See [ADR 0061](docs/adr/0061-codex-cli-ticket-worktree-launcher.md).
-
-`tools/batch-spec.sh` runs `/spec` for many tickets at once, one worktree per
-job, reading `tools/spec-batch.txt`. Tickets that share files go on one line so
-they get one spec rather than four competing ones. It stops at the spec gate:
-every job ends with a Draft spec, uncommitted, awaiting a human. `--dry-run`
-prints the plan, `--parallel N` widens it, `--budget` caps each job. Where the
-project declares `.worktreeinclude`, the matching ignored files are copied into
-each worktree — `git worktree add` is not `claude --worktree` and does not do
-that itself.
-
-`tools/run-metrics.sh` reports measured run metrics from a Claude Code
-transcript — tool-call batching, token totals, main-session vs subagent split,
-main-session tool results over a line threshold (whole files read inline), and
-failure signals (errored and denied tool results, handoff-gate blocks, turn
-caps, repeated commands) — with `--since`/`--until` to scope a single `/build`
-and `--row` to print a ready observation-log row. See
-`dotfiles/claude/references/agent-run-metrics.md`.
-
-`.github/workflows/ci.yml` runs every deterministic check in `tools/` on each
-push to `main` and each pull request — hooks, handoff gate, persona frontmatter and settings pins, artifact
-paths, workflow-runner logic, the Codex installer, and the metrics script. The
-live workflow runner is excluded; it spends tokens and stays a manual run.
-Real-run evidence — failures, cost, turns — goes in `docs/observation-log.md`.
-
-This repo's own build decisions (why an agent is configured one way and
-not another, including choices reversed after contact with reality) are
-recorded in `docs/adr/*.md` — read that before re-proposing
-something already tried and rejected here.
-
-Architecture and source ownership: [ARCHITECTURE.md](ARCHITECTURE.md).
-
-To document another project, open a session in that project and use
-`/project-docs` in Claude or `$project-docs` in Codex. The default selects a small
-useful set; add `full set` for architecture, design, conventions, commands,
-testing, security, and a repository map. Use `refresh ARCHITECTURE.md TESTING.md`
-to update selected files. The skill reads the project's source and existing
-rules; it does not copy Leadbuster's architecture into other projects.
-
-Synced:
-- `dotfiles/codex/bin/codex-worktree` -> `~/.local/bin/codex-worktree` — one independent terminal Codex session per ticket worktree; requires `~/.local/bin` on `PATH`.
-- `dotfiles/claude/AGENTS.md` -> `~/.claude/CLAUDE.md` and `~/.claude/AGENTS.md` — one canonical source for global working rules. Claude 2.1.277+ supports project `AGENTS.md`; its documented global entry point remains `~/.claude/CLAUDE.md`, which links directly to this source.
-- `dotfiles/claude/settings.json` -> `~/.claude/settings.json` — model, permissions, hooks, active plugins, and context settings. It turns on Claude Code's Bash sandbox (`docs/adr/0068-sandbox-resumable-build-and-failure-signals.md`): shell commands run inside an OS boundary with `~/.ssh`, `~/.aws`, `~/.config/gh` and other credential files unreadable and token variables unset; DB, Docker and SSH commands are excluded because the sandbox cannot reach localhost services or SSH remotes. On Linux it needs `bubblewrap` and `socat` (`sudo apt-get install bubblewrap socat`); without them Claude Code runs commands unsandboxed, so check `/sandbox` once per machine. Built-in automatic memory is **enabled** (`autoMemoryEnabled: true`) alongside versioned `docs/MEMORY.md` and the episodic conversation-search plugin, and the auto-compact window is 500k — both reverse `docs/adr/0037-fixed-session-context-reduced.md`; see `docs/adr/0043-automatic-memory-and-compaction-window-restored.md` for the reversal and the precedence rule that resolves the three memory surfaces
-- `dotfiles/claude/remote-settings.json` -> `~/.claude/remote-settings.json`
-- `dotfiles/claude/statusline.sh` -> `~/.claude/statusline.sh` — status line script wired via `settings.json`'s `statusLine.command`: model name, cwd, git branch, context-usage bar, session cost, elapsed time
-- `dotfiles/claude/subagent-statusline.sh` -> `~/.claude/subagent-statusline.sh` — per-subagent row override wired via `settings.json`'s `subagentStatusLine.command`: status icon, name, model, token count/percentage, elapsed time
-- `dotfiles/claude/agents/` -> `~/.claude/agents/` (whole directory) — custom subagents: `distributed-systems-reviewer` (timeouts/idempotent retries/backoff/circuit breakers/backpressure/checkpointing, for anything crossing a process/network/queue boundary), `executor` (dispatched by `/build` to implement one task end-to-end; never invokes another agent), `repo-recon` (read-only survey dispatched by `/spec` and `/plan` so the recon reads stay in the agent's own context and only a pointer report returns — see `docs/adr/0041-recon-delegated-to-repo-recon-subagent.md`) — first-party — plus vendored `code-reviewer` (five-axis review), `security-auditor` (vulnerability detection, threat modeling, and hardening across input handling, auth, data protection, infra, third-party integrations, and LLM/OWASP-LLM-Top-10 surfaces — see `docs/adr/0025-security-auditor-provenance-corrected.md` for its actual addyosmani origin, which superseded `infra-reviewer`/`security-reviewer`), and `test-engineer` (dispatched by `/test` as the bounded verifier when `/review` requires the VERIFY gate; also answers direct test-design/coverage-analysis requests) — all three MIT-licensed, see `dotfiles/claude/skills/ADDYOSMANI_AGENT_SKILLS_LICENSE`. The former `ai-engineer`/`prompt-engineer`/`vector-database-engineer` personas (production LLM app/RAG/agent architecture, prompt optimization, vector search/embedding) come from the installed and globally enabled `llm-application-dev@claude-code-workflows` plugin — see `docs/adr/0018-llm-application-dev-switched-to-installed-plugin.md`
-- `dotfiles/claude/skills/` -> `~/.claude/skills/` (whole directory) — first-party `dotfiles-sync`, `adr-recording`, `jira-ticket`, `c4-architecture`, `project-docs`, `laravel-worktree-isolation` (per-worktree test database and Redis keyspace for a Laravel repo, including the schema-snapshot case where the test DB isn't built from migrations — the scripts it produces live in the target repo, not here), and `executor-development-discipline`; vendored `spec-driven-development`, `planning-and-task-breakdown`, `incremental-implementation`, `test-driven-development`, `code-review-and-quality`, `git-workflow-and-versioning`, `deprecation-and-migration`, `security-and-hardening`, `api-and-interface-design`, `context-engineering`, and `browser-testing-with-devtools` (selected by `/build`/`/test` as a materially required task-specific skill for browser-facing work, and by `test-engineer`) under `ADDYOSMANI_AGENT_SKILLS_LICENSE`. The full incremental, TDD, and review skills remain available for explicit use — each sets `disable-model-invocation: true`, so they load only on `/skill-name` and never auto-trigger — while `/build`, `/test`, and `/review` use the compact executor discipline, `test-engineer`, and `code-reviewer` routes to avoid loading duplicate methodology automatically — see `docs/adr/0039-runtime-catalog-narrowed-by-observed-use.md`
-- `dotfiles/claude/commands/` -> `~/.claude/commands/` (whole directory) — `/spec`, `/plan`: short aliases into the SDLC skills above; the back half of the chain is a gated split (`docs/adr/0020-build-test-review-pipeline-split.md`) — `/build` groups tasks into workstreams, selects `executor-development-discipline` plus any materially required task-specific skills, and dispatches one `executor` per workstream (resumed across that workstream's later tasks instead of a fresh spawn per task; concurrency has no fixed cap — one executor per workstream that is genuinely independent, dependency-ready, worktree-isolated, runtime-isolated for every mutable resource its checks touch, and within rate-limit headroom, with the rest queued, since two writers in one checkout race on git state regardless of file-scope overlap and a worktree isolates git but not a shared database or queue — `docs/adr/0031-parallel-executors-via-worktree-isolation.md`, `docs/adr/0054-executor-concurrency-condition-gated-not-capped.md`), implements only, no review/verify/verdict; `/review` is the independent REVIEW gate after `/build` — it decides whether independent verification is required for the candidate (`references/verification-triggers.md`; `/test` is risk-triggered, not mandatory — `docs/adr/0035-independent-verify-made-risk-triggered.md`), then fans out `code-reviewer`/`security-auditor`/`distributed-systems-reviewer` (only `code-reviewer` is unconditional; the rest trigger per `references/reviewer-triggers.md`) capped at 2 concurrent reviewers with no exception, and reports findings mapped to canonical BLOCKER/REQUIRED/ADVISORY dispositions (`docs/adr/0033-canonical-disposition-and-scoped-commit-authority.md`); `/test`, when required, dispatches `test-engineer` and reports VERIFY PASS/FAIL/BLOCKED; `/ship` is the final gate after `/review` (`docs/adr/0028-ship-command-as-synthesis-gate.md`) — dispatches nobody, synthesizes `/review`'s findings and verification status, checks the axes no persona owns (infrastructure, documentation), and issues the GO/NO-GO verdict with a mandatory rollback plan. `/explain` sits outside the gates: it renders a candidate's spec, plan, diff and gate messages as one offline HTML review page under `.git/explain/` — requirement trace, touched modules, blind-reviewer's reading next to the goal, open findings, rollback — and changes nothing (`docs/adr/0069-plain-writing-explain-page-and-generated-map.md`). The former `/ai-assistant`, `/langchain-agent`, `/prompt-optimize` vendored commands come from the installed and globally enabled `llm-application-dev@claude-code-workflows` plugin
-- `dotfiles/claude/references/` -> `~/.claude/references/` (whole directory) — shared checklists (`definition-of-done.md`, `security-checklist.md`) that the SDLC skills point at with a `../../references/` path, `documentation-practices.md` (the Ideas/Decisions/Memory practice moved out of `CLAUDE.md` so it isn't force-loaded into every subagent), `reviewer-triggers.md` (the single trigger-condition matrix `/review` reads when dispatching specialist reviewers), `repository-precedent.md` (how to use a `repo-recon` report and what to do when there is no precedent — previously restated in `/spec`, `/plan` and `spec-driven-development`; the evidence order itself stayed inline in `spec-driven-development` because it is five lines needed on nearly every run, and `repository-precedent-example.md` holds the worked report separately for the same reason — see `docs/adr/0048-repository-precedent-placement-corrected.md`), `spec-quality-gates.md` and `plan-quality-gates.md` (the single sources for closure checks, approval state, id ownership, the invariant-mechanism and data-lifecycle gates, and the `REQ-###` trace from `/spec` through `/ship` — the plan side also carries spec-revision pinning via `git hash-object` and the rules for bounded spike tasks; several consumers, one copy each, same reason as `reviewer-triggers.md`), `agent-run-metrics.md` (lightweight actual-only signals for tuning executor/workstream/model policy), and `templates/` (`spec.md`, `bugfix-spec.md`, `plan.md`, `task.md` — the canonical document shapes `spec-driven-development`/`planning-and-task-breakdown` point at instead of embedding their own copy, so the two skills can't drift apart on format either; `bugfix-spec.md` leads with reproduction evidence and makes preserved behavior its own requirement — see `docs/adr/0045-spec-approval-state-change-impact-and-requirement-traceability.md`); must stay a sibling of `skills/`, not nested inside it
-- `dotfiles/claude/hooks/` -> `~/.claude/hooks/` (whole directory) — scripts referenced by `settings.json`'s `hooks` key: destructive-bash blocking (`rm -rf`, block-device writes, recursive chmod/chown, and the git equivalents — `reset --hard`, `clean -f`, `branch -D`, `checkout .`/`restore .`), and a force-push-to-main/master warning plus a plain-push confirm in local IDE sessions (`$CLAUDE_CODE_REMOTE` unset). Both hooks expand the `dotfiles/.gitconfig` aliases that reach those commands (`rlc`, `co`, `fu`, and the `push` typo family) before matching, since a grep for the spelled-out command lets every alias through; keep the two lists in sync when that `[alias]` section changes. The worktree startup/dispatch hooks share `worktree-readiness.sh`: projects may expose a fast, nonmutating `bin/worktree-doctor.sh --infrastructure`; stale or missing ticket infrastructure warns on startup and denies writing dispatch, including mid-ticket. Sequential executors inherit the ticket checkout; concurrent dispatch explicitly requests isolation (see `docs/adr/0058-sequential-ticket-checkout-and-infrastructure-readiness.md`). Two further hooks are **agent-scoped** — declared in `executor.md` and `test-engineer.md` frontmatter, not in `settings.json` — so they run only while those writing personas run: `block-agent-push.sh` hard-denies every spelling of `git push` and the `gh` commands that push or publish (local commits and tags stay allowed), and `require-handoff-report.sh` (a `SubagentStop` hook) refuses to let the persona finish until its report carries verification outcomes, a commit id, and the working-tree state — see `docs/adr/0055-multi-agent-enforcement-and-parallel-when-safe.md`. `settings.json` also pins `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` (no subagent can spawn another), `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=0` (a named subagent never silently becomes a teammate without worktree isolation), and `CLAUDE_CODE_FORK_SUBAGENT=0` (Claude cannot spawn a conversation fork that inherits the main session's full context and tool pool; `/subtask` still works when you start one yourself)
-- `dotfiles/claude/docs/` -> `~/.claude/docs/` (whole directory) — `agents.md`: the persona/orchestration reference (roster, `/build`→`/test`→`/review` shapes, context-discipline, adding-a-persona checklist), made available at runtime instead of living only in this repo's own `docs/` (which holds repo-specific meta-documentation — ADRs, IDEAS.md, MEMORY.md — that has no reason to sync to every machine's `~/.claude/`)
-- `dotfiles/codex/config.toml` -> `~/.codex/config.toml` — `sandbox_mode = "workspace-write"` with `[sandbox_workspace_write] network_access = true`: writes confined to the workspace (`.git`/`.agents`/`.codex` read-only inside it), network kept on for npx/composer/remote MCP. The `[desktop]`, `[projects]`, `[plugins.*]` and `[mcp_servers.node_repl]` blocks are written by the Codex app itself, so they churn per machine — that's expected noise in `git status`, not config to hand-edit
-- `dotfiles/codex/rules/harness.rules` -> `~/.codex/rules/harness.rules` — curated per-command approval rules, generic across machines and projects. These are convenience, not a security boundary: `sandbox_mode` is what enforces. `~/.codex/rules/default.rules` is deliberately **not** synced: Codex writes every TUI approval there, and while it was a symlink into this repo, one-off approvals and the blanket `sed -n` removed in `docs/adr/0044-config-security-hardening-pass.md` flowed back into git. The linker retires that old link, keeping any approvals written through it as a local file — see `docs/adr/0062-codex-rules-curated-file-separate-from-approvals.md`
-- `dotfiles/claude/AGENTS.md` -> `~/.codex/AGENTS.md` — the same shared global working rules, without a second source copy.
-- `dotfiles/codex/agents/` -> `~/.codex/agents/` — eight native Codex roles reusing the shared persona bodies. Executor, test-engineer, and repo-recon use Terra/xhigh; four reviewers and executor-high use Astra/high. Native roles disable nested delegation and attach role policies; recon/review default to a read-only sandbox.
-- `dotfiles/codex/hooks/` -> `~/.codex/hooks/` and `dotfiles/codex/hooks.json` -> `~/.codex/hooks.json` — Codex adapters for the shared destructive-command, push, worktree/readiness, isolated-test-runner, startup, and writer-handoff guards. Hooks require Codex trust review before they run; these are accident guards on supported tool paths, not a complete security boundary.
-- `dotfiles/codex/references/` -> `~/.codex/references/` — Codex invocation, model routing, independent context, hook activation, and runtime compatibility instructions.
-- `dotfiles/codex/skills/*` -> `~/.agents/skills/*` (individual links) — Codex adapters for all 18 local skills under `dotfiles/claude/skills` and all 7 commands (`$spec`, `$plan`, `$build`, `$test`, `$review`, `$ship`, `$explain`). They read the maintained Claude commands, skill bodies, agents, references, and templates through relative source paths. `dotfiles/codex/references/workflow-runtime.md` maps invocation, skill loading, and agent orchestration to Codex. `agents/openai.yaml` makes these explicit-only (`allow_implicit_invocation: false`): the six stage entry points and `$explain`, the standalone incremental, TDD and code-review skills, and `executor-development-discipline`, `spec-driven-development` and `planning-and-task-breakdown`, which only a stage or a role loads. `tools/test-codex-harness.py` checks that set and that each adapter's description matches its Claude skill. Claude model names and MCP settings are not imported; native Codex roles and hook adapters provide the client-specific layer. Tool-dependent skills still require callable Codex tools. Codex's bundled `~/.codex/skills/.system` remains untouched.
-
-The main `tools/link_dotfiles.sh` setup calls the Codex installer. To install
-or repeat only the Codex skill setup, run `python3 dotfiles/codex/install-skills.py`
-from the repository root. The main setup preflights every destination before
-mutation, refuses to overwrite an existing `.bak`, and reverts paths changed by
-the current run if a later link fails. The Codex installer likewise preflights
-conflicts and rolls back adapter links created by a failed run.
-`python3 dotfiles/codex/install-skills.py --check` verifies installed link targets
-without changing files; it does not test model behavior or connector access.
-Use `--dest PATH` for an isolated installation check. Links point at this checkout,
-so rerun setup on each machine at its actual checkout location.
-
-After changing native agents or hooks, start a new Codex session and review/trust
-the new definitions in CLI `/hooks`, including role-layer hooks when surfaced.
-Untrusted hooks are skipped. On a surface without a native-role selector, the
-workflow passes the model and persona explicitly, but role-specific hooks and
-sandbox defaults do not load; the runtime reference documents that limitation.
-Live parent permission overrides can also supersede role sandbox defaults.
-`python3 tools/test-codex-harness.py` checks real Git fixtures, installed hook
-commands, and role declarations without spending model tokens. See
-[ADR 0059](docs/adr/0059-codex-native-roles-and-hook-adapters.md).
-
-Superpowers, Code Simplifier, and Commit Commands remain installed/known for
-project-scoped opt-in but are not globally enabled. Qdrant and LLM Application
-Dev remain globally enabled; see
-`docs/adr/0039-runtime-catalog-narrowed-by-observed-use.md`.
-
-Since these are symlinks, editing the file in the repo or letting the app
-edit it live (e.g. `/model`, `codex mcp add`) are the same thing — just
-`git status` in this repo afterwards to see what changed, and commit when
-you want to snapshot it. Adding a new agent/skill/hook file needs no script
-change (whole directories are linked) — see
-`dotfiles/claude/skills/dotfiles-sync/SKILL.md` for the full checklist.
-
-MCP servers: **not symlinked** — see `dotfiles/claude/mcp/setup.sh`. Run it
-by hand once per machine (`./dotfiles/claude/mcp/setup.sh`, no secrets needed);
-`claude mcp add` writes into `~/.claude.json`, which mixes server config with
-per-project trust state and can carry OAuth tokens/API keys, so it belongs
-in the "not synced" list below, not linked like the rest. The script writes
-auth headers as literal `${GITHUB_TOKEN}`/`${APIFY_TOKEN}`/`${CONTEXT7_API_KEY}` placeholders
-that Claude Code expands at load time, so the stored config holds variable
-names rather than tokens — export those variables in the shell that starts
-Claude Code. One exception: with `CONTEXT7_API_KEY` unset, Context7 is added
-with no auth header at all (its unauthenticated rate limit), and a later rerun
-skips it as already configured — so export the key before the first run if you
-want the higher limit. Re-running the script skips any server that already exists
-instead of aborting on the first duplicate name.
-
-The script also adds Chrome DevTools MCP (`chrome-devtools-mcp@1.10.1`,
-`--isolated`, a throwaway Chrome profile per run) for real-browser checks.
-Only `test-engineer` holds its tools; executors have none, so `/build` lists
-browser-dependent criteria as `Needs real-browser check` and `/review` routes
-them to `/test` (`docs/adr/0070-browser-checks-route-to-test-engineer.md`). It
-needs Node 20+ and a local Chrome. The Codex config pins the same version; bump
-both together.
-
-The filesystem MCP server is deliberately **not** configured. At user scope
-rooted on `$HOME` it reached around `settings.json`'s `Read` deny paths
-(`~/.ssh`, `~/.aws`, `~/.config/gh`, `~/.git-credentials`) — that deny list
-constrains Claude Code's own file tools, not an MCP server — while the built-in
-`Read`/`Write`/`Glob`/`Grep` tools already cover the workspace. Run
-`claude mcp remove filesystem` on a machine that still has it.
-
-Deliberately **not** synced:
-- `~/.claude.json` — MCP server config (user/local scope) plus per-project trust
-  state and possible OAuth tokens/API keys. Use `dotfiles/claude/mcp/setup.sh`
-  to reproduce the MCP servers on a new machine instead.
-- `~/.claude/.credentials.json` — OAuth tokens, machine-specific secrets.
-- `~/.claude/plugins/installed_plugins.json`, `known_marketplaces.json` — regenerated
-  automatically from `settings.json`'s `enabledPlugins` / `extraKnownMarketplaces`.
-- `dotfiles/claude/skills/synced/`, `dotfiles/claude/skills/session-start-hook/`
-  (gitignored) — Claude Code's own bundled/example skills (docx, pdf, pptx, xlsx,
-  skill-creator, morning, session-start-hook), auto-materialized inside the
-  symlinked `skills/` directory whenever one gets listed as available in a
-  session. Same "regenerated automatically" category as the plugin files above,
-  just written into a path this repo otherwise curates deliberately.
-- `~/.claude/{projects,sessions,cache,downloads,shell-snapshots,file-history,
-  session-env,backups,ide,daemon,jobs,paste-cache}`, `~/.claude/history.jsonl`,
-  `~/.claude/policy-limits.json`, `~/.claude/.last-*` — runtime state/logs, not config.
-- `~/.codex/{sessions,shell_snapshots,tmp,.tmp,mcp-oauth-locks}`, the `*.sqlite*`
-  state/memory/log/goals databases, `installation_id` — runtime state, machine-specific.
-- `~/.codex/skills/.system/*` — vendor-shipped system skills bundled with Codex itself,
-  not user config.
-- `~/.ai/mcp/mcp.json` — currently empty (0 bytes), nothing to sync yet.
-- `~/.config/superpowers/` — the `episodic-memory` plugin's archived conversation
-  transcripts and local SQLite/vector index. Rebuilds itself from `~/.claude/projects`
-  and `~/.codex/sessions` on each machine; nothing here is worth carrying over, and
-  transcripts can hold anything that was ever pasted into a session.
+`.github/workflows/ci.yml` runs the harness's self-tests. It stays at the root
+because GitHub reads workflows only from there.

@@ -461,7 +461,7 @@ protected-branch mutation, or history rewriting.**
 
 ## 6. Operator tools
 
-Scripts under `../../../tools/` and `../../codex/bin/` are invoked directly by
+Scripts under `../../tools/` and `../../codex/bin/` are invoked directly by
 a human or by CI, not dispatched as agents. Each has a fixed exit-code and
 stdout contract.
 
@@ -482,7 +482,7 @@ violation** — all three, no exceptions.
 
 | Tool | Guards |
 |---|---|
-| `validate-frontmatter.py` | Reviewer `tools:` grants, writer `hooks:` blocks, and the three settings.json pins stay as `docs/adr/0055` declares them |
+| `validate-frontmatter.py` | Reviewer `tools:` grants, writer `hooks:` blocks, and the three settings.json pins stay as `dotfiles/docs/adr/0055` declares them |
 | `validate-artifact-paths.py` | One canonical spec/capability-map/plan/todo path convention across every pipeline file that names one |
 | `check-references.py` | Every relative cross-reference (`../`, `./`, `templates/`) between harness files resolves |
 
