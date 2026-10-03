@@ -19,6 +19,12 @@ usage() { sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; }
 PROJECT="$(cd "$1" && pwd)"; REGEX="$2"; DEST="$3"
 
 [ -e "$DEST" ] && { echo "replay: $DEST already exists; remove it or pick another path" >&2; exit 1; }
+parent="$(dirname "$DEST")"
+if ! mkdir -p "$parent" 2>/dev/null || [ ! -w "$parent" ]; then
+  echo "replay: cannot create $DEST: $parent is not writable by $(id -un)." >&2
+  echo "  Use a path you own, e.g. \$HOME/replay-LD-440." >&2
+  exit 1
+fi
 first="$(git -C "$PROJECT" log --all --reverse -E -i --grep="$REGEX" --format=%H | head -1)"
 [ -n "$first" ] || { echo "replay: no commit message matches $REGEX" >&2; exit 1; }
 base="$(git -C "$PROJECT" rev-parse "$first^")"

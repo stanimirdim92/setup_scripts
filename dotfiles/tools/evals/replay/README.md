@@ -10,7 +10,7 @@ The worked example is LD-440, the parent of LD-441 (backend) and LD-442
 ```bash
 H=/var/www/html/personal/setup_scripts        # this repository
 P=/var/www/html/leadbuster                    # the project
-R=/var/www/html/replay-LD-440                 # the replay checkout (created below)
+R=$HOME/replay-LD-440                         # the replay checkout (created below; any folder you own)
 ```
 
 ## 0. Bring the harness up to date

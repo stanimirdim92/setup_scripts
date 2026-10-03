@@ -26,5 +26,12 @@ check temp_branch_removed 0 "$(git -C "$P" branch --list 'replay/*' | wc -l | tr
 bash "$SCRIPT" "$P" 'LD-44[12]' "$TMP/replay" >/dev/null 2>&1; check existing_dest_rc 1 "$?"
 bash "$SCRIPT" "$P" 'LD-999' "$TMP/other" >/dev/null 2>&1; check no_match_rc 1 "$?"
 
+mkdir -p "$TMP/locked"; chmod 555 "$TMP/locked"
+if [ ! -w "$TMP/locked" ]; then   # root can write anywhere; the case only holds for a normal user
+  bash "$SCRIPT" "$P" 'LD-44[12]' "$TMP/locked/replay" >/dev/null 2>"$TMP/err"; check unwritable_rc 1 "$?"
+  check unwritable_says 1 "$(grep -c 'not writable' "$TMP/err")"
+fi
+chmod 755 "$TMP/locked"
+
 echo "replay prepare: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
