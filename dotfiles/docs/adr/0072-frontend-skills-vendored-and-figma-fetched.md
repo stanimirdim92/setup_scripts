@@ -1,10 +1,9 @@
 # Frontend skills: three vendored, Figma's fetched
 
 **Context.** Frontend work in the target projects is React 19 with Inertia on
-Laravel, Tailwind 4, Vite and Vitest, often built from a Figma design. Laravel
-Boost is already installed per project and supplies `inertia-react-development`,
-`tailwindcss-development` and `pest-testing` at the project's installed
-versions. The harness had no skill for component API design, for Vite or
+Laravel, Tailwind 4, Vite and Vitest, often built from a Figma design. Framework
+and version guidance for a project lives in that project's own instruction
+files and is out of the harness's scope. The harness had no skill for component API design, for Vite or
 Vitest, or for the Figma design-to-code loop; LD-442 left Figma parity as a
 manual, visual-only check.
 
@@ -33,9 +32,7 @@ Codex adapter: Codex has no Figma MCP configured.
 **Decision — wire them into the gates.**
 - `/build` selects `figma-design-to-code` for a task whose spec or packet links
   a Figma design, `vercel-composition-patterns` for component API work, and
-  `vite` / `vitest` for build config and tests. Project skills in the target's
-  own `.claude/skills/` (Boost's) are selected the same way and win for their
-  area.
+  `vite` / `vitest` for build config and tests.
 - `/test` selects `figma-design-to-code` when a claim is "matches the Figma
   design": the Figma screenshot is the target, the rendered screen comes from
   Chrome DevTools, a mismatch is `VERIFY FAIL`, a missing connection is

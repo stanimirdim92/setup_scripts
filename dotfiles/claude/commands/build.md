@@ -162,11 +162,6 @@ Typical examples:
   providers) -> `vercel-composition-patterns`;
 - Vite config or plugins -> `vite`; Vitest tests, mocking or config -> `vitest`.
 
-Skills the project ships in its own `.claude/skills/` (for example Laravel
-Boost's `inertia-react-development`, `tailwindcss-development` and
-`pest-testing`) are selected the same way and win over a general skill for the
-same area: they match the project's installed versions.
-
 Never select `browser-testing-with-devtools` for an executor. Executors hold no
 browser tools; test-engineer does (dotfiles/docs/adr/0070).
 
