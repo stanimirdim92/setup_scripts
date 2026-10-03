@@ -40,6 +40,9 @@ recall table of `dotfiles/docs/observation-log.md`.
 - `--subject-only` matches tickets in the commit subject only. Pipeline commits
   name their ticket there (`(LD-442 T002)`); a squash or summary commit that
   only mentions a ticket in its body ("builds on LD-441") is then left out.
+- `--trailer-only` matches a ticket only when it equals a `Refs:` trailer value
+  (ADR 0073), never the subject or body text. Use it for history written after
+  the trailer convention; `--subject-only` is for older history.
 - `--show-commits` lists the commits that were scored. Check it whenever a
   number looks wrong.
 - `--not-ticket LD-442` (with `--ticket`, repeatable) drops commits whose

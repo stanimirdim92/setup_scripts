@@ -61,7 +61,10 @@ withdrawn from the spec through `/spec` with re-approval. Do not accept a
 missing requirement as risk; risk acceptance is for a known finding, not for an
 unproven requirement.
 
-A requirement the spec marks withdrawn needs no evidence. Explicitly preserved
+Evidence covers each MUST and MUST NOT clause, and each SHOULD or SHOULD NOT
+clause or the exception the spec names for it. A MAY clause grants latitude and
+needs no evidence of its own. A requirement the spec marks withdrawn needs no
+evidence. Explicitly preserved
 behavior from Change Impact is a requirement like any other — its evidence is
 that its tests still pass.
 

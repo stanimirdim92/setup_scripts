@@ -84,21 +84,21 @@ when the matched risk is both high-impact and materially ambiguous.
 
 Preserve every reviewer's native severity and add the canonical disposition:
 
-| Source | Native severity | Disposition |
-|---|---|---|
-| `code-reviewer` | Critical | BLOCKER |
-|  | Important | REQUIRED |
-|  | Suggestion | ADVISORY |
-| `blind-reviewer` | Critical | BLOCKER |
-|  | Important | REQUIRED |
-|  | Suggestion | ADVISORY |
-|  | Intent-dependent | resolve here — see below |
-| `security-auditor` | Critical, High | BLOCKER |
-|  | Medium | REQUIRED |
-|  | Low, Info | ADVISORY |
-| `distributed-systems-reviewer` | Critical | BLOCKER |
-|  | Important | REQUIRED |
-|  | Suggestion | ADVISORY |
+| Source | Native severity | Disposition | SARIF level |
+|---|---|---|---|
+| `code-reviewer` | Critical | BLOCKER | `error` |
+|  | Important | REQUIRED | `warning` |
+|  | Suggestion | ADVISORY | `note` |
+| `blind-reviewer` | Critical | BLOCKER | `error` |
+|  | Important | REQUIRED | `warning` |
+|  | Suggestion | ADVISORY | `note` |
+|  | Intent-dependent | resolve here — see below | — |
+| `security-auditor` | Critical, High | BLOCKER | `error` |
+|  | Medium | REQUIRED | `warning` |
+|  | Low, Info | ADVISORY | `note` |
+| `distributed-systems-reviewer` | Critical | BLOCKER | `error` |
+|  | Important | REQUIRED | `warning` |
+|  | Suggestion | ADVISORY | `note` |
 
 `blind-reviewer` also returns two things no other reviewer produces, and both
 are yours to resolve because you are the only participant holding the diff
@@ -134,6 +134,17 @@ Report:
   implements it and the verification that proves it, or an explicit statement
   that one of those is missing. `/ship` blocks on a missing entry, so report the
   gap rather than leaving the requirement off the list.
+
+Also write every finding to a SARIF 2.1.0 file, so code-scanning tools can
+read the review (`../references/component-response-contracts.md` §Review SARIF):
+
+```bash
+out="$(git rev-parse --git-common-dir)/review/<TICKET>-$(git rev-parse --short HEAD).sarif"
+```
+
+It sits outside the working tree and is never committed. Give its path in the
+report. The markdown report stays the gate artifact; the SARIF file is a copy
+of its findings for tools.
 
 Then stop. The next stage is `/ship`.
 

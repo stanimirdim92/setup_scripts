@@ -630,6 +630,8 @@ CONVENTIONS = [
     ('Fixed forms', '`**Files/areas likely touched:**`', 'The places a task changes; plan recall reads this list', '/plan', 'references/templates/task.md', '**Files/areas likely touched:**'),
     ('Fixed forms', '`**Change-surface search:**`', 'The search that finds every consumer; /build reruns it', '/plan', 'references/templates/task.md', '**Change-surface search:**'),
     ('Fixed forms', '`path` — unchanged — reason', 'A place checked and deliberately left alone', '/plan', 'references/templates/task.md', 'unchanged — '),
+    ('Fixed forms', '`MUST` / `SHOULD` / `MAY`', 'RFC 2119 obligation in a requirement; a SHOULD names its exception, a MAY needs no evidence', '/spec', 'skills/spec-driven-development/SKILL.md', 'RFC 2119'),
+    ('Fixed forms', '`Refs: LD-442` / `Task: T002`', 'Git trailers ending a ticket commit; `recall.py --trailer-only` reads `Refs:`', 'executor', 'skills/git-workflow-and-versioning/SKILL.md', '### Ticket trailers'),
     ('Fixed forms', '`file:line`', 'How evidence and findings point at code', 'reviewers', 'agents/blind-reviewer.md', 'file:line'),
     ('Status words', 'Draft / Approved / Needs reapproval / Superseded', 'Spec header; only a human sets Approved', '/spec', 'references/spec-quality-gates.md', 'Needs reapproval'),
     ('Status words', 'New / Modify / Remove / Rename / Bugfix', 'Spec `Change kind`', '/spec', 'references/templates/spec.md', 'Change kind:'),
@@ -649,10 +651,11 @@ CONVENTIONS = [
     ('Paths', '`docs/specs/[TICKET]-SPEC.md`', 'The one spec per ticket; any other spelling fails CI', '/spec', 'references/templates/plan.md', 'docs/specs/[TICKET]-SPEC.md'),
     ('Paths', '`docs/tasks/[TICKET]-plan.md`, `-todo.md`', 'The plan and its task packets', '/plan', 'references/templates/plan.md', 'docs/tasks/[TICKET]-'),
     ('Paths', '`.git/explain/<TICKET>-<sha>.html`', 'An /explain review page, outside the working tree', '/explain', 'commands/explain.md', 'git-common-dir)/explain/'),
+    ('Paths', '`.git/review/<TICKET>-<sha>.sarif`', 'The review findings as SARIF 2.1.0; disposition decides the level (error / warning / note)', '/review', 'commands/review.md', 'git-common-dir)/review/'),
 ]
 # Seen in the target projects' history, not defined by any harness file.
 OBSERVED = [
-    ('`feat(area): … (LD-442 T002)`', 'Commit subject: conventional type, then ticket and task id. `recall.py --subject-only` relies on it.'),
+    ('`feat(area): … (LD-442 T002)`', 'Commit subject: conventional type, then ticket and task id. Older history; `recall.py --subject-only` reads it. New commits use the `Refs:` trailer.'),
     ('`(LD-442 review R-04)`', 'Review fix commits numbered by the review run; no reviewer file defines `R-##`.'),
 ]
 

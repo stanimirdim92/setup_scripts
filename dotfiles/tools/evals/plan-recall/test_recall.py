@@ -157,6 +157,17 @@ class EndToEnd(unittest.TestCase):
             subjects = [s for _, s in pr.ticket_commits(repo, f'{base}..HEAD', ['LD-441'], subject_only=True)]
             self.assertEqual(subjects, ['LD-441: change a', 'ld-441 scratch', 'LD-441 drop scratch',
                                         'LD-441 LD-442: shared sort'])
+            # trailer_only matches Refs: values exactly, never the subject or body.
+            (repo / 'd.php').write_text('d\n'); git('add', '-A')
+            git('commit', '-qm', 'Rank the feed', '-m', 'Refs: LD-441\nTask: T003')
+            (repo / 'e.php').write_text('e\n'); git('add', '-A')
+            git('commit', '-qm', 'Squash', '-m', 'Includes LD-441 work.', '-m', 'Refs: LD-4410')
+            (repo / 'f.php').write_text('f\n'); git('add', '-A')
+            git('commit', '-qm', 'Shared util', '-m', 'Refs: LD-441, LD-442')
+            self.assertEqual(set(pr.changed_files(repo, f'{base}..HEAD', ['LD-441'], trailer_only=True)),
+                             {'d.php', 'f.php'})
+            self.assertEqual(set(pr.changed_files(repo, f'{base}..HEAD', ['ld-441'], trailer_only=True,
+                                                  not_tickets=['LD-442'])), {'d.php'})
 
 
 if __name__ == '__main__':

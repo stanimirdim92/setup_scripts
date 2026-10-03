@@ -208,6 +208,28 @@ BREAKING CHANGE:
 
 footer.
 
+### Ticket trailers
+
+When the work belongs to a ticket, end the message with git trailers, whatever
+the subject convention is. Trailers do not compete with it:
+
+```text
+Rank the most-relevant feed by score
+
+Refs: LD-442
+Task: T002
+```
+
+- `Refs:` — the ticket key. One trailer per ticket, or comma-separated keys.
+- `Task:` — the plan task id (`T###`), when the commit implements a planned
+  task. Omit it for review fixes and other unplanned commits.
+
+Trailers go in the last paragraph, `Key: value`, with no blank line between
+them. Git parses them (`git log --format='%(trailers:key=Refs,valueonly)'`,
+`git interpret-trailers`), so tools can find a ticket's commits exactly instead
+of searching the subject. If the repository already uses a ticket trailer under
+another key, use that key.
+
 Commit messages should explain intent and, when useful, why the change exists.
 
 Avoid vague messages such as:

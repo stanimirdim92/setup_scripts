@@ -173,9 +173,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="layout">
-<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>7</span></a><a href="#conventions">Conventions<span>36</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>21</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>20</span></a><a href="#decisions">Decisions<span>72</span></a></nav>
+<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>7</span></a><a href="#conventions">Conventions<span>39</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>21</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>20</span></a><a href="#decisions">Decisions<span>75</span></a></nav>
 <main>
-<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>7</b>guards</span><span class="count"><b>36</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>21</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>20</b>self-tests</span><span class="count"><b>72</b>decisions</span></div></header>
+<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>7</b>guards</span><span class="count"><b>39</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>21</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>20</b>self-tests</span><span class="count"><b>75</b>decisions</span></div></header>
 <section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The amber rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">grey</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
 <div class="tabs" role="tablist" aria-label="Pipeline views">
 <button type="button" role="tab" id="tab-list" aria-controls="view-list" aria-selected="false" tabindex="-1" data-view="list"><span>1</span>Stage list</button>
@@ -229,6 +229,8 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell"><code>**Files/areas likely touched:**</code></td><td>The places a task changes; plan recall reads this list</td><td class="cmdcell">/plan</td><td class="cmdcell">references/templates/task.md</td></tr>
 <tr><td class="cmdcell"><code>**Change-surface search:**</code></td><td>The search that finds every consumer; /build reruns it</td><td class="cmdcell">/plan</td><td class="cmdcell">references/templates/task.md</td></tr>
 <tr><td class="cmdcell"><code>path</code> — unchanged — reason</td><td>A place checked and deliberately left alone</td><td class="cmdcell">/plan</td><td class="cmdcell">references/templates/task.md</td></tr>
+<tr><td class="cmdcell"><code>MUST</code> / <code>SHOULD</code> / <code>MAY</code></td><td>RFC 2119 obligation in a requirement; a SHOULD names its exception, a MAY needs no evidence</td><td class="cmdcell">/spec</td><td class="cmdcell">skills/spec-driven-development/SKILL.md</td></tr>
+<tr><td class="cmdcell"><code>Refs: LD-442</code> / <code>Task: T002</code></td><td>Git trailers ending a ticket commit; <code>recall.py --trailer-only</code> reads <code>Refs:</code></td><td class="cmdcell">executor</td><td class="cmdcell">skills/git-workflow-and-versioning/SKILL.md</td></tr>
 <tr><td class="cmdcell"><code>file:line</code></td><td>How evidence and findings point at code</td><td class="cmdcell">reviewers</td><td class="cmdcell">agents/blind-reviewer.md</td></tr>
 <tr><td class="group" colspan="4">Status words</td></tr>
 <tr><td class="cmdcell">Draft / Approved / Needs reapproval / Superseded</td><td>Spec header; only a human sets Approved</td><td class="cmdcell">/spec</td><td class="cmdcell">references/spec-quality-gates.md</td></tr>
@@ -251,8 +253,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell"><code>docs/specs/[TICKET]-SPEC.md</code></td><td>The one spec per ticket; any other spelling fails CI</td><td class="cmdcell">/spec</td><td class="cmdcell">references/templates/plan.md</td></tr>
 <tr><td class="cmdcell"><code>docs/tasks/[TICKET]-plan.md</code>, <code>-todo.md</code></td><td>The plan and its task packets</td><td class="cmdcell">/plan</td><td class="cmdcell">references/templates/plan.md</td></tr>
 <tr><td class="cmdcell"><code>.git/explain/&lt;TICKET&gt;-&lt;sha&gt;.html</code></td><td>An /explain review page, outside the working tree</td><td class="cmdcell">/explain</td><td class="cmdcell">commands/explain.md</td></tr>
+<tr><td class="cmdcell"><code>.git/review/&lt;TICKET&gt;-&lt;sha&gt;.sarif</code></td><td>The review findings as SARIF 2.1.0; disposition decides the level (error / warning / note)</td><td class="cmdcell">/review</td><td class="cmdcell">commands/review.md</td></tr>
 <tr><td class="group" colspan="4">Seen in project history<span>not defined by the harness</span></td></tr>
-<tr><td class="cmdcell"><code>feat(area): … (LD-442 T002)</code></td><td colspan="3">Commit subject: conventional type, then ticket and task id. <code>recall.py --subject-only</code> relies on it.</td></tr>
+<tr><td class="cmdcell"><code>feat(area): … (LD-442 T002)</code></td><td colspan="3">Commit subject: conventional type, then ticket and task id. Older history; <code>recall.py --subject-only</code> reads it. New commits use the <code>Refs:</code> trailer.</td></tr>
 <tr><td class="cmdcell"><code>(LD-442 review R-04)</code></td><td colspan="3">Review fix commits numbered by the review run; no reviewer file defines <code>R-##</code>.</td></tr>
 </tbody></table></div></section>
 <section id="session"><div class="sec-head"><h2>Session setup</h2><p class="summary">What every session loads: the rules in <code>AGENTS.md</code> and the pins in <code>settings.json</code>.</p></div><div class="two"><div class="panel"><div class="panel-title">AGENTS.md rules</div><ol class="rules">
@@ -346,7 +349,10 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td><b>Batch spec runner</b><span class="sub">The batch spec runner&#x27;s decisions, with <code>claude</code> stubbed.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-batch-spec.sh</td></tr>
 <tr><td><b>Run metrics</b><span class="sub">Measurement: the transcript metrics&#x27; large-result section.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-run-metrics.sh</td></tr>
 </tbody></table></div></section>
-<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">72 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">75 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<tr><td class="cmdcell">0075</td><td>RFC 2119 keywords in requirements</td></tr>
+<tr><td class="cmdcell">0074</td><td>Review findings exported as SARIF</td></tr>
+<tr><td class="cmdcell">0073</td><td>Ticket trailers on commits</td></tr>
 <tr><td class="cmdcell">0072</td><td>Frontend skills: three vendored, Figma&#x27;s fetched</td></tr>
 <tr><td class="cmdcell">0071</td><td>Harness files live under <code>dotfiles/</code></td></tr>
 <tr><td class="cmdcell">0070</td><td>Browser checks route to test-engineer, and the DevTools MCP is installed</td></tr>
@@ -354,9 +360,6 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">0068</td><td>OS sandbox, resumable <code>/build</code>, and failure signals from transcripts</td></tr>
 <tr><td class="cmdcell">0067</td><td>Change surface in plans, touch points in recon, and a plan-recall eval</td></tr>
 <tr><td class="cmdcell">0066</td><td>Opus 5.5: medium session effort, and bounded continuations for early stops</td></tr>
-<tr><td class="cmdcell">0065</td><td>One spec per ticket; the capability map is a section of it</td></tr>
-<tr><td class="cmdcell">0064</td><td>Caveman skill dropped</td></tr>
-<tr><td class="cmdcell">0063</td><td>Sonnet 5.5 replaces Sonnet 5; the advisor moves to Fable 5.1</td></tr>
 </tbody></table></div></section>
 <footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. Do not edit by hand.</footer></main></div>
 <script>

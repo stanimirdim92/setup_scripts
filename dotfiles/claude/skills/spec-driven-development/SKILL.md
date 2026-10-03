@@ -156,6 +156,10 @@ In every form:
 - requirements use the exact `### Requirement: REQ-### — Title`, standalone
   `Source:`, and `#### Scenario: Name` forms consumed downstream; ids are never
   renumbered after approval (`../../references/spec-quality-gates.md` §3);
+- each requirement statement states its obligation with an uppercase RFC 2119
+  keyword (RFC 8174): MUST / MUST NOT, SHOULD / SHOULD NOT — always with the
+  exception that allows otherwise, or it is a MUST — and MAY for latitude
+  given to the implementation. Scenarios keep GIVEN/WHEN/THEN;
 - `Change kind` is recorded, and non-`New` work names modified and explicitly
   preserved behavior in Change Impact;
 - commands are exact and repository-defined, never abbreviated or inferred;

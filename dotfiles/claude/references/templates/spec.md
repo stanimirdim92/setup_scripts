@@ -74,7 +74,11 @@ requirement-by-requirement instead of interpreting prose.]
 ### Requirement: REQ-001 — [Behavior the system must provide]
 Source: [ticket AC-2 / user decision in conversation / existing REQ this refines]
 
-[One or two sentences stating the requirement precisely. Ids are mandatory for
+[One or two sentences stating the requirement precisely, with its obligation
+in an RFC 2119 keyword, uppercase: MUST / MUST NOT for an absolute requirement,
+SHOULD / SHOULD NOT with the exception that allows otherwise, MAY for latitude
+the implementation is given. Lowercase "must" carries no requirement weight.
+Ids are mandatory for
 any spec that will enter `/plan`, sequential and never renumbered once
 approved — downstream artifacts reference them. A withdrawn requirement keeps
 its id and is marked withdrawn rather than reused.]

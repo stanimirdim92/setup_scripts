@@ -398,21 +398,21 @@ production-code fix invalidates a prior VERIFY result.
 
 Every reviewer's native severity maps to one of three canonical dispositions:
 
-| Source | Native severity | Disposition |
-|---|---|---|
-| `code-reviewer` | Critical | BLOCKER |
-|  | Important | REQUIRED |
-|  | Suggestion | ADVISORY |
-| `blind-reviewer` | Critical | BLOCKER |
-|  | Important | REQUIRED |
-|  | Suggestion | ADVISORY |
-|  | Intent-dependent | resolved by `/review` itself |
-| `security-auditor` | Critical, High | BLOCKER |
-|  | Medium | REQUIRED |
-|  | Low, Info | ADVISORY |
-| `distributed-systems-reviewer` | Critical | BLOCKER |
-|  | Important | REQUIRED |
-|  | Suggestion | ADVISORY |
+| Source | Native severity | Disposition | SARIF level |
+|---|---|---|---|
+| `code-reviewer` | Critical | BLOCKER | `error` |
+|  | Important | REQUIRED | `warning` |
+|  | Suggestion | ADVISORY | `note` |
+| `blind-reviewer` | Critical | BLOCKER | `error` |
+|  | Important | REQUIRED | `warning` |
+|  | Suggestion | ADVISORY | `note` |
+|  | Intent-dependent | resolved by `/review` itself | — |
+| `security-auditor` | Critical, High | BLOCKER | `error` |
+|  | Medium | REQUIRED | `warning` |
+|  | Low, Info | ADVISORY | `note` |
+| `distributed-systems-reviewer` | Critical | BLOCKER | `error` |
+|  | Important | REQUIRED | `warning` |
+|  | Suggestion | ADVISORY | `note` |
 
 Report includes: candidate branch/diff scope, BUILD candidate and any accepted
 post-BUILD test-only commits, **Independent verification: NOT REQUIRED \|
@@ -421,6 +421,37 @@ every finding with disposition and its `REQ-###` where applicable, and one
 requirement-evidence line per spec `REQ-###` (implementation + verification, or
 an explicit gap — `/ship` blocks on a missing entry). Confidence travels with
 each finding so `/ship` can tell a confirmed BLOCKER from a suspected one.
+
+### Review SARIF
+
+`/review` also writes its findings as SARIF 2.1.0 (OASIS). One run per
+reviewer; the disposition decides `level` through the table above:
+
+```json
+{
+  "version": "2.1.0",
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [{
+    "tool": {"driver": {"name": "code-reviewer"}},
+    "results": [{
+      "ruleId": "CODE-1",
+      "level": "error",
+      "message": {"text": "problem + recommended fix"},
+      "locations": [{"physicalLocation": {
+        "artifactLocation": {"uri": "app/Services/Feed.php"},
+        "region": {"startLine": 42}}}],
+      "properties": {"nativeSeverity": "Critical", "disposition": "BLOCKER",
+                     "confidence": "high", "requirement": "REQ-003",
+                     "resolution": "open"}
+    }]
+  }]
+}
+```
+
+`uri` is relative to the repository root. A finding without a line keeps the
+`artifactLocation` and drops `region`; one without a file drops `locations`.
+`properties` keeps what SARIF has no field for, so nothing in the markdown
+report is lost.
 
 ### `/ship` → GO / NO-GO / SHIP BLOCKED
 

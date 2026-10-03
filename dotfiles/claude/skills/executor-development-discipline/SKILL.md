@@ -109,7 +109,9 @@ blocker instead of looping.
 
 Commit a logical increment only when its intended behavior works, its required
 focused verification is green, and the tree is in a valid state. Use meaningful
-messages that explain the change and follow the repository's commit convention.
+messages that explain the change and follow the repository's commit convention,
+and end each message with the `Refs: <TICKET>` and `Task: T###` trailers
+(`git-workflow-and-versioning` §Ticket trailers).
 
 Invocation through `/build` authorizes these scoped local commits for the
 approved task unless the user explicitly requests an uncommitted result;
