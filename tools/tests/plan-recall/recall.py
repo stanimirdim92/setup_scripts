@@ -83,6 +83,9 @@ def score(entries, changed, excludes=()):
             if not any(fnmatch.fnmatch(p, g) for g in excludes)}
     excluded = len(changed) - len(kept)
     changed = kept
+    # A planned entry the excludes cover (the plan listing its own todo) is
+    # dropped on both sides, or it reads as a planned edit that never shipped.
+    entries = [(e, u) for e, u in entries if not any(fnmatch.fnmatch(e, g) for g in excludes)]
     considered = [e for e, _ in entries]
     expected = [e for e, unchanged in entries if not unchanged]
 
@@ -112,7 +115,7 @@ def git(repo, *args):
                           check=True, text=True, capture_output=True).stdout
 
 
-def parse_name_status(out, changed):
+def parse_name_status(out, changed, origins=None, commit=None):
     for line in out.splitlines():
         parts = line.split('\t')
         if len(parts) < 2:
@@ -123,20 +126,28 @@ def parse_name_status(out, changed):
         status = 'M' if status == 'R' else status
         if path not in changed:
             changed[path] = status
+            if origins is not None:
+                origins[path] = commit
         elif status == 'D' and changed[path] == 'A':
             del changed[path]            # added and removed inside the ticket: no location
     return changed
 
 
-def changed_files(repo, rev_range, ticket=None):
-    """{path: status} over the range, or over only the ticket's own commits."""
+def changed_files(repo, rev_range, ticket=None, origins=None):
+    """{path: status} over the range, or over only the ticket's own commits.
+
+    With a ticket, `origins` (when given) maps each path to the first commit
+    that touched it, as 'sha7 subject', so a miss can be traced to the task,
+    review fix, or scope expansion that brought it in."""
     if not ticket:
         return parse_name_status(git(repo, 'diff', '--name-status', '-M', rev_range), {})
-    shas = git(repo, 'log', '--no-merges', '--reverse', '--format=%H', '-i', '-F',
-               f'--grep={ticket}', rev_range).split()
+    log = git(repo, 'log', '--no-merges', '--reverse', '--format=%H %s', '-i', '-F',
+              f'--grep={ticket}', rev_range).splitlines()
     changed = {}
-    for sha in shas:
-        parse_name_status(git(repo, 'show', '--name-status', '-M', '--format=', sha), changed)
+    for line in log:
+        sha, _, subject = line.partition(' ')
+        parse_name_status(git(repo, 'show', '--name-status', '-M', '--format=', sha), changed,
+                          origins, f'{sha[:7]} {subject}')
     return changed
 
 
@@ -164,11 +175,14 @@ def main(argv=None):
     if not entries:
         print('plan-recall: no "Files/areas likely touched" entries found in the plan files', file=sys.stderr)
 
-    changed = changed_files(args.repo, args.range, args.ticket)
+    origins = {}
+    changed = changed_files(args.repo, args.range, args.ticket, origins)
     if args.ticket and not changed:
         print(f'plan-recall: no commits in {args.range} name {args.ticket}', file=sys.stderr)
     excludes = list(args.exclude) + ([] if args.no_default_excludes else list(DEFAULT_EXCLUDES))
     result = score(entries, changed, excludes)
+    if origins:
+        result['missed_origin'] = {p: origins[p] for p in result['missed']}
     if args.json:
         print(json.dumps(result, indent=2))
     else:
@@ -180,8 +194,10 @@ def main(argv=None):
         print(f"precision (planned edits): {pct(result['precision'])}")
         if result['missed']:
             print('missed (changed, never planned):')
+            width = max(len(p) for p in result['missed'])
             for p in result['missed']:
-                print(f'  {p}')
+                origin = result.get('missed_origin', {}).get(p)
+                print(f'  {p:<{width}}  <- {origin}' if origin else f'  {p}')
         if result['planned_but_untouched']:
             print('planned but not in the diff:')
             for p in result['planned_but_untouched']:

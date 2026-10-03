@@ -24,7 +24,9 @@ python3 tools/tests/plan-recall/recall.py --repo ~/code/leadbuster \
 - `--ticket LD-380` scores only the commits in the range whose message names
   the ticket (case-insensitive substring, merges skipped). Use it whenever the
   range also carries other tickets' work; without it, their files read as
-  misses. A file added and then removed inside the ticket is dropped.
+  misses. A file added and then removed inside the ticket is dropped. Each
+  missed file shows the first ticket commit that touched it, so a planning
+  miss can be told apart from a review fix or a scope expansion.
 - Pipeline artifacts and agent configuration are excluded by default
   (`docs/specs/*`, `docs/tasks/*`, `CLAUDE.md`, `AGENTS.md`, `.claude/*`,
   `.codex/*`, `.ai/*`, `.worktreeinclude`): no task plans them.

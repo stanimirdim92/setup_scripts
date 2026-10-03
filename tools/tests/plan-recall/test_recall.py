@@ -89,6 +89,12 @@ class Scoring(unittest.TestCase):
         self.assertEqual(result['excluded_files'], 6)
         self.assertEqual(result['recall'], 1.0)
 
+    def test_excluded_planned_entry_is_not_an_untouched_edit(self):
+        entries = [('app/A.php', False), ('docs/tasks/LD-1-plan.md', False)]
+        result = pr.score(entries, {'app/A.php': 'M'}, pr.DEFAULT_EXCLUDES)
+        self.assertEqual(result['planned_but_untouched'], [])
+        self.assertEqual(result['precision'], 1.0)
+
     def test_empty_diff_has_no_ratio(self):
         self.assertIsNone(pr.score(self.entries, {})['recall'])
 
@@ -131,6 +137,9 @@ class EndToEnd(unittest.TestCase):
             (repo / 'tmp.php').write_text('t\n'); git('add', '-A'); git('commit', '-qm', 'ld-441 scratch')
             git('rm', '-q', 'tmp.php'); git('commit', '-qm', 'LD-441 drop scratch')
             self.assertEqual(pr.changed_files(repo, f'{base}..HEAD', 'LD-441'), {'a.php': 'M'})
+            origins = {}
+            pr.changed_files(repo, f'{base}..HEAD', 'LD-441', origins)
+            self.assertTrue(origins['a.php'].endswith(' LD-441: change a'))
             self.assertEqual(set(pr.changed_files(repo, f'{base}..HEAD')), {'a.php', 'b.php'})
 
 
