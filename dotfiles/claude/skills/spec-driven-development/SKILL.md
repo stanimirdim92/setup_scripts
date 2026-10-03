@@ -160,6 +160,11 @@ In every form:
   keyword (RFC 8174): MUST / MUST NOT, SHOULD / SHOULD NOT — always with the
   exception that allows otherwise, or it is a MUST — and MAY for latitude
   given to the implementation. Scenarios keep GIVEN/WHEN/THEN;
+- each requirement statement follows an EARS pattern (ubiquitous, While, When,
+  Where, If … then, or a combination) with the RFC 2119 keyword in the place of
+  "shall", as the spec template shows. The EARS sentence states the rule; its
+  GIVEN/WHEN/THEN scenarios are the examples that test it. A statement that
+  fits no pattern usually holds two requirements, or none;
 - `Change kind` is recorded, and non-`New` work names modified and explicitly
   preserved behavior in Change Impact;
 - commands are exact and repository-defined, never abbreviated or inferred;

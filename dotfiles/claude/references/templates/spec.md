@@ -78,6 +78,14 @@ Source: [ticket AC-2 / user decision in conversation / existing REQ this refines
 in an RFC 2119 keyword, uppercase: MUST / MUST NOT for an absolute requirement,
 SHOULD / SHOULD NOT with the exception that allows otherwise, MAY for latitude
 the implementation is given. Lowercase "must" carries no requirement weight.
+Write the sentence in the EARS pattern that fits, with the keyword where EARS
+puts "shall":
+- Ubiquitous: The <system> MUST <response>.
+- State-driven: While <state>, the <system> MUST <response>.
+- Event-driven: When <trigger>, the <system> MUST <response>.
+- Optional feature: Where <feature is present>, the <system> MUST <response>.
+- Unwanted behavior: If <unwanted condition>, then the <system> MUST <response>.
+- Complex: While <state>, when <trigger>, the <system> MUST <response>.
 Ids are mandatory for
 any spec that will enter `/plan`, sequential and never renumbered once
 approved — downstream artifacts reference them. A withdrawn requirement keeps

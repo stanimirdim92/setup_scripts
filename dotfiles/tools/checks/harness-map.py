@@ -631,7 +631,9 @@ CONVENTIONS = [
     ('Fixed forms', '`**Change-surface search:**`', 'The search that finds every consumer; /build reruns it', '/plan', 'references/templates/task.md', '**Change-surface search:**'),
     ('Fixed forms', '`path` — unchanged — reason', 'A place checked and deliberately left alone', '/plan', 'references/templates/task.md', 'unchanged — '),
     ('Fixed forms', '`MUST` / `SHOULD` / `MAY`', 'RFC 2119 obligation in a requirement; a SHOULD names its exception, a MAY needs no evidence', '/spec', 'skills/spec-driven-development/SKILL.md', 'RFC 2119'),
+    ('Fixed forms', '`When <trigger>, the <system> MUST <response>.`', 'A requirement statement in an EARS pattern: ubiquitous, While, When, Where, If … then, or combined', '/spec', 'references/templates/spec.md', 'EARS pattern'),
     ('Fixed forms', '`Refs: LD-442` / `Task: T002`', 'Git trailers ending a ticket commit; `recall.py --trailer-only` reads `Refs:`', 'executor', 'skills/git-workflow-and-versioning/SKILL.md', '### Ticket trailers'),
+    ('Fixed forms', '`<type>[scope]: <description>`', 'Commit subject when the repository has no convention of its own', 'executor', 'skills/git-workflow-and-versioning/SKILL.md', 'use Conventional Commits'),
     ('Fixed forms', '`file:line`', 'How evidence and findings point at code', 'reviewers', 'agents/blind-reviewer.md', 'file:line'),
     ('Status words', 'Draft / Approved / Needs reapproval / Superseded', 'Spec header; only a human sets Approved', '/spec', 'references/spec-quality-gates.md', 'Needs reapproval'),
     ('Status words', 'New / Modify / Remove / Rename / Bugfix', 'Spec `Change kind`', '/spec', 'references/templates/spec.md', 'Change kind:'),
@@ -653,6 +655,19 @@ CONVENTIONS = [
     ('Paths', '`.git/explain/<TICKET>-<sha>.html`', 'An /explain review page, outside the working tree', '/explain', 'commands/explain.md', 'git-common-dir)/explain/'),
     ('Paths', '`.git/review/<TICKET>-<sha>.sarif`', 'The review findings as SARIF 2.1.0; disposition decides the level (error / warning / note)', '/review', 'commands/review.md', 'git-common-dir)/review/'),
 ]
+# Where a convention comes from, when it is an outside standard rather than
+# the harness's own; keyed by the marker shown in CONVENTIONS.
+ORIGIN = {
+    '`NNNN-title.md`': 'Nygard ADRs, MADR-style numbering',
+    '`### Requirement: REQ-001 — Title`': 'OpenSpec (ADR 0040)',
+    '`#### Scenario: Name`': 'Gherkin / BDD, via OpenSpec',
+    '`MUST` / `SHOULD` / `MAY`': 'RFC 2119, RFC 8174',
+    '`When <trigger>, the <system> MUST <response>.`': 'EARS (Mavin et al., 2009)',
+    '`Refs: LD-442` / `Task: T002`': 'git trailers',
+    '`<type>[scope]: <description>`': 'Conventional Commits 1.0',
+    '`file:line`': 'GNU error-message format',
+    '`.git/review/<TICKET>-<sha>.sarif`': 'SARIF 2.1.0 (OASIS)',
+}
 # Seen in the target projects' history, not defined by any harness file.
 OBSERVED = [
     ('`feat(area): … (LD-442 T002)`', 'Commit subject: conventional type, then ticket and task id. Older history; `recall.py --subject-only` reads it. New commits use the `Refs:` trailer.'),
@@ -678,6 +693,7 @@ def conventions():
     """CONVENTIONS, each checked against the file that defines it."""
     missing = [f'{src}: {needle!r}' for _, _, _, _, src, needle in CONVENTIONS
                if needle not in read((CLAUDE / src).resolve())]
+    missing += [f'ORIGIN key not in CONVENTIONS: {k}' for k in ORIGIN if k not in {c[1] for c in CONVENTIONS}]
     if missing:
         raise SystemExit('harness-map: conventions no longer found in their source:\n  ' + '\n  '.join(missing))
     return CONVENTIONS
@@ -807,22 +823,24 @@ def render():
                '<p class="summary">The ids, fixed forms, status words and flags every stage reads and writes. '
                'Each names the file that defines it; this page fails to build if one disappears from there.</p>'
                '</div><div class="panel tablewrap"><table><thead><tr><th>Convention</th><th>Means</th>'
-               '<th>Owner</th><th>Defined in</th></tr></thead><tbody>')
-    out.append('<tr><td class="group" colspan="4">Ids<span>never renumbered; one owner each</span></td></tr>')
+               '<th>Owner</th><th>Defined in</th><th>Origin</th></tr></thead><tbody>')
+    out.append('<tr><td class="group" colspan="5">Ids<span>never renumbered; one owner each</span></td></tr>')
     for ident, lives, owner, meaning in ids:
         out.append(f'<tr><td class="cmdcell nowrap">{e(ident)}</td><td>{e(meaning)} <span class="sub">in the {e(lives)}</span></td>'
-                   f'<td class="cmdcell">{e(owner)}</td><td class="cmdcell">references/plan-quality-gates.md</td></tr>')
+                   f'<td class="cmdcell">{e(owner)}</td><td class="cmdcell">references/plan-quality-gates.md</td>'
+                   f'<td><span class="sub">Harness</span></td></tr>')
     group = 'Ids'
     for grp, marker, meaning, owner, src, _ in conv:
         if grp != group:
-            out.append(f'<tr><td class="group" colspan="4">{e(grp)}</td></tr>')
+            out.append(f'<tr><td class="group" colspan="5">{e(grp)}</td></tr>')
             group = grp
         shown = src.replace('../docs/', 'dotfiles/docs/')
+        origin = e(ORIGIN[marker]) if marker in ORIGIN else '<span class="sub">Harness</span>'
         out.append(f'<tr><td class="cmdcell">{e(marker)}</td><td>{e(meaning)}</td><td class="cmdcell">{e(owner)}</td>'
-                   f'<td class="cmdcell">{e(shown)}</td></tr>')
-    out.append('<tr><td class="group" colspan="4">Seen in project history<span>not defined by the harness</span></td></tr>')
+                   f'<td class="cmdcell">{e(shown)}</td><td>{origin}</td></tr>')
+    out.append('<tr><td class="group" colspan="5">Seen in project history<span>not defined by the harness</span></td></tr>')
     for marker, meaning in OBSERVED:
-        out.append(f'<tr><td class="cmdcell">{e(marker)}</td><td colspan="3">{e(meaning)}</td></tr>')
+        out.append(f'<tr><td class="cmdcell">{e(marker)}</td><td colspan="4">{e(meaning)}</td></tr>')
     out.append('</tbody></table></div></section>')
 
     # Session setup
