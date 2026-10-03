@@ -25,6 +25,7 @@ Grouped by what you do with them. Paths below are from the repository root.
 | `validate-frontmatter.py` | A persona's tools, model, effort or hooks, or a `settings.json` pin, drifts from its ADR |
 | `validate-artifact-paths.py` | A spec, plan or todo path is spelled differently anywhere |
 | `check-references.py` | A cross-reference between harness files no longer resolves |
+| `check-writing.py` | More than 20% of the sentences in an ADR from 0073 on run over 25 words. Pass files to check a spec or plan |
 | `harness-map.py` | `dotfiles/docs/harness-map.html` is out of date. Without `--check` it regenerates the page |
 
 ## `tests/`
@@ -35,7 +36,7 @@ Grouped by what you do with them. Paths below are from the repository root.
 | `test-handoff-hook.sh` | The handoff report gate on writer personas |
 | `test-worktree-hooks.sh` | The stale-base warning and the writer-worktree guard |
 | `test-isolated-test-runner.sh` | The isolated test-runner guard |
-| `validate-frontmatter-test.py`, `validate-artifact-paths-test.py`, `check-references-test.py` | The three checks above |
+| `validate-frontmatter-test.py`, `validate-artifact-paths-test.py`, `check-references-test.py`, `check-writing-test.py` | The checks above |
 | `test-install-skills.py`, `test-codex-harness.py`, `test-codex-worktree.py` | The Codex installer, roles, hook adapter and worktree launcher |
 | `test-link-dotfiles.sh` | `setup/link_dotfiles.sh` |
 | `test-batch-spec.sh`, `test-run-metrics.sh` | The two `run/` scripts |

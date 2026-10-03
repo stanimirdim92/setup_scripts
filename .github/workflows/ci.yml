@@ -80,6 +80,13 @@ jobs:
           python3 dotfiles/tools/checks/check-references.py
           python3 dotfiles/tools/tests/check-references-test.py
 
+      # Writing rule: ADRs from 0073 on keep long sentences (over 25 words) to
+      # 20% or less (dotfiles/claude/AGENTS.md "Writing for humans", adr/0077).
+      - name: Writing rule
+        run: |
+          python3 dotfiles/tools/checks/check-writing.py
+          python3 dotfiles/tools/tests/check-writing-test.py
+
       # The harness map is generated from the sources it describes; a change
       # to a persona, hook, command, skill, reference or CI step that did not
       # regenerate it fails here (adr/0069).

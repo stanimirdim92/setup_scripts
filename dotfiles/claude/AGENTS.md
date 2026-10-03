@@ -161,6 +161,7 @@ identifiers, or quoted evidence.
 
 Use the rule about 80% of the time. Break it when a longer sentence is
 clearer, for example to keep a condition next to its consequence.
+`dotfiles/tools/checks/check-writing.py FILE` measures the sentence lengths.
 - *Catches: reports the reader must parse twice before they can act.*
 
 ## Worktrees

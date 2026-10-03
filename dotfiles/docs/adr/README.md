@@ -84,6 +84,7 @@ that explanation here, just the index.
 | [0074](0074-review-findings-exported-as-sarif.md) | Review findings exported as SARIF | Accepted |
 | [0075](0075-rfc-2119-keywords-in-requirements.md) | RFC 2119 keywords in requirements | Accepted; EARS rejection reversed by [0076](0076-ears-requirement-statements.md) |
 | [0076](0076-ears-requirement-statements.md) | EARS requirement statements | Accepted |
+| [0077](0077-writing-rule-checked-in-ci.md) | Writing rule checked in CI | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and
