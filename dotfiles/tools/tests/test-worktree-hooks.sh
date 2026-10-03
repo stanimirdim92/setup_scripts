@@ -11,10 +11,10 @@
 # nothing is wrong gets ignored within a week, and a hook that refuses a
 # legitimate dispatch gets deleted.
 #
-# Run: dotfiles/tools/test-worktree-hooks.sh
+# Run: dotfiles/tools/tests/test-worktree-hooks.sh
 set -uo pipefail
 
-HOOKS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../claude/hooks" && pwd)"
+HOOKS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../claude/hooks" && pwd)"
 WARN="$HOOKS/warn-stale-base.sh"
 BLOCK="$HOOKS/require-worktree-for-writers.sh"
 command -v jq >/dev/null || { echo "test-worktree-hooks: jq is required" >&2; exit 1; }

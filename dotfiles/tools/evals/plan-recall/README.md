@@ -17,7 +17,7 @@ From the project checkout, once the ticket has shipped. Score each ticket
 against its own plan:
 
 ```bash
-python3 ~/path/to/setup_scripts/dotfiles/tools/tests/plan-recall/recall.py --repo ./ \
+python3 ~/path/to/setup_scripts/dotfiles/tools/evals/plan-recall/recall.py --repo ./ \
     --ticket LD-380 --subject-only --show-commits \
     --plan docs/tasks/LD-380-plan.md --plan docs/tasks/LD-380-todo.md \
     --range <commit before the ticket>..<last commit of the ticket>

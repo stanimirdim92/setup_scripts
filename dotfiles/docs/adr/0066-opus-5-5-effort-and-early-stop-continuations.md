@@ -10,7 +10,7 @@ the same level name it thinks more per turn than Opus 5, so the carried-over
 `medium`. The four reviewers declare `effort: high` in their frontmatter — the
 review is where depth pays and it runs once per candidate. Sonnet personas
 keep their `modelSettings` override (0063) and the Fable advisor its own.
-`dotfiles/tools/validate-frontmatter.py` pins both values. This reverses 0056's "no
+`dotfiles/tools/checks/validate-frontmatter.py` pins both values. This reverses 0056's "no
 persona declares `effort:`", deliberately: two levels, set where they apply.
 Revisit from `dotfiles/docs/observation-log.md` cost and quality per stage.
 

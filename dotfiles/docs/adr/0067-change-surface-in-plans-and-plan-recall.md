@@ -29,7 +29,7 @@ location one workstream handled.
 serialization, tests and docs — each with the search that found it, so `/plan`
 can record and rerun it rather than rediscover it.
 
-**Decision — plan-recall eval.** `dotfiles/tools/tests/plan-recall/recall.py` scores a
+**Decision — plan-recall eval.** `dotfiles/tools/evals/plan-recall/recall.py` scores a
 shipped ticket's plan against its merged change (recall over pre-existing
 files, the paper's measure). It is deterministic and free; its scoring logic
 runs in CI, and real scores go in `dotfiles/docs/observation-log.md`. It is how the two

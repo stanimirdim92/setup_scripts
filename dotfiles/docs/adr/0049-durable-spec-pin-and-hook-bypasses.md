@@ -53,7 +53,7 @@ reached the tool untouched:
 | `git push --delete origin main` / `origin :main` | remote branch deletion |
 | `git checkout -f` / `git switch -f` / `--discard-changes` | discards the tree without naming a path |
 
-**The fix that matters is not the regexes — it is `dotfiles/tools/test-hooks.sh`**, 65
+**The fix that matters is not the regexes — it is `dotfiles/tools/tests/test-hooks.sh`**, 65
 fixtures asserting `deny` / `ask` / `allow`, including the allow cases
 (`rm -rf ./build`, `git switch main`, `git checkout -b`) so a future
 over-broad matcher fails too. The hooks are the only primitive in this harness

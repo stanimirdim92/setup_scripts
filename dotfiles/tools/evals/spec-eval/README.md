@@ -14,7 +14,7 @@ a ticket that shipped, whose spec a human has read against the implementation.
 You need the Jira ticket, its deployed spec, and the project checkout.
 
 ```bash
-cd /var/www/html/personal/setup_scripts/dotfiles/tools/tests/spec-eval
+cd /var/www/html/personal/setup_scripts/dotfiles/tools/evals/spec-eval
 
 # Once per ticket: freeze the Jira intake, store the deployed spec as the
 # reference, and find the commit before the spec was written.

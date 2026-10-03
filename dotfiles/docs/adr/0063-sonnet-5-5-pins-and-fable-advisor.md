@@ -6,7 +6,7 @@
 role tiering from [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md)
 is unchanged: reviewers and the session stay on `opus[1m]`. Pins stay explicit
 version ids, for 0002's reason. `settings.json`'s per-model effort override
-follows the id, and `dotfiles/tools/validate-frontmatter.py` now requires the new pin.
+follows the id, and `dotfiles/tools/checks/validate-frontmatter.py` now requires the new pin.
 
 **Decision.** `advisorModel` changes from the `opus` alias to `claude-fable-5-1`,
 Anthropic's most capable widely released model. The advisor runs only when

@@ -27,7 +27,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 DOTFILES="$REPO_DIR/dotfiles"
 
 SOURCES=(

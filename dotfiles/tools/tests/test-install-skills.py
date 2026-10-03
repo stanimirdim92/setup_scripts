@@ -9,7 +9,7 @@ from unittest import mock
 
 sys.dont_write_bytecode = True
 
-SCRIPT = Path(__file__).resolve().parents[2] / "dotfiles" / "codex" / "install-skills.py"
+SCRIPT = Path(__file__).resolve().parents[3] / "dotfiles" / "codex" / "install-skills.py"
 SPEC = importlib.util.spec_from_file_location("install_skills", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)

@@ -53,4 +53,4 @@ choosing to confess is not policy.
 **Revisit if** run metrics show a third executor being dispatched into throttled
 windows (the rate-limit condition is not being evaluated honestly), or show
 merge failures concentrating in 3-wide runs (integration cost rises with width
-faster than assumed). Both are visible from `dotfiles/tools/run-metrics.sh` plus `/usage`.
+faster than assumed). Both are visible from `dotfiles/tools/run/run-metrics.sh` plus `/usage`.

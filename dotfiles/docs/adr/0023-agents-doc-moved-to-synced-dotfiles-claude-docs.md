@@ -26,7 +26,7 @@ no reason to sync elsewhere: `docs/adr/*.md`, `docs/IDEAS.md`,
 reference content like the personas/skills/commands it describes, not a
 record of this repo's own build decisions.
 
-Updated: `dotfiles/tools/link_dotfiles.sh` (new `docs/` directory link),
+Updated: `dotfiles/tools/setup/link_dotfiles.sh` (new `docs/` directory link),
 `README.md`'s synced-files list, `dotfiles-sync/SKILL.md`'s
 whole-directory-sync enumeration, and `security-auditor.md`'s one live
 cross-reference to the file (`CLAUDE.md`'s own mention already resolved

@@ -27,7 +27,7 @@ when a shared skill's discovery contract changes.
 
 ## Installation and reads
 
-[dotfiles/tools/link_dotfiles.sh](tools/link_dotfiles.sh) links the Claude directories and
+[dotfiles/tools/setup/link_dotfiles.sh](tools/setup/link_dotfiles.sh) links the Claude directories and
 configuration into the user's home and links the global rules to Codex's
 `AGENTS.md`. It preflights every destination (including the Codex adapter
 links below) before mutating anything, refuses to overwrite an existing
@@ -96,7 +96,7 @@ Codex tools must be available in its own session.
 [dotfiles/docs/harness-map.html](docs/harness-map.html) draws every layer -- pipeline,
 session boot, personas, enforcement, references, skills, self-tests, records --
 as one sheet. Open it in a browser; GitHub will not render it.
-[dotfiles/tools/harness-map.py](tools/harness-map.py) generates it from the files that
+[dotfiles/tools/checks/harness-map.py](tools/checks/harness-map.py) generates it from the files that
 own each fact (agent frontmatter, command frontmatter, `settings.json`, hook
 headers, skill frontmatter, the CI workflow, the ADRs). Do not edit it by hand.
 When a persona, hook, command, skill, reference or CI step changes, run the
@@ -114,64 +114,64 @@ results, and a gate counting a `rm -rf`-ed worktree. None was reachable in a
 repository with no prior specs, no branches and no stale worktrees.
 
 - `python3 dotfiles/codex/install-skills.py --check` checks installed link targets.
-- `dotfiles/tools/test-install-skills.py` regression-tests the installer's preflight and
+- `dotfiles/tools/tests/test-install-skills.py` regression-tests the installer's preflight and
   rollback behavior (conflict detection, injected-failure rollback) in a
   temporary destination, without touching real links.
-- `dotfiles/tools/test-link-dotfiles.sh` runs `link_dotfiles.sh` against a throwaway
+- `dotfiles/tools/tests/test-link-dotfiles.sh` runs `link_dotfiles.sh` against a throwaway
   `$HOME` and checks the filesystem afterwards, so a declined run has to prove
   it changed nothing rather than prove it printed a warning. Covers decline,
   non-terminal stdin, dry run, `--yes`, whole-directory backup, and the
   silent no-op re-run.
-- `dotfiles/tools/test-batch-spec.sh` covers `batch-spec.sh` with `claude` stubbed --
+- `dotfiles/tools/tests/test-batch-spec.sh` covers `batch-spec.sh` with `claude` stubbed --
   manifest parsing, the already-specced skip, decline, non-terminal stdin, dry
   run, per-job failure, `.worktreeinclude` copying, and that each job runs
   *inside* its worktree. That last one caught the real bug: the branch was
   created and the spec written to the main checkout.
-- `dotfiles/tools/test-hooks.sh` exercises the Claude command hooks with fixtures;
-  `dotfiles/tools/test-handoff-hook.sh` does the same for the `SubagentStop` handoff gate.
-- `dotfiles/tools/test-isolated-test-runner.sh` covers the gate that denies a bare
+- `dotfiles/tools/tests/test-hooks.sh` exercises the Claude command hooks with fixtures;
+  `dotfiles/tools/tests/test-handoff-hook.sh` does the same for the `SubagentStop` handoff gate.
+- `dotfiles/tools/tests/test-isolated-test-runner.sh` covers the gate that denies a bare
   `php artisan test`/`phpunit` when the project ships `bin/worktree-test.sh`
   and more than one worktree is live. Both evidence gates, the command-position
   anchor, the env-assignment prefix and the `test:` boundary each have a case
   that fails when removed.
-- `dotfiles/tools/test-worktree-hooks.sh` covers the worktree-base and infrastructure
+- `dotfiles/tools/tests/test-worktree-hooks.sh` covers the worktree-base and infrastructure
   readiness guards (ADR 0057/0058) against real Git fixtures and stub project
   doctors. Cases include safe feature/linked checkouts, malformed input, missing
   tools, detached HEAD, paths with spaces, and mid-ticket runner drift. The writer
   guard's cases assert the `permissionDecision` it returns, never an exit
   status: the first version asserted `exit 2` from a `SubagentStart` hook,
   which passes whether or not that event can block anything.
-- `dotfiles/tools/test-run-metrics.sh` runs `dotfiles/tools/run-metrics.sh` on a fabricated
+- `dotfiles/tools/tests/test-run-metrics.sh` runs `dotfiles/tools/run/run-metrics.sh` on a fabricated
   transcript and checks its large-result section: threshold default and
   override, time window, subagent exclusion, string and array-form results.
-- `dotfiles/tools/validate-frontmatter.py` fails when a persona loses its explicit
+- `dotfiles/tools/checks/validate-frontmatter.py` fails when a persona loses its explicit
   `tools:` line, a read-only persona gains a mutating or dispatching tool, a
   writing persona stops referencing its two agent-scoped hooks, the verifier
   loses `isolation: worktree`, an executor gains unconditional isolation, a
   persona drifts off the model tier its role calls for,
   or a `settings.json` pin from ADR 0055 or 0056 is missing;
-  `dotfiles/tools/validate-frontmatter-test.py` covers the allow and deny cases.
-- `dotfiles/tools/validate-artifact-paths.py` fails when any pipeline file spells a
+  `dotfiles/tools/tests/validate-frontmatter-test.py` covers the allow and deny cases.
+- `dotfiles/tools/checks/validate-artifact-paths.py` fails when any pipeline file spells a
   spec/capability-map/plan/todo artifact path differently from the canonical
-  set (the drift class fixed in c4584dd); `dotfiles/tools/validate-artifact-paths-test.py`
+  set (the drift class fixed in c4584dd); `dotfiles/tools/tests/validate-artifact-paths-test.py`
   covers the allow and deny cases.
-- [Spec eval](tools/tests/spec-eval/README.md) re-runs `/spec` against a ticket
+- [Spec eval](tools/evals/spec-eval/README.md) re-runs `/spec` against a ticket
   whose right answer is known from a human reading its spec against what
   shipped, and checks the known findings survive. It is the only check here
   that can tell whether a harness change moved spec *quality* rather than
   shape. Its judging half is deterministic and runs in CI; producing a spec
   costs tokens and is run deliberately. Fixtures carry real ticket content and
   are gitignored.
-- [Plan recall](tools/tests/plan-recall/README.md) scores a shipped ticket's
+- [Plan recall](tools/evals/plan-recall/README.md) scores a shipped ticket's
   plan against its merged change: the share of changed files the plan's tasks
   named. It measures the plan's change surface (`plan-quality-gates.md` §4),
   costs no tokens, and its scoring logic runs in CI. Score with `--ticket`
   when the range carries other work.
-- [Workflow checks](tools/tests/workflow/README.md) document the isolated
+- [Workflow checks](tools/evals/workflow/README.md) document the isolated
   Jira/spec/plan/build/review runner, its invocation, and what its evidence
   does not cover.
-- `dotfiles/tools/check-references.py` resolves every relative cross-reference between
-  harness files and fails on one that no longer exists; `dotfiles/tools/check-references-test.py`
+- `dotfiles/tools/checks/check-references.py` resolves every relative cross-reference between
+  harness files and fails on one that no longer exists; `dotfiles/tools/tests/check-references-test.py`
   covers the resolution and the placeholder/URL cases it must not flag. It is the
   static half of the reference problem — a reference refused at runtime because
   it resolves outside the session's working directory is not visible to it.

@@ -1,11 +1,11 @@
 # AI tool dotfiles (Claude Code / Codex)
 
 `dotfiles/` holds the syncable config from `~/.claude` and `~/.codex`. On a
-machine, `dotfiles/tools/link_dotfiles.sh` symlinks these into place (backing up any
+machine, `dotfiles/tools/setup/link_dotfiles.sh` symlinks these into place (backing up any
 existing real file as `<name>.bak` the first time). Re-run it any time,
 including right after `git clone` on a new machine:
 
-    ./dotfiles/tools/link_dotfiles.sh
+    ./dotfiles/tools/setup/link_dotfiles.sh
 
 It prints what each destination will become — `new`, `relink`, `backup`, or
 `ok` — and asks before touching anything. Six of the destinations are whole
@@ -42,8 +42,8 @@ Worktrees remain after exit; use the project's cleanup procedure and
 `/.codex/worktrees/` through `.git/info/exclude`, without editing project files.
 See [ADR 0061](docs/adr/0061-codex-cli-ticket-worktree-launcher.md).
 
-`dotfiles/tools/batch-spec.sh` runs `/spec` for many tickets at once, one worktree per
-job, reading `dotfiles/tools/spec-batch.txt`. Tickets that share files go on one line so
+`dotfiles/tools/run/batch-spec.sh` runs `/spec` for many tickets at once, one worktree per
+job, reading `dotfiles/tools/run/spec-batch.txt`. Tickets that share files go on one line so
 they get one spec rather than four competing ones. It stops at the spec gate:
 every job ends with a Draft spec, uncommitted, awaiting a human. `--dry-run`
 prints the plan, `--parallel N` widens it, `--budget` caps each job. Where the
@@ -51,7 +51,7 @@ project declares `.worktreeinclude`, the matching ignored files are copied into
 each worktree — `git worktree add` is not `claude --worktree` and does not do
 that itself.
 
-`dotfiles/tools/run-metrics.sh` reports measured run metrics from a Claude Code
+`dotfiles/tools/run/run-metrics.sh` reports measured run metrics from a Claude Code
 transcript — tool-call batching, token totals, main-session vs subagent split,
 main-session tool results over a line threshold (whole files read inline), and
 failure signals (errored and denied tool results, handoff-gate blocks, turn
@@ -59,12 +59,12 @@ caps, repeated commands) — with `--since`/`--until` to scope a single `/build`
 and `--row` to print a ready observation-log row. See
 `dotfiles/claude/references/agent-run-metrics.md`.
 
-`dotfiles/tools/tests/plan-recall/recall.py` scores a shipped ticket's plan
+`dotfiles/tools/evals/plan-recall/recall.py` scores a shipped ticket's plan
 against what changed: the share of changed files its tasks named. Run it from
 the project checkout:
 
 ```bash
-python3 ~/path/to/setup_scripts/dotfiles/tools/tests/plan-recall/recall.py --repo ./ \
+python3 ~/path/to/setup_scripts/dotfiles/tools/evals/plan-recall/recall.py --repo ./ \
     --ticket LD-380 --subject-only --show-commits \
     --plan docs/tasks/LD-380-plan.md --plan docs/tasks/LD-380-todo.md \
     --range <commit before the ticket>..<last commit of the ticket>
@@ -72,9 +72,9 @@ python3 ~/path/to/setup_scripts/dotfiles/tools/tests/plan-recall/recall.py --rep
 
 Check the `scored commits` list before trusting the number, then record it in
 `dotfiles/docs/observation-log.md` §Plan recall. Options and how to read the
-result: `dotfiles/tools/tests/plan-recall/README.md`.
+result: `dotfiles/tools/evals/plan-recall/README.md`.
 
-`.github/workflows/ci.yml` runs every deterministic check in `dotfiles/tools/` on each
+`dotfiles/tools/README.md` lists every tool by folder. `.github/workflows/ci.yml` runs every deterministic check in `dotfiles/tools/` on each
 push to `main` and each pull request — hooks, handoff gate, persona frontmatter and settings pins, artifact
 paths, workflow-runner logic, the Codex installer, and the metrics script. The
 live workflow runner is excluded; it spends tokens and stays a manual run.
@@ -113,9 +113,9 @@ Synced:
 - `dotfiles/codex/agents/` -> `~/.codex/agents/` — eight native Codex roles reusing the shared persona bodies. Executor, test-engineer, and repo-recon use Terra/xhigh; four reviewers and executor-high use Astra/high. Native roles disable nested delegation and attach role policies; recon/review default to a read-only sandbox.
 - `dotfiles/codex/hooks/` -> `~/.codex/hooks/` and `dotfiles/codex/hooks.json` -> `~/.codex/hooks.json` — Codex adapters for the shared destructive-command, push, worktree/readiness, isolated-test-runner, startup, and writer-handoff guards. Hooks require Codex trust review before they run; these are accident guards on supported tool paths, not a complete security boundary.
 - `dotfiles/codex/references/` -> `~/.codex/references/` — Codex invocation, model routing, independent context, hook activation, and runtime compatibility instructions.
-- `dotfiles/codex/skills/*` -> `~/.agents/skills/*` (individual links) — Codex adapters for all 18 local skills under `dotfiles/claude/skills` and all 7 commands (`$spec`, `$plan`, `$build`, `$test`, `$review`, `$ship`, `$explain`). They read the maintained Claude commands, skill bodies, agents, references, and templates through relative source paths. `dotfiles/codex/references/workflow-runtime.md` maps invocation, skill loading, and agent orchestration to Codex. `agents/openai.yaml` makes these explicit-only (`allow_implicit_invocation: false`): the six stage entry points and `$explain`, the standalone incremental, TDD and code-review skills, and `executor-development-discipline`, `spec-driven-development` and `planning-and-task-breakdown`, which only a stage or a role loads. `dotfiles/tools/test-codex-harness.py` checks that set and that each adapter's description matches its Claude skill. Claude model names and MCP settings are not imported; native Codex roles and hook adapters provide the client-specific layer. Tool-dependent skills still require callable Codex tools. Codex's bundled `~/.codex/skills/.system` remains untouched.
+- `dotfiles/codex/skills/*` -> `~/.agents/skills/*` (individual links) — Codex adapters for all 18 local skills under `dotfiles/claude/skills` and all 7 commands (`$spec`, `$plan`, `$build`, `$test`, `$review`, `$ship`, `$explain`). They read the maintained Claude commands, skill bodies, agents, references, and templates through relative source paths. `dotfiles/codex/references/workflow-runtime.md` maps invocation, skill loading, and agent orchestration to Codex. `agents/openai.yaml` makes these explicit-only (`allow_implicit_invocation: false`): the six stage entry points and `$explain`, the standalone incremental, TDD and code-review skills, and `executor-development-discipline`, `spec-driven-development` and `planning-and-task-breakdown`, which only a stage or a role loads. `dotfiles/tools/tests/test-codex-harness.py` checks that set and that each adapter's description matches its Claude skill. Claude model names and MCP settings are not imported; native Codex roles and hook adapters provide the client-specific layer. Tool-dependent skills still require callable Codex tools. Codex's bundled `~/.codex/skills/.system` remains untouched.
 
-The main `dotfiles/tools/link_dotfiles.sh` setup calls the Codex installer. To install
+The main `dotfiles/tools/setup/link_dotfiles.sh` setup calls the Codex installer. To install
 or repeat only the Codex skill setup, run `python3 dotfiles/codex/install-skills.py`
 from the repository root. The main setup preflights every destination before
 mutation, refuses to overwrite an existing `.bak`, and reverts paths changed by
@@ -132,7 +132,7 @@ Untrusted hooks are skipped. On a surface without a native-role selector, the
 workflow passes the model and persona explicitly, but role-specific hooks and
 sandbox defaults do not load; the runtime reference documents that limitation.
 Live parent permission overrides can also supersede role sandbox defaults.
-`python3 dotfiles/tools/test-codex-harness.py` checks real Git fixtures, installed hook
+`python3 dotfiles/tools/tests/test-codex-harness.py` checks real Git fixtures, installed hook
 commands, and role declarations without spending model tokens. See
 [ADR 0059](docs/adr/0059-codex-native-roles-and-hook-adapters.md).
 

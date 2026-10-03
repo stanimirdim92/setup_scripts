@@ -7,11 +7,11 @@
 # real script against a throwaway $HOME and then checks the filesystem, because
 # "it printed a warning" is not the same claim as "it changed nothing".
 #
-# Run: dotfiles/tools/test-link-dotfiles.sh
+# Run: dotfiles/tools/tests/test-link-dotfiles.sh
 set -uo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-LINK="$REPO/dotfiles/tools/link_dotfiles.sh"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+LINK="$REPO/dotfiles/tools/setup/link_dotfiles.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 PASS=0; FAIL=0; FAILED=()
@@ -142,7 +142,7 @@ cp -R "$REPO/dotfiles" "$FIXTURE_REPO/"
 printf 'prefix_rule(pattern=["make"], decision="allow")\n' > "$FIXTURE_REPO/dotfiles/codex/rules/default.rules"
 mkdir -p "$H/.codex/rules"
 ln -s "$FIXTURE_REPO/dotfiles/codex/rules/default.rules" "$H/.codex/rules/default.rules"
-OUT="$(HOME="$H" bash "$FIXTURE_REPO/dotfiles/tools/link_dotfiles.sh" --yes </dev/null 2>&1)"; RC=$?
+OUT="$(HOME="$H" bash "$FIXTURE_REPO/dotfiles/tools/setup/link_dotfiles.sh" --yes </dev/null 2>&1)"; RC=$?
 check  written_rc               0 "$RC"
 check  written_now_real_file    1 "$([ -f "$H/.codex/rules/default.rules" ] && [ ! -L "$H/.codex/rules/default.rules" ] && echo 1 || echo 0)"
 contains written_kept_approvals 'pattern=["make"]' "$(cat "$H/.codex/rules/default.rules" 2>/dev/null)"
@@ -157,10 +157,10 @@ check  own_rules_untouched      mine "$(cat "$H/.codex/rules/default.rules")"
 # Refuse a missing source before installing any destination.
 H="$(fresh_home missing_source)"
 FIXTURE_REPO="$TMP/incomplete-repo"
-mkdir -p "$FIXTURE_REPO/dotfiles/tools" "$FIXTURE_REPO/dotfiles/codex"
-cp "$LINK" "$FIXTURE_REPO/dotfiles/tools/link_dotfiles.sh"
+mkdir -p "$FIXTURE_REPO/dotfiles/tools/setup" "$FIXTURE_REPO/dotfiles/codex"
+cp "$LINK" "$FIXTURE_REPO/dotfiles/tools/setup/link_dotfiles.sh"
 ln -s "$REPO/dotfiles/codex/install-skills.py" "$FIXTURE_REPO/dotfiles/codex/install-skills.py"
-OUT="$(HOME="$H" bash "$FIXTURE_REPO/dotfiles/tools/link_dotfiles.sh" --yes </dev/null 2>&1)"; RC=$?
+OUT="$(HOME="$H" bash "$FIXTURE_REPO/dotfiles/tools/setup/link_dotfiles.sh" --yes </dev/null 2>&1)"; RC=$?
 check  missing_source_rc        1 "$RC"
 contains missing_source_named  "Missing link source:" "$OUT"
 check  missing_source_no_link   0 "$([ -L "$H/.claude/CLAUDE.md" ] && echo 1 || echo 0)"

@@ -18,7 +18,7 @@ fourth decision quietly depends on:
    repository.
 
 Both are wired in `settings.json` and tested by
-`dotfiles/tools/test-worktree-hooks.sh` against real git fixtures.
+`dotfiles/tools/tests/test-worktree-hooks.sh` against real git fixtures.
 
 ## The risk 0056 moved rather than removed
 
@@ -78,7 +78,7 @@ way: it verifies the script's opinion, never that anything was prevented.
 It is now `PreToolUse` on the dispatch tool, returning the same
 `permissionDecision: "deny"` as the harness's three other enforcing hooks —
 blocking by documented contract, on the mechanism already proven by 100 cases
-in `dotfiles/tools/test-hooks.sh`. The tests assert the decision rather than the exit
+in `dotfiles/tools/tests/test-hooks.sh`. The tests assert the decision rather than the exit
 status, and two cases now check that the output *is* a `permissionDecision`
 naming `PreToolUse`, so a future move back to an exit code fails.
 
@@ -192,4 +192,4 @@ all the guard is protecting.
   `main`/`master` by name. A repository whose default branch is neither, and
   whose `origin/HEAD` is unset, is not covered by either hook — it exits 0,
   silently, which is the correct direction to fail.
-- `dotfiles/tools/test-worktree-hooks.sh` joins CI as the tenth self-test suite.
+- `dotfiles/tools/tests/test-worktree-hooks.sh` joins CI as the tenth self-test suite.

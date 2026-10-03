@@ -155,7 +155,7 @@ two grounds. Its "verify claimed reuse" step reads an implementation and judges
 whether it satisfies a requirement, which is judgment wearing retrieval's
 clothes, and a cheap wrong answer there is expensive downstream. And splitting
 one persona into two to save money we have not yet measured inverts the order:
-`dotfiles/docs/observation-log.md` and `dotfiles/tools/run-metrics.sh` now exist, so the split
+`dotfiles/docs/observation-log.md` and `dotfiles/tools/run/run-metrics.sh` now exist, so the split
 can be proposed from cost data rather than from intuition. Revisit when the log
 shows recon cost is material.
 
@@ -194,7 +194,7 @@ established as the guarantee rather than an instruction. `/test` and
 - `/review` gains real work it cannot skip. Intent-dependent findings must be
   settled against the acceptance criteria, and "what this change appears to do"
   must be compared against the actual goal.
-- `dotfiles/tools/validate-frontmatter.py` now checks all four decisions: the model tier
+- `dotfiles/tools/checks/validate-frontmatter.py` now checks all four decisions: the model tier
   per role, `isolation: worktree` on both writers, and `worktree.baseRef` in
   settings. A drift away from any of them fails CI rather than being discovered
   in a run.

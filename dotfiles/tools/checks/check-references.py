@@ -17,7 +17,7 @@ disclosed it in a footnote (dotfiles/docs/observation-log.md).
 
 Scope, deliberately narrow: markdown links and backticked paths that begin with
 `./`, `../` or `templates/` -- the cross-reference class. Artifact paths carrying
-a `[TICKET]` placeholder belong to dotfiles/tools/validate-artifact-paths.py and are
+a `[TICKET]` placeholder belong to dotfiles/tools/checks/validate-artifact-paths.py and are
 skipped here; so are URLs and bare filenames, which are prose more often than
 links.
 
@@ -39,7 +39,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 HARNESS = ROOT / 'dotfiles/claude'
 
 # [text](target) and `target`

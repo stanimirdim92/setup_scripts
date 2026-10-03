@@ -10,7 +10,7 @@ import importlib.util
 import unittest
 from pathlib import Path
 
-spec = importlib.util.spec_from_file_location('vf', Path(__file__).with_name('validate-frontmatter.py'))
+spec = importlib.util.spec_from_file_location('vf', Path(__file__).resolve().parent.parent / 'checks' / 'validate-frontmatter.py')
 vf = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(vf)
 

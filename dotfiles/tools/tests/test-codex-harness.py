@@ -11,7 +11,7 @@ import tempfile
 import tomllib
 import unittest
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 CODEX = ROOT / "dotfiles/codex"
 POLICY = CODEX / "hooks/policy.py"
 SPEC = importlib.util.spec_from_file_location("policy", POLICY)

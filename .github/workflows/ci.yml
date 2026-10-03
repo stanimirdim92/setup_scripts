@@ -2,8 +2,8 @@
 #
 # These suites cost nothing and run in seconds, and until now they ran only
 # when someone remembered. The one suite deliberately absent is
-# dotfiles/tools/tests/workflow/run.py: it drives the real model and spends tokens, so
-# it stays a manual run (dotfiles/tools/tests/workflow/README.md). Its assertion logic
+# dotfiles/tools/evals/workflow/run.py: it drives the real model and spends tokens, so
+# it stays a manual run (dotfiles/tools/evals/workflow/README.md). Its assertion logic
 # is covered here through test_runner.py.
 #
 # Runner deps: bash, git, jq and python3 are all preinstalled on ubuntu-latest.
@@ -43,53 +43,53 @@ jobs:
       # Enforcement: the three PreToolUse hooks, deny/ask/allow, including the
       # alias, typo, global-option and quoted-target bypasses (adr/0049).
       - name: Hooks — deny, ask, and allow cases
-        run: bash dotfiles/tools/test-hooks.sh
+        run: bash dotfiles/tools/tests/test-hooks.sh
 
       # Enforcement: the SubagentStop handoff gate — complete, partial,
       # claim-only, second attempt, unknown agent, unreadable transcript.
       - name: Hooks — handoff report gate
-        run: bash dotfiles/tools/test-handoff-hook.sh
+        run: bash dotfiles/tools/tests/test-handoff-hook.sh
 
       # Enforcement: the two worktree-base guards (adr/0057). Real git
       # fixtures -- bare origin, main checkout, linked worktree, feature
       # branch -- because both hooks decide from git state.
       - name: Hooks — worktree base guards
-        run: bash dotfiles/tools/test-worktree-hooks.sh
+        run: bash dotfiles/tools/tests/test-worktree-hooks.sh
 
       # Enforcement: the isolated test-runner gate, evidence-gated on the
       # project shipping bin/worktree-test.sh and more than one live worktree.
       - name: Hooks — isolated test runner
-        run: bash dotfiles/tools/test-isolated-test-runner.sh
+        run: bash dotfiles/tools/tests/test-isolated-test-runner.sh
 
       # Declarations: persona tool grants, writer hook attachment, settings pins.
       - name: Frontmatter and settings pins
         run: |
-          python3 dotfiles/tools/validate-frontmatter.py
-          python3 dotfiles/tools/validate-frontmatter-test.py
+          python3 dotfiles/tools/checks/validate-frontmatter.py
+          python3 dotfiles/tools/tests/validate-frontmatter-test.py
 
       # Pipeline: canonical spec/plan/todo artifact paths across 25 files.
       - name: Artifact paths
         run: |
-          python3 dotfiles/tools/validate-artifact-paths.py
-          python3 dotfiles/tools/validate-artifact-paths-test.py
+          python3 dotfiles/tools/checks/validate-artifact-paths.py
+          python3 dotfiles/tools/tests/validate-artifact-paths-test.py
 
       # Pipeline: every cross-reference between harness files resolves. A stage
       # that cannot read its own reference proceeds from the skill body alone.
       - name: Harness cross-references
         run: |
-          python3 dotfiles/tools/check-references.py
-          python3 dotfiles/tools/check-references-test.py
+          python3 dotfiles/tools/checks/check-references.py
+          python3 dotfiles/tools/tests/check-references-test.py
 
       # The harness map is generated from the sources it describes; a change
       # to a persona, hook, command, skill, reference or CI step that did not
       # regenerate it fails here (adr/0069).
       - name: Harness map is current
-        run: python3 dotfiles/tools/harness-map.py --check
+        run: python3 dotfiles/tools/checks/harness-map.py --check
 
       # Spec eval: the judging half only. Producing a spec drives the real
       # model and stays manual.
       - name: Spec-eval judging logic
-        working-directory: dotfiles/tools/tests/spec-eval
+        working-directory: dotfiles/tools/evals/spec-eval
         run: |
           python3 test_judge.py
           python3 test_produce.py
@@ -97,33 +97,33 @@ jobs:
       # Plan-localization recall scoring (adr/0067). Scoring a real ticket
       # needs its project checkout and stays manual.
       - name: Plan-recall scoring logic
-        working-directory: dotfiles/tools/tests/plan-recall
+        working-directory: dotfiles/tools/evals/plan-recall
         run: python3 test_recall.py
 
       # Orchestration: the workflow runner's own assertion and fixture logic.
       # NOT the live cases — those spend tokens and stay manual.
       - name: Workflow runner logic
-        working-directory: dotfiles/tools/tests/workflow
+        working-directory: dotfiles/tools/evals/workflow
         run: python3 -m unittest -q test_runner
 
       # Installation: preflight conflict detection and injected-failure rollback.
       - name: Codex skill installer
-        run: python3 dotfiles/tools/test-install-skills.py
+        run: python3 dotfiles/tools/tests/test-install-skills.py
 
       - name: Codex native roles and hook adapters
-        run: python3 dotfiles/tools/test-codex-harness.py
+        run: python3 dotfiles/tools/tests/test-codex-harness.py
 
       - name: Codex CLI ticket worktrees and concurrent sessions
-        run: python3 dotfiles/tools/test-codex-worktree.py
+        run: python3 dotfiles/tools/tests/test-codex-worktree.py
 
       # The dotfile linker's confirmation gate, against a throwaway $HOME.
       - name: Dotfile linker confirmation
-        run: bash dotfiles/tools/test-link-dotfiles.sh
+        run: bash dotfiles/tools/tests/test-link-dotfiles.sh
 
       # The batch spec runner's decisions, with `claude` stubbed.
       - name: Batch spec runner
-        run: bash dotfiles/tools/test-batch-spec.sh
+        run: bash dotfiles/tools/tests/test-batch-spec.sh
 
       # Measurement: the transcript metrics' large-result section.
       - name: Run metrics
-        run: bash dotfiles/tools/test-run-metrics.sh
+        run: bash dotfiles/tools/tests/test-run-metrics.sh

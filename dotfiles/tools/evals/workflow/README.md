@@ -1,6 +1,6 @@
 # Jira → spec → plan → build → review behavioral checks
 
-Run `python3 dotfiles/tools/tests/workflow/run.py` from the repository root. Requires an
+Run `python3 dotfiles/tools/evals/workflow/run.py` from the repository root. Requires an
 authenticated Claude CLI. These calls consume normal account usage. Use
 `--case NAME` for a focused rerun and `--output DIRECTORY` to retain evidence.
 No model override is applied. Each case starts a new session.

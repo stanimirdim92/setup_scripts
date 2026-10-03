@@ -28,7 +28,7 @@ doing, not just what it is.
   one hook on `Read` + `Bash`, **main session only** — hook input carries
   `agent_id` inside a subagent, so every persona is exempt and recon and
   executors keep whole-file reads; `hookSpecificOutput` deny form, not shunt's
-  legacy `decision`; fixtures in `dotfiles/tools/test-hooks.sh` including the cases
+  legacy `decision`; fixtures in `dotfiles/tools/tests/test-hooks.sh` including the cases
   shunt's own evals get wrong (`cat f 2>/dev/null` and `cat a b c` pass its
   `>`/first-argument checks; `head -100 f` is blocked and eval #5 asserts it).
   Adopting it amends ADR 0051, which rejected size as a dispatch trigger — a

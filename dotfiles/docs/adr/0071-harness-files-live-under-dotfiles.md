@@ -20,7 +20,7 @@ stays at the root because GitHub reads workflows only there; its steps now run
 `dotfiles/tools/...`.
 
 Path conventions after the move:
-- Prose names paths from the repository root (`dotfiles/tools/recall.py`).
+- Prose names paths from the repository root (`dotfiles/tools/evals/plan-recall/recall.py`).
 - Markdown links stay relative to the file that holds them.
 - `docs/adr/`, `docs/IDEAS.md` and `docs/MEMORY.md` in harness instructions
   (`AGENTS.md`, `adr-recording`, `documentation-practices.md`) still mean the
@@ -35,3 +35,10 @@ unchanged.
 
 **Rejected.** A separate `harness/` directory beside `dotfiles/`: the harness
 *is* the dotfiles, and two top-level homes would split one system again.
+
+**Amendment 2026-10-03 — `dotfiles/tools/` grouped by use.** Twenty-two files
+in one folder were hard to navigate. They now sit in `setup/` (the linker),
+`run/` (batch spec runner, run metrics), `checks/` (the four validators),
+`tests/` (every self-test) and `evals/` (plan recall, spec eval, workflow
+runner), with `dotfiles/tools/README.md` as the index. Behavior is unchanged;
+`batch-spec.sh` still finds `spec-batch.txt` beside it in `run/`.

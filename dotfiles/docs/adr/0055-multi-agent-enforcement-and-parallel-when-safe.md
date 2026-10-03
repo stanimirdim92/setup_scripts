@@ -56,7 +56,7 @@ where the trade is free of risk, and leaves everything else where it was: a
 condition in doubt is a condition unmet, and that workstream queues.
 
 The fixture cases `build_shared_db` and `build_independent` in
-`dotfiles/tools/tests/workflow/run.py` pin both halves: a shared test database must not
+`dotfiles/tools/evals/workflow/run.py` pin both halves: a shared test database must not
 fan out; genuinely isolated workstreams must.
 
 ## Why enforcement moved from instruction to hook
@@ -73,9 +73,9 @@ executor's last message said.
 Agent-scoped hooks exist for exactly this — a `PreToolUse` or `Stop` hook that
 runs only while that persona runs — and they were unused. Both new hooks follow
 0049's rule that a guardrail nothing tests is a guardrail nobody has checked:
-`dotfiles/tools/test-hooks.sh` covers every push spelling plus the allow cases that
+`dotfiles/tools/tests/test-hooks.sh` covers every push spelling plus the allow cases that
 matter as much (commit, tag, fetch, `gh pr view`), and
-`dotfiles/tools/test-handoff-hook.sh` covers complete, partial, claim-only, second
+`dotfiles/tools/tests/test-handoff-hook.sh` covers complete, partial, claim-only, second
 attempt, unknown agent, and unreadable transcript.
 
 ## Rejected alternatives
@@ -113,7 +113,7 @@ pushing it is a push and is denied.
 - An executor that pushes now gets a hook denial with the reason in its
   context, and an executor that returns "Done." gets one block asking for the
   report sections. Both are visible in the subagent transcript.
-- `maxTurns` values are first guesses. `dotfiles/tools/run-metrics.sh` reports turn
+- `maxTurns` values are first guesses. `dotfiles/tools/run/run-metrics.sh` reports turn
   counts from transcripts; tune the caps from a few real runs rather than
   from intuition.
 - The workflow runner grows two stages (`build`, `review`) and two output

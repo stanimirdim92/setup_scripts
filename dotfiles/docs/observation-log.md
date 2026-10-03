@@ -27,7 +27,7 @@ a gate that should have fired and did not).
 | Date | Ticket | Stage / persona | What failed | Cost | Repeated? | Fix or status |
 |---|---|---|---|---|---|---|
 | 2026-09-14 | LD-380 | `jira-ticket` | Two cross-ticket contradictions not surfaced. LD-238 says the user "receives an email once the advertiser is ready"; LD-380 says "No email or other notification is sent" — flat contradiction, unflagged. LD-362's comment thread decides the `list content not complete` frame becomes the incomplete-Google-data fallback (`—` / "No category"); that decision reached neither the intake nor LD-380's state table. The third contradiction, Outscraper vs Google Places, **was** caught and routed to `/spec`. | None — found by reading the run, not by the harness. Would have surfaced in `/review` or QA at the earliest. | first | Open. §2 asks for requirement-bearing comments to be *retained*; it never asks for conflicting statements across tickets to be *reconciled*. One caught of three suggests the behavior is incidental, not instructed. |
-| 2026-09-14 | LD-380 | `/plan` | Ran its full precondition check and wrote its report having never read `plan-quality-gates.md`, `templates/plan.md` or `templates/task.md` — all three denied (`is_error`) on every route it tried: the `.claude/*` symlink path, the resolved absolute path, `cat` via Bash, then a repeat `Read`. 15 of the stage's 23 tool results were denials. It disclosed this, but as a "secondary (non-blocking) note" under a blocker that happened to be fatal anyway. Had the primary blocker been absent, it would have written a plan shaped only by the skill body, with no template and no quality gates, and nothing would have flagged it. | None. The primary block was correct and stopped everything. | first | **Cause was the fixture, not the harness.** The fixture mounted `.claude/` as symlinks into the dotfiles checkout and the nested session was never given that directory, so the resolved paths sat outside its working directory. A real install links `~/.claude`, which Claude Code reads natively. Verified on the approver's own machine the same day: `Read ~/.claude/references/plan-quality-gates.md` from an unrelated project returns the file, no denial. The three shipped tickets ran with their gates intact. What survives as a harness observation is narrower and unproven in production: a stage that loses a reference discloses it in a footnote and keeps going. `dotfiles/tools/check-references.py` covers references that do not resolve; nothing covers one that resolves and is refused, and there is now no evidence that happens outside a misbuilt fixture. |
+| 2026-09-14 | LD-380 | `/plan` | Ran its full precondition check and wrote its report having never read `plan-quality-gates.md`, `templates/plan.md` or `templates/task.md` — all three denied (`is_error`) on every route it tried: the `.claude/*` symlink path, the resolved absolute path, `cat` via Bash, then a repeat `Read`. 15 of the stage's 23 tool results were denials. It disclosed this, but as a "secondary (non-blocking) note" under a blocker that happened to be fatal anyway. Had the primary blocker been absent, it would have written a plan shaped only by the skill body, with no template and no quality gates, and nothing would have flagged it. | None. The primary block was correct and stopped everything. | first | **Cause was the fixture, not the harness.** The fixture mounted `.claude/` as symlinks into the dotfiles checkout and the nested session was never given that directory, so the resolved paths sat outside its working directory. A real install links `~/.claude`, which Claude Code reads natively. Verified on the approver's own machine the same day: `Read ~/.claude/references/plan-quality-gates.md` from an unrelated project returns the file, no denial. The three shipped tickets ran with their gates intact. What survives as a harness observation is narrower and unproven in production: a stage that loses a reference discloses it in a footnote and keeps going. `dotfiles/tools/checks/check-references.py` covers references that do not resolve; nothing covers one that resolves and is refused, and there is now no evidence that happens outside a misbuilt fixture. |
 | 2026-10-03 | LD-442 | `/plan` | Plan recall 67% over existing files (precision 92%). All six misses were consumers of a changed surface the plan did not follow: the second locale `lang/de/ticker.php` (the English file was planned), `FrontendTranslationsTest.php` that checks the locales match, the existing tests of three changed components or hooks, and the shared `ticker.utils.ts` edited by T001's extraction. | None measured. Executors found and changed all six during `/build`; no rework loop is attributed to them. | first | Open. The plan predates the change-surface rule (ADR 0067), so this is the baseline. Not yet `Fixed`: watch whether the next frontend ticket's plan lists sibling locales and existing tests. Scored with `recall.py --ticket LD-442 --subject-only`. |
 
 - **Stage / persona** — `/spec`, `/plan`, `/build`, `/review`, `/ship`, `/test`,
@@ -175,7 +175,7 @@ the project was an empty fixture, so there was nothing to survey and no
 subagent ran. `maxTurns` is still uncalibrated for the same reason. Two caveats
 on the setup itself: `--allowedTools` is an auto-approval allowlist, not a
 restriction — `Bash` ran 12 times despite not being listed (`--tools` is the
-restricting flag, which `dotfiles/tools/tests/workflow/run.py` uses correctly) — and the
+restricting flag, which `dotfiles/tools/evals/workflow/run.py` uses correctly) — and the
 fixture's `settings.json` carried the env pins but not the global `PreToolUse`
 hooks, so the destructive-bash and force-push guards were not in force (added
 before the approval and plan stages).
@@ -191,20 +191,20 @@ harness's. Two corrections to one row in one day is the honest cost of a log
 that records what happened rather than what was assumed.
 
 Source every number. Fastest path, run from the project directory right after
-the stage: `dotfiles/tools/run-metrics.sh --row <TICKET> <stage> --since <start> --until <end>`
+the stage: `dotfiles/tools/run/run-metrics.sh --row <TICKET> <stage> --since <start> --until <end>`
 prints a ready Run metrics row with the measured columns filled and `FILL:`
 naming the source of each one it cannot measure (cost, turn caps, fan-out).
 Its full report ends with FAILURE SIGNALS — denied reads, hook blocks, turn
 caps, repeated commands — each a candidate failure row to record or dismiss.
 
-- turns, tokens, batching, large reads — `dotfiles/tools/run-metrics.sh --since <start> --until <end> <transcript>`
+- turns, tokens, batching, large reads — `dotfiles/tools/run/run-metrics.sh --since <start> --until <end> <transcript>`
 - cost and duration — `/cost`, or the statusline payload delta across the run
 - fan-out and queueing — `/build`'s own completion report, which states which
   condition each queued workstream failed
 
 ## Plan recall
 
-One row per shipped ticket, from `dotfiles/tools/tests/plan-recall/recall.py`.
+One row per shipped ticket, from `dotfiles/tools/evals/plan-recall/recall.py`.
 Score each ticket against its own plan with `--ticket <id> --subject-only`,
 and check `--show-commits` before trusting the number.
 
@@ -228,7 +228,7 @@ Per `references/agent-run-metrics.md`, after roughly 10–20 comparable tickets:
 - recon — how often `/spec` and `/plan` dispatch rather than bounded-check, and
   whether the bounded checks were adequate in hindsight (ADR 0051's revisit
   condition)
-- plan recall — `dotfiles/tools/tests/plan-recall/recall.py` on each shipped ticket:
+- plan recall — `dotfiles/tools/evals/plan-recall/recall.py` on each shipped ticket:
   existing-file recall, and whether each missed file was a consumer or
   registration the change-surface search should have found
 - large reads — main-session whole-file reads in areas a bounded check or recon

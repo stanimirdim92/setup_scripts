@@ -11,7 +11,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-spec = importlib.util.spec_from_file_location('cr', Path(__file__).with_name('check-references.py'))
+spec = importlib.util.spec_from_file_location('cr', Path(__file__).resolve().parent.parent / 'checks' / 'check-references.py')
 cr = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cr)
 

@@ -7,10 +7,10 @@
 # the right way. Each case builds real repositories, because the hook decides
 # from `git worktree list` and a file on disk.
 #
-# Run: dotfiles/tools/test-isolated-test-runner.sh
+# Run: dotfiles/tools/tests/test-isolated-test-runner.sh
 set -uo pipefail
 
-HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")/../claude/hooks" && pwd)/require-isolated-test-runner.sh"
+HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../claude/hooks" && pwd)/require-isolated-test-runner.sh"
 command -v jq >/dev/null || { echo "test-isolated-test-runner: jq is required" >&2; exit 1; }
 
 TMP="$(mktemp -d)"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fixture tests for the LARGE TOOL RESULTS section of dotfiles/tools/run-metrics.sh,
+# Fixture tests for the LARGE TOOL RESULTS section of dotfiles/tools/run/run-metrics.sh,
 # for --row, the observation-log row it prints, and for FAILURE SIGNALS.
 # Builds a JSONL transcript by hand — main-session Read/Bash/Grep results of
 # known sizes plus a subagent (isSidechain) result that must not count — runs
@@ -9,10 +9,10 @@
 #   exclusion  — subagent results never count as main-session context
 #   shape      — string and array-form tool_result content both measure
 #
-# Run: dotfiles/tools/test-run-metrics.sh
+# Run: dotfiles/tools/tests/test-run-metrics.sh
 set -uo pipefail
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/run-metrics.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../run" && pwd)/run-metrics.sh"
 command -v jq >/dev/null || { echo "test-run-metrics: jq is required" >&2; exit 1; }
 
 TMP="$(mktemp -d)"

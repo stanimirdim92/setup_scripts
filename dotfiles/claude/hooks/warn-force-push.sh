@@ -24,7 +24,7 @@ raw_command="$command"
 # expand aliases. Alias expansion must happen after stripping because forms such
 # as `git -C /tmp fu` do not place the alias directly after `git` initially.
 # Keep the alias list in sync with the [alias] section of dotfiles/.gitconfig.
-# Every form here is covered by dotfiles/tools/test-hooks.sh -- add a fixture before
+# Every form here is covered by dotfiles/tools/tests/test-hooks.sh -- add a fixture before
 # adding a matcher. Note `git help.autocorrect = 1` can still run a near-miss
 # typo that no fixed list covers.
 command="$(sed -E \

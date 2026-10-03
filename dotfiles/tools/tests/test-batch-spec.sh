@@ -6,11 +6,11 @@
 # ticket already specced. `claude` is stubbed -- these test the runner's
 # decisions, not the model.
 #
-# Run: dotfiles/tools/test-batch-spec.sh
+# Run: dotfiles/tools/tests/test-batch-spec.sh
 set -uo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-BATCH="$REPO/dotfiles/tools/batch-spec.sh"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+BATCH="$REPO/dotfiles/tools/run/batch-spec.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 PASS=0; FAIL=0; FAILED=()
@@ -262,7 +262,7 @@ check    outside_repo_rc        1 "$RC"
 
 # the committed manifest must parse
 D="$(new_repo real)"
-cp "$REPO/dotfiles/tools/spec-batch.txt" "$D/jobs.txt"
+cp "$REPO/dotfiles/tools/run/spec-batch.txt" "$D/jobs.txt"
 run "$D" -m jobs.txt --dry-run
 check    real_manifest_rc       0 "$RC"
 contains real_manifest_jobs     "17 job(s)" "$OUT"

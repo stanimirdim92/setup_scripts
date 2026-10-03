@@ -10,8 +10,8 @@ nothing checked that the block still says what the ADR claims:
   read-only in prose only.
 - The writing personas carry the two agent-scoped hooks (`block-agent-push.sh`,
   `require-handoff-report.sh`). Delete a `hooks:` block by accident and the
-  push denial and the handoff gate silently stop existing; dotfiles/tools/test-hooks.sh
-  and dotfiles/tools/test-handoff-hook.sh still pass, because the hooks themselves are
+  push denial and the handoff gate silently stop existing; dotfiles/tools/tests/test-hooks.sh
+  and dotfiles/tools/tests/test-handoff-hook.sh still pass, because the hooks themselves are
   fine -- nobody is calling them.
 - The spawn-depth, agent-teams and fork pins in settings.json are single lines
   whose absence restores a default that undoes the design (0055 follow-up).
@@ -28,7 +28,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 CLAUDE = ROOT / 'dotfiles/claude'
 AGENTS = CLAUDE / 'agents'
 SETTINGS = CLAUDE / 'settings.json'

@@ -11,7 +11,7 @@
 # so its allow cases matter twice over: it must let those personas commit and
 # tag locally while denying every spelling of push.
 #
-# Run: dotfiles/tools/test-hooks.sh
+# Run: dotfiles/tools/tests/test-hooks.sh
 #
 # These exist because both hooks shipped with bypasses that a regex read like
 # it covered: git aliases, git global options (`git -C x`, `git --no-pager`),
@@ -19,7 +19,7 @@
 # a guardrail nobody has checked — see dotfiles/docs/adr/0049.
 set -uo pipefail
 
-HOOKS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../claude/hooks" && pwd)"
+HOOKS="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../claude/hooks" && pwd)"
 BLOCK="$HOOKS/block-destructive-bash.sh"
 WARN="$HOOKS/warn-force-push.sh"
 PUSH="$HOOKS/block-agent-push.sh"

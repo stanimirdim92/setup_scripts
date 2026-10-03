@@ -30,7 +30,7 @@ The Codex adapter `$explain` is explicit-only like the stage commands.
 **Decision — the harness map is generated, and CI fails when it is stale.**
 The hand-drawn `dotfiles/docs/harness-map.html` (stamped at 3e6280f) still said six
 personas, Sonnet 5 and nineteen skills months after each changed.
-`dotfiles/tools/harness-map.py` now renders it from the files that own each fact:
+`dotfiles/tools/checks/harness-map.py` now renders it from the files that own each fact:
 agent and command frontmatter, `settings.json`, hook header comments, skill
 frontmatter with the Codex invocation policy, CI step comments, and the ADRs.
 The output carries no timestamp or commit id, so `--check` compares it byte

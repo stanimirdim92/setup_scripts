@@ -22,7 +22,7 @@ records `Modules:` and `Not yet planned:`. There is one plan per ticket:
 planning a later module revises it in place, keeps built task ids, and returns
 it to `Needs replan` for renewed approval.
 
-**Decision — enforcement.** `dotfiles/tools/validate-artifact-paths.py` no longer
+**Decision — enforcement.** `dotfiles/tools/checks/validate-artifact-paths.py` no longer
 accepts the map file or per-module spec paths, so a pipeline file that
 reintroduces them fails CI.
 

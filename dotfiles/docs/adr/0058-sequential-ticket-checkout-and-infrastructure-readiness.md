@@ -55,7 +55,7 @@ identify actual runner drift without demanding unrelated merges.
 or Git identity is no evidence that a writing destination is safe. Denial names
 the repair; valid read-only agents still pass without checkout requirements.
 
-**Decision.** `dotfiles/tools/test-worktree-hooks.sh` exercises real Git fixtures and
+**Decision.** `dotfiles/tools/tests/test-worktree-hooks.sh` exercises real Git fixtures and
 stub project doctors, including malformed input, missing tools, detached HEAD,
 external paths, mid-ticket drift, and both Agent/Task dispatch. Frontmatter
 validation preserves verifier isolation while rejecting unconditional executor

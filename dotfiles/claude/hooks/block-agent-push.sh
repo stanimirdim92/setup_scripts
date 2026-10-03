@@ -27,7 +27,7 @@ deny() {
 # Same normalisation as warn-force-push.sh: strip git global options, then
 # expand the dotfiles/.gitconfig aliases and push typos that reach `push`.
 # Keep the alias list in sync with that [alias] section and with
-# warn-force-push.sh; every form is covered by dotfiles/tools/test-hooks.sh.
+# warn-force-push.sh; every form is covered by dotfiles/tools/tests/test-hooks.sh.
 command="$(sed -E \
   -e "s/\bgit((([[:space:]]+(-C|-c|--git-dir|--work-tree|--exec-path|--namespace)([[:space:]]+|=)(\"[^\"]*\"|'[^']*'|[^[:space:]]+)))|([[:space:]]+(--no-pager|--paginate|--bare|--literal-pathspecs|--no-optional-locks|--no-replace-objects)))+/git/g" \
   -e 's/\bgit[[:space:]]+fu\b/git push --force-with-lease -u/g' \

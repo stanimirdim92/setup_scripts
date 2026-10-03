@@ -26,7 +26,7 @@ Laravel/PHP/Yarn project checks. `["codex", "mcp"]`, which allowed
 If Codex has written through the dangling link, the resulting file holds that
 machine's approvals and is moved back to `~/.codex` as a real file rather than
 deleted. A real `default.rules` the user owns is never touched. The repo path is
-gitignored as a backstop. Covered in `dotfiles/tools/test-link-dotfiles.sh`.
+gitignored as a backstop. Covered in `dotfiles/tools/tests/test-link-dotfiles.sh`.
 
 **Rejected — keep syncing `default.rules` and prune it periodically.** That is
 what 0044 did; it lasted until the next approval click.

@@ -8,10 +8,10 @@
 #           (unknown agent, another hook's loop, third stop, unreadable
 #           transcript)
 #
-# Run: dotfiles/tools/test-handoff-hook.sh
+# Run: dotfiles/tools/tests/test-handoff-hook.sh
 set -uo pipefail
 
-HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")/../claude/hooks" && pwd)/require-handoff-report.sh"
+HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../claude/hooks" && pwd)/require-handoff-report.sh"
 command -v jq >/dev/null || { echo "test-handoff-hook: jq is required" >&2; exit 1; }
 
 TMP="$(mktemp -d)"

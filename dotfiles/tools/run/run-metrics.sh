@@ -7,12 +7,12 @@
 # dotfiles/claude/references/agent-run-metrics.md.
 #
 # Usage:
-#   dotfiles/tools/run-metrics.sh                      # most recent session, this project
-#   dotfiles/tools/run-metrics.sh <session.jsonl>
-#   dotfiles/tools/run-metrics.sh --list               # sessions for this project
-#   dotfiles/tools/run-metrics.sh --since 2026-08-29T14:00 --until 2026-08-29T15:30
-#   dotfiles/tools/run-metrics.sh --large-lines 500    # large-result threshold (default 350)
-#   dotfiles/tools/run-metrics.sh --row LD-412 /build --since ... --until ...
+#   dotfiles/tools/run/run-metrics.sh                      # most recent session, this project
+#   dotfiles/tools/run/run-metrics.sh <session.jsonl>
+#   dotfiles/tools/run/run-metrics.sh --list               # sessions for this project
+#   dotfiles/tools/run/run-metrics.sh --since 2026-08-29T14:00 --until 2026-08-29T15:30
+#   dotfiles/tools/run/run-metrics.sh --large-lines 500    # large-result threshold (default 350)
+#   dotfiles/tools/run/run-metrics.sh --row LD-412 /build --since ... --until ...
 #                                             # one dotfiles/docs/observation-log.md row
 #
 # Scope one BUILD by passing --since (the /build invocation) and --until

@@ -1,13 +1,13 @@
 ---
 name: dotfiles-sync
-description: How to add, edit, or relink files in this dotfiles/setup_scripts repo so dotfiles/tools/link_dotfiles.sh and dotfiles/README.md's synced-files list stay correct. Use when adding a new file meant to be symlinked into $HOME, or when editing dotfiles/tools/link_dotfiles.sh or dotfiles/README.md's Synced/Not-synced sections.
+description: How to add, edit, or relink files in this dotfiles/setup_scripts repo so dotfiles/tools/setup/link_dotfiles.sh and dotfiles/README.md's synced-files list stay correct. Use when adding a new file meant to be symlinked into $HOME, or when editing dotfiles/tools/setup/link_dotfiles.sh or dotfiles/README.md's Synced/Not-synced sections.
 ---
 
 # Adding a new synced dotfile
 
 1. Put the real file under `dotfiles/<tool>/<name>` (e.g.
    `dotfiles/claude/agents/foo.md`).
-2. In `dotfiles/tools/link_dotfiles.sh`, append the source to `SOURCES=(...)` and the
+2. In `dotfiles/tools/setup/link_dotfiles.sh`, append the source to `SOURCES=(...)` and the
    destination to `DESTINATIONS=(...)` at the same index — the two arrays are
    paired by position. One pair per file, or one pair per directory if
    the whole directory should be symlinked as a unit (this is how `agents/`,
@@ -38,7 +38,7 @@ description: How to add, edit, or relink files in this dotfiles/setup_scripts re
    with `allow_implicit_invocation: false`. Update dotfiles/README.md's adapter
    count ("all N local skills … and all M commands"), then run
    `python3 dotfiles/codex/install-skills.py --check`.
-5. Re-run `./dotfiles/tools/link_dotfiles.sh`. It prints the plan for every
+5. Re-run `./dotfiles/tools/setup/link_dotfiles.sh`. It prints the plan for every
    destination and asks before changing anything; `--dry-run` shows the plan
    and stops, `--yes` skips the prompt. Read the output: `ok <dest>` means
    already correct, `linked <dest> -> <src>` means newly linked, `backup
@@ -56,7 +56,7 @@ description: How to add, edit, or relink files in this dotfiles/setup_scripts re
    an in-app edit to any of them changes Codex's rules too.
 7. **Removing a synced path?** Don't just delete its `SOURCES`/`DESTINATIONS`
    pair — that leaves a dangling link on machines already set up. Move it to
-   `RETIRED_DESTINATIONS`/`RETIRED_SOURCES` in `dotfiles/tools/link_dotfiles.sh` so the
+   `RETIRED_DESTINATIONS`/`RETIRED_SOURCES` in `dotfiles/tools/setup/link_dotfiles.sh` so the
    next run retires the old link. Removed Codex adapters need no such entry:
    `install-skills.py` cleans up links to adapters that no longer exist.
    Codex TUI approvals stay in the local `~/.codex/rules/default.rules`;
