@@ -50,3 +50,11 @@ drop `docs/specs/*`, `docs/tasks/*`, `CLAUDE.md`, `AGENTS.md`, `.claude/*`,
 `.codex/*`, `.ai/*` and `.worktreeinclude`, which no task plans
 (`--no-default-excludes` restores them). A file added and removed inside the
 ticket is dropped.
+
+**Amendment 2026-10-03 — the map is drawn again, from data.** The pipeline
+opens as an SVG drawing generated from the command files: stages left to
+right, human decisions as diamonds, `/test` as a conditional detour, each
+stage's personas under it. Personas are cards, hooks are ordered by the moment
+they fire, and skills are a grid. The hand-drawn diagrams stay retired; the
+gate order and the human decision points remain the generator's only
+constants.
