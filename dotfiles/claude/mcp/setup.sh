@@ -93,6 +93,10 @@ echo "==> Figma MCP server (user scope, all projects)"
 # exists in desktop sessions; this user-scope entry is what makes Figma
 # reachable from a plain CLI session.
 add_server figma --transport http https://mcp.figma.com/mcp --scope user
+# Figma's design-to-code skill is the workflow for these tools. It is fetched
+# at a pinned commit and hash-checked, not committed: upstream has no licence.
+"$(dirname "${BASH_SOURCE[0]}")/../../tools/setup/fetch-figma-skill.sh" || \
+  echo "    note: figma-design-to-code skill not installed; rerun dotfiles/tools/setup/fetch-figma-skill.sh"
 
 echo "==> Context7 docs MCP server (user scope, all projects)"
 # Works without a key at low rate limits; set CONTEXT7_API_KEY for a higher

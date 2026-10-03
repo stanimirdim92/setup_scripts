@@ -74,6 +74,14 @@ or network behavior. The verifier invokes each selected skill before testing.
 When a required browser capability is unavailable, return `VERIFY BLOCKED` for
 that check; component tests cannot replace browser evidence.
 
+When an in-scope claim is "matches the Figma design", also select
+`figma-design-to-code`. The verifier follows its Verification section: the
+Figma screenshot of each linked node is the target, the rendered screen is
+captured through Chrome DevTools, and every visible asset and its geometry is
+compared. A mismatch is a `VERIFY FAIL` with both screenshots named; a
+missing Figma connection is `VERIFY BLOCKED`, never a visual judgement from
+memory.
+
 Include relevant invariant and decision pointers. BUILD's results are prior
 evidence, not the verifier's conclusion; the agent independently selects and
 executes checks sufficient to establish the in-scope behavior.

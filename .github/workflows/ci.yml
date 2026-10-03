@@ -120,6 +120,10 @@ jobs:
       - name: Dotfile linker confirmation
         run: bash dotfiles/tools/tests/test-link-dotfiles.sh
 
+      # The Figma skill fetch refuses a file whose hash differs from the pin.
+      - name: Figma skill fetch
+        run: bash dotfiles/tools/tests/test-fetch-figma-skill.sh
+
       # The batch spec runner's decisions, with `claude` stubbed.
       - name: Batch spec runner
         run: bash dotfiles/tools/tests/test-batch-spec.sh

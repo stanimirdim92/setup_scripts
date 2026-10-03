@@ -26,6 +26,7 @@ import argparse
 import html
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -374,7 +375,13 @@ def references():
 
 def skills():
     rows = []
+    # Tracked skills only: a skill fetched into a gitignored folder (Figma's)
+    # exists on one machine and not in CI, and would make the page stale.
+    tracked = set(subprocess.run(['git', '-C', str(ROOT), 'ls-files', 'dotfiles/claude/skills'],
+                                 capture_output=True, text=True).stdout.split())
     for path in sorted((CLAUDE / 'skills').glob('*/SKILL.md')):
+        if rel(path) not in tracked:
+            continue
         name = path.parent.name
         data, _ = frontmatter(read(path))
         policy = CODEX / 'skills' / name / 'agents/openai.yaml'

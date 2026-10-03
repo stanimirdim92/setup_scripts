@@ -154,6 +154,19 @@ Typical examples:
 - auth, permissions, secrets, or sensitive trust boundary ->
   `security-and-hardening`.
 
+- a task whose spec or task packet links a Figma design ->
+  `figma-design-to-code` (needs the Figma MCP server and the skill fetched by
+  `dotfiles/tools/setup/fetch-figma-skill.sh`; when either is missing, the
+  executor reports the blocker instead of building from memory of the design);
+- adding or reshaping a React component's API (props, compound components,
+  providers) -> `vercel-composition-patterns`;
+- Vite config or plugins -> `vite`; Vitest tests, mocking or config -> `vitest`.
+
+Skills the project ships in its own `.claude/skills/` (for example Laravel
+Boost's `inertia-react-development`, `tailwindcss-development` and
+`pest-testing`) are selected the same way and win over a general skill for the
+same area: they match the project's installed versions.
+
 Never select `browser-testing-with-devtools` for an executor. Executors hold no
 browser tools; test-engineer does (dotfiles/docs/adr/0070).
 

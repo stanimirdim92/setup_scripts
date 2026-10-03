@@ -1,7 +1,7 @@
 ---
 name: executor
 description: Implements one planned task end-to-end and can be resumed for later tasks in the same workstream. Tests, verifies, commits, reports, then stops.
-tools: Read, Edit, Write, Bash, Grep, Glob, Skill
+tools: Read, Edit, Write, Bash, Grep, Glob, Skill, mcp__figma__*
 skills:
   - executor-development-discipline
 model: claude-sonnet-5-5

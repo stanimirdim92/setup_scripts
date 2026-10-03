@@ -79,6 +79,7 @@ that explanation here, just the index.
 | [0069](0069-plain-writing-explain-page-and-generated-map.md) | Plain writing, an `/explain` review page, a generated harness map, and ticket-scoped plan recall | Accepted |
 | [0070](0070-browser-checks-route-to-test-engineer.md) | Browser checks route to test-engineer, and the DevTools MCP is installed | Accepted |
 | [0071](0071-harness-files-live-under-dotfiles.md) | Harness files live under `dotfiles/` | Accepted |
+| [0072](0072-frontend-skills-vendored-and-figma-fetched.md) | Frontend skills: three vendored, Figma's fetched | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

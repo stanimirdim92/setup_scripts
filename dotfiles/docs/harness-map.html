@@ -173,9 +173,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="layout">
-<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>7</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>18</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>18</span></a><a href="#decisions">Decisions<span>71</span></a></nav>
+<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>7</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>21</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>19</span></a><a href="#decisions">Decisions<span>72</span></a></nav>
 <main>
-<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>7</b>guards</span><span class="count"><b>8</b>session setup</span><span class="count"><b>18</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>18</b>self-tests</span><span class="count"><b>71</b>decisions</span></div></header>
+<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>7</b>guards</span><span class="count"><b>8</b>session setup</span><span class="count"><b>21</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>19</b>self-tests</span><span class="count"><b>72</b>decisions</span></div></header>
 <section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The amber rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">grey</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
 <div class="tabs" role="tablist" aria-label="Pipeline views">
 <button type="button" role="tab" id="tab-list" aria-controls="view-list" aria-selected="false" tabindex="-1" data-view="list"><span>1</span>Stage list</button>
@@ -234,7 +234,7 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <dt>sandbox</dt><dd>on · 11 excluded commands · 10 credential paths denied</dd>
 <dt>worktree.baseRef</dt><dd>head</dd>
 </dl></div><p class="note">AGENTS.md also covers: Session and context, Writing for humans, Worktrees, Agent orchestration, Models, Durable project records.</p></div></div></section>
-<section id="skills"><div class="sec-head"><h2>Skills</h2><p class="summary">18 skills. 6 are explicit-only: a stage or role loads them, never a keyword match.</p></div><div class="panel tablewrap"><table><thead><tr><th>Skill</th><th>Loading</th><th>What it is for</th></tr></thead><tbody>
+<section id="skills"><div class="sec-head"><h2>Skills</h2><p class="summary">21 skills. 6 are explicit-only: a stage or role loads them, never a keyword match.</p></div><div class="panel tablewrap"><table><thead><tr><th>Skill</th><th>Loading</th><th>What it is for</th></tr></thead><tbody>
 <tr><td class="cmdcell">code-review-and-quality</td><td><span class="badge gate">explicit</span></td><td>Conducts multi-axis code review across correctness, readability, architecture, security, and performance.</td></tr>
 <tr><td class="cmdcell">executor-development-discipline</td><td><span class="badge gate">explicit</span></td><td>Implements a planned task through thin behavioral slices, test-driven development, focused verification, evidence-driven retries, and atomic commits.</td></tr>
 <tr><td class="cmdcell">incremental-implementation</td><td><span class="badge gate">explicit</span></td><td>Delivers changes in small, verifiable increments.</td></tr>
@@ -253,6 +253,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">laravel-worktree-isolation</td><td><span class="badge read">on match</span></td><td>Set up a Laravel repository so its test suite runs isolated per git worktree — separate database and Redis keyspace — enabling parallel ticket work.</td></tr>
 <tr><td class="cmdcell">project-docs</td><td><span class="badge read">on match</span></td><td>Create or refresh repository documentation from the actual project.</td></tr>
 <tr><td class="cmdcell">security-and-hardening</td><td><span class="badge read">on match</span></td><td>Hardens code against vulnerabilities.</td></tr>
+<tr><td class="cmdcell">vercel-composition-patterns</td><td><span class="badge read">on match</span></td><td>React composition patterns that scale.</td></tr>
+<tr><td class="cmdcell">vite</td><td><span class="badge read">on match</span></td><td>Vite build tool configuration, plugin API, SSR, and Vite 8 Rolldown migration.</td></tr>
+<tr><td class="cmdcell">vitest</td><td><span class="badge read">on match</span></td><td>Vitest fast unit testing framework powered by Vite with Jest-compatible API.</td></tr>
 </tbody></table></div></section>
 <section id="references"><div class="sec-head"><h2>References</h2><p class="summary">15 references and 4 templates. Each rule is written once, here, and the commands point at it.</p></div><div class="panel tablewrap"><table><thead><tr><th>File</th><th>Title</th></tr></thead><tbody>
 <tr><td class="cmdcell">agent-run-metrics.md</td><td>Agent Run Metrics</td></tr>
@@ -275,7 +278,7 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">templates/spec.md</td><td>Spec Template</td></tr>
 <tr><td class="cmdcell">templates/task.md</td><td>Task Template</td></tr>
 </tbody></table></div></section>
-<section id="ci"><div class="sec-head"><h2>Self-tests</h2><p class="summary">18 CI steps on every push to main and every pull request. Runs that spend model tokens stay manual.</p></div><div class="panel tablewrap"><table><thead><tr><th>Step</th><th>Command</th></tr></thead><tbody>
+<section id="ci"><div class="sec-head"><h2>Self-tests</h2><p class="summary">19 CI steps on every push to main and every pull request. Runs that spend model tokens stay manual.</p></div><div class="panel tablewrap"><table><thead><tr><th>Step</th><th>Command</th></tr></thead><tbody>
 <tr><td><b>Preflight — required tools</b></td><td class="cmdcell">for tool in bash git jq python3; do<br>command -v &quot;$tool&quot; &gt;/dev/null || { echo &quot;missing: $tool&quot;; exit 1; }<br>done<br>jq --version &amp;&amp; python3 --version &amp;&amp; git --version</td></tr>
 <tr><td><b>Hooks — deny, ask, and allow cases</b><span class="sub">Enforcement: the three PreToolUse hooks, deny/ask/allow, including the alias, typo, global-option and quoted-target bypasses (adr/0049).</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-hooks.sh</td></tr>
 <tr><td><b>Hooks — handoff report gate</b><span class="sub">Enforcement: the SubagentStop handoff gate — complete, partial, claim-only, second attempt, unknown agent, unreadable transcript.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-handoff-hook.sh</td></tr>
@@ -292,10 +295,12 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td><b>Codex native roles and hook adapters</b></td><td class="cmdcell">python3 dotfiles/tools/tests/test-codex-harness.py</td></tr>
 <tr><td><b>Codex CLI ticket worktrees and concurrent sessions</b></td><td class="cmdcell">python3 dotfiles/tools/tests/test-codex-worktree.py</td></tr>
 <tr><td><b>Dotfile linker confirmation</b><span class="sub">The dotfile linker&#x27;s confirmation gate, against a throwaway $HOME.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-link-dotfiles.sh</td></tr>
+<tr><td><b>Figma skill fetch</b><span class="sub">The Figma skill fetch refuses a file whose hash differs from the pin.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-fetch-figma-skill.sh</td></tr>
 <tr><td><b>Batch spec runner</b><span class="sub">The batch spec runner&#x27;s decisions, with <code>claude</code> stubbed.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-batch-spec.sh</td></tr>
 <tr><td><b>Run metrics</b><span class="sub">Measurement: the transcript metrics&#x27; large-result section.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-run-metrics.sh</td></tr>
 </tbody></table></div></section>
-<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">71 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">72 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<tr><td class="cmdcell">0072</td><td>Frontend skills: three vendored, Figma&#x27;s fetched</td></tr>
 <tr><td class="cmdcell">0071</td><td>Harness files live under <code>dotfiles/</code></td></tr>
 <tr><td class="cmdcell">0070</td><td>Browser checks route to test-engineer, and the DevTools MCP is installed</td></tr>
 <tr><td class="cmdcell">0069</td><td>Plain writing, an <code>/explain</code> review page, a generated harness map, and ticket-scoped plan recall</td></tr>
@@ -305,7 +310,6 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">0065</td><td>One spec per ticket; the capability map is a section of it</td></tr>
 <tr><td class="cmdcell">0064</td><td>Caveman skill dropped</td></tr>
 <tr><td class="cmdcell">0063</td><td>Sonnet 5.5 replaces Sonnet 5; the advisor moves to Fable 5.1</td></tr>
-<tr><td class="cmdcell">0062</td><td>Codex rules: a curated synced file, separate from the approvals file</td></tr>
 </tbody></table></div></section>
 <footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. Do not edit by hand.</footer></main></div>
 <script>
