@@ -59,6 +59,21 @@ caps, repeated commands) — with `--since`/`--until` to scope a single `/build`
 and `--row` to print a ready observation-log row. See
 `dotfiles/claude/references/agent-run-metrics.md`.
 
+`dotfiles/tools/tests/plan-recall/recall.py` scores a shipped ticket's plan
+against what changed: the share of changed files its tasks named. Run it from
+the project checkout:
+
+```bash
+python3 ~/path/to/setup_scripts/dotfiles/tools/tests/plan-recall/recall.py --repo ./ \
+    --ticket LD-380 --subject-only --show-commits \
+    --plan docs/tasks/LD-380-plan.md --plan docs/tasks/LD-380-todo.md \
+    --range <commit before the ticket>..<last commit of the ticket>
+```
+
+Check the `scored commits` list before trusting the number, then record it in
+`dotfiles/docs/observation-log.md` §Plan recall. Options and how to read the
+result: `dotfiles/tools/tests/plan-recall/README.md`.
+
 `.github/workflows/ci.yml` runs every deterministic check in `dotfiles/tools/` on each
 push to `main` and each pull request — hooks, handoff gate, persona frontmatter and settings pins, artifact
 paths, workflow-runner logic, the Codex installer, and the metrics script. The

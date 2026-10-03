@@ -13,13 +13,21 @@ recall is the number that says whether the list is complete.
 
 ## Running it
 
-From anywhere, against a project checkout and a ticket that has shipped:
+From the project checkout, once the ticket has shipped. Score each ticket
+against its own plan:
 
 ```bash
-python3 dotfiles/tools/tests/plan-recall/recall.py --repo ~/code/leadbuster \
+python3 ~/path/to/setup_scripts/dotfiles/tools/tests/plan-recall/recall.py --repo ./ \
+    --ticket LD-380 --subject-only --show-commits \
     --plan docs/tasks/LD-380-plan.md --plan docs/tasks/LD-380-todo.md \
-    --range <commit before the ticket>..<merge commit>
+    --range <commit before the ticket>..<last commit of the ticket>
 ```
+
+Read the `scored commits` list first. It must hold the ticket's own pipeline
+commits (`(LD-380 T001)` and the like) and nothing else. If a commit of the
+ticket names it only in its body, drop `--subject-only`; if another ticket's
+commits got in, add `--not-ticket <id>`. Then record the figures in the Plan
+recall table of `dotfiles/docs/observation-log.md`.
 
 - `--ticket LD-380` scores only the commits in the range whose message names
   the ticket (case-insensitive substring, merges skipped). Repeat it to score
