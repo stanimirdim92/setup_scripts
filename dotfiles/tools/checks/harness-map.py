@@ -39,6 +39,16 @@ OUT = ROOT / 'dotfiles/docs/harness-map.html'
 PIPELINE = ['spec', 'plan', 'build', 'review', 'test', 'ship']
 HUMAN_GATE_AFTER = {'spec': 'approve spec', 'plan': 'approve plan', 'ship': 'push / merge'}
 CONDITIONAL = {'test': 'only when /review requires it'}
+# What each stage leaves behind. Artifact paths are the ones
+# validate-artifact-paths.py guards; the gate words are the commands' own.
+STAGE_OUTPUT = {
+    'spec': 'docs/specs/[TICKET]-SPEC.md, Status: Draft',
+    'plan': 'docs/tasks/[TICKET]-plan.md + -todo.md',
+    'build': 'local commits, task Status: Done',
+    'review': 'findings: BLOCKER / REQUIRED / ADVISORY',
+    'test': 'VERIFY PASS / FAIL / BLOCKED',
+    'ship': 'GO / NO-GO with a rollback plan',
+}
 
 
 
@@ -54,6 +64,7 @@ CSS = r"""
   --line:#DCE1E7; --line-2:#C3CAD3;
   --gate:#A9620B; --gate-bg:#FBF0DD; --write:#1F5FAE; --write-bg:#E3EDFA; --read:#5A6472;
   --ok:#2F7A4F;
+  --display:"Archivo","Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
   --sans:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   color-scheme:light;
@@ -79,6 +90,7 @@ html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;padding-inline:clamp(16px,3vw,40px);padding-block:32px 80px}
 a{color:inherit}
 h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-0.01em}
+h1,h2{font-family:var(--display);font-stretch:112%;letter-spacing:-0.02em}
 h1{font-size:clamp(34px,4.6vw,50px);line-height:1.1;font-weight:800}
 h2{font-size:27px;line-height:1.25;font-weight:700}
 h3{font-size:18px;font-weight:700}
@@ -132,8 +144,6 @@ section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px;min-w
 .tabs button:hover{color:var(--ink);background:var(--sunk)}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--write)}
 .tabs button span{font-family:var(--mono);font-size:13px;color:var(--ink-3);margin-right:6px}
-.mermaid-wrap{overflow-x:auto;min-width:0}
-.mermaid-wrap svg{max-width:none!important;height:auto}
 
 /* option 1: stage list */
 ol.stages{list-style:none;margin:0;padding:0}
@@ -152,8 +162,22 @@ ol.stages > li.gate{display:flex;gap:10px;align-items:center;padding:8px 20px;ba
 .strip .sep{color:var(--ink-3)}
 .strip .diamond{margin-inline:2px}
 
-/* option 3: mermaid */
-pre.mermaid{margin:0;padding:18px 20px;font-family:var(--mono);font-size:13.5px;color:var(--ink-2);white-space:pre;overflow-x:auto;background:none}
+/* option 3: flowchart (inline SVG, styled from here) */
+figure.flow{margin:0;display:flex;flex-direction:column}
+.flow-scroll{overflow-x:auto;padding:12px}
+.flow-scroll svg{display:block;width:100%;min-width:760px;max-width:980px;height:auto}
+figure.flow figcaption{font-size:15px;color:var(--ink-2);padding:12px 20px 16px;border-top:1px solid var(--line)}
+.f-cmd{font-family:var(--mono);font-size:19px;font-weight:700;fill:var(--ink)}
+.f-desc{font-family:var(--sans);font-size:15.5px;fill:var(--ink)}
+.f-who,.f-out{font-family:var(--mono);font-size:13.5px;fill:var(--ink-2)}
+.f-label{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--ink-3);letter-spacing:0.04em}
+.f-write{fill:var(--write);font-weight:700}
+.f-read{fill:var(--ink-2)}
+.f-note{font-family:var(--sans);font-size:13px;font-style:italic;fill:var(--ink-3)}
+.f-edge{stroke:var(--ink-2);stroke-width:1.6}
+.f-edge-label{font-family:var(--sans);font-size:13.5px;fill:var(--ink-3)}
+.f-gate{font-family:var(--sans);font-size:15.5px;font-weight:700;fill:var(--gate)}
+ol.stages .leaves{display:block;font-family:var(--mono);font-size:13.5px;color:var(--ink-3);margin-top:4px}
 
 /* tables */
 .tablewrap{overflow-x:auto;min-width:0}
@@ -414,8 +438,8 @@ def persona_label(name, writers):
 
 
 # The pipeline is shown three ways, as tabs; the flowchart opens first.
-PIPELINE_VIEWS = ('list', 'strip', 'mermaid')
-DEFAULT_VIEW = 'mermaid'
+PIPELINE_VIEWS = ('list', 'strip', 'flow')
+DEFAULT_VIEW = 'flow'
 
 
 def pipeline_list(cmds, writers):
@@ -429,7 +453,9 @@ def pipeline_list(cmds, writers):
         who = ''.join(persona_label(p, writers) for p in c['personas']) or '<span class="note">the session itself</span>'
         cls = ' class="cond"' if cond else ''
         rows.append(f'<li{cls}><span class="cmd">/{e(name)}</span>'
-                    f'<span class="does">{e(c["description"])}{badge}</span><span class="who">{who}</span></li>')
+                    f'<span class="does">{e(c["description"])}{badge}'
+                    f'<span class="leaves">Leaves {e(STAGE_OUTPUT.get(name, ""))}</span></span>'
+                    f'<span class="who">{who}</span></li>')
         if name in HUMAN_GATE_AFTER:
             rows.append(f'<li class="gate"><i class="diamond"></i>You decide: {e(HUMAN_GATE_AFTER[name])}</li>')
     return '<div class="panel"><ol class="stages">' + ''.join(rows) + '</ol></div>'
@@ -453,44 +479,131 @@ def pipeline_strip(cmds, writers):
             f'<tbody>{rows}</tbody></table></div></div>')
 
 
-def mermaid_text(text):
-    """Safe inside a Mermaid quoted label."""
-    return text.replace('"', '#quot;').replace('`', "'")
+def wrap(text, width):
+    """Greedy word wrap by character count, for SVG text (no layout engine)."""
+    lines, line = [], ''
+    for word in text.split():
+        if line and len(line) + 1 + len(word) > width:
+            lines.append(line)
+            line = word
+        else:
+            line = f'{line} {word}'.strip()
+    return lines + ([line] if line else [])
 
 
-def pipeline_mermaid(cmds, writers):
-    """The stage list as a diagram: one box per stage, top to bottom, holding
-    the command, what it does and who does it. Approvals are diamonds between
-    boxes; /test is a dashed detour. Drawn by the Mermaid script when the page
-    is online; the source shows otherwise. (Mermaid drops a subgraph's own
-    direction when its nodes link outside it, so personas live in the label.)"""
-    lines = ['flowchart TB']
-    order = [n for n in PIPELINE if n in cmds]
-    for name in order:
+def pipeline_flow(cmds, writers):
+    """The pipeline as an inline SVG flowchart: one box per stage, top to bottom,
+    with what it does, who does it and what it leaves behind. Every arrow names
+    what passes along it; amber diamonds are the human decisions; /test is a
+    dashed detour on the right. Themed through the page's CSS variables."""
+    X, W, TX, TW = 24, 560, 640, 340          # main column, detour column
+    PAD, LINE, SVGW = 20, 21, 1004
+    out, y = [], 16
+
+    def box(name, x, w, y, dashed=False):
         c = cmds[name]
-        who = ', '.join(f'{p} (writes)' if p in writers else p for p in c['personas']) or 'the session itself'
-        label = f'<b>/{name}</b><br/>{mermaid_text(c["description"])}<br/><i>Who: {mermaid_text(who)}</i>'
-        if name in CONDITIONAL:
-            label += f'<br/><i>{mermaid_text(CONDITIONAL[name])}</i>'
-        lines.append(f'  {name}["{label}"]:::{"cond" if name in CONDITIONAL else "stage"}')
-    main = [n for n in order if n not in CONDITIONAL]
-    prev = None
-    for name in main:
-        if prev:
-            lines.append(f'  {prev} --> {name}')
-        prev = name
+        chars = (w - 2 * PAD) // 7.6
+        desc = wrap(c['description'], int(chars))
+        who = c['personas'] or []
+        who_lines, cur = [], []
+        for p in who:                          # persona names wrap as units
+            if cur and len(', '.join(cur + [p])) + 5 > (w - 2 * PAD) // 7.9:
+                who_lines.append(cur)
+                cur = []
+            cur.append(p)
+        if cur:
+            who_lines.append(cur)
+        h = PAD + 24 + len(desc) * LINE + 8 + max(1, len(who_lines)) * LINE + LINE + PAD - 6
+        fill = 'var(--sunk)' if dashed else 'var(--surface)'
+        dash = ' stroke-dasharray="7 5"' if dashed else ''
+        stroke = 'var(--ink-3)' if dashed else 'var(--ink)'
+        out.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="6" fill="{fill}" stroke="{stroke}" '
+                   f'stroke-width="1.5"{dash}/>')
+        ty = y + PAD + 16
+        out.append(f'<text x="{x + PAD}" y="{ty}" class="f-cmd">/{e(name)}</text>')
+        ty += 8
+        for line in desc:
+            ty += LINE
+            out.append(f'<text x="{x + PAD}" y="{ty}" class="f-desc">{e(line)}</text>')
+        ty += 8
+        if who_lines:
+            for i, group in enumerate(who_lines):
+                ty += LINE
+                spans = []
+                for j, p in enumerate(group):
+                    cls = 'f-write' if p in writers else 'f-read'
+                    sep = ', ' if j < len(group) - 1 or i < len(who_lines) - 1 else ''
+                    spans.append(f'<tspan class="{cls}">{e(p)}</tspan>{e(sep)}')
+                lead = '<tspan class="f-label">Who </tspan>' if i == 0 else '<tspan class="f-label">    </tspan>'
+                out.append(f'<text x="{x + PAD}" y="{ty}" class="f-who">{lead}{"".join(spans)}</text>')
+        else:
+            ty += LINE
+            out.append(f'<text x="{x + PAD}" y="{ty}" class="f-who"><tspan class="f-label">Who </tspan>'
+                       f'<tspan class="f-read">the session itself</tspan></text>')
+        ty += LINE
+        out.append(f'<text x="{x + PAD}" y="{ty}" class="f-out"><tspan class="f-label">Leaves </tspan>'
+                   f'{e(STAGE_OUTPUT.get(name, ""))}</text>')
+        return h
+
+    def arrow(x, y1, y2, label=None, dashed=False):
+        dash = ' stroke-dasharray="6 5"' if dashed else ''
+        out.append(f'<line x1="{x}" y1="{y1}" x2="{x}" y2="{y2 - 2}" class="f-edge"{dash} marker-end="url(#f-arw)"/>')
+        if label:
+            out.append(f'<text x="{x + 12}" y="{(y1 + y2) / 2 + 5}" class="f-edge-label">{e(label)}</text>')
+
+    cx = X + W / 2
+    edge_label = {'spec': 'draft spec', 'plan': 'draft plan', 'build': 'candidate commits',
+                  'ship': 'GO and rollback plan'}
+    after_gate = {'spec': 'approved spec', 'plan': 'approved plan', 'ship': None}
+    main = [n for n in PIPELINE if n in cmds and n not in CONDITIONAL]
+    boxes = {}
+    for i, name in enumerate(main):
+        h = box(name, X, W, y)
+        boxes[name] = (y, h)
+        y += h
+        nxt = main[i + 1] if i + 1 < len(main) else None
         if name in HUMAN_GATE_AFTER:
-            gate = f'g_{name}'
-            lines.append(f'  {gate}{{"You decide:<br/>{mermaid_text(HUMAN_GATE_AFTER[name])}"}}:::gate')
-            lines.append(f'  {name} --> {gate}')
-            prev = gate
-    for name in CONDITIONAL:
-        if name in cmds and 'review' in cmds and 'ship' in cmds:
-            lines.append(f'  review -. "if required" .-> {name} -.-> ship')
-    lines += ['  classDef stage fill:#FFFFFF,stroke:#111827,stroke-width:1.5px,color:#111827',
-              '  classDef cond fill:#F3F5F8,stroke:#717A87,stroke-dasharray:6 4,color:#111827',
-              '  classDef gate fill:#FBF0DD,stroke:#A9620B,color:#7A4708']
-    return ('<div class="panel mermaid-wrap"><pre class="mermaid">' + e('\n'.join(lines)) + '</pre></div>')
+            arrow(cx, y, y + 34, edge_label.get(name))
+            gy = y + 34 + 15
+            out.append(f'<rect x="{cx - 13}" y="{gy - 13}" width="26" height="26" fill="var(--gate-bg)" '
+                       f'stroke="var(--gate)" stroke-width="2" transform="rotate(45 {cx} {gy})"/>')
+            out.append(f'<text x="{cx + 32}" y="{gy + 5}" class="f-gate">You decide: {e(HUMAN_GATE_AFTER[name])}</text>')
+            y = gy + 15
+            if nxt:
+                arrow(cx, y, y + 34, after_gate.get(name))
+                y += 34
+        elif nxt:
+            gap = 46
+            if name == 'review' and 'test' in cmds and 'test' in CONDITIONAL:
+                ty0 = boxes['review'][0] + boxes['review'][1] + 30
+                th = box('test', TX, TW, ty0, dashed=True)
+                boxes['test'] = (ty0, th)
+                gap = max(gap, ty0 + th + 40 - y)
+                ry = boxes['review'][0] + boxes['review'][1] - 30
+                out.append(f'<path d="M{X + W},{ry} H{TX + TW / 2} V{ty0 - 2}" fill="none" class="f-edge" '
+                           f'stroke-dasharray="6 5" marker-end="url(#f-arw)"/>')
+                out.append(f'<text x="{X + W + 12}" y="{ry - 8}" class="f-edge-label">if /review requires it</text>')
+                boxes['_test_join'] = ty0 + th
+            arrow(cx, y, y + gap, 'findings and evidence' if name == 'review' else edge_label.get(name))
+            y += gap
+    if '_test_join' in boxes and 'ship' in boxes:
+        sy, sh = boxes['ship']
+        jy = sy + 34
+        out.append(f'<path d="M{TX + TW / 2},{boxes["_test_join"]} V{jy} H{X + W + 2}" fill="none" class="f-edge" '
+                   f'stroke-dasharray="6 5" marker-end="url(#f-arw)"/>')
+        out.append(f'<text x="{TX + TW / 2 + 12}" y="{(boxes["_test_join"] + jy) / 2 + 5}" '
+                   f'class="f-edge-label">VERIFY PASS</text>')
+    height = y + 16
+    svg = (f'<svg viewBox="0 0 {SVGW} {height}" role="img" aria-label="The pipeline from /spec to /ship: each '
+           'stage, who runs it and what it leaves behind, with the three human decisions and the conditional '
+           '/test detour.">'
+           '<defs><marker id="f-arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" '
+           'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker></defs>'
+           + ''.join(out) + '</svg>')
+    return ('<figure class="panel flow">' + '<div class="flow-scroll">' + svg + '</div>'
+            '<figcaption>Every arrow names what it carries. Nothing reaches the next stage past an amber diamond '
+            'until you decide; /test runs only when /review requires it, and /ship then needs its VERIFY PASS.'
+            '</figcaption></figure>')
 
 
 LIFECYCLE = [('SessionStart', None, 'Session starts'),
@@ -525,7 +638,7 @@ def render():
            '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
            '<title>Harness Map</title>',
            '<!-- Generated by dotfiles/tools/checks/harness-map.py. Do not edit by hand; CI fails when this page is stale. -->',
-           '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">',
+           '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..800&family=Hanken+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">',
            '<style>' + CSS + '</style>', '</head>', '<body>', '<div class="layout">',
            '<nav class="index" aria-label="Sections"><div class="label">Harness map</div>'
            + ''.join(f'<a href="#{i}">{e(t)}<span>{n}</span></a>' for i, t, n in sections) + '</nav>',
@@ -549,7 +662,7 @@ def render():
                '<span><span class="badge cond">dashed</span> only when needed</span></div>')
     views = {'list': ('1', 'Stage list', pipeline_list),
              'strip': ('2', 'Strip', pipeline_strip),
-             'mermaid': ('3', 'Flowchart', pipeline_mermaid)}
+             'flow': ('3', 'Flowchart', pipeline_flow)}
     out.append('<div class="tabs" role="tablist" aria-label="Pipeline views">')
     for key in PIPELINE_VIEWS:
         num, label, _ = views[key]
@@ -560,8 +673,7 @@ def render():
     out.append('</div>')
     for key in PIPELINE_VIEWS:
         hidden = '' if key == DEFAULT_VIEW else ' hidden'
-        note = ('<p class="note">Needs the Mermaid script from a CDN; offline, its source shows instead.</p>'
-                if key == 'mermaid' else '')
+        note = ''
         out.append(f'<div role="tabpanel" id="view-{key}" aria-labelledby="tab-{key}" class="option"{hidden}>'
                    + views[key][2](cmds, writers) + note + '</div>')
     for name in sorted(n for n in cmds if n not in PIPELINE):
@@ -686,22 +798,9 @@ def render():
 
     out.append('<footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. '
                'Do not edit by hand.</footer></main></div>')
-    if 'mermaid' in PIPELINE_VIEWS:
-        out.append('<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>')
     out.append('''<script>
 (function () {
   var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
-  var drawn = false;
-  function draw() {
-    if (drawn || !window.mermaid) { return; }
-    drawn = true;
-    var dark = document.documentElement.dataset.theme === 'dark' ||
-      (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
-    mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'strict',
-      themeVariables: { fontSize: '17px', fontFamily: 'Hanken Grotesk, Helvetica Neue, Arial, sans-serif' },
-      flowchart: { htmlLabels: true, useMaxWidth: false, wrappingWidth: 420, nodeSpacing: 40, rankSpacing: 36 } });
-    mermaid.run({ querySelector: 'pre.mermaid' });
-  }
   function show(key, focus) {
     tabs.forEach(function (tab) {
       var on = tab.dataset.view === key;
@@ -710,7 +809,6 @@ def render():
       document.getElementById('view-' + tab.dataset.view).hidden = !on;
       if (on && focus) { tab.focus(); }
     });
-    if (key === 'mermaid') { draw(); }
     try { localStorage.setItem('harness-map-view', key); } catch (err) {}
   }
   tabs.forEach(function (tab, i) {
