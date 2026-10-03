@@ -80,6 +80,15 @@ class Scoring(unittest.TestCase):
         changed = {'app/Billing/InvoiceTotals.php': 'M', 'docs/billing.md': 'M'}
         self.assertEqual(pr.score(self.entries, changed, ['docs/*'])['recall'], 1.0)
 
+    def test_default_excludes_drop_pipeline_and_agent_config(self):
+        changed = {'app/Billing/InvoiceTotals.php': 'M', 'docs/specs/LD-1-spec.md': 'A',
+                   'docs/tasks/LD-1-todo.md': 'M', '.claude/settings.json': 'M', 'CLAUDE.md': 'M',
+                   '.ai/rules/php.md': 'M', 'Modules/Socials/CLAUDE.md': 'M'}
+        result = pr.score(self.entries, changed, pr.DEFAULT_EXCLUDES)
+        self.assertEqual(result['changed_files'], 1)
+        self.assertEqual(result['excluded_files'], 6)
+        self.assertEqual(result['recall'], 1.0)
+
     def test_empty_diff_has_no_ratio(self):
         self.assertIsNone(pr.score(self.entries, {})['recall'])
 
@@ -106,6 +115,23 @@ class EndToEnd(unittest.TestCase):
                                       '--min-recall', '0.9']), 1)
             self.assertEqual(pr.main(['--repo', tmp, '--plan', 'plan.md', '--range', f'{base}..HEAD',
                                       '--min-recall', '0.5']), 0)
+
+    def test_ticket_scopes_to_its_own_commits(self):
+        # A range carrying two tickets: the other ticket's files are not misses.
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            git = lambda *a: subprocess.run(['git', '-C', tmp, '-c', 'user.email=t@t', '-c', 'user.name=t', *a],
+                                            check=True, capture_output=True, text=True).stdout.strip()
+            git('init', '-q')
+            (repo / 'a.php').write_text('a\n'); (repo / 'b.php').write_text('b\n')
+            git('add', '-A'); git('commit', '-qm', 'base')
+            base = git('rev-parse', 'HEAD')
+            (repo / 'a.php').write_text('a2\n'); git('commit', '-qam', 'LD-441: change a')
+            (repo / 'b.php').write_text('b2\n'); git('commit', '-qam', 'LD-442: change b')
+            (repo / 'tmp.php').write_text('t\n'); git('add', '-A'); git('commit', '-qm', 'ld-441 scratch')
+            git('rm', '-q', 'tmp.php'); git('commit', '-qm', 'LD-441 drop scratch')
+            self.assertEqual(pr.changed_files(repo, f'{base}..HEAD', 'LD-441'), {'a.php': 'M'})
+            self.assertEqual(set(pr.changed_files(repo, f'{base}..HEAD')), {'a.php', 'b.php'})
 
 
 if __name__ == '__main__':

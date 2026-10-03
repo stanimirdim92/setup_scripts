@@ -21,6 +21,14 @@ python3 tools/tests/plan-recall/recall.py --repo ~/code/leadbuster \
     --range <commit before the ticket>..<merge commit>
 ```
 
+- `--ticket LD-380` scores only the commits in the range whose message names
+  the ticket (case-insensitive substring, merges skipped). Use it whenever the
+  range also carries other tickets' work; without it, their files read as
+  misses. A file added and then removed inside the ticket is dropped.
+- Pipeline artifacts and agent configuration are excluded by default
+  (`docs/specs/*`, `docs/tasks/*`, `CLAUDE.md`, `AGENTS.md`, `.claude/*`,
+  `.codex/*`, `.ai/*`, `.worktreeinclude`): no task plans them.
+  `--no-default-excludes` scores them too.
 - `--exclude 'docs/*'` drops changed files the plan is not expected to list
   (repeatable).
 - `--min-recall 0.8` exits 1 below that recall over pre-existing files.
