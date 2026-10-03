@@ -54,5 +54,6 @@ grep -E '^\s+(run: )?(bash|python3) dotfiles' .github/workflows/ci.yml \
 | `plan-recall/` | How many of the files a ticket changed its plan named | Free |
 | `spec-eval/` | How close a fresh `/spec` gets to a deployed spec | One real `/spec` run per ticket |
 | `workflow/` | The pipeline end to end in a throwaway project | Real model runs |
+| `replay/` | Today's harness on a ticket that already shipped, from the code before it started | A full ticket run |
 
 Each folder's README has the commands. Their own logic tests (`test_*.py`) run in CI.
