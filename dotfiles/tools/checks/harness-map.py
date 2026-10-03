@@ -47,154 +47,144 @@ def e(text):
     return re.sub(r'`([^`]+)`', r'<code>\1</code>', html.escape(str(text)))
 
 CSS = r"""
-/* Layout: an engineer's plate. One wide pipeline drawing opens the sheet;
-   indexed plates follow, each a different view of the same harness. */
+/* Layout: a reference manual. A fixed index on the left, one column of
+   sections on the right, each opening with a one-line summary, then a table. */
 :root{
-  --paper:#F2F3EF; --paper-2:#E6E8E2; --panel:#FAFAF7; --ink:#1A1F27; --ink-2:#4B525C; --ink-3:#6E757F;
-  --rule:#8A9099; --rule-2:#CDD1CA;
-  --gate:#B0680A; --gate-soft:#F5E3C4; --writer:#2F6390; --writer-soft:#D7E5F1; --ro:#5B6370;
-  --ok:#3C7A4E;
-  --display:"Bricolage Grotesque","Archivo",system-ui,sans-serif;
-  --body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --bg:#F6F7F9; --surface:#FFFFFF; --sunk:#EDF0F3; --ink:#111827; --ink-2:#4A5361; --ink-3:#717A87;
+  --line:#DCE1E7; --line-2:#C3CAD3;
+  --gate:#A9620B; --gate-bg:#FBF0DD; --write:#1F5FAE; --write-bg:#E3EDFA; --read:#5A6472;
+  --ok:#2F7A4F;
+  --sans:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --paper:#12161D; --paper-2:#1B212B; --panel:#171C24; --ink:#E7E9E4; --ink-2:#AEB4BC; --ink-3:#8A919A;
-    --rule:#69717C; --rule-2:#2C3440;
-    --gate:#E39A3D; --gate-soft:#3A2A12; --writer:#78AEDB; --writer-soft:#1B2E40; --ro:#9AA2AC; --ok:#79B98A;
+    --bg:#0E1116; --surface:#151A21; --sunk:#1C222B; --ink:#E8EBEF; --ink-2:#AAB2BD; --ink-3:#848D99;
+    --line:#262D37; --line-2:#36404C;
+    --gate:#E8A24A; --gate-bg:#33240F; --write:#7AAEF0; --write-bg:#172A42; --read:#9BA5B2; --ok:#6FBF8C;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --paper:#12161D; --paper-2:#1B212B; --panel:#171C24; --ink:#E7E9E4; --ink-2:#AEB4BC; --ink-3:#8A919A;
-  --rule:#69717C; --rule-2:#2C3440;
-  --gate:#E39A3D; --gate-soft:#3A2A12; --writer:#78AEDB; --writer-soft:#1B2E40; --ro:#9AA2AC; --ok:#79B98A;
+  --bg:#0E1116; --surface:#151A21; --sunk:#1C222B; --ink:#E8EBEF; --ink-2:#AAB2BD; --ink-3:#848D99;
+  --line:#262D37; --line-2:#36404C;
+  --gate:#E8A24A; --gate-bg:#33240F; --write:#7AAEF0; --write-bg:#172A42; --read:#9BA5B2; --ok:#6FBF8C;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;padding-inline:clamp(16px,4vw,56px);padding-block:40px 80px}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;padding-inline:clamp(16px,3vw,40px);padding-block:32px 80px}
 a{color:inherit}
-h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-0.015em}
-h1{font-size:clamp(40px,6.5vw,76px);line-height:0.98;font-weight:700}
-h2{font-size:clamp(24px,3vw,34px);line-height:1.1;font-weight:700}
-h3{font-size:17px;font-weight:600;line-height:1.25}
-p{margin:0;max-width:68ch}
-code,.mono{font-family:var(--mono);font-size:0.9em}
-code{background:var(--paper-2);padding:1px 5px;border-radius:3px;overflow-wrap:anywhere}
-:focus-visible{outline:2px solid var(--gate);outline-offset:2px}
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ink-3)}
-.sheet{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:72px}
-.muted{color:var(--ink-2)}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-0.01em}
+h1{font-size:clamp(30px,4vw,42px);line-height:1.1;font-weight:800}
+h2{font-size:22px;line-height:1.25;font-weight:700}
+h3{font-size:15px;font-weight:700}
+p{margin:0;max-width:70ch}
+code,.mono{font-family:var(--mono);font-size:0.86em}
+code{background:var(--sunk);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+:focus-visible{outline:2px solid var(--write);outline-offset:2px;border-radius:2px}
+.layout{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px}
 
-/* masthead */
-.mast{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:40px;align-items:end;border-bottom:3px solid var(--ink);padding-bottom:28px}
-.mast .lede{margin-top:16px;color:var(--ink-2);font-size:17px}
-.figures{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--rule-2);border:1px solid var(--rule-2)}
-.figure{background:var(--paper);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
-.figure b{font-family:var(--display);font-size:30px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
-.figure span{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3)}
-nav.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);margin-block:-48px;padding-block:12px;border-bottom:1px solid var(--rule-2);display:flex;flex-wrap:wrap;gap:6px 20px;font-family:var(--mono);font-size:12px}
-nav.toc a{text-decoration:none;color:var(--ink-2);border-bottom:1px solid transparent;padding-bottom:1px}
-nav.toc a:hover,nav.toc a:focus-visible{color:var(--ink);border-color:var(--gate);outline:none}
+/* index */
+nav.index{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;display:flex;flex-direction:column;gap:2px;font-size:14px}
+nav.index .label{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+nav.index a{text-decoration:none;color:var(--ink-2);padding:5px 10px;border-left:2px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+nav.index a span{font-family:var(--mono);font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+nav.index a:hover,nav.index a:focus-visible{color:var(--ink);border-left-color:var(--write);outline:none}
+main{display:flex;flex-direction:column;gap:56px;min-width:0}
 
-/* plates */
-section{display:flex;flex-direction:column;gap:22px;scroll-margin-top:64px}
-.plate-head{display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px 24px;border-top:1px solid var(--ink);padding-top:16px}
-.plate-head .eyebrow{padding-top:8px}
-.plate-head p{color:var(--ink-2);grid-column:2}
-.legend{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:12px;color:var(--ink-2);font-family:var(--mono)}
-.legend span{display:inline-flex;align-items:center;gap:8px}
-.sw{width:14px;height:14px;display:inline-block;border:1.5px solid var(--ink)}
-.sw.gate{border-color:var(--gate);background:var(--gate-soft);transform:rotate(45deg) scale(.8)}
-.sw.writer{border-color:var(--writer);background:var(--writer-soft)}
-.sw.ro{border-style:dashed;border-color:var(--ro)}
-.scroll{overflow-x:auto;min-width:0}
-figure{margin:0}
-.drawing{border:1px solid var(--rule-2);background:var(--panel);padding:8px}
-.drawing svg{display:block;width:100%;min-width:980px;height:auto}
-.tag{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:1px 8px;border:1px solid var(--rule);border-radius:2px;white-space:nowrap}
-.tag.writer{border-color:var(--writer);color:var(--writer);background:var(--writer-soft)}
-.tag.ro{border-style:dashed;color:var(--ro)}
-.tag.gate{border-color:var(--gate);color:var(--gate);background:var(--gate-soft)}
-.chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{font-family:var(--mono);font-size:11.5px;padding:2px 7px;background:var(--paper-2);border-radius:2px}
-.aside{font-size:14px;color:var(--ink-2)}
+/* header */
+header.top{display:flex;flex-direction:column;gap:10px;padding-bottom:24px;border-bottom:1px solid var(--line)}
+header.top .kicker{font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+header.top p{color:var(--ink-2);font-size:16px}
+.counts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.count{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font-size:13px;color:var(--ink-2)}
+.count b{color:var(--ink);font-variant-numeric:tabular-nums;margin-right:4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+
+/* sections */
+section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px;min-width:0}
+.sec-head{display:flex;flex-direction:column;gap:4px}
+.sec-head .summary{color:var(--ink-2)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-width:0}
+.panel.pad{padding:18px 20px}
+.option{display:flex;flex-direction:column;gap:10px}
+.option-label{display:flex;align-items:baseline;gap:10px;font-size:13px;color:var(--ink-3)}
+.option-label b{font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink)}
+
+/* badges */
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.badge.write{color:var(--write);background:var(--write-bg)}
+.badge.read{color:var(--read);border-color:var(--line-2)}
+.badge.gate{color:var(--gate);background:var(--gate-bg)}
+.badge.cond{color:var(--ink-3);border:1px dashed var(--line-2)}
+.persona-name{font-family:var(--mono);font-size:13px;white-space:nowrap}
+.persona-name.write{color:var(--write)}
+.who{display:flex;flex-wrap:wrap;gap:4px 12px}
+
+/* option 1: stage list */
+ol.stages{list-style:none;margin:0;padding:0}
+ol.stages > li{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,300px);gap:6px 20px;padding:14px 20px;border-top:1px solid var(--line);align-items:baseline}
+ol.stages > li:first-child{border-top:0}
+ol.stages .cmd{font-family:var(--mono);font-size:16px;font-weight:700}
+ol.stages .does{color:var(--ink-2);font-size:14px}
+ol.stages > li.cond{background:repeating-linear-gradient(135deg,transparent 0 10px,var(--sunk) 10px 11px)}
+ol.stages > li.gate{display:flex;gap:10px;align-items:center;padding:8px 20px;background:var(--gate-bg);color:var(--gate);font-weight:600;font-size:14px}
+.diamond{width:10px;height:10px;transform:rotate(45deg);background:var(--gate);display:inline-block;flex:none}
+
+/* option 2: strip */
+.strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:18px 20px}
+.strip .box{font-family:var(--mono);font-weight:700;font-size:14px;padding:8px 14px;border:1.5px solid var(--ink);border-radius:6px;background:var(--surface)}
+.strip .box.cond{border-style:dashed;color:var(--ink-2)}
+.strip .sep{color:var(--ink-3)}
+.strip .diamond{margin-inline:2px}
+
+/* option 3: mermaid */
+pre.mermaid{margin:0;padding:18px 20px;font-family:var(--mono);font-size:12px;color:var(--ink-2);white-space:pre;overflow-x:auto;background:none}
+
+/* tables */
+.tablewrap{overflow-x:auto;min-width:0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{font-size:11.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3);background:var(--sunk);border-bottom:1px solid var(--line)}
+th:first-child{border-top-left-radius:8px}
+th:last-child{border-top-right-radius:8px}
+td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+td .sub{display:block;font-size:13px;color:var(--ink-2);margin-top:2px;max-width:60ch}
+td.cmdcell{font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
+td.nowrap{white-space:nowrap}
+td.group{font-weight:700;background:var(--bg);font-size:13px;color:var(--ink)}
+td.group span{font-weight:400;color:var(--ink-3);font-family:var(--mono);font-size:12px;margin-left:8px}
+.tested{color:var(--ok);font-family:var(--mono);font-size:12px}
 
 /* boot */
-.boot{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px}
-.rules{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 28px}
-.rules li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:6px}
-.rules li > i{font-style:normal;font-family:var(--display);font-size:24px;line-height:1;color:var(--gate);font-weight:700}
-.rules b{display:block;font-weight:600}
-.rules span{display:block;color:var(--ink-2);font-size:13.5px}
-.rules em{display:block;font-style:normal;font-size:12.5px;color:var(--ink-3);margin-top:3px}
-dl.kv{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;font-size:13.5px}
-dl.kv dt{font-family:var(--mono);font-size:12px;color:var(--ink-2);padding-top:2px}
-dl.kv dd{margin:0;min-width:0}
-.stack{display:flex;flex-direction:column;gap:22px;min-width:0}
-.panel-title{font-family:var(--mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--rule-2);padding-bottom:6px;margin-bottom:10px}
+.two{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px}
+ol.rules{margin:0;padding:6px 20px 6px 44px;display:flex;flex-direction:column}
+ol.rules li{padding:9px 0;border-top:1px solid var(--line)}
+ol.rules li:first-child{border-top:0}
+ol.rules li::marker{font-weight:700;color:var(--ink-3);font-variant-numeric:tabular-nums}
+ol.rules .sub{display:block;font-size:13px;color:var(--ink-2)}
+dl.kv{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);font-size:13.5px}
+dl.kv dt,dl.kv dd{padding:8px 16px;border-top:1px solid var(--line);margin:0;min-width:0}
+dl.kv dt:first-of-type,dl.kv dd:first-of-type{border-top:0}
+dl.kv dt{font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
+.panel-title{font-size:11.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3);padding:10px 16px;background:var(--sunk);border-bottom:1px solid var(--line);border-radius:8px 8px 0 0}
+.stack{display:flex;flex-direction:column;gap:20px;min-width:0}
+.note{font-size:13.5px;color:var(--ink-2)}
+footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padding-top:14px}
 
-/* personas */
-.personas{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
-.persona{background:var(--panel);border:1px solid var(--rule-2);padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.persona.writer{border-top:3px solid var(--writer)}
-.persona.ro{border-top:3px dashed var(--ro)}
-.persona header{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.persona h3{font-family:var(--mono);font-size:15px;font-weight:500;letter-spacing:0}
-.persona .role{font-size:13.5px;color:var(--ink-2)}
-.persona .model{font-family:var(--mono);font-size:12px}
-.persona dl.kv{font-size:12.5px;gap:4px 12px}
-
-/* lifecycle */
-.lifecycle{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.lifecycle > li{display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;padding-block:16px;border-top:1px solid var(--rule-2)}
-.lifecycle > li:first-child{border-top:0}
-.moment b{display:block;font-family:var(--display);font-size:18px}
-.moment span{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
-.guards{display:flex;flex-direction:column;gap:12px;min-width:0}
-.guard{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:4px 18px;padding-left:14px;border-left:3px solid var(--gate)}
-.guard code{background:none;padding:0;font-size:13px;font-weight:500}
-.guard .scope{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
-.guard p{font-size:13.5px}
-.guard .tests{grid-column:2;font-family:var(--mono);font-size:11px;color:var(--ok)}
-
-/* skills, references, tests, records */
-.skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:var(--rule-2);border:1px solid var(--rule-2)}
-.skill{background:var(--paper);padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
-.skill header{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-.skill code{background:none;padding:0;font-size:13px;font-weight:500}
-.skill p{font-size:13px;color:var(--ink-2)}
-.cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:28px}
-ul.index{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-ul.index li{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:16px;padding-block:7px;border-top:1px solid var(--rule-2);font-size:13.5px}
-ul.index li:first-child{border-top:0}
-ul.index code{background:none;padding:0}
-ul.index span{color:var(--ink-2)}
-table{border-collapse:collapse;width:100%;font-size:13.5px}
-th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--rule-2)}
-th{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-3);font-weight:500;border-bottom:1px solid var(--rule)}
-td .why{display:block;font-size:12.5px;color:var(--ink-2);margin-top:3px;max-width:62ch}
-td.cmd{font-family:var(--mono);font-size:12px;color:var(--ink-2);white-space:nowrap}
-ol.adrs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-ol.adrs li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding-block:8px;border-top:1px solid var(--rule-2)}
-ol.adrs li:first-child{border-top:0}
-ol.adrs b{font-family:var(--mono);font-weight:500;color:var(--gate);font-variant-numeric:tabular-nums}
-footer{font-family:var(--mono);font-size:12px;color:var(--ink-3);border-top:1px solid var(--rule-2);padding-top:14px}
-
-@media (max-width:860px){
-  .mast,.boot,.cols{grid-template-columns:minmax(0,1fr)}
-  .rules{grid-template-columns:minmax(0,1fr)}
-  .plate-head{grid-template-columns:minmax(0,1fr)}
-  .plate-head p{grid-column:1}
-  .lifecycle > li{grid-template-columns:minmax(0,1fr);gap:10px}
-  .guard{grid-template-columns:minmax(0,1fr)}
-  .guard .tests{grid-column:1}
-  ul.index li{grid-template-columns:minmax(0,1fr);gap:2px}
-  nav.toc{margin-block:-56px}
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:24px}
+  nav.index{position:static;flex-direction:row;flex-wrap:wrap;gap:6px}
+  nav.index .label{width:100%;margin-bottom:0}
+  nav.index a{border-left:0;border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+  .two{grid-template-columns:minmax(0,1fr)}
+  ol.stages > li{grid-template-columns:minmax(0,1fr);gap:2px}
 }
-@media (prefers-reduced-motion: no-preference){nav.toc a{transition:border-color .15s,color .15s}}
 """
 
 
@@ -404,99 +394,89 @@ def adrs():
 
 
 def first_sentence(text, limit=180):
-    """The first sentence of a description, for cards that cannot hold a paragraph."""
+    """The first sentence of a description, for rows that cannot hold a paragraph."""
     sentence = re.split(r'(?<=[.!?])\s', text.strip(), maxsplit=1)[0]
     return sentence if len(sentence) <= limit else sentence[:limit - 1].rstrip() + '…'
 
 
-def tag(name, writer):
-    return f'<span class="tag {"writer" if writer else "ro"}">{e(name)}</span>'
+def persona_label(name, writers):
+    return f'<span class="persona-name{" write" if name in writers else ""}">{e(name)}</span>'
 
 
-def pipeline_svg(cmds, writers):
-    """The gate commands left to right, human decisions as diamonds, /test as a
-    conditional detour below /review, and each stage's personas under it."""
-    main = [n for n in PIPELINE if n in cmds and n not in CONDITIONAL]
-    x0, step, w, h, top = 40, 214, 156, 64, 64
-    pos = {n: x0 + i * step for i, n in enumerate(main)}
-    out = ['<svg viewBox="0 0 1200 470" role="img" font-family="IBM Plex Mono, ui-monospace, monospace" '
-           'aria-label="Gate commands from left to right with human approval points, the conditional /test stage '
-           'under /review, and the personas each stage dispatches.">',
-           '<defs><marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
-           'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"/></marker>'
-           '<marker id="arwg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" '
-           'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ro)"/></marker></defs>']
+# The three pipeline views under comparison. Remove the ones not chosen.
+PIPELINE_VIEWS = ('list', 'strip', 'mermaid')
 
-    def stage(name, x, y, dashed=False):
-        c = cmds[name]
-        dash = ' stroke-dasharray="6 4"' if dashed else ''
-        out.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="var(--panel)" stroke="var(--ink)" '
-                   f'stroke-width="1.6"{dash}/>')
-        out.append(f'<text x="{x + 14}" y="{y + 28}" font-family="Bricolage Grotesque, system-ui, sans-serif" '
-                   f'font-size="22" font-weight="700" fill="var(--ink)">/{e(name)}</text>')
-        sub = c['model'] or ('conditional' if dashed else 'session model')
-        out.append(f'<text x="{x + 14}" y="{y + 50}" font-size="11" fill="var(--ink-3)">{e(sub)}</text>')
-        for i, persona in enumerate(c['personas']):
-            py = y + h + 22 + i * 30
-            writer = persona in writers
-            out.append(f'<line x1="{x + 14}" y1="{py - 22 if i == 0 else py - 16}" x2="{x + 14}" y2="{py}" '
-                       f'stroke="var(--rule)" stroke-width="1"/>')
-            fill = 'var(--writer-soft)' if writer else 'var(--panel)'
-            stroke = 'var(--writer)' if writer else 'var(--ro)'
-            dash2 = '' if writer else ' stroke-dasharray="4 3"'
-            cw = max(w - 24, round(7.1 * len(persona) + 18))   # IBM Plex Mono 11.5px is ~7px a glyph
-            out.append(f'<rect x="{x + 24}" y="{py - 9}" width="{cw}" height="22" fill="{fill}" '
-                       f'stroke="{stroke}" stroke-width="1.2"{dash2}/>')
-            out.append(f'<text x="{x + 32}" y="{py + 6}" font-size="11.5" fill="{stroke}">{e(persona)}</text>')
 
-    for name in main:
-        stage(name, pos[name], top)
-    for a, b in zip(main, main[1:]):
-        x1, x2, y = pos[a] + w, pos[b], top + h / 2
-        if a in HUMAN_GATE_AFTER:
-            mid = (x1 + x2) / 2
-            out.append(f'<line x1="{x1}" y1="{y}" x2="{mid - 12}" y2="{y}" stroke="var(--ink)" stroke-width="1.6"/>')
-            out.append(f'<rect x="{mid - 9}" y="{y - 9}" width="18" height="18" fill="var(--gate-soft)" '
-                       f'stroke="var(--gate)" stroke-width="1.8" transform="rotate(45 {mid} {y})"/>')
-            out.append(f'<line x1="{mid + 12}" y1="{y}" x2="{x2 - 2}" y2="{y}" stroke="var(--ink)" '
-                       f'stroke-width="1.6" marker-end="url(#arw)"/>')
-            out.append(f'<text x="{mid}" y="{top - 16}" font-size="11" text-anchor="middle" '
-                       f'fill="var(--gate)">{e(HUMAN_GATE_AFTER[a])}</text>')
-        else:
-            out.append(f'<line x1="{x1}" y1="{y}" x2="{x2 - 2}" y2="{y}" stroke="var(--ink)" stroke-width="1.6" '
-                       f'marker-end="url(#arw)"/>')
-    last = main[-1]
-    if last in HUMAN_GATE_AFTER:
-        x1, y = pos[last] + w, top + h / 2
-        mid = x1 + 30
-        out.append(f'<line x1="{x1}" y1="{y}" x2="{mid - 12}" y2="{y}" stroke="var(--ink)" stroke-width="1.6"/>')
-        out.append(f'<rect x="{mid - 9}" y="{y - 9}" width="18" height="18" fill="var(--gate-soft)" '
-                   f'stroke="var(--gate)" stroke-width="1.8" transform="rotate(45 {mid} {y})"/>')
-        out.append(f'<text x="{mid}" y="{top - 16}" font-size="11" text-anchor="middle" '
-                   f'fill="var(--gate)">{e(HUMAN_GATE_AFTER[last])}</text>')
-
-    for name in CONDITIONAL:
-        if name not in cmds or 'review' not in pos or 'ship' not in pos:
+def pipeline_list(cmds, writers):
+    rows = []
+    for name in PIPELINE:
+        if name not in cmds:
             continue
-        # Under /ship, so the detour never crosses /review's persona column:
-        # down /review's left edge, along under its personas, up into /ship.
-        x, y = pos['ship'], 330
-        stage(name, x, y, dashed=True)
-        rx = pos['review'] + 6
-        out.append(f'<path d="M{rx},{top + h} V{y + h / 2} H{x - 2}" fill="none" stroke="var(--ro)" '
-                   f'stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arwg)"/>')
-        out.append(f'<path d="M{x + w / 2},{y} V{top + h + 2}" fill="none" stroke="var(--ro)" '
-                   f'stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arwg)"/>')
-        out.append(f'<text x="{(rx + x) / 2}" y="{y + h / 2 - 8}" font-size="11" text-anchor="middle" '
-                   f'fill="var(--ink-3)">{e(CONDITIONAL[name])}</text>')
-    out.append('</svg>')
-    return '\n'.join(out)
+        c = cmds[name]
+        cond = name in CONDITIONAL
+        badge = f' <span class="badge cond">{e(CONDITIONAL[name])}</span>' if cond else ''
+        who = ''.join(persona_label(p, writers) for p in c['personas']) or '<span class="note">the session itself</span>'
+        cls = ' class="cond"' if cond else ''
+        rows.append(f'<li{cls}><span class="cmd">/{e(name)}</span>'
+                    f'<span class="does">{e(c["description"])}{badge}</span><span class="who">{who}</span></li>')
+        if name in HUMAN_GATE_AFTER:
+            rows.append(f'<li class="gate"><i class="diamond"></i>You decide: {e(HUMAN_GATE_AFTER[name])}</li>')
+    return '<div class="panel"><ol class="stages">' + ''.join(rows) + '</ol></div>'
 
 
-LIFECYCLE = [('SessionStart', None, 'Session starts', 'before any work'),
-             ('PreToolUse', 'Agent|Task', 'A persona is dispatched', 'PreToolUse · Agent|Task'),
-             ('PreToolUse', 'Bash', 'Any shell command', 'PreToolUse · Bash'),
-             ('SubagentStop', None, 'A writer tries to finish', 'SubagentStop')]
+def pipeline_strip(cmds, writers):
+    parts = []
+    for name in PIPELINE:
+        if name not in cmds:
+            continue
+        if parts:
+            parts.append('<span class="sep">→</span>')
+        parts.append(f'<span class="box{" cond" if name in CONDITIONAL else ""}">/{e(name)}</span>')
+        if name in HUMAN_GATE_AFTER:
+            parts.append(f'<i class="diamond" title="{e(HUMAN_GATE_AFTER[name])}"></i>')
+    rows = ''.join(f'<tr><td class="cmdcell">/{e(n)}</td><td><div class="who">'
+                   + (''.join(persona_label(p, writers) for p in cmds[n]['personas']) or '<span class="note">—</span>')
+                   + '</div></td></tr>' for n in PIPELINE if n in cmds)
+    return (f'<div class="panel"><div class="strip">{"".join(parts)}</div>'
+            '<div class="tablewrap"><table><thead><tr><th>Stage</th><th>Personas</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div></div>')
+
+
+def pipeline_mermaid(cmds, writers):
+    """Mermaid source, drawn by the Mermaid script when the page is online."""
+    lines = ['flowchart LR']
+    main = [n for n in PIPELINE if n in cmds and n not in CONDITIONAL]
+    prev = None
+    for name in main:
+        lines.append(f'  {name}["/{name}"]')
+        if prev:
+            lines.append(f'  {prev} --> {name}')
+        prev = name
+        if name in HUMAN_GATE_AFTER:
+            gate = f'g_{name}'
+            lines.append(f'  {gate}{{"{HUMAN_GATE_AFTER[name]}"}}:::gate')
+            lines.append(f'  {name} --> {gate}')
+            prev = gate
+    for name, label in CONDITIONAL.items():
+        if name in cmds and 'review' in cmds and 'ship' in cmds:
+            lines.append(f'  {name}["/{name}"]:::cond')
+            lines.append(f'  review -. "{label}" .-> {name} -.-> ship')
+    for name in PIPELINE:
+        for i, persona in enumerate(cmds.get(name, {}).get('personas', [])):
+            node = f'p_{name}_{i}'
+            lines.append(f'  {node}(["{persona}"]):::{"write" if persona in writers else "read"}')
+            lines.append(f'  {name} --- {node}')
+    lines += ['  classDef gate fill:#FBF0DD,stroke:#A9620B,color:#7A4708',
+              '  classDef cond stroke-dasharray:5 4',
+              '  classDef write fill:#E3EDFA,stroke:#1F5FAE,color:#1F5FAE',
+              '  classDef read fill:#FFFFFF,stroke:#5A6472,color:#5A6472,stroke-dasharray:4 3']
+    return '<div class="panel"><pre class="mermaid">' + e('\n'.join(lines)) + '</pre></div>'
+
+
+LIFECYCLE = [('SessionStart', None, 'Session starts'),
+             ('PreToolUse', 'Agent|Task', 'A persona is dispatched'),
+             ('PreToolUse', 'Bash', 'Any shell command'),
+             ('SubagentStop', None, 'A writer tries to finish')]
 
 
 def render():
@@ -512,44 +492,95 @@ def render():
     adr_rows = adrs()
     templates = [r for r in ref_rows if r[0].startswith('templates/')]
     refs = [r for r in ref_rows if not r[0].startswith('templates/')]
+    dispatched_by = {p['name']: [f'/{n}' for n in PIPELINE if p['name'] in cmds.get(n, {}).get('personas', [])]
+                     for p in persona_rows}
+
+    sections = [('pipeline', 'Pipeline', len([n for n in PIPELINE if n in cmds])),
+                ('personas', 'Personas', len(persona_rows)), ('guards', 'Guards', len(hook_rows)),
+                ('session', 'Session setup', len(rules)), ('skills', 'Skills', len(skill_rows)),
+                ('references', 'References', len(ref_rows)), ('ci', 'Self-tests', len(steps)),
+                ('decisions', 'Decisions', len(adr_rows))]
 
     out = ['<!doctype html>', '<html lang="en">', '<head>', '<meta charset="utf-8">',
            '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
            '<title>Harness Map</title>',
            '<!-- Generated by dotfiles/tools/checks/harness-map.py. Do not edit by hand; CI fails when this page is stale. -->',
-           '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">',
-           '<style>' + CSS + '</style>', '</head>', '<body>', '<div class="sheet">']
+           '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">',
+           '<style>' + CSS + '</style>', '</head>', '<body>', '<div class="layout">',
+           '<nav class="index" aria-label="Sections"><div class="label">Harness map</div>'
+           + ''.join(f'<a href="#{i}">{e(t)}<span>{n}</span></a>' for i, t, n in sections) + '</nav>',
+           '<main>']
 
-    figures = [(len(cmds), 'commands'), (len(persona_rows), 'personas'), (len(skill_rows), 'skills'),
-               (len(hook_rows), 'hook bindings'), (len(adr_rows), 'decisions'), (len(steps), 'CI steps')]
-    out.append('<header class="mast"><div>'
-               '<div class="eyebrow">stanimirdim92/setup_scripts · dotfiles</div>'
+    out.append('<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div>'
                '<h1>Harness Map</h1>'
-               '<p class="lede">The Claude Code harness as its files define it: what every session loads, how the '
-               'gate commands hand work to personas, which rules the host enforces, and what tests the harness. '
-               'Generated by <code>dotfiles/tools/checks/harness-map.py</code>; CI fails when it is stale.</p>'
-               '</div><div class="figures">'
-               + ''.join(f'<div class="figure"><b>{n}</b><span>{e(label)}</span></div>' for n, label in figures)
+               '<p>How a ticket moves through the Claude Code harness, who does the work at each step, and which '
+               'rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p>'
+               '<div class="counts">'
+               + ''.join(f'<span class="count"><b>{n}</b>{e(t.lower())}</span>' for _, t, n in sections)
                + '</div></header>')
-    out.append('<nav class="toc" aria-label="Sections">'
-               '<a href="#pipeline">Pipeline</a><a href="#boot">Session boot</a><a href="#personas">Personas</a>'
-               '<a href="#enforcement">Enforcement</a><a href="#skills">Skills</a><a href="#references">References</a>'
-               '<a href="#tests">Self-tests</a><a href="#records">Decisions</a></nav>')
 
     # Pipeline
-    out.append('<section id="pipeline"><div class="plate-head"><div class="eyebrow">Plate 1 · Flow</div>'
-               '<h2>A ticket moves left to right through gates</h2>'
-               '<p>Commands orchestrate; personas never dispatch personas (spawn depth 1). A persona hangs under the '
-               'command that names it. Amber diamonds are decisions only a human makes.</p></div>'
-               '<div class="legend"><span><i class="sw gate"></i>human decision</span>'
-               '<span><i class="sw writer"></i>persona that can change files</span>'
-               '<span><i class="sw ro"></i>read-only persona</span><span>dashed = conditional</span></div>'
-               '<figure class="drawing scroll">' + pipeline_svg(cmds, writers) + '</figure>')
+    out.append('<section id="pipeline"><div class="sec-head"><h2>Pipeline</h2>'
+               '<p class="summary">Commands run in this order. Personas never start other personas. '
+               'The amber rows are decisions only you make.</p></div>'
+               '<div class="legend"><span><i class="diamond"></i>you decide</span>'
+               '<span><span class="persona-name write">blue</span> can change files</span>'
+               '<span><span class="persona-name">grey</span> read-only</span>'
+               '<span><span class="badge cond">dashed</span> only when needed</span></div>')
+    views = {'list': ('Option 1', 'Stage list', pipeline_list),
+             'strip': ('Option 2', 'Horizontal strip', pipeline_strip),
+             'mermaid': ('Option 3', 'Mermaid flowchart (needs the Mermaid script online)', pipeline_mermaid)}
+    for key in PIPELINE_VIEWS:
+        tag_, label, fn = views[key]
+        out.append(f'<div class="option"><div class="option-label"><b>{tag_}</b>{e(label)}</div>'
+                   + fn(cmds, writers) + '</div>')
     for name in sorted(n for n in cmds if n not in PIPELINE):
-        out.append(f'<p class="aside">Outside the gates: <code>/{e(name)}</code> — {e(cmds[name]["description"])}.</p>')
+        out.append(f'<p class="note">Outside the pipeline: <code>/{e(name)}</code> — {e(cmds[name]["description"])}.</p>')
     out.append('</section>')
 
-    # Boot
+    # Personas
+    ordered = sorted(persona_rows, key=lambda p: (not p['writer'], p['name']))
+    out.append(f'<section id="personas"><div class="sec-head"><h2>Personas</h2>'
+               f'<p class="summary">{len(persona_rows)} personas; {len(writers)} can change files. Read-only is a '
+               'tool grant, not an instruction.</p></div><div class="panel tablewrap"><table><thead><tr>'
+               '<th>Persona</th><th>Access</th><th>Model</th><th>Effort</th><th>Max turns</th>'
+               '<th>Started by</th><th>Hooks</th></tr></thead><tbody>')
+    for p in ordered:
+        access = '<span class="badge write">writes</span>' if p['writer'] else '<span class="badge read">read-only</span>'
+        if p['isolation']:
+            access += f' <span class="badge read">{e(p["isolation"])}</span>'
+        hooks_cell = '<br>'.join(e(s[:-3]) for _, s in p['hooks']) or '—'
+        out.append(f'<tr><td>{persona_label(p["name"], writers)}<span class="sub">{e(first_sentence(p["description"], 140))}</span></td>'
+                   f'<td>{access}</td><td class="cmdcell nowrap">{e(p["model"])}</td><td>{e(p["effort"] or "—")}</td>'
+                   f'<td class="num">{e(p["maxTurns"])}</td><td class="cmdcell">{e(", ".join(dispatched_by[p["name"]]) or "direct use")}</td>'
+                   f'<td class="cmdcell">{hooks_cell}</td></tr>')
+    out.append('</tbody></table></div></section>')
+
+    # Guards
+    out.append('<section id="guards"><div class="sec-head"><h2>Guards</h2>'
+               '<p class="summary">Rules the host enforces, in the order they fire. A guard here cannot be argued '
+               'past; each one has a self-test.</p></div><div class="panel tablewrap"><table><thead><tr>'
+               '<th>Hook</th><th>Applies to</th><th>What it does</th><th>Tested by</th></tr></thead><tbody>')
+    placed = set()
+    for event, matcher, title in LIFECYCLE:
+        rows = [r for r in hook_rows if r[1] == event and (matcher is None or r[2] == matcher)]
+        if not rows:
+            continue
+        label = event + (f' · {matcher}' if matcher else '')
+        out.append(f'<tr><td class="group" colspan="4">{e(title)}<span>{e(label)}</span></td></tr>')
+        for script, ev, mt, scope, summary, tests in rows:
+            placed.add((script, ev, mt))
+            out.append(f'<tr><td class="cmdcell">{e(script)}</td><td>{e(scope)}</td><td>{e(summary)}</td>'
+                       f'<td class="tested">{"<br>".join(e(t.rsplit("/", 1)[1]) for t in tests) or "—"}</td></tr>')
+    rest = [r for r in hook_rows if (r[0], r[1], r[2]) not in placed]
+    if rest:
+        out.append('<tr><td class="group" colspan="4">Other</td></tr>')
+        for script, ev, mt, scope, summary, tests in rest:
+            out.append(f'<tr><td class="cmdcell">{e(script)}</td><td>{e(ev)} · {e(scope)}</td><td>{e(summary)}</td>'
+                       f'<td class="tested">{"<br>".join(e(t.rsplit("/", 1)[1]) for t in tests) or "—"}</td></tr>')
+    out.append('</tbody></table></div></section>')
+
+    # Session setup
     env = settings.get('env', {})
     pins = [(k, v) for k, v in sorted(env.items()) if k.startswith('CLAUDE_CODE_')]
     sandbox = settings.get('sandbox', {})
@@ -567,121 +598,69 @@ def render():
                     f'excluded commands · {len(denied)} credential paths denied'),
         ('worktree.baseRef', settings.get('worktree', {}).get('baseRef', '—')),
     ]
-    out.append('<section id="boot"><div class="plate-head"><div class="eyebrow">Plate 2 · Context</div>'
-               '<h2>What every session loads</h2>'
-               '<p><code>AGENTS.md</code>, linked as Claude\'s <code>CLAUDE.md</code> and Codex\'s '
-               '<code>AGENTS.md</code>, and <code>settings.json</code>.</p></div><div class="boot">'
-               f'<div><div class="panel-title">AGENTS.md · {len(rules)} rules, each naming what it catches</div>'
-               '<ol class="rules">')
-    for i, (title, lead, catches) in enumerate(rules, 1):
-        out.append(f'<li><i>{i}</i><div><b>{e(title)}</b><span>{e(lead)}</span>'
-                   + (f'<em>Catches: {e(catches)}</em>' if catches else '') + '</div></li>')
-    out.append(f'</ol><p class="aside" style="margin-top:14px">Also: {", ".join(e(s) for s in other_sections)}.</p></div>'
-               '<div class="stack"><div><div class="panel-title">Enforcement pins · env</div><dl class="kv">')
+    out.append('<section id="session"><div class="sec-head"><h2>Session setup</h2>'
+               '<p class="summary">What every session loads: the rules in <code>AGENTS.md</code> and the pins in '
+               '<code>settings.json</code>.</p></div><div class="two">'
+               f'<div class="panel"><div class="panel-title">AGENTS.md rules</div><ol class="rules">')
+    for title, lead, catches in rules:
+        out.append(f'<li><b>{e(title)}</b>' + (f'<span class="sub">{e(lead)}</span>' if lead else '')
+                   + (f'<span class="sub">Catches: {e(catches)}</span>' if catches else '') + '</li>')
+    out.append('</ol></div><div class="stack"><div class="panel"><div class="panel-title">settings.json · env pins</div>'
+               '<dl class="kv">')
     for k, v in pins:
         out.append(f'<dt>{e(k.replace("CLAUDE_CODE_", ""))}</dt><dd><code>{e(str(v))}</code></dd>')
-    out.append('</dl></div><div><div class="panel-title">Defaults</div><dl class="kv">')
+    out.append('</dl></div><div class="panel"><div class="panel-title">settings.json · defaults</div><dl class="kv">')
     for k, v in defaults:
         out.append(f'<dt>{e(k)}</dt><dd>{e(str(v))}</dd>')
-    out.append('</dl></div></div></div></section>')
-
-    # Personas: writers first, then by name
-    ordered = sorted(persona_rows, key=lambda p: (not p['writer'], p['name']))
-    out.append(f'<section id="personas"><div class="plate-head"><div class="eyebrow">Plate 3 · Workers</div>'
-               f'<h2>{len(persona_rows)} personas, {len(writers)} of which can write</h2>'
-               '<p>Read-only is a tool grant, not an instruction. Writers carry agent-scoped hooks.</p></div>'
-               '<div class="personas">')
-    for p in ordered:
-        kind = 'writer' if p['writer'] else 'ro'
-        model = e(p['model']) + (f' · effort {e(p["effort"])}' if p['effort'] else '')
-        meta = [('maxTurns', e(p['maxTurns']))]
-        if p['isolation']:
-            meta.append(('isolation', e(p['isolation'])))
-        if p['hooks']:
-            meta.append(('hooks', '<br>'.join(f'{e(ev)} · {e(s[:-3])}' for ev, s in p['hooks'])))
-        if p['skills']:
-            meta.append(('preloads', e(', '.join(p['skills']))))
-        out.append(f'<article class="persona {kind}"><header><h3>{e(p["name"])}</h3>'
-                   f'<span class="tag {kind}">{"writes" if p["writer"] else "read-only"}</span></header>'
-                   f'<div class="model">{model}</div><p class="role">{e(first_sentence(p["description"]))}</p>'
-                   '<div class="chips">' + ''.join(f'<span class="chip">{e(t)}</span>' for t in p['tools']) + '</div>'
-                   '<dl class="kv">' + ''.join(f'<dt>{k}</dt><dd>{v}</dd>' for k, v in meta) + '</dl></article>')
-    out.append('</div></section>')
-
-    # Enforcement as a lifecycle
-    out.append('<section id="enforcement"><div class="plate-head"><div class="eyebrow">Plate 4 · Guards</div>'
-               '<h2>Where a rule stops being a sentence</h2>'
-               '<p>Every hook binding at the moment it fires, with the first line of the script\'s own header and the '
-               'self-test that exercises it.</p></div><ol class="lifecycle">')
-    placed = set()
-    for event, matcher, title, label in LIFECYCLE:
-        rows = [r for r in hook_rows if r[1] == event and (matcher is None or r[2] == matcher)]
-        if not rows:
-            continue
-        out.append(f'<li><div class="moment"><b>{e(title)}</b><span>{e(label)}</span></div><div class="guards">')
-        for script, ev, mt, scope, summary, tests in rows:
-            placed.add((script, ev, mt))
-            out.append(f'<div class="guard"><div><code>{e(script)}</code><div class="scope">{e(scope)}</div></div>'
-                       f'<p>{e(summary)}</p>'
-                       + (f'<div class="tests">tested by {" · ".join(e(t.rsplit("/", 1)[1]) for t in tests)}</div>'
-                          if tests else '') + '</div>')
-        out.append('</div></li>')
-    rest = [r for r in hook_rows if (r[0], r[1], r[2]) not in placed]
-    if rest:
-        out.append('<li><div class="moment"><b>Other</b><span>unplaced events</span></div><div class="guards">')
-        for script, ev, mt, scope, summary, tests in rest:
-            out.append(f'<div class="guard"><div><code>{e(script)}</code><div class="scope">{e(ev)} · {e(mt)} · '
-                       f'{e(scope)}</div></div><p>{e(summary)}</p></div>')
-        out.append('</div></li>')
-    out.append('</ol></section>')
+    out.append(f'</dl></div><p class="note">AGENTS.md also covers: {", ".join(e(s) for s in other_sections)}.</p>'
+               '</div></div></section>')
 
     # Skills
     explicit = sum(1 for s in skill_rows if s[2])
-    out.append(f'<section id="skills"><div class="plate-head"><div class="eyebrow">Plate 5 · Methodology</div>'
-               f'<h2>{len(skill_rows)} skills</h2>'
-               f'<p>{explicit} are <span class="tag gate">explicit</span>: their Codex adapter sets '
-               '<code>allow_implicit_invocation: false</code>, so a stage or role loads them, never a keyword '
-               'match.</p></div><div class="skills">')
-    for name, desc, is_explicit in skill_rows:
-        badge = '<span class="tag gate">explicit</span>' if is_explicit else ''
-        out.append(f'<div class="skill"><header><code>{e(name)}</code>{badge}</header>'
-                   f'<p>{e(first_sentence(desc, 150))}</p></div>')
-    out.append('</div></section>')
-
-    # References
-    out.append(f'<section id="references"><div class="plate-head"><div class="eyebrow">Plate 6 · Sources</div>'
-               f'<h2>{len(refs)} references and {len(templates)} templates</h2>'
-               '<p>The single sources the commands point at, so a rule is written once.</p></div><div class="cols">'
-               '<div><div class="panel-title">references/</div><ul class="index">')
-    for path, title in refs:
-        out.append(f'<li><code>{e(path)}</code><span>{e(title)}</span></li>')
-    out.append('</ul></div><div><div class="panel-title">references/templates/</div><ul class="index">')
-    for path, title in templates:
-        out.append(f'<li><code>{e(path.split("/", 1)[1])}</code><span>{e(title)}</span></li>')
-    out.append('</ul></div></div></section>')
-
-    # Self-tests
-    out.append(f'<section id="tests"><div class="plate-head"><div class="eyebrow">Plate 7 · Self-tests</div>'
-               f'<h2>{len(steps)} CI steps on every push to main and every pull request</h2>'
-               '<p>Every deterministic check. The live workflow runner and real spec runs stay manual; they spend '
-               'tokens.</p></div><div class="scroll"><table><thead><tr><th>Step</th><th>Runs</th></tr></thead><tbody>')
-    for name, runs, comment in steps:
-        why = f'<span class="why">{e(comment)}</span>' if comment else ''
-        out.append(f'<tr><td>{e(name)}{why}</td><td class="cmd">{"<br>".join(e(r) for r in runs)}</td></tr>')
+    out.append(f'<section id="skills"><div class="sec-head"><h2>Skills</h2>'
+               f'<p class="summary">{len(skill_rows)} skills. {explicit} are explicit-only: a stage or role loads '
+               'them, never a keyword match.</p></div><div class="panel tablewrap"><table><thead><tr>'
+               '<th>Skill</th><th>Loading</th><th>What it is for</th></tr></thead><tbody>')
+    for name, desc, is_explicit in sorted(skill_rows, key=lambda s: (not s[2], s[0])):
+        badge = '<span class="badge gate">explicit</span>' if is_explicit else '<span class="badge read">on match</span>'
+        out.append(f'<tr><td class="cmdcell">{e(name)}</td><td>{badge}</td><td>{e(first_sentence(desc, 160))}</td></tr>')
     out.append('</tbody></table></div></section>')
 
-    # Records
-    out.append(f'<section id="records"><div class="plate-head"><div class="eyebrow">Plate 8 · Decisions</div>'
-               f'<h2>{len(adr_rows)} architecture decisions</h2>'
-               '<p>The ten most recent. The full index is <code>dotfiles/docs/adr/README.md</code>.</p></div>'
-               '<ol class="adrs">')
+    # References
+    out.append(f'<section id="references"><div class="sec-head"><h2>References</h2>'
+               f'<p class="summary">{len(refs)} references and {len(templates)} templates. Each rule is written once, '
+               'here, and the commands point at it.</p></div><div class="panel tablewrap"><table><thead><tr>'
+               '<th>File</th><th>Title</th></tr></thead><tbody>')
+    for path, title in refs + templates:
+        out.append(f'<tr><td class="cmdcell">{e(path)}</td><td>{e(title)}</td></tr>')
+    out.append('</tbody></table></div></section>')
+
+    # Self-tests
+    out.append(f'<section id="ci"><div class="sec-head"><h2>Self-tests</h2>'
+               f'<p class="summary">{len(steps)} CI steps on every push to main and every pull request. Runs that '
+               'spend model tokens stay manual.</p></div><div class="panel tablewrap"><table><thead><tr>'
+               '<th>Step</th><th>Command</th></tr></thead><tbody>')
+    for name, runs, comment in steps:
+        why = f'<span class="sub">{e(comment)}</span>' if comment else ''
+        out.append(f'<tr><td><b>{e(name)}</b>{why}</td><td class="cmdcell">{"<br>".join(e(r) for r in runs)}</td></tr>')
+    out.append('</tbody></table></div></section>')
+
+    # Decisions
+    out.append(f'<section id="decisions"><div class="sec-head"><h2>Decisions</h2>'
+               f'<p class="summary">{len(adr_rows)} architecture decisions; the ten most recent below. Full index: '
+               '<code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr>'
+               '<th>ADR</th><th>Decision</th></tr></thead><tbody>')
     for num, title, path in adr_rows[-10:][::-1]:
-        out.append(f'<li><b>{e(num)}</b><span>{e(title)}</span></li>')
-    out.append('</ol></section>')
+        out.append(f'<tr><td class="cmdcell">{e(num)}</td><td>{e(title)}</td></tr>')
+    out.append('</tbody></table></div></section>')
 
     out.append('<footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. '
-               'Do not edit by hand.</footer>')
-    out.append('</div>\n</body>\n</html>\n')
+               'Do not edit by hand.</footer></main></div>')
+    if 'mermaid' in PIPELINE_VIEWS:
+        out.append('<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>'
+                   '<script>if (window.mermaid) { mermaid.initialize({ startOnLoad: true, theme: '
+                   'matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "neutral" }); }</script>')
+    out.append('</body>\n</html>\n')
     return '\n'.join(out)
 
 
