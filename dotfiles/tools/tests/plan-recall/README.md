@@ -22,11 +22,18 @@ python3 dotfiles/tools/tests/plan-recall/recall.py --repo ~/code/leadbuster \
 ```
 
 - `--ticket LD-380` scores only the commits in the range whose message names
-  the ticket (case-insensitive substring, merges skipped). Use it whenever the
+  the ticket (case-insensitive substring, merges skipped). Repeat it to score
+  several tickets together against all their plans; a commit naming any of
+  them counts. Use it whenever the
   range also carries other tickets' work; without it, their files read as
   misses. A file added and then removed inside the ticket is dropped. Each
   missed file shows the first ticket commit that touched it, so a planning
   miss can be told apart from a review fix or a scope expansion.
+- `--subject-only` matches tickets in the commit subject only. Pipeline commits
+  name their ticket there (`(LD-442 T002)`); a squash or summary commit that
+  only mentions a ticket in its body ("builds on LD-441") is then left out.
+- `--show-commits` lists the commits that were scored. Check it whenever a
+  number looks wrong.
 - `--not-ticket LD-442` (with `--ticket`, repeatable) drops commits whose
   message also names another ticket. Use it when two tickets were built on one
   branch and some commits name both.

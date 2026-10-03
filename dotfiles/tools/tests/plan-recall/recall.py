@@ -133,27 +133,36 @@ def parse_name_status(out, changed, origins=None, commit=None):
     return changed
 
 
-def changed_files(repo, rev_range, ticket=None, origins=None, not_tickets=()):
-    """{path: status} over the range, or over only the ticket's own commits.
+def ticket_commits(repo, rev_range, tickets, not_tickets=(), subject_only=False):
+    """[(sha, subject)] oldest first: non-merge commits naming any of `tickets`
+    and none of `not_tickets`, matched case-insensitively in the whole message,
+    or only in the subject with `subject_only`."""
+    out = git(repo, 'log', '--no-merges', '--reverse', '--format=%H%x1f%s%x1f%B%x1e', rev_range)
+    commits = []
+    for record in out.split('\x1e'):
+        if not record.strip():
+            continue
+        sha, subject, body = (record.strip('\n').split('\x1f') + ['', ''])[:3]
+        text = (subject if subject_only else f'{subject}\n{body}').lower()
+        if any(t.lower() in text for t in tickets) and not any(t.lower() in text for t in not_tickets):
+            commits.append((sha, subject))
+    return commits
 
-    With a ticket, `origins` (when given) maps each path to the first commit
+
+def changed_files(repo, rev_range, tickets=(), origins=None, not_tickets=(), subject_only=False):
+    """{path: status} over the range, or over only the tickets' own commits.
+
+    With tickets, `origins` (when given) maps each path to the first commit
     that touched it, as 'sha7 subject', so a miss can be traced to the task,
     review fix, or scope expansion that brought it in. A commit whose message
     also names one of `not_tickets` is dropped: it carries the other ticket's
     files, and they are not this plan's misses."""
-    if not ticket:
+    if isinstance(tickets, str):
+        tickets = [tickets]
+    if not tickets:
         return parse_name_status(git(repo, 'diff', '--name-status', '-M', rev_range), {})
-    log = git(repo, 'log', '--no-merges', '--reverse', '--format=%H %s', '-i', '-F',
-              f'--grep={ticket}', rev_range).splitlines()
-    others = set()
-    for other in not_tickets:
-        others.update(git(repo, 'log', '--no-merges', '--format=%H', '-i', '-F',
-                          f'--grep={other}', rev_range).split())
     changed = {}
-    for line in log:
-        sha, _, subject = line.partition(' ')
-        if sha in others:
-            continue
+    for sha, subject in ticket_commits(repo, rev_range, tickets, not_tickets, subject_only):
         parse_name_status(git(repo, 'show', '--name-status', '-M', '--format=', sha), changed,
                           origins, f'{sha[:7]} {subject}')
     return changed
@@ -165,7 +174,12 @@ def main(argv=None):
                         help='plan or todo file (repeatable); relative to --repo')
     parser.add_argument('--range', required=True, help='git range of the shipped change, e.g. abc123..def456')
     parser.add_argument('--repo', type=Path, default=Path('.'))
-    parser.add_argument('--ticket', help='score only commits whose message names this ticket, e.g. LD-441')
+    parser.add_argument('--ticket', action='append', default=[],
+                        help='score only commits whose message names this ticket, e.g. LD-441 '
+                             '(repeatable: a commit naming any of them counts)')
+    parser.add_argument('--subject-only', action='store_true',
+                        help='match tickets in the commit subject only, not the body')
+    parser.add_argument('--show-commits', action='store_true', help='list the commits that were scored')
     parser.add_argument('--not-ticket', action='append', default=[], metavar='TICKET',
                         help='with --ticket, drop commits that also name this ticket, e.g. LD-442 (repeatable)')
     parser.add_argument('--exclude', action='append', default=[],
@@ -186,11 +200,16 @@ def main(argv=None):
         print('plan-recall: no "Files/areas likely touched" entries found in the plan files', file=sys.stderr)
 
     origins = {}
-    if args.not_ticket and not args.ticket:
-        parser.error('--not-ticket needs --ticket')
-    changed = changed_files(args.repo, args.range, args.ticket, origins, args.not_ticket)
+    if (args.not_ticket or args.subject_only or args.show_commits) and not args.ticket:
+        parser.error('--not-ticket, --subject-only and --show-commits need --ticket')
+    changed = changed_files(args.repo, args.range, args.ticket, origins, args.not_ticket, args.subject_only)
     if args.ticket and not changed:
-        print(f'plan-recall: no commits in {args.range} name {args.ticket}', file=sys.stderr)
+        print(f'plan-recall: no commits in {args.range} name {", ".join(args.ticket)}', file=sys.stderr)
+    if args.show_commits and not args.json:
+        commits = ticket_commits(args.repo, args.range, args.ticket, args.not_ticket, args.subject_only)
+        print(f'scored commits ({len(commits)}):')
+        for sha, subject in commits:
+            print(f'  {sha[:7]} {subject}')
     excludes = list(args.exclude) + ([] if args.no_default_excludes else list(DEFAULT_EXCLUDES))
     result = score(entries, changed, excludes)
     if origins:

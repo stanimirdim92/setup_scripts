@@ -146,6 +146,17 @@ class EndToEnd(unittest.TestCase):
             self.assertIn('b.php', pr.changed_files(repo, f'{base}..HEAD', 'LD-441'))
             self.assertEqual(pr.changed_files(repo, f'{base}..HEAD', 'LD-441', not_tickets=['LD-442']),
                              {'a.php': 'M'})
+            # Two tickets in one run: a commit naming either counts.
+            self.assertEqual(set(pr.changed_files(repo, f'{base}..HEAD', ['LD-441', 'LD-442'])),
+                             {'a.php', 'b.php'})
+            # A ticket named only in the body is dropped with subject_only.
+            (repo / 'c.php').write_text('c\n'); git('add', '-A')
+            git('commit', '-qm', 'feat: squash of the sort work', '-m', 'Builds on LD-441.')
+            self.assertIn('c.php', pr.changed_files(repo, f'{base}..HEAD', ['LD-441']))
+            self.assertNotIn('c.php', pr.changed_files(repo, f'{base}..HEAD', ['LD-441'], subject_only=True))
+            subjects = [s for _, s in pr.ticket_commits(repo, f'{base}..HEAD', ['LD-441'], subject_only=True)]
+            self.assertEqual(subjects, ['LD-441: change a', 'ld-441 scratch', 'LD-441 drop scratch',
+                                        'LD-441 LD-442: shared sort'])
 
 
 if __name__ == '__main__':
