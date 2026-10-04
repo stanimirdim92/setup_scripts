@@ -80,6 +80,11 @@ jobs:
           python3 dotfiles/tools/checks/check-references.py
           python3 dotfiles/tools/tests/check-references-test.py
 
+      # /review's weakened-test guard: deleted or skipped tests, removed
+      # assertions, suppressions, checker config and stubs (adr/0078).
+      - name: Weakened-test guard
+        run: python3 dotfiles/tools/tests/test-weakened-tests.py
+
       # Writing rule: ADRs from 0073 on keep long sentences (over 25 words) to
       # 20% or less (dotfiles/claude/AGENTS.md "Writing for humans", adr/0077).
       - name: Writing rule

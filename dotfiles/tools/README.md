@@ -24,7 +24,7 @@ Grouped by what you do with them. Paths below are from the repository root.
 | --- | --- |
 | `validate-frontmatter.py` | A persona's tools, model, effort or hooks, or a `settings.json` pin, drifts from its ADR |
 | `validate-artifact-paths.py` | A spec, plan or todo path is spelled differently anywhere |
-| `check-references.py` | A cross-reference between harness files no longer resolves |
+| `check-references.py` | A cross-reference between harness files no longer resolves, including a `#anchor` or `§Section` it names |
 | `check-writing.py` | More than 20% of the sentences in an ADR from 0073 on run over 25 words. Pass files to check a spec or plan |
 | `harness-map.py` | `dotfiles/docs/harness-map.html` is out of date. Without `--check` it regenerates the page |
 
@@ -40,6 +40,7 @@ Grouped by what you do with them. Paths below are from the repository root.
 | `test-install-skills.py`, `test-codex-harness.py`, `test-codex-worktree.py` | The Codex installer, roles, hook adapter and worktree launcher |
 | `test-link-dotfiles.sh` | `setup/link_dotfiles.sh` |
 | `test-batch-spec.sh`, `test-run-metrics.sh` | The two `run/` scripts |
+| `test-weakened-tests.py` | `/review`'s weakened-test guard, shipped in the `code-review-and-quality` skill |
 
 Run everything CI runs:
 

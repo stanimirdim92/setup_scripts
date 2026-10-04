@@ -133,7 +133,9 @@ to be committed.
 Before issuing PASS, reconcile the final tree with the recorded candidate:
 only the declared, verified test-only changes may have been introduced.
 Confirm the agent supplied executed evidence per requirement, not merely
-recommended tests. Missing in-scope evidence cannot be labeled an intentional
+recommended tests. Confirm its mutation probes (`test-engineer` §6): every
+production file is restored, and every surviving mutant has a new test that
+kills it or a stated reason why no test can. Missing in-scope evidence cannot be labeled an intentional
 coverage exclusion; obtain it or report why verification is blocked.
 
 Report acceptance criteria verified **per `REQ-###`** — one line per

@@ -634,6 +634,7 @@ CONVENTIONS = [
     ('Fixed forms', '`When <trigger>, the <system> MUST <response>.`', 'A requirement statement in an EARS pattern: ubiquitous, While, When, Where, If … then, or combined', '/spec', 'references/templates/spec.md', 'EARS pattern'),
     ('Fixed forms', '`Refs: LD-442` / `Task: T002`', 'Git trailers ending a ticket commit; `recall.py --trailer-only` reads `Refs:`', 'executor', 'skills/git-workflow-and-versioning/SKILL.md', '### Ticket trailers'),
     ('Fixed forms', '`<type>[scope]: <description>`', 'Commit subject when the repository has no convention of its own', 'executor', 'skills/git-workflow-and-versioning/SKILL.md', 'use Conventional Commits'),
+    ('Fixed forms', '`path.md` §Section, `test-engineer` §6', 'A reference to a section; CI fails when the heading is gone', 'every file', '../tools/checks/check-references.py', 'NAMED = re.compile'),
     ('Fixed forms', '`file:line`', 'How evidence and findings point at code', 'reviewers', 'agents/blind-reviewer.md', 'file:line'),
     ('Status words', 'Draft / Approved / Needs reapproval / Superseded', 'Spec header; only a human sets Approved', '/spec', 'references/spec-quality-gates.md', 'Needs reapproval'),
     ('Status words', 'New / Modify / Remove / Rename / Bugfix', 'Spec `Change kind`', '/spec', 'references/templates/spec.md', 'Change kind:'),
@@ -641,6 +642,8 @@ CONVENTIONS = [
     ('Status words', 'BUILD COMPLETE / BUILD BLOCKED', 'The /build result', '/build', 'commands/build.md', 'BUILD COMPLETE'),
     ('Status words', 'VERIFY PASS / FAIL / BLOCKED', 'The /test result', '/test', 'commands/test.md', 'VERIFY BLOCKED'),
     ('Status words', 'BLOCKER / REQUIRED / ADVISORY', 'How serious a review finding is', '/review', 'commands/review.md', 'ADVISORY'),
+    ('Status words', 'killed / survived', 'A mutation probe: a surviving mutant is a missing test', 'test-engineer', 'agents/test-engineer.md', 'has survived'),
+    ('Status words', 'Weakened tests: none found / Not verified', 'The /review result of the weakened-test guard', '/review', 'commands/review.md', 'Weakened tests: none found'),
     ('Status words', 'GO / NO-GO / SHIP BLOCKED', 'The /ship decision', '/ship', 'commands/ship.md', 'SHIP BLOCKED'),
     ('Status words', 'Open / Mitigated / Fixed — <check>', 'A failure row in the observation log; Fixed names the check that catches it', 'you', '../docs/observation-log.md', 'Fixed — <check>'),
     ('Flags', '`OPEN QUESTION:` block', 'A choice that is yours; the spec cannot be approved while one remains', '/spec', 'skills/spec-driven-development/SKILL.md', 'OPEN QUESTION:'),
@@ -667,6 +670,7 @@ ORIGIN = {
     '`<type>[scope]: <description>`': 'Conventional Commits 1.0',
     '`file:line`': 'GNU error-message format',
     '`.git/review/<TICKET>-<sha>.sarif`': 'SARIF 2.1.0 (OASIS)',
+    'killed / survived': 'Mutation testing',
 }
 # Seen in the target projects' history, not defined by any harness file.
 OBSERVED = [
@@ -834,7 +838,7 @@ def render():
         if grp != group:
             out.append(f'<tr><td class="group" colspan="5">{e(grp)}</td></tr>')
             group = grp
-        shown = src.replace('../docs/', 'dotfiles/docs/')
+        shown = src.replace('../docs/', 'dotfiles/docs/').replace('../tools/', 'dotfiles/tools/')
         origin = e(ORIGIN[marker]) if marker in ORIGIN else '<span class="sub">Harness</span>'
         out.append(f'<tr><td class="cmdcell">{e(marker)}</td><td>{e(meaning)}</td><td class="cmdcell">{e(owner)}</td>'
                    f'<td class="cmdcell">{e(shown)}</td><td>{origin}</td></tr>')

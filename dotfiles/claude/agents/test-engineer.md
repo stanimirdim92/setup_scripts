@@ -126,10 +126,32 @@ Use browser evidence when the required behavior depends on actual rendering or
 browser integration; report unavailable tooling instead of treating component
 tests as visual proof.
 
-### 6. Own Test-Only Changes
+### 6. Probe the Tests by Mutation
+
+A green suite does not prove that the tests check the change. Answer that by
+experiment, not by reading. For each condition the candidate adds or changes
+on an in-scope requirement's path:
+
+1. Copy the production file.
+2. Invert one condition: drop a negation, swap `&&` and `||`, change `<` to
+   `<=`, or return early.
+3. Run the focused tests for that behavior.
+4. Restore the file from the copy, and confirm `git diff --quiet -- <file>`.
+
+A mutant that fails a test is killed. A mutant that stays green has survived:
+a test case is missing. Write that case as a test-only change, then run the
+mutant once more to show the new test kills it.
+
+Probe the conditions whose failure would break an acceptance criterion. One
+probe per condition is enough; do not mutate every line. The mutation is the
+only production-code edit you may make, it lasts one test run, and it is never
+committed. If a file cannot be restored exactly, stop and report it.
+
+### 7. Own Test-Only Changes
 
 When invoked by `/test`, you may add or correct tests, fixtures, and test
-configuration required for verification. You must not modify production code.
+configuration required for verification. You must not modify production code,
+except for the one-run mutation in §6.
 
 - Verify every test-only change with the repository's own commands.
 - Commit a **passing** test-only change separately with a clear `test:` commit
@@ -154,6 +176,8 @@ When dispatched by `/test`, report:
   distinguish checks executed here from inherited evidence (name its source),
   code reasoning, and blocked checks;
 - reproduced defects with expected versus actual behavior and reproduction;
+- mutation probes: `file:line`, the mutation, killed or survived, and the
+  test added for each survivor;
 - test-only files/commits, final tree state, and any changes from the baseline;
 - required checks not run, blockers, and the next action needed.
 

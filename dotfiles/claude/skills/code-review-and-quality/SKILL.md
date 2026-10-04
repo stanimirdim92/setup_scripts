@@ -175,7 +175,17 @@ Tests reveal intent and coverage:
 - Are edge cases covered?
 - Do tests have descriptive names?
 - Would the tests catch a regression if the code changed?
+- Did the change make passing easier: a test deleted or skipped, an assertion
+  removed, a suppression or checker setting added, a stub left in?
 ```
+
+`scripts/weakened-tests.py --base <ref>` lists those moves in the diff
+(`--worktree` adds uncommitted and untracked files). Exit 1 means it found
+some; each one needs a reason or a finding. Exit 2 means it could not run.
+
+The regression question has a mechanical answer: invert one condition the
+change adds and run the tests. Reviewers here are read-only, so `/test` does
+this (`test-engineer` §6). A mutant that stays green is a missing test.
 
 ### Step 3: Review the Implementation
 

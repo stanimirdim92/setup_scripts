@@ -103,5 +103,57 @@ class Resolution(unittest.TestCase):
         self.assertEqual(cr.broken(self.cmd, self.cmd.read_text()), ['../../references/plan-quality-gates.md'])
 
 
+class Places(unittest.TestCase):
+    """An anchor or a section that no longer exists in a file that does."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        (root / 'commands').mkdir()
+        (root / 'references').mkdir()
+        (root / 'references' / 'gates.md').write_text(
+            '# Gates\n\n## 3. Id spaces\n\n## Gate handoffs\n\n```\n## Not a heading\n```\n'
+            '## Gate handoffs\n')
+        self.cmd = root / 'commands' / 'plan.md'
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def check(self, text):
+        self.cmd.write_text(text)
+        return cr.broken(self.cmd, text)
+
+    def test_slugs_follow_github(self):
+        self.assertEqual(cr.slug('3. Id spaces'), '3-id-spaces')
+        self.assertEqual(cr.slug('`/review` → disposition table'), 'review--disposition-table')
+        heads = cr.anchors(Path(self.tmp.name) / 'references' / 'gates.md')
+        self.assertIn('gate-handoffs-1', heads)  # the repeated heading
+        self.assertNotIn('not-a-heading', heads)  # inside a code fence
+
+    def test_anchor(self):
+        self.assertEqual(self.check('[g](../references/gates.md#gate-handoffs)\n'), [])
+        self.assertEqual(self.check('`../references/gates.md#3-id-spaces`\n'), [])
+        self.assertEqual(self.check('[g](../references/gates.md#handoffs)\n'),
+                         ['../references/gates.md#handoffs (no such heading)'])
+
+    def test_named_section(self):
+        self.assertEqual(self.check('See `../references/gates.md` §Gate handoffs for it.\n'), [])
+        self.assertEqual(self.check('See `../references/gates.md` §Stage handoffs for it.\n'),
+                         ['../references/gates.md §Stage handoffs for it (no such section)'])
+
+    def test_numbered_section(self):
+        self.assertEqual(self.check('Per `../references/gates.md` §3, ids are stable.\n'), [])
+        self.assertEqual(self.check('Per `../references/gates.md` §4–5.\n'),
+                         ['../references/gates.md §4 (no such section)'])
+
+    def test_missing_file_reported_once(self):
+        self.assertEqual(self.check('`../references/gone.md` §Anything\n'), ['../references/gone.md'])
+
+    def test_named_harness_file(self):
+        # Resolved against the real harness: persona and skill names.
+        self.assertEqual(self.check('(`test-engineer` §6) and `code-review-and-quality` §Step 2\n'), [])
+        self.assertEqual(self.check('`test-engineer` §42\n'), ['agents/test-engineer.md §42 (no such section)'])
+        self.assertEqual(self.check('`not-a-skill` §Anything\n'), [])
+
 if __name__ == '__main__':
     unittest.main(verbosity=1)

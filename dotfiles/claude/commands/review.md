@@ -53,12 +53,27 @@ Do not re-run `/test` inline and do not duplicate the trigger matrix here.
 
 Two reviewers always run, on the same diff, from opposite directions.
 
+First, list the changes that make passing easier instead of making the code
+right: deleted or skipped tests, removed assertions, new suppressions, changed
+checker config, stubs.
+
+```bash
+python3 "$HOME/.claude/skills/code-review-and-quality/scripts/weakened-tests.py" --base <candidate base>
+```
+
+- Exit 0: record **Weakened tests: none found**.
+- Exit 1: give the list to `code-reviewer`. Each entry ends as a finding or as
+  a stated reason, such as a test deleted with the feature it tested.
+- Exit 2: record **Weakened tests: Not verified** with the error. Never read
+  it as clean.
+
 Dispatch `code-reviewer` with:
 
 - the integrated diff;
 - a one-line goal;
 - the relevant acceptance criteria;
-- the build/verify evidence needed to understand what was checked.
+- the build/verify evidence needed to understand what was checked;
+- the weakened-test list, when there is one.
 
 Dispatch `blind-reviewer` with **the integrated diff and nothing else**. No
 goal, no acceptance criteria, no build evidence, no ticket id in the packet
@@ -127,6 +142,7 @@ Report:
 - BUILD candidate and any accepted post-BUILD test-only commits;
 - **Independent verification: NOT REQUIRED | PASS**;
 - required-reviewer list and trigger decisions;
+- the weakened-test result, and how each listed change was resolved;
 - each reviewer result under its own heading;
 - all findings with canonical disposition, each tagged with the `REQ-###` it
   bears on when it bears on one;

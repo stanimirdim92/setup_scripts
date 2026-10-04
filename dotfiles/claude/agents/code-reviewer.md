@@ -163,6 +163,7 @@ the command.
 
 ### Verification Story
 - Tests reviewed: [yes/no, observations]
+- Weakened-test list: [each entry from the packet, as a finding id or the reason it is fine; "none in packet" otherwise]
 - Build/verify evidence reviewed: [what the packet's evidence covers and what it does not; you run nothing yourself]
 - Security checked: [yes/no, observations]
 - Not verified: [anything you could not check]
