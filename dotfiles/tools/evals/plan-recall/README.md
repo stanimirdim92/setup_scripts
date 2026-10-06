@@ -43,6 +43,10 @@ recall table of `dotfiles/docs/observation-log.md`.
 - `--trailer-only` matches a ticket only when it equals a `Refs:` trailer value
   (ADR 0073), never the subject or body text. Use it for history written after
   the trailer convention; `--subject-only` is for older history.
+- `--baseline before.json` compares this plan with an earlier one (a `--json`
+  output) on the same range, file by file: which changed files each plan
+  found that the other missed. It exits 1 when this plan loses more files than
+  it gains. Use it to compare a replay plan with the original.
 - `--show-commits` lists the commits that were scored. Check it whenever a
   number looks wrong.
 - `--not-ticket LD-442` (with `--ticket`, repeatable) drops commits whose

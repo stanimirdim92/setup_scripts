@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Project layout for spec-eval runs, with `claude` never invoked. Runs in CI."""
 import importlib.util
+import io
 import json
 import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location('run', Path(__file__).with_name('run.py'))
@@ -147,6 +149,103 @@ See `docs/specs/LD-6-SPEC.md`, `REQ-002`, `DEC-005` and the word `relevance`.
             finally:
                 run.HERE = saved
 
+
+class EvaluatorIntegrity(unittest.TestCase):
+    """The eval's own defects, found on LD-441: a reference holding what review
+    found after the build, an intake holding comments written after the spec,
+    and prose fragments counted as terms."""
+
+    def test_reference_is_the_first_approved_version_and_base_precedes_the_draft(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / 'docs/specs').mkdir(parents=True)
+            (repo / 'a.php').write_text('<?php\n')
+            git(repo, 'init', '-q'); git(repo, 'add', '-A'); git(repo, 'commit', '-qm', 'before')
+            before = git(repo, 'rev-parse', 'HEAD')
+            spec = repo / 'docs/specs/LD-8-SPEC.md'
+            for status, body in (('Draft', 'first draft'), ('Approved', 'as approved'),
+                                 ('Approved', 'review found `UnexpectedValueException`')):
+                spec.write_text(f'Status: {status}\n\n{body}\n')
+                git(repo, 'add', '-A'); git(repo, 'commit', '-qm', f'spec {status}')
+            text, commit, base, as_of = run.reference_version(repo, 'docs/specs/LD-8-SPEC.md')
+            self.assertIn('as approved', text)
+            self.assertNotIn('UnexpectedValueException', text)
+            self.assertEqual(git(repo, 'rev-parse', base), before)
+            self.assertRegex(as_of, r'^\d{4}-\d\d-\d\d$')
+            latest = run.reference_version(repo, 'docs/specs/LD-8-SPEC.md', 'latest')[0]
+            self.assertIn('UnexpectedValueException', latest)
+
+    def test_reference_follows_a_rename(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / 'docs').mkdir()
+            (repo / 'docs/old.md').write_text('Status: Approved\n\nfirst\n')
+            git(repo, 'init', '-q'); git(repo, 'add', '-A'); git(repo, 'commit', '-qm', 'add')
+            git(repo, 'mv', 'docs/old.md', 'docs/LD-9-SPEC.md'); git(repo, 'commit', '-qm', 'rename')
+            self.assertIn('first', run.reference_version(repo, 'docs/LD-9-SPEC.md')[0])
+
+    def test_intake_dates_after_the_spec_are_flagged(self):
+        intake = ('Comment by Ann (2026-09-14): use srch_sort.\n'
+                  'Comment by Ann (2026-09-23): EVENT_TYPE_SCORES gives reactivated 9.\n'
+                  'Resolved 2026-09-30.\n')
+        self.assertEqual([n for n, _ in run.dates_after(intake, '2026-09-17')], [2, 3])
+        self.assertEqual(run.dates_after(intake, '2026-10-01'), [])
+
+    def test_prose_fragments_are_not_terms(self):
+        spec = ('Throws `UnexpectedValueException` (REQ-004`). Both ` and `in:` and '
+                '`for **newly generated** rows` and `) and continues to strip`, but '
+                '`value_score => \'high\'` and `(score, time_posted, id)` stay.\n'
+                '```php\n$x = 1;\n```\nUses `srch_sort`.\n')
+        terms = run.reference_terms(spec)
+        self.assertIn('UnexpectedValueException', terms)
+        self.assertIn("value_score => 'high'", terms)
+        self.assertIn('(score, time_posted, id)', terms)
+        self.assertIn('srch_sort', terms)
+        for junk in ('in:', 'for **newly generated** rows', ') and continues to strip'):
+            self.assertNotIn(junk, terms)
+
+
+class Paired(unittest.TestCase):
+    """SAGE (arXiv 2609.36043): compare per item, not by the average."""
+
+    def test_wins_regressions_and_must_losses(self):
+        base = {'a': True, 'b': True, 'c': False, 'd': False, 'only-old': True}
+        new = {'a': True, 'b': False, 'c': True, 'd': True, 'only-new': False}
+        pair = run.paired(base, new, must_ids={'b'})
+        self.assertEqual(pair['wins'], ['c', 'd'])
+        self.assertEqual(pair['regressions'], ['b'])
+        self.assertEqual(pair['unchanged'], 1)
+        self.assertEqual(pair['not_compared'], ['only-new', 'only-old'])
+        self.assertEqual(run.verdict(pair)[0], 'WORSE')  # a must loss outweighs any gain
+
+    def test_verdicts(self):
+        self.assertEqual(run.verdict(run.paired({'a': False, 'b': False}, {'a': True, 'b': False}))[0], 'BETTER')
+        self.assertEqual(run.verdict(run.paired({'a': True}, {'a': True}))[0], 'SAME')
+        # A higher average can still hide an equal trade: one gained, one lost.
+        self.assertEqual(run.verdict(run.paired({'a': True, 'b': False}, {'a': False, 'b': True}))[0],
+                         'NOT BETTER')
+
+    def test_baseline_gate_through_the_cli(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            fixture = tmp / 'fixtures' / 'LD-5'
+            fixture.mkdir(parents=True)
+            (fixture / 'expectations.json').write_text(json.dumps({'ticket': 'LD-5', 'expectations': [
+                {'id': 'draft', 'regex': 'Draft', 'why': 'w'},
+                {'id': 'term:alpha', 'regex': 'alpha', 'severity': 'should', 'reference_term': True, 'why': 'w'},
+                {'id': 'term:beta', 'regex': 'beta', 'severity': 'should', 'reference_term': True, 'why': 'w'}]}))
+            old, new = tmp / 'old.md', tmp / 'new.md'
+            old.write_text('Draft alpha\n'); new.write_text('Draft beta\n')
+            saved, run.HERE = run.HERE, tmp
+            try:
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(run.main(['--fixture', 'LD-5', '--spec', str(old), '--output', str(tmp / 'o')]), 0)
+                    results = tmp / 'o' / 'results.json'
+                    self.assertEqual(json.loads(results.read_text())['results']['term:alpha'], True)
+                    self.assertEqual(run.main(['--fixture', 'LD-5', '--spec', str(new), '--baseline', str(results)]), 1)
+                    self.assertEqual(run.main(['--fixture', 'LD-5', '--spec', str(old), '--baseline', str(results)]), 0)
+            finally:
+                run.HERE = saved
 
 if __name__ == '__main__':
     unittest.main(verbosity=1)

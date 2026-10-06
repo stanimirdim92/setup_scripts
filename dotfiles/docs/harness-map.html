@@ -173,9 +173,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="layout">
-<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>7</span></a><a href="#conventions">Conventions<span>44</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>21</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>22</span></a><a href="#decisions">Decisions<span>78</span></a></nav>
+<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>7</span></a><a href="#conventions">Conventions<span>44</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>21</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>22</span></a><a href="#decisions">Decisions<span>79</span></a></nav>
 <main>
-<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>7</b>guards</span><span class="count"><b>44</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>21</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>22</b>self-tests</span><span class="count"><b>78</b>decisions</span></div></header>
+<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>7</b>guards</span><span class="count"><b>44</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>21</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>22</b>self-tests</span><span class="count"><b>79</b>decisions</span></div></header>
 <section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The amber rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">grey</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
 <div class="tabs" role="tablist" aria-label="Pipeline views">
 <button type="button" role="tab" id="tab-list" aria-controls="view-list" aria-selected="false" tabindex="-1" data-view="list"><span>1</span>Stage list</button>
@@ -356,7 +356,8 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td><b>Batch spec runner</b><span class="sub">The batch spec runner&#x27;s decisions, with <code>claude</code> stubbed.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-batch-spec.sh</td></tr>
 <tr><td><b>Run metrics</b><span class="sub">Measurement: the transcript metrics&#x27; large-result section.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-run-metrics.sh</td></tr>
 </tbody></table></div></section>
-<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">78 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">79 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<tr><td class="cmdcell">0079</td><td>Eval integrity and paired comparison</td></tr>
 <tr><td class="cmdcell">0078</td><td>Mutation probes, a weakened-test guard, and checked section references</td></tr>
 <tr><td class="cmdcell">0077</td><td>Writing rule checked in CI</td></tr>
 <tr><td class="cmdcell">0076</td><td>EARS requirement statements</td></tr>
@@ -366,7 +367,6 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">0072</td><td>Frontend skills: three vendored, Figma&#x27;s fetched</td></tr>
 <tr><td class="cmdcell">0071</td><td>Harness files live under <code>dotfiles/</code></td></tr>
 <tr><td class="cmdcell">0070</td><td>Browser checks route to test-engineer, and the DevTools MCP is installed</td></tr>
-<tr><td class="cmdcell">0069</td><td>Plain writing, an <code>/explain</code> review page, a generated harness map, and ticket-scoped plan recall</td></tr>
 </tbody></table></div></section>
 <footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. Do not edit by hand.</footer></main></div>
 <script>

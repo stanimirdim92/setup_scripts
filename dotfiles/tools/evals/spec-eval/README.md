@@ -25,8 +25,20 @@ python3 run.py --new LD-441 --repo /var/www/html/leadbuster \
 python3 run.py --fixture LD-441 --repo /var/www/html/leadbuster --output ./out-441
 ```
 
-`--new` runs the `jira-ticket` skill once (Jira MCP must work in a plain
-`claude` session) and saves its output as `intake.md`. Pass `--intake FILE`
+`--new` builds the fixture so the run knows only what the original `/spec`
+could have known:
+
+- **Reference:** the spec as a human first approved it, read from git history,
+  not as it stands today. Later revisions add what review and production
+  found after the build; scoring against them counts the unknowable as misses.
+  `--reference-version latest` uses today's file.
+- **Intake:** the `jira-ticket` skill runs once. Jira MCP must work in a plain
+  `claude` session. The skill is told to stop at the as-of date: the day the
+  spec was first committed, or `--as-of YYYY-MM-DD`. A comment written after the
+  spec can hand the run a decision it should have had to ask for. `--new` then
+  lists every intake line that names a later date. Delete those lines.
+
+It saves the intake as `intake.md`. Pass `--intake FILE`
 to use a saved intake instead, or `--at <commit>` when the spec file was not
 added in its own commit. The base commit is the parent of the commit that
 first added the spec, so the run sees the code as `/spec` first saw it.
@@ -37,6 +49,30 @@ fresh spec also names, and which it missed. It is a recall figure, like plan
 recall. It says whether a harness change made specs better or worse at naming
 the right things; it cannot say whether a spec is good. Read `out-441/` next
 to the reference.
+
+### Did a harness change make specs better?
+
+Compare item by item, not by the average. An average can rise while items the
+old harness got right are lost (SAGE, arXiv 2609.36043).
+
+```bash
+python3 run.py --fixture LD-441 --repo $P --output ./before   # before the change
+# ... change the harness ...
+python3 run.py --fixture LD-441 --repo $P --output ./after --baseline ./before/results.json
+```
+
+The run lists every item gained and lost, and ends with one verdict:
+
+| Verdict | Means | Exit |
+| --- | --- | --- |
+| BETTER | more items gained than lost, and no `must` item lost | 0 |
+| SAME | no item changed | 0 |
+| NOT BETTER | as many or more items lost than gained | 1 |
+| WORSE | a `must` item the baseline met is now missed | 1 |
+
+One run per side is noisy: a term can flip between two runs of the same
+harness. Read each lost item before you blame the change. Run each side twice
+when the verdict decides a change you care about.
 
 To make a finding permanent, edit `fixtures/LD-441/expectations.json`: change
 its `severity` from `should` to `must`, or delete a term that does not matter.

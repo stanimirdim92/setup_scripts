@@ -105,9 +105,25 @@ def score(entries, changed, excludes=()):
         'recall': ratio(found, changed),
         'recall_existing': ratio(existing_found, existing),
         'precision': ratio(touched, expected),
+        'found': found,
         'missed': missed,
         'planned_but_untouched': untouched,
     }
+
+
+def paired(baseline, current):
+    """Per-file comparison of two plans scored against the same shipped change.
+
+    A plan can raise recall overall while losing a file the other plan found
+    (SAGE, arXiv 2609.36043). Only files changed in both runs are compared;
+    a different file set means a different range, not a better plan."""
+    before = {p: True for p in baseline['found']} | {p: False for p in baseline['missed']}
+    after = {p: True for p in current['found']} | {p: False for p in current['missed']}
+    shared = sorted(set(before) & set(after))
+    return {'gained': [p for p in shared if after[p] and not before[p]],
+            'lost': [p for p in shared if before[p] and not after[p]],
+            'unchanged': sum(1 for p in shared if before[p] == after[p]),
+            'not_compared': sorted(set(before) ^ set(after))}
 
 
 def git(repo, *args):
@@ -198,6 +214,9 @@ def main(argv=None):
     parser.add_argument('--no-default-excludes', action='store_true',
                         help='also score pipeline artifacts and agent config (DEFAULT_EXCLUDES)')
     parser.add_argument('--min-recall', type=float, help='exit 1 when recall_existing is below this')
+    parser.add_argument('--baseline', type=Path,
+                        help='--json output of an earlier run on the same range: list files gained and lost, '
+                             'exit 1 when more are lost than gained')
     parser.add_argument('--json', action='store_true')
     args = parser.parse_args(argv)
 
@@ -248,9 +267,21 @@ def main(argv=None):
             print('planned but not in the diff:')
             for p in result['planned_but_untouched']:
                 print(f'  {p}')
+    gate = 0
+    if args.baseline:
+        pair = paired(json.loads(args.baseline.read_text()), result)
+        if not args.json:
+            print(f"paired with {args.baseline}: {len(pair['gained'])} gained, {len(pair['lost'])} lost, "
+                  f"{pair['unchanged']} unchanged")
+            for label in ('gained', 'lost'):
+                for p in pair[label]:
+                    print(f'  {label:<6} {p}')
+            if pair['not_compared']:
+                print(f"  {len(pair['not_compared'])} file(s) in one run only: is the range the same?")
+        gate = 1 if len(pair['lost']) > len(pair['gained']) else 0
     if args.min_recall is not None and (result['recall_existing'] or 0) < args.min_recall:
         return 1
-    return 0
+    return gate
 
 
 if __name__ == '__main__':

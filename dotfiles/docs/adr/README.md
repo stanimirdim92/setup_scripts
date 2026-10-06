@@ -86,6 +86,7 @@ that explanation here, just the index.
 | [0076](0076-ears-requirement-statements.md) | EARS requirement statements | Accepted |
 | [0077](0077-writing-rule-checked-in-ci.md) | Writing rule checked in CI | Accepted |
 | [0078](0078-mutation-probes-weakened-test-guard-section-references.md) | Mutation probes, a weakened-test guard, and checked section references | Accepted |
+| [0079](0079-eval-integrity-and-paired-comparison.md) | Eval integrity and paired comparison | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

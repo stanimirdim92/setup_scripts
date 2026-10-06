@@ -170,5 +170,20 @@ class EndToEnd(unittest.TestCase):
                                                   not_tickets=['LD-442'])), {'d.php'})
 
 
+class Paired(unittest.TestCase):
+    def test_gained_lost_and_not_compared(self):
+        base = {'found': ['a.php', 'b.php'], 'missed': ['c.php', 'old.php']}
+        new = {'found': ['a.php', 'c.php'], 'missed': ['b.php', 'new.php']}
+        pair = pr.paired(base, new)
+        self.assertEqual(pair['gained'], ['c.php'])
+        self.assertEqual(pair['lost'], ['b.php'])
+        self.assertEqual(pair['unchanged'], 1)
+        self.assertEqual(pair['not_compared'], ['new.php', 'old.php'])
+
+    def test_score_reports_found_files(self):
+        result = pr.score([('a.php', False)], {'a.php': 'M', 'b.php': 'M'})
+        self.assertEqual(result['found'], ['a.php'])
+        self.assertEqual(result['missed'], ['b.php'])
+
 if __name__ == '__main__':
     unittest.main(verbosity=1)
