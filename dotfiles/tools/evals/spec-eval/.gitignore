@@ -2,3 +2,7 @@
 # repository is public. Keep them local; commit only the example.
 fixtures/*
 !fixtures/example/
+# Run output (--output): produced specs, run.json and results.json carry the
+# same ticket content. Every folder here except fixtures/ is output.
+/*/
+!/fixtures/
