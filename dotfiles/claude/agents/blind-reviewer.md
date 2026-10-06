@@ -4,7 +4,7 @@ description: Reviews a diff with no knowledge of what it was supposed to do — 
 tools: Read, Grep, Glob
 model: opus[1m]
 effort: high
-maxTurns: 60
+maxTurns: 100
 ---
 
 # Blind Reviewer

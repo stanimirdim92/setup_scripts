@@ -4,7 +4,7 @@ description: Senior code reviewer that evaluates changes across five dimensions 
 tools: Read, Grep, Glob
 model: opus[1m]
 effort: high
-maxTurns: 60
+maxTurns: 100
 ---
 
 # Senior Code Reviewer

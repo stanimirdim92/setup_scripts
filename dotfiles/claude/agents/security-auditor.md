@@ -4,7 +4,7 @@ description: Security engineer for changes that materially alter trust boundarie
 tools: Read, Grep, Glob
 model: opus[1m]
 effort: high
-maxTurns: 60
+maxTurns: 100
 ---
 
 # Security Auditor

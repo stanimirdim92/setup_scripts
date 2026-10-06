@@ -62,7 +62,7 @@ that explanation here, just the index.
 | [0052](0052-spec-guidance-consolidated-around-human-approval.md) | Spec guidance consolidated around human approval | Accepted |
 | [0053](0053-plan-guidance-consolidated-around-behavioral-tasks.md) | Plan guidance consolidated around behavioral tasks | Accepted |
 | [0054](0054-executor-concurrency-condition-gated-not-capped.md) | Executor concurrency gated by conditions, not a fixed cap | Partially superseded by [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) (sequential default replaced by parallel-when-safe; conditions unchanged) |
-| [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) | Multi-agent rules enforced by the harness; parallel-when-safe replaces sequential-by-default | Accepted |
+| [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) | Multi-agent rules enforced by the harness; parallel-when-safe replaces sequential-by-default | Accepted; reviewer turn cap raised to 100 by [0080](0080-reviewer-turn-cap-raised-to-100.md) |
 | [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md) | Models tiered by role; blind reviewer; recon width; writer isolation structural | Partially superseded by [0058](0058-sequential-ticket-checkout-and-infrastructure-readiness.md) (executor isolation) and [0059](0059-codex-native-roles-and-hook-adapters.md) (session alias; Codex role tiers added); effort split per role by [0066](0066-opus-5-5-effort-and-early-stop-continuations.md) |
 | [0057](0057-worktree-base-guards-at-the-session-level.md) | The cost of `worktree.baseRef: head` is paid at the session level, and guarded there | Partially superseded by [0058](0058-sequential-ticket-checkout-and-infrastructure-readiness.md) (writer failures deny; infrastructure readiness added) |
 | [0058](0058-sequential-ticket-checkout-and-infrastructure-readiness.md) | Sequential ticket checkout reuse and project infrastructure readiness | Codex enforcement extended by [0059](0059-codex-native-roles-and-hook-adapters.md); checkout policy retained |
@@ -87,6 +87,7 @@ that explanation here, just the index.
 | [0077](0077-writing-rule-checked-in-ci.md) | Writing rule checked in CI | Accepted |
 | [0078](0078-mutation-probes-weakened-test-guard-section-references.md) | Mutation probes, a weakened-test guard, and checked section references | Accepted |
 | [0079](0079-eval-integrity-and-paired-comparison.md) | Eval integrity and paired comparison | Accepted |
+| [0080](0080-reviewer-turn-cap-raised-to-100.md) | Reviewer turn cap raised to 100 | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

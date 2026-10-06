@@ -4,7 +4,7 @@ description: Reviews changes that materially alter retries, idempotency, orderin
 tools: Read, Grep, Glob
 model: opus[1m]
 effort: high
-maxTurns: 60
+maxTurns: 100
 ---
 
 # Distributed Systems Reviewer
