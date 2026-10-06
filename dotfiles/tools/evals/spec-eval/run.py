@@ -288,7 +288,7 @@ LATER_DATE = re.compile(r'\b(20\d\d-[01]\d-[0-3]\d)\b')
 def dates_after(text, as_of):
     """Lines of the intake that name a date later than `as_of` (YYYY-MM-DD).
     The jira-ticket skill is told to stop at the as-of date; this is the check
-    that it did. A later comment is how a replay learns a decision it should
+    that it did. A later comment is how a fresh run learns a decision it should
     have had to ask for."""
     return [(n, line.strip()) for n, line in enumerate(text.splitlines(), 1)
             if any(d > as_of for d in LATER_DATE.findall(line))]
