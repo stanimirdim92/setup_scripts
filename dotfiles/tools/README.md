@@ -1,6 +1,6 @@
 # Harness tools
 
-Grouped by what you do with them. Paths below are from the repository root.
+Grouped by what you do with them. Paths below are from the repository root. Each folder has its own README that explains it in plain terms.
 
 | Folder | What it is | When you use it |
 | --- | --- | --- |
