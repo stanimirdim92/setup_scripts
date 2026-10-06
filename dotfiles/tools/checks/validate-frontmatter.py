@@ -8,9 +8,9 @@ nothing checked that the block still says what the ADR claims:
   loses its `tools:` line inherits everything, including `Agent` and `Bash` --
   the exact hole 0055 closed. A reviewer that gains `Write`/`Edit`/`Bash` is
   read-only in prose only.
-- The writing personas carry the two agent-scoped hooks (`block-agent-push.sh`,
-  `require-handoff-report.sh`). Delete a `hooks:` block by accident and the
-  push denial and the handoff gate silently stop existing; dotfiles/tools/tests/test-hooks.sh
+- The writing personas carry the three agent-scoped hooks (`block-agent-push.sh`,
+  `require-commit-trailers.sh`, `require-handoff-report.sh`). Delete a `hooks:` block by accident and the
+  push denial, the trailer rule and the handoff gate silently stop existing; dotfiles/tools/tests/test-hooks.sh
   and dotfiles/tools/tests/test-handoff-hook.sh still pass, because the hooks themselves are
   fine -- nobody is calling them.
 - The spawn-depth, agent-teams and fork pins in settings.json are single lines
@@ -37,7 +37,7 @@ SETTINGS = CLAUDE / 'settings.json'
 # 0058 keeps verifier isolation structural and makes concurrent executor
 # isolation an explicit dispatch choice; sequential executors reuse the ticket.
 WRITERS = {'executor', 'test-engineer'}
-WRITER_HOOKS = ('block-agent-push.sh', 'require-handoff-report.sh')
+WRITER_HOOKS = ('block-agent-push.sh', 'require-commit-trailers.sh', 'require-handoff-report.sh')
 
 # Models are tiered by role (0056), and pinned rather than floating for the
 # reason 0002 gives: delegation should target a version deliberately chosen, not

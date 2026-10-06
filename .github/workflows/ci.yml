@@ -47,6 +47,10 @@ jobs:
 
       # Enforcement: the SubagentStop handoff gate — complete, partial,
       # claim-only, second attempt, unknown agent, unreadable transcript.
+      # Writers' commits carry a Refs: trailer (adr/0081).
+      - name: Hooks — commit trailers
+        run: bash dotfiles/tools/tests/test-commit-trailers.sh
+
       - name: Hooks — handoff report gate
         run: bash dotfiles/tools/tests/test-handoff-hook.sh
 
@@ -84,6 +88,13 @@ jobs:
       # assertions, suppressions, checker config and stubs (adr/0078).
       - name: Weakened-test guard
         run: python3 dotfiles/tools/tests/test-weakened-tests.py
+
+      # /spec and /plan check their own output: spec shape, and a plan that
+      # covers its spec with complete packets (adr/0081).
+      - name: Spec and plan checks
+        run: |
+          python3 dotfiles/tools/tests/test-check-spec.py
+          python3 dotfiles/tools/tests/test-check-plan.py
 
       # Writing rule: ADRs from 0073 on keep long sentences (over 25 words) to
       # 20% or less (dotfiles/claude/AGENTS.md "Writing for humans", adr/0077).

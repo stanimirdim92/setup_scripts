@@ -73,7 +73,9 @@ class CodexHarnessTest(unittest.TestCase):
             for command in ["git push", "git fu", "gh pr create", "gh pr merge", "gh release create v1"]:
                 with self.subTest(role=role, command=command):
                     self.assertEqual(self.decision(self.invoke(self.payload(command=command), role)), "deny")
-            self.assertEqual(self.invoke(self.payload(command="git commit -m task"), role), {})
+            # A local commit is allowed when it carries the Refs: trailer (ADR 0081).
+            self.assertEqual(self.invoke(self.payload(command='git commit -m task -m "Refs: LD-1"'), role), {})
+            self.assertEqual(self.decision(self.invoke(self.payload(command="git commit -m task"), role)), "deny")
 
     def test_raw_exec_arguments_are_normalized(self):
         payload = {"hook_event_name": "PreToolUse", "cwd": str(self.ticket),

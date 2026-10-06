@@ -50,7 +50,17 @@ approval metadata; passing the check, silence, or an instruction to continue
 does not grant approval. Editorial revisions retain existing approval;
 behavioral revisions require reapproval under the shared transition rules.
 
-Save the spec and report its path, status, and remaining blockers. `/spec` ends
+Save the spec, then check its shape:
+
+```bash
+python3 "$HOME/.claude/skills/spec-driven-development/scripts/check-spec.py" docs/specs/<TICKET>-SPEC.md
+```
+
+Fix every FAIL before presenting the spec. A FAIL means a form a later stage
+reads mechanically is missing: a `Source:` line, a scenario's THEN, an RFC 2119
+keyword. Read each warning and fix the ones that are slips. Report the result.
+
+Report the spec's path, status, and remaining blockers. `/spec` ends
 here; it does not invoke `/plan` or implementation. After approval, the user
 may invoke `/plan` in this session or a new one. Preserve the durable handoff
 described by the skill so either works without the conversation transcript.

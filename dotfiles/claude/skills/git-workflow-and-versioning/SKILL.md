@@ -228,7 +228,10 @@ Trailers go in the last paragraph, `Key: value`, with no blank line between
 them. Git parses them (`git log --format='%(trailers:key=Refs,valueonly)'`,
 `git interpret-trailers`), so tools can find a ticket's commits exactly instead
 of searching the subject. If the repository already uses a ticket trailer under
-another key, use that key.
+another key, use that key alongside `Refs:`.
+
+For `executor` and `test-engineer`, the `require-commit-trailers.sh` hook
+denies a commit whose new message has no `Refs:` trailer.
 
 Commit messages should explain intent and, when useful, why the change exists.
 

@@ -12,6 +12,7 @@ push.
 | Test | Covers |
 | --- | --- |
 | `test-hooks.sh` | The hooks that block destructive commands, force pushes, and pushes by agents |
+| `test-commit-trailers.sh` | The hook that refuses a writer's commit without a `Refs:` trailer |
 | `test-handoff-hook.sh` | The hook that stops a writer agent from finishing without its handoff report |
 | `test-worktree-hooks.sh` | The stale-base warning and the rule that writers work in a worktree |
 | `test-isolated-test-runner.sh` | The rule that a project's tests run in isolation |
@@ -20,6 +21,7 @@ push.
 | `test-batch-spec.sh`, `test-run-metrics.sh` | The scripts in `../run/` |
 | `test-install-skills.py`, `test-codex-harness.py`, `test-codex-worktree.py` | The Codex side: skill install, roles and hook adapters, and the worktree launcher |
 | `test-weakened-tests.py` | The guard `/review` runs for deleted or weakened tests (the script lives in the code-review skill) |
+| `test-check-spec.py`, `test-check-plan.py` | The checks `/spec` and `/plan` run on their own output (the scripts live in those skills) |
 
 Run the one for what you changed, from the repository root:
 

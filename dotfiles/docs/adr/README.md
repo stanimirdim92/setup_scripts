@@ -80,7 +80,7 @@ that explanation here, just the index.
 | [0070](0070-browser-checks-route-to-test-engineer.md) | Browser checks route to test-engineer, and the DevTools MCP is installed | Accepted |
 | [0071](0071-harness-files-live-under-dotfiles.md) | Harness files live under `dotfiles/` | Accepted |
 | [0072](0072-frontend-skills-vendored-and-figma-fetched.md) | Frontend skills: three vendored, Figma's fetched | Accepted |
-| [0073](0073-ticket-trailers-on-commits.md) | Ticket trailers on commits | Accepted |
+| [0073](0073-ticket-trailers-on-commits.md) | Ticket trailers on commits | Accepted; enforced for writers and own-key rule amended by [0081](0081-spec-plan-checks-and-trailer-hook.md) |
 | [0074](0074-review-findings-exported-as-sarif.md) | Review findings exported as SARIF | Accepted |
 | [0075](0075-rfc-2119-keywords-in-requirements.md) | RFC 2119 keywords in requirements | Accepted; EARS rejection reversed by [0076](0076-ears-requirement-statements.md) |
 | [0076](0076-ears-requirement-statements.md) | EARS requirement statements | Accepted |
@@ -88,6 +88,7 @@ that explanation here, just the index.
 | [0078](0078-mutation-probes-weakened-test-guard-section-references.md) | Mutation probes, a weakened-test guard, and checked section references | Accepted |
 | [0079](0079-eval-integrity-and-paired-comparison.md) | Eval integrity and paired comparison | Accepted |
 | [0080](0080-reviewer-turn-cap-raised-to-100.md) | Reviewer turn cap raised to 100 | Accepted |
+| [0081](0081-spec-plan-checks-and-trailer-hook.md) | Spec and plan checks, and a commit trailer hook | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

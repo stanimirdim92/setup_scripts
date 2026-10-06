@@ -44,7 +44,17 @@ material changes set Needs replan immediately and require renewed approval.
 
 Run the skill's Approval Check before presenting the result. Save the plan and
 task packets, including decisions and context pointers needed by a fresh
-`/build` session; do not depend on chat-only conclusions. Report their locations,
+`/build` session; do not depend on chat-only conclusions. Then check that the
+plan covers the spec and every packet is complete:
+
+```bash
+python3 "$HOME/.claude/skills/planning-and-task-breakdown/scripts/check-plan.py" \
+    docs/tasks/<TICKET>-plan.md --todo docs/tasks/<TICKET>-todo.md --spec docs/specs/<TICKET>-SPEC.md
+```
+
+Fix every FAIL before presenting the plan: a requirement with no task, a task
+naming a requirement the spec lacks, a dependency on an undefined id, or a
+packet missing Status, Requirements, Acceptance criteria or Verification. Report their locations,
 plan status, remaining blockers, and handoff state.
 
 Only explicit human approval permits Approved and Ready for /build. After

@@ -10,6 +10,8 @@ hooks:
       hooks:
         - type: command
           command: "$HOME/.claude/hooks/block-agent-push.sh"
+        - type: command
+          command: "$HOME/.claude/hooks/require-commit-trailers.sh"
   Stop:
     - hooks:
         - type: command

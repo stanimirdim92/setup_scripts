@@ -216,7 +216,7 @@ def policy(payload, role=""):
         if not isinstance(command, str) or not command:
             raise ValueError("Shell command must be a nonempty string.")
         normalized["tool_input"]["command"] = command
-        for name in ["block-destructive-bash.sh", "require-isolated-test-runner.sh"] + (["block-agent-push.sh"] if role in WRITERS else ["warn-force-push.sh"]):
+        for name in ["block-destructive-bash.sh", "require-isolated-test-runner.sh"] + (["block-agent-push.sh", "require-commit-trailers.sh"] if role in WRITERS else ["warn-force-push.sh"]):
             result = shared(name, normalized)
             if result:
                 return result
