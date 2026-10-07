@@ -218,6 +218,7 @@ the `SocialPostType` refactor to LD-441 as misses (10% instead of 100%).
 |---|---|---|---|---|---|---|---|
 | 2026-10-03 | LD-441 | 100% | 88% | 88% | 8 / 3 | `tests/Feature/Socials/TickerFeedSeeder.php` (new) | `TickerService.php` planned, never changed. Plan predates the change-surface rule. |
 | 2026-10-03 | LD-442 | 67% | 62% | 92% | 16 / 3 | `lang/de/ticker.php`, `FrontendTranslationsTest.php`, 3 existing test files, `ticker.utils.ts` | All misses were consumers; see the Failures row. `resources/js/components/icons/` planned, never changed. Plan predates the change-surface rule. |
+| 2026-10-07 | LD-380 (harness-test plan of 2026-10-07) | 69% | 60% | 60% | 43 / 5 | 2 real: `useAdvertiserOnboardingSearch.ts`, `useAdvertiserOnboardingSubmit.ts`. 5 written as shorthand (`Http/Requests/`, `Data/`, "its contract interface"). 10 outside today's design or later fixes: the Pending status files, `PublishAdvertiser.php`, the Details endpoint, `Utils.php`, `package.json` | A fresh plan scored against the 08-27 build and its 09-02 rework, so the shipped design differs (Pending status, a details endpoint). With full paths it would find 31/43. The 08-27 plan cannot be scored: 1 of its 10 packets lists files. First LD-380 baseline (`~/ld380-fresh.json`). Scored after the parser fixes of 2026-10-07. |
 
 ## What to look for
 
