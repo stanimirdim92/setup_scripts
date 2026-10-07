@@ -222,6 +222,10 @@ class EvaluatorIntegrity(unittest.TestCase):
             self.assertRegex(text, run.term_pattern(term), term)
         self.assertNotRegex('the row exists today', run.term_pattern('exists()'))
         self.assertRegex('the `findDeletedMatch` path', run.term_pattern('findDeletedMatch()'))
+
+    def test_old_fixture_terms_use_the_current_matching(self):
+        old = {'id': 'term:findDeletedMatch()', 'reference_term': True, 'regex': r'findDeletedMatch\(\)'}
+        self.assertTrue(run.evaluate(old, 'the `findDeletedMatch` path')[0])
         self.assertNotRegex('a services layer', run.term_pattern('Modules/Core/app/Services'))
 
     def test_prose_fragments_are_not_terms(self):

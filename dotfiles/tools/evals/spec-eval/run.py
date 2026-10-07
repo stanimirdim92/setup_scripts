@@ -71,6 +71,11 @@ def evaluate(expectation, spec):
         terms = expectation['near']
         span = expectation.get('within_lines', 4)
         return window(spec, terms, span), f'terms {terms} within {span} lines'
+    if expectation.get('reference_term') and expectation['id'].startswith('term:'):
+        # Built from the term at judge time, so a fixture made before a
+        # matching fix still gets it without a rebuild.
+        pattern = term_pattern(expectation['id'][len('term:'):])
+        return bool(re.search(pattern, spec, re.M | re.I)), f'/{pattern}/'
     if 'regex' in expectation:
         return bool(re.search(expectation['regex'], spec, re.M | re.I)), f"/{expectation['regex']}/"
     if 'absent_regex' in expectation:
