@@ -93,7 +93,8 @@ def score(entries, changed, excludes=()):
     # dropped on both sides, or it reads as a planned edit that never shipped.
     entries = [(e, u) for e, u in entries if not any(fnmatch.fnmatch(e, g) for g in excludes)]
     considered = [e for e, _ in entries]
-    expected = [e for e, unchanged in entries if not unchanged]
+    # Two tasks naming one location plan it once: precision counts each entry once.
+    expected = list(dict.fromkeys(e for e, unchanged in entries if not unchanged))
 
     found = sorted(p for p in changed if any(covers(e, p) for e in considered))
     missed = sorted(p for p in changed if p not in found)

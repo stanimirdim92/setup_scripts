@@ -60,6 +60,12 @@ class Scoring(unittest.TestCase):
     def setUp(self):
         self.entries = pr.planned_entries(PLAN)
 
+    def test_an_entry_two_tasks_name_counts_once(self):
+        entries = [('tests/Feature/', False), ('tests/Feature/', False), ('app/Gone.php', False)]
+        result = pr.score(entries, {'tests/Feature/ATest.php': 'A'})
+        self.assertEqual(result['precision'], 0.5)
+        self.assertEqual(result['planned_but_untouched'], ['app/Gone.php'])
+
     def test_missed_cross_module_file_lowers_recall(self):
         # The LoLBench failure: the change reaches a provider binding nobody planned.
         changed = {'app/Billing/InvoiceTotals.php': 'M', 'app/Http/Resources/InvoiceResource.php': 'M',
