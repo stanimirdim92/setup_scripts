@@ -290,8 +290,19 @@ def dates_after(text, as_of):
     The jira-ticket skill is told to stop at the as-of date; this is the check
     that it did. A later comment is how a fresh run learns a decision it should
     have had to ask for."""
-    return [(n, line.strip()) for n, line in enumerate(text.splitlines(), 1)
-            if any(d > as_of for d in LATER_DATE.findall(line))]
+    late, skipping = [], None
+    for n, line in enumerate(text.splitlines(), 1):
+        indent = len(line) - len(line.lstrip())
+        # The intake's own record of what it left out, and of when it fetched,
+        # names later dates without carrying their content.
+        if skipping is not None and line.strip() and indent > skipping:
+            continue
+        skipping = indent if re.search(r'\bleft out\b', line, re.I) else None
+        if skipping is not None or re.search(r'\b(fetched|before the)\b', line, re.I):
+            continue
+        if any(d > as_of for d in LATER_DATE.findall(line)):
+            late.append((n, line.strip()))
+    return late
 
 
 def fetch_intake(ticket, jira, repo, budget, as_of=None):

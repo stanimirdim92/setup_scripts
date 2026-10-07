@@ -191,6 +191,15 @@ class EvaluatorIntegrity(unittest.TestCase):
         self.assertEqual([n for n, _ in run.dates_after(intake, '2026-09-17')], [2, 3])
         self.assertEqual(run.dates_after(intake, '2026-10-01'), [])
 
+    def test_intake_record_of_what_it_left_out_is_not_flagged(self):
+        intake = ('- Snapshot: Jira at the end of 2026-09-06. I fetched the data on 2026-10-07.\n'
+                  '- Left out because they were made after 2026-09-06: **2 items**.\n'
+                  '  - LD-380: status QA -> Done (2026-09-16).\n'
+                  '  - LD-386: description edit (2026-09-16).\n'
+                  '- LD-386: I used the description as it stood before the 2026-09-16 edit.\n'
+                  '- Comment by Ann (2026-09-20): drop the lock.\n')
+        self.assertEqual([n for n, _ in run.dates_after(intake, '2026-09-06')], [6])
+
     def test_prose_fragments_are_not_terms(self):
         spec = ('Throws `UnexpectedValueException` (REQ-004`). Both ` and `in:` and '
                 '`for **newly generated** rows` and `) and continues to strip`, but '
