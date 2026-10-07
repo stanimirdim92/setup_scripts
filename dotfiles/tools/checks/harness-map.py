@@ -61,10 +61,11 @@ CSS = r"""
 /* Layout: a reference manual. A fixed index on the left, one column of
    sections on the right, each opening with a one-line summary, then a table. */
 :root{
-  --bg:#F6F7F9; --surface:#FFFFFF; --sunk:#EDF0F3; --ink:#111827; --ink-2:#4A5361; --ink-3:#717A87;
-  --line:#DCE1E7; --line-2:#C3CAD3;
-  --gate:#A9620B; --gate-bg:#FBF0DD; --write:#1F5FAE; --write-bg:#E3EDFA; --read:#5A6472;
-  --ok:#2F7A4F;
+  --bg:#F3F4FB; --surface:#FFFFFF; --sunk:#ECEEF8; --ink:#141729; --ink-2:#454B66; --ink-3:#656B8A;
+  --line:#DADDF0; --line-2:#BCC1E0;
+  --brand:#5534D1; --brand-bg:#EEEAFE;
+  --gate:#C2410C; --gate-bg:#FFEDD5; --write:#1D4ED8; --write-bg:#DBEAFE; --read:#0F766E; --read-bg:#CCFBF1;
+  --ok:#15803D;
   --display:"Archivo","Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
   --sans:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -72,16 +73,18 @@ CSS = r"""
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0E1116; --surface:#151A21; --sunk:#1C222B; --ink:#E8EBEF; --ink-2:#AAB2BD; --ink-3:#848D99;
-    --line:#262D37; --line-2:#36404C;
-    --gate:#E8A24A; --gate-bg:#33240F; --write:#7AAEF0; --write-bg:#172A42; --read:#9BA5B2; --ok:#6FBF8C;
+    --bg:#0C0E1A; --surface:#151829; --sunk:#1D2136; --ink:#ECEEFB; --ink-2:#B4B9D8; --ink-3:#8C92B3;
+    --line:#272C46; --line-2:#3A4062;
+    --brand:#A897FF; --brand-bg:#2A2259;
+    --gate:#FB923C; --gate-bg:#3D2211; --write:#82B1FF; --write-bg:#172B52; --read:#2DD4BF; --read-bg:#0E322E; --ok:#4ADE80;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0E1116; --surface:#151A21; --sunk:#1C222B; --ink:#E8EBEF; --ink-2:#AAB2BD; --ink-3:#848D99;
-  --line:#262D37; --line-2:#36404C;
-  --gate:#E8A24A; --gate-bg:#33240F; --write:#7AAEF0; --write-bg:#172A42; --read:#9BA5B2; --ok:#6FBF8C;
+  --bg:#0C0E1A; --surface:#151829; --sunk:#1D2136; --ink:#ECEEFB; --ink-2:#B4B9D8; --ink-3:#8C92B3;
+  --line:#272C46; --line-2:#3A4062;
+  --brand:#A897FF; --brand-bg:#2A2259;
+  --gate:#FB923C; --gate-bg:#3D2211; --write:#82B1FF; --write-bg:#172B52; --read:#2DD4BF; --read-bg:#0E322E; --ok:#4ADE80;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -98,7 +101,7 @@ h3{font-size:18px;font-weight:700}
 p{margin:0;max-width:70ch}
 code,.mono{font-family:var(--mono);font-size:0.88em}
 code{background:var(--sunk);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
-:focus-visible{outline:2px solid var(--write);outline-offset:2px;border-radius:2px}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:2px}
 .layout{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
 
 /* index */
@@ -106,22 +109,22 @@ nav.index{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-se
 nav.index .label{font-size:12.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
 nav.index a{text-decoration:none;color:var(--ink-2);padding:5px 10px;border-left:2px solid var(--line);display:flex;justify-content:space-between;gap:8px}
 nav.index a span{font-family:var(--mono);font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums}
-nav.index a:hover,nav.index a:focus-visible{color:var(--ink);border-left-color:var(--write);outline:none}
+nav.index a:hover,nav.index a:focus-visible{color:var(--brand);border-left-color:var(--brand);background:var(--brand-bg);outline:none}
 main{display:flex;flex-direction:column;gap:56px;min-width:0}
 
 /* header */
 header.top{display:flex;flex-direction:column;gap:10px;padding-bottom:24px;border-bottom:1px solid var(--line)}
-header.top .kicker{font-family:var(--mono);font-size:13.5px;color:var(--ink-3)}
+header.top .kicker{font-family:var(--mono);font-size:13.5px;color:var(--brand)}
 header.top p{color:var(--ink-2);font-size:18.5px}
 .counts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .count{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 14px;font-size:15px;color:var(--ink-2)}
-.count b{color:var(--ink);font-variant-numeric:tabular-nums;margin-right:4px}
+.count b{color:var(--brand);font-variant-numeric:tabular-nums;margin-right:4px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:15px;color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 
 /* sections */
 section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px;min-width:0}
-.sec-head{display:flex;flex-direction:column;gap:4px}
+.sec-head{display:flex;flex-direction:column;gap:4px;border-left:4px solid var(--brand);padding-left:14px}
 .sec-head .summary{color:var(--ink-2)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-width:0}
 .panel.pad{padding:18px 20px}
@@ -132,10 +135,11 @@ section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px;min-w
 /* badges */
 .badge{display:inline-block;font-size:13.5px;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
 .badge.write{color:var(--write);background:var(--write-bg)}
-.badge.read{color:var(--read);border-color:var(--line-2)}
+.badge.read{color:var(--read);background:var(--read-bg)}
+.badge.plain{color:var(--ink-2);border-color:var(--line-2)}
 .badge.gate{color:var(--gate);background:var(--gate-bg)}
 .badge.cond{color:var(--ink-3);border:1px dashed var(--line-2)}
-.persona-name{font-family:var(--mono);font-size:15px;white-space:nowrap}
+.persona-name{font-family:var(--mono);font-size:15px;white-space:nowrap;color:var(--read)}
 .persona-name.write{color:var(--write)}
 .who{display:flex;flex-wrap:wrap;gap:4px 12px}
 
@@ -143,14 +147,14 @@ section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px;min-w
 .tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line-2)}
 .tabs button{font:inherit;font-size:16px;font-weight:600;color:var(--ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:10px 16px;margin-bottom:-1px;cursor:pointer;border-radius:6px 6px 0 0}
 .tabs button:hover{color:var(--ink);background:var(--sunk)}
-.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--write)}
+.tabs button[aria-selected="true"]{color:var(--brand);border-bottom-color:var(--brand)}
 .tabs button span{font-family:var(--mono);font-size:13px;color:var(--ink-3);margin-right:6px}
 
 /* option 1: stage list */
 ol.stages{list-style:none;margin:0;padding:0}
 ol.stages > li{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,300px);gap:6px 20px;padding:14px 20px;border-top:1px solid var(--line);align-items:baseline}
 ol.stages > li:first-child{border-top:0}
-ol.stages .cmd{font-family:var(--mono);font-size:18px;font-weight:700}
+ol.stages .cmd{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--brand)}
 ol.stages .does{color:var(--ink-2);font-size:16px}
 ol.stages > li.cond{background:repeating-linear-gradient(135deg,transparent 0 10px,var(--sunk) 10px 11px)}
 ol.stages > li.gate{display:flex;gap:10px;align-items:center;padding:8px 20px;background:var(--gate-bg);color:var(--gate);font-weight:600;font-size:16px}
@@ -158,7 +162,7 @@ ol.stages > li.gate{display:flex;gap:10px;align-items:center;padding:8px 20px;ba
 
 /* option 2: strip */
 .strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:18px 20px}
-.strip .box{font-family:var(--mono);font-weight:700;font-size:16px;padding:8px 14px;border:1.5px solid var(--ink);border-radius:6px;background:var(--surface)}
+.strip .box{font-family:var(--mono);font-weight:700;font-size:16px;padding:8px 14px;border:1.5px solid var(--brand);border-radius:6px;background:var(--brand-bg);color:var(--brand)}
 .strip .box.cond{border-style:dashed;color:var(--ink-2)}
 .strip .sep{color:var(--ink-3)}
 .strip .diamond{margin-inline:2px}
@@ -168,12 +172,12 @@ figure.flow{margin:0;display:flex;flex-direction:column}
 .flow-scroll{overflow-x:auto;padding:12px}
 .flow-scroll svg{display:block;width:100%;min-width:760px;max-width:980px;height:auto}
 figure.flow figcaption{font-size:15px;color:var(--ink-2);padding:12px 20px 16px;border-top:1px solid var(--line)}
-.f-cmd{font-family:var(--mono);font-size:19px;font-weight:700;fill:var(--ink)}
+.f-cmd{font-family:var(--mono);font-size:19px;font-weight:700;fill:var(--brand)}
 .f-desc{font-family:var(--sans);font-size:15.5px;fill:var(--ink)}
 .f-who,.f-out{font-family:var(--mono);font-size:13.5px;fill:var(--ink-2)}
 .f-label{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--ink-3);letter-spacing:0.04em}
 .f-write{fill:var(--write);font-weight:700}
-.f-read{fill:var(--ink-2)}
+.f-read{fill:var(--read);font-weight:700}
 .f-note{font-family:var(--sans);font-size:13px;font-style:italic;fill:var(--ink-3)}
 .f-edge{stroke:var(--ink-2);stroke-width:1.6}
 .f-edge-label{font-family:var(--sans);font-size:13.5px;fill:var(--ink-3)}
@@ -185,14 +189,14 @@ ol.stages .leaves{display:block;font-family:var(--mono);font-size:13.5px;color:v
 table{border-collapse:collapse;width:100%;font-size:16px}
 th,td{text-align:left;vertical-align:top;padding:12px 16px;border-bottom:1px solid var(--line)}
 tr:last-child td{border-bottom:0}
-th{font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3);background:var(--sunk);border-bottom:1px solid var(--line)}
+th{font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--brand);background:var(--brand-bg);border-bottom:1px solid var(--line)}
 th:first-child{border-top-left-radius:8px}
 th:last-child{border-top-right-radius:8px}
 td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 td .sub{display:block;font-size:15px;color:var(--ink-2);margin-top:2px;max-width:60ch}
 td.cmdcell{font-family:var(--mono);font-size:14.5px;color:var(--ink-2)}
 td.nowrap{white-space:nowrap}
-td.group{font-weight:700;background:var(--bg);font-size:15.5px;color:var(--ink)}
+td.group{font-weight:700;background:var(--sunk);font-size:15.5px;color:var(--brand)}
 td.group span{font-weight:400;color:var(--ink-3);font-family:var(--mono);font-size:13.5px;margin-left:8px}
 .tested{color:var(--ok);font-family:var(--mono);font-size:14px}
 
@@ -501,7 +505,7 @@ def wrap(text, width):
 def pipeline_flow(cmds, writers):
     """The pipeline as an inline SVG flowchart: one box per stage, top to bottom,
     with what it does, who does it and what it leaves behind. Every arrow names
-    what passes along it; amber diamonds are the human decisions; /test is a
+    what passes along it; orange diamonds are the human decisions; /test is a
     dashed detour on the right. Themed through the page's CSS variables."""
     X, W, TX, TW = 24, 560, 640, 340          # main column, detour column
     PAD, LINE, SVGW = 20, 21, 1004
@@ -523,7 +527,7 @@ def pipeline_flow(cmds, writers):
         h = PAD + 24 + len(desc) * LINE + 8 + max(1, len(who_lines)) * LINE + LINE + PAD - 6
         fill = 'var(--sunk)' if dashed else 'var(--surface)'
         dash = ' stroke-dasharray="7 5"' if dashed else ''
-        stroke = 'var(--ink-3)' if dashed else 'var(--ink)'
+        stroke = 'var(--ink-3)' if dashed else 'var(--brand)'
         out.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="6" fill="{fill}" stroke="{stroke}" '
                    f'stroke-width="1.5"{dash}/>')
         ty = y + PAD + 16
@@ -608,7 +612,7 @@ def pipeline_flow(cmds, writers):
            'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker></defs>'
            + ''.join(out) + '</svg>')
     return ('<figure class="panel flow">' + '<div class="flow-scroll">' + svg + '</div>'
-            '<figcaption>Every arrow names what it carries. Nothing reaches the next stage past an amber diamond '
+            '<figcaption>Every arrow names what it carries. Nothing reaches the next stage past an orange diamond '
             'until you decide; /test runs only when /review requires it, and /ship then needs its VERIFY PASS.'
             '</figcaption></figure>')
 
@@ -755,10 +759,10 @@ def render():
     # Pipeline
     out.append('<section id="pipeline"><div class="sec-head"><h2>Pipeline</h2>'
                '<p class="summary">Commands run in this order. Personas never start other personas. '
-               'The amber rows are decisions only you make.</p></div>'
+               'The orange rows are decisions only you make.</p></div>'
                '<div class="legend"><span><i class="diamond"></i>you decide</span>'
                '<span><span class="persona-name write">blue</span> can change files</span>'
-               '<span><span class="persona-name">grey</span> read-only</span>'
+               '<span><span class="persona-name">teal</span> read-only</span>'
                '<span><span class="badge cond">dashed</span> only when needed</span></div>')
     views = {'list': ('1', 'Stage list', pipeline_list),
              'strip': ('2', 'Strip', pipeline_strip),
@@ -790,7 +794,7 @@ def render():
     for p in ordered:
         access = '<span class="badge write">writes</span>' if p['writer'] else '<span class="badge read">read-only</span>'
         if p['isolation']:
-            access += f' <span class="badge read">{e(p["isolation"])}</span>'
+            access += f' <span class="badge plain">{e(p["isolation"])}</span>'
         hooks_cell = '<br>'.join(e(s[:-3]) for _, s in p['hooks']) or '—'
         out.append(f'<tr><td>{persona_label(p["name"], writers)}<span class="sub">{e(first_sentence(p["description"], 140))}</span></td>'
                    f'<td>{access}</td><td class="cmdcell nowrap">{e(p["model"])}</td><td>{e(p["effort"] or "—")}</td>'
@@ -889,7 +893,7 @@ def render():
                'them, never a keyword match.</p></div><div class="panel tablewrap"><table><thead><tr>'
                '<th>Skill</th><th>Loading</th><th>What it is for</th></tr></thead><tbody>')
     for name, desc, is_explicit in sorted(skill_rows, key=lambda s: (not s[2], s[0])):
-        badge = '<span class="badge gate">explicit</span>' if is_explicit else '<span class="badge read">on match</span>'
+        badge = '<span class="badge gate">explicit</span>' if is_explicit else '<span class="badge plain">on match</span>'
         out.append(f'<tr><td class="cmdcell">{e(name)}</td><td>{badge}</td><td>{e(first_sentence(desc, 160))}</td></tr>')
     out.append('</tbody></table></div></section>')
 

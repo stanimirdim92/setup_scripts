@@ -10,10 +10,11 @@
 /* Layout: a reference manual. A fixed index on the left, one column of
    sections on the right, each opening with a one-line summary, then a table. */
 :root{
-  --bg:#F6F7F9; --surface:#FFFFFF; --sunk:#EDF0F3; --ink:#111827; --ink-2:#4A5361; --ink-3:#717A87;
-  --line:#DCE1E7; --line-2:#C3CAD3;
-  --gate:#A9620B; --gate-bg:#FBF0DD; --write:#1F5FAE; --write-bg:#E3EDFA; --read:#5A6472;
-  --ok:#2F7A4F;
+  --bg:#F3F4FB; --surface:#FFFFFF; --sunk:#ECEEF8; --ink:#141729; --ink-2:#454B66; --ink-3:#656B8A;
+  --line:#DADDF0; --line-2:#BCC1E0;
+  --brand:#5534D1; --brand-bg:#EEEAFE;
+  --gate:#C2410C; --gate-bg:#FFEDD5; --write:#1D4ED8; --write-bg:#DBEAFE; --read:#0F766E; --read-bg:#CCFBF1;
+  --ok:#15803D;
   --display:"Archivo","Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
   --sans:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -21,16 +22,18 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0E1116; --surface:#151A21; --sunk:#1C222B; --ink:#E8EBEF; --ink-2:#AAB2BD; --ink-3:#848D99;
-    --line:#262D37; --line-2:#36404C;
-    --gate:#E8A24A; --gate-bg:#33240F; --write:#7AAEF0; --write-bg:#172A42; --read:#9BA5B2; --ok:#6FBF8C;
+    --bg:#0C0E1A; --surface:#151829; --sunk:#1D2136; --ink:#ECEEFB; --ink-2:#B4B9D8; --ink-3:#8C92B3;
+    --line:#272C46; --line-2:#3A4062;
+    --brand:#A897FF; --brand-bg:#2A2259;
+    --gate:#FB923C; --gate-bg:#3D2211; --write:#82B1FF; --write-bg:#172B52; --read:#2DD4BF; --read-bg:#0E322E; --ok:#4ADE80;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0E1116; --surface:#151A21; --sunk:#1C222B; --ink:#E8EBEF; --ink-2:#AAB2BD; --ink-3:#848D99;
-  --line:#262D37; --line-2:#36404C;
-  --gate:#E8A24A; --gate-bg:#33240F; --write:#7AAEF0; --write-bg:#172A42; --read:#9BA5B2; --ok:#6FBF8C;
+  --bg:#0C0E1A; --surface:#151829; --sunk:#1D2136; --ink:#ECEEFB; --ink-2:#B4B9D8; --ink-3:#8C92B3;
+  --line:#272C46; --line-2:#3A4062;
+  --brand:#A897FF; --brand-bg:#2A2259;
+  --gate:#FB923C; --gate-bg:#3D2211; --write:#82B1FF; --write-bg:#172B52; --read:#2DD4BF; --read-bg:#0E322E; --ok:#4ADE80;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -47,7 +50,7 @@ h3{font-size:18px;font-weight:700}
 p{margin:0;max-width:70ch}
 code,.mono{font-family:var(--mono);font-size:0.88em}
 code{background:var(--sunk);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
-:focus-visible{outline:2px solid var(--write);outline-offset:2px;border-radius:2px}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:2px}
 .layout{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px}
 
 /* index */
@@ -55,22 +58,22 @@ nav.index{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-se
 nav.index .label{font-size:12.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
 nav.index a{text-decoration:none;color:var(--ink-2);padding:5px 10px;border-left:2px solid var(--line);display:flex;justify-content:space-between;gap:8px}
 nav.index a span{font-family:var(--mono);font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums}
-nav.index a:hover,nav.index a:focus-visible{color:var(--ink);border-left-color:var(--write);outline:none}
+nav.index a:hover,nav.index a:focus-visible{color:var(--brand);border-left-color:var(--brand);background:var(--brand-bg);outline:none}
 main{display:flex;flex-direction:column;gap:56px;min-width:0}
 
 /* header */
 header.top{display:flex;flex-direction:column;gap:10px;padding-bottom:24px;border-bottom:1px solid var(--line)}
-header.top .kicker{font-family:var(--mono);font-size:13.5px;color:var(--ink-3)}
+header.top .kicker{font-family:var(--mono);font-size:13.5px;color:var(--brand)}
 header.top p{color:var(--ink-2);font-size:18.5px}
 .counts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .count{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 14px;font-size:15px;color:var(--ink-2)}
-.count b{color:var(--ink);font-variant-numeric:tabular-nums;margin-right:4px}
+.count b{color:var(--brand);font-variant-numeric:tabular-nums;margin-right:4px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:15px;color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 
 /* sections */
 section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px;min-width:0}
-.sec-head{display:flex;flex-direction:column;gap:4px}
+.sec-head{display:flex;flex-direction:column;gap:4px;border-left:4px solid var(--brand);padding-left:14px}
 .sec-head .summary{color:var(--ink-2)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-width:0}
 .panel.pad{padding:18px 20px}
@@ -81,10 +84,11 @@ section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px;min-w
 /* badges */
 .badge{display:inline-block;font-size:13.5px;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
 .badge.write{color:var(--write);background:var(--write-bg)}
-.badge.read{color:var(--read);border-color:var(--line-2)}
+.badge.read{color:var(--read);background:var(--read-bg)}
+.badge.plain{color:var(--ink-2);border-color:var(--line-2)}
 .badge.gate{color:var(--gate);background:var(--gate-bg)}
 .badge.cond{color:var(--ink-3);border:1px dashed var(--line-2)}
-.persona-name{font-family:var(--mono);font-size:15px;white-space:nowrap}
+.persona-name{font-family:var(--mono);font-size:15px;white-space:nowrap;color:var(--read)}
 .persona-name.write{color:var(--write)}
 .who{display:flex;flex-wrap:wrap;gap:4px 12px}
 
@@ -92,14 +96,14 @@ section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px;min-w
 .tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line-2)}
 .tabs button{font:inherit;font-size:16px;font-weight:600;color:var(--ink-2);background:none;border:0;border-bottom:3px solid transparent;padding:10px 16px;margin-bottom:-1px;cursor:pointer;border-radius:6px 6px 0 0}
 .tabs button:hover{color:var(--ink);background:var(--sunk)}
-.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--write)}
+.tabs button[aria-selected="true"]{color:var(--brand);border-bottom-color:var(--brand)}
 .tabs button span{font-family:var(--mono);font-size:13px;color:var(--ink-3);margin-right:6px}
 
 /* option 1: stage list */
 ol.stages{list-style:none;margin:0;padding:0}
 ol.stages > li{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,300px);gap:6px 20px;padding:14px 20px;border-top:1px solid var(--line);align-items:baseline}
 ol.stages > li:first-child{border-top:0}
-ol.stages .cmd{font-family:var(--mono);font-size:18px;font-weight:700}
+ol.stages .cmd{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--brand)}
 ol.stages .does{color:var(--ink-2);font-size:16px}
 ol.stages > li.cond{background:repeating-linear-gradient(135deg,transparent 0 10px,var(--sunk) 10px 11px)}
 ol.stages > li.gate{display:flex;gap:10px;align-items:center;padding:8px 20px;background:var(--gate-bg);color:var(--gate);font-weight:600;font-size:16px}
@@ -107,7 +111,7 @@ ol.stages > li.gate{display:flex;gap:10px;align-items:center;padding:8px 20px;ba
 
 /* option 2: strip */
 .strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:18px 20px}
-.strip .box{font-family:var(--mono);font-weight:700;font-size:16px;padding:8px 14px;border:1.5px solid var(--ink);border-radius:6px;background:var(--surface)}
+.strip .box{font-family:var(--mono);font-weight:700;font-size:16px;padding:8px 14px;border:1.5px solid var(--brand);border-radius:6px;background:var(--brand-bg);color:var(--brand)}
 .strip .box.cond{border-style:dashed;color:var(--ink-2)}
 .strip .sep{color:var(--ink-3)}
 .strip .diamond{margin-inline:2px}
@@ -117,12 +121,12 @@ figure.flow{margin:0;display:flex;flex-direction:column}
 .flow-scroll{overflow-x:auto;padding:12px}
 .flow-scroll svg{display:block;width:100%;min-width:760px;max-width:980px;height:auto}
 figure.flow figcaption{font-size:15px;color:var(--ink-2);padding:12px 20px 16px;border-top:1px solid var(--line)}
-.f-cmd{font-family:var(--mono);font-size:19px;font-weight:700;fill:var(--ink)}
+.f-cmd{font-family:var(--mono);font-size:19px;font-weight:700;fill:var(--brand)}
 .f-desc{font-family:var(--sans);font-size:15.5px;fill:var(--ink)}
 .f-who,.f-out{font-family:var(--mono);font-size:13.5px;fill:var(--ink-2)}
 .f-label{font-family:var(--sans);font-size:13px;font-weight:700;fill:var(--ink-3);letter-spacing:0.04em}
 .f-write{fill:var(--write);font-weight:700}
-.f-read{fill:var(--ink-2)}
+.f-read{fill:var(--read);font-weight:700}
 .f-note{font-family:var(--sans);font-size:13px;font-style:italic;fill:var(--ink-3)}
 .f-edge{stroke:var(--ink-2);stroke-width:1.6}
 .f-edge-label{font-family:var(--sans);font-size:13.5px;fill:var(--ink-3)}
@@ -134,14 +138,14 @@ ol.stages .leaves{display:block;font-family:var(--mono);font-size:13.5px;color:v
 table{border-collapse:collapse;width:100%;font-size:16px}
 th,td{text-align:left;vertical-align:top;padding:12px 16px;border-bottom:1px solid var(--line)}
 tr:last-child td{border-bottom:0}
-th{font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-3);background:var(--sunk);border-bottom:1px solid var(--line)}
+th{font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--brand);background:var(--brand-bg);border-bottom:1px solid var(--line)}
 th:first-child{border-top-left-radius:8px}
 th:last-child{border-top-right-radius:8px}
 td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 td .sub{display:block;font-size:15px;color:var(--ink-2);margin-top:2px;max-width:60ch}
 td.cmdcell{font-family:var(--mono);font-size:14.5px;color:var(--ink-2)}
 td.nowrap{white-space:nowrap}
-td.group{font-weight:700;background:var(--bg);font-size:15.5px;color:var(--ink)}
+td.group{font-weight:700;background:var(--sunk);font-size:15.5px;color:var(--brand)}
 td.group span{font-weight:400;color:var(--ink-3);font-family:var(--mono);font-size:13.5px;margin-left:8px}
 .tested{color:var(--ok);font-family:var(--mono);font-size:14px}
 
@@ -176,7 +180,7 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>44</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>23</span></a><a href="#decisions">Decisions<span>83</span></a></nav>
 <main>
 <header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>44</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>23</b>self-tests</span><span class="count"><b>83</b>decisions</span></div></header>
-<section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The amber rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">grey</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
+<section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The orange rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">teal</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
 <div class="tabs" role="tablist" aria-label="Pipeline views">
 <button type="button" role="tab" id="tab-list" aria-controls="view-list" aria-selected="false" tabindex="-1" data-view="list"><span>1</span>Stage list</button>
 <button type="button" role="tab" id="tab-strip" aria-controls="view-strip" aria-selected="false" tabindex="-1" data-view="strip"><span>2</span>Strip</button>
@@ -184,12 +188,12 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 </div>
 <div role="tabpanel" id="view-list" aria-labelledby="tab-list" class="option" hidden><div class="panel"><ol class="stages"><li><span class="cmd">/spec</span><span class="does">Start spec-driven development — write a structured specification before writing code<span class="leaves">Leaves docs/specs/[TICKET]-SPEC.md, Status: Draft</span></span><span class="who"><span class="persona-name">repo-recon</span></span></li><li class="gate"><i class="diamond"></i>You decide: approve spec</li><li><span class="cmd">/plan</span><span class="does">Break approved requirements into ordered, verifiable implementation tasks<span class="leaves">Leaves docs/tasks/[TICKET]-plan.md + -todo.md</span></span><span class="who"><span class="note">the session itself</span></span></li><li class="gate"><i class="diamond"></i>You decide: approve plan</li><li><span class="cmd">/build</span><span class="does">Dispatch implementation for one or more planned tasks by workstream<span class="leaves">Leaves local commits, task Status: Done</span></span><span class="who"><span class="persona-name write">executor</span></span></li><li><span class="cmd">/review</span><span class="does">Conduct independent review and decide whether a separate VERIFY gate is required<span class="leaves">Leaves findings: BLOCKER / REQUIRED / ADVISORY</span></span><span class="who"><span class="persona-name">blind-reviewer</span><span class="persona-name">code-reviewer</span><span class="persona-name">distributed-systems-reviewer</span><span class="persona-name">security-auditor</span></span></li><li class="cond"><span class="cmd">/test</span><span class="does">Independently verify built work when risk or explicit request warrants a separate verifier <span class="badge cond">only when /review requires it</span><span class="leaves">Leaves VERIFY PASS / FAIL / BLOCKED</span></span><span class="who"><span class="persona-name write">test-engineer</span></span></li><li><span class="cmd">/ship</span><span class="does">Final release gate — synthesize review evidence into a GO/NO-GO decision with rollback<span class="leaves">Leaves GO / NO-GO with a rollback plan</span></span><span class="who"><span class="note">the session itself</span></span></li><li class="gate"><i class="diamond"></i>You decide: push / merge</li></ol></div></div>
 <div role="tabpanel" id="view-strip" aria-labelledby="tab-strip" class="option" hidden><div class="panel"><div class="strip"><span class="box">/spec</span><i class="diamond" title="approve spec"></i><span class="sep">→</span><span class="box">/plan</span><i class="diamond" title="approve plan"></i><span class="sep">→</span><span class="box">/build</span><span class="sep">→</span><span class="box">/review</span><span class="sep">→</span><span class="box cond">/test</span><span class="sep">→</span><span class="box">/ship</span><i class="diamond" title="push / merge"></i></div><div class="tablewrap"><table><thead><tr><th>Stage</th><th>Personas</th></tr></thead><tbody><tr><td class="cmdcell">/spec</td><td><div class="who"><span class="persona-name">repo-recon</span></div></td></tr><tr><td class="cmdcell">/plan</td><td><div class="who"><span class="note">—</span></div></td></tr><tr><td class="cmdcell">/build</td><td><div class="who"><span class="persona-name write">executor</span></div></td></tr><tr><td class="cmdcell">/review</td><td><div class="who"><span class="persona-name">blind-reviewer</span><span class="persona-name">code-reviewer</span><span class="persona-name">distributed-systems-reviewer</span><span class="persona-name">security-auditor</span></div></td></tr><tr><td class="cmdcell">/test</td><td><div class="who"><span class="persona-name write">test-engineer</span></div></td></tr><tr><td class="cmdcell">/ship</td><td><div class="who"><span class="note">—</span></div></td></tr></tbody></table></div></div></div>
-<div role="tabpanel" id="view-flow" aria-labelledby="tab-flow" class="option"><figure class="panel flow"><div class="flow-scroll"><svg viewBox="0 0 1004 1329" role="img" aria-label="The pipeline from /spec to /ship: each stage, who runs it and what it leaves behind, with the three human decisions and the conditional /test detour."><defs><marker id="f-arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker></defs><rect x="24" y="16" width="560" height="150" rx="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/><text x="44" y="52" class="f-cmd">/spec</text><text x="44" y="81" class="f-desc">Start spec-driven development — write a structured specification</text><text x="44" y="102" class="f-desc">before writing code</text><text x="44" y="131" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-read">repo-recon</tspan></text><text x="44" y="152" class="f-out"><tspan class="f-label">Leaves </tspan>docs/specs/[TICKET]-SPEC.md, Status: Draft</text><line x1="304.0" y1="166" x2="304.0" y2="198" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="188.0" class="f-edge-label">draft spec</text><rect x="291.0" y="202" width="26" height="26" fill="var(--gate-bg)" stroke="var(--gate)" stroke-width="2" transform="rotate(45 304.0 215)"/><text x="336.0" y="220" class="f-gate">You decide: approve spec</text><line x1="304.0" y1="230" x2="304.0" y2="262" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="252.0" class="f-edge-label">approved spec</text><rect x="24" y="264" width="560" height="150" rx="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/><text x="44" y="300" class="f-cmd">/plan</text><text x="44" y="329" class="f-desc">Break approved requirements into ordered, verifiable implementation</text><text x="44" y="350" class="f-desc">tasks</text><text x="44" y="379" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-read">the session itself</tspan></text><text x="44" y="400" class="f-out"><tspan class="f-label">Leaves </tspan>docs/tasks/[TICKET]-plan.md + -todo.md</text><line x1="304.0" y1="414" x2="304.0" y2="446" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="436.0" class="f-edge-label">draft plan</text><rect x="291.0" y="450" width="26" height="26" fill="var(--gate-bg)" stroke="var(--gate)" stroke-width="2" transform="rotate(45 304.0 463)"/><text x="336.0" y="468" class="f-gate">You decide: approve plan</text><line x1="304.0" y1="478" x2="304.0" y2="510" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="500.0" class="f-edge-label">approved plan</text><rect x="24" y="512" width="560" height="129" rx="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/><text x="44" y="548" class="f-cmd">/build</text><text x="44" y="577" class="f-desc">Dispatch implementation for one or more planned tasks by workstream</text><text x="44" y="606" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-write">executor</tspan></text><text x="44" y="627" class="f-out"><tspan class="f-label">Leaves </tspan>local commits, task Status: Done</text><line x1="304.0" y1="641" x2="304.0" y2="685" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="669.0" class="f-edge-label">candidate commits</text><rect x="24" y="687" width="560" height="171" rx="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/><text x="44" y="723" class="f-cmd">/review</text><text x="44" y="752" class="f-desc">Conduct independent review and decide whether a separate VERIFY gate</text><text x="44" y="773" class="f-desc">is required</text><text x="44" y="802" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-read">blind-reviewer</tspan>, <tspan class="f-read">code-reviewer</tspan>, <tspan class="f-read">distributed-systems-reviewer</tspan>, </text><text x="44" y="823" class="f-who"><tspan class="f-label">    </tspan><tspan class="f-read">security-auditor</tspan></text><text x="44" y="844" class="f-out"><tspan class="f-label">Leaves </tspan>findings: BLOCKER / REQUIRED / ADVISORY</text><rect x="640" y="888" width="340" height="171" rx="6" fill="var(--sunk)" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="7 5"/><text x="660" y="924" class="f-cmd">/test</text><text x="660" y="953" class="f-desc">Independently verify built work when</text><text x="660" y="974" class="f-desc">risk or explicit request warrants a</text><text x="660" y="995" class="f-desc">separate verifier</text><text x="660" y="1024" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-write">test-engineer</tspan></text><text x="660" y="1045" class="f-out"><tspan class="f-label">Leaves </tspan>VERIFY PASS / FAIL / BLOCKED</text><path d="M584,828 H810.0 V886" fill="none" class="f-edge" stroke-dasharray="6 5" marker-end="url(#f-arw)"/><text x="596" y="820" class="f-edge-label">if /review requires it</text><line x1="304.0" y1="858" x2="304.0" y2="1097" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="983.5" class="f-edge-label">findings and evidence</text><rect x="24" y="1099" width="560" height="150" rx="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.5"/><text x="44" y="1135" class="f-cmd">/ship</text><text x="44" y="1164" class="f-desc">Final release gate — synthesize review evidence into a GO/NO-GO</text><text x="44" y="1185" class="f-desc">decision with rollback</text><text x="44" y="1214" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-read">the session itself</tspan></text><text x="44" y="1235" class="f-out"><tspan class="f-label">Leaves </tspan>GO / NO-GO with a rollback plan</text><line x1="304.0" y1="1249" x2="304.0" y2="1281" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="1271.0" class="f-edge-label">GO and rollback plan</text><rect x="291.0" y="1285" width="26" height="26" fill="var(--gate-bg)" stroke="var(--gate)" stroke-width="2" transform="rotate(45 304.0 1298)"/><text x="336.0" y="1303" class="f-gate">You decide: push / merge</text><path d="M810.0,1059 V1133 H586" fill="none" class="f-edge" stroke-dasharray="6 5" marker-end="url(#f-arw)"/><text x="822.0" y="1101.0" class="f-edge-label">VERIFY PASS</text></svg></div><figcaption>Every arrow names what it carries. Nothing reaches the next stage past an amber diamond until you decide; /test runs only when /review requires it, and /ship then needs its VERIFY PASS.</figcaption></figure></div>
+<div role="tabpanel" id="view-flow" aria-labelledby="tab-flow" class="option"><figure class="panel flow"><div class="flow-scroll"><svg viewBox="0 0 1004 1329" role="img" aria-label="The pipeline from /spec to /ship: each stage, who runs it and what it leaves behind, with the three human decisions and the conditional /test detour."><defs><marker id="f-arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker></defs><rect x="24" y="16" width="560" height="150" rx="6" fill="var(--surface)" stroke="var(--brand)" stroke-width="1.5"/><text x="44" y="52" class="f-cmd">/spec</text><text x="44" y="81" class="f-desc">Start spec-driven development — write a structured specification</text><text x="44" y="102" class="f-desc">before writing code</text><text x="44" y="131" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-read">repo-recon</tspan></text><text x="44" y="152" class="f-out"><tspan class="f-label">Leaves </tspan>docs/specs/[TICKET]-SPEC.md, Status: Draft</text><line x1="304.0" y1="166" x2="304.0" y2="198" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="188.0" class="f-edge-label">draft spec</text><rect x="291.0" y="202" width="26" height="26" fill="var(--gate-bg)" stroke="var(--gate)" stroke-width="2" transform="rotate(45 304.0 215)"/><text x="336.0" y="220" class="f-gate">You decide: approve spec</text><line x1="304.0" y1="230" x2="304.0" y2="262" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="252.0" class="f-edge-label">approved spec</text><rect x="24" y="264" width="560" height="150" rx="6" fill="var(--surface)" stroke="var(--brand)" stroke-width="1.5"/><text x="44" y="300" class="f-cmd">/plan</text><text x="44" y="329" class="f-desc">Break approved requirements into ordered, verifiable implementation</text><text x="44" y="350" class="f-desc">tasks</text><text x="44" y="379" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-read">the session itself</tspan></text><text x="44" y="400" class="f-out"><tspan class="f-label">Leaves </tspan>docs/tasks/[TICKET]-plan.md + -todo.md</text><line x1="304.0" y1="414" x2="304.0" y2="446" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="436.0" class="f-edge-label">draft plan</text><rect x="291.0" y="450" width="26" height="26" fill="var(--gate-bg)" stroke="var(--gate)" stroke-width="2" transform="rotate(45 304.0 463)"/><text x="336.0" y="468" class="f-gate">You decide: approve plan</text><line x1="304.0" y1="478" x2="304.0" y2="510" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="500.0" class="f-edge-label">approved plan</text><rect x="24" y="512" width="560" height="129" rx="6" fill="var(--surface)" stroke="var(--brand)" stroke-width="1.5"/><text x="44" y="548" class="f-cmd">/build</text><text x="44" y="577" class="f-desc">Dispatch implementation for one or more planned tasks by workstream</text><text x="44" y="606" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-write">executor</tspan></text><text x="44" y="627" class="f-out"><tspan class="f-label">Leaves </tspan>local commits, task Status: Done</text><line x1="304.0" y1="641" x2="304.0" y2="685" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="669.0" class="f-edge-label">candidate commits</text><rect x="24" y="687" width="560" height="171" rx="6" fill="var(--surface)" stroke="var(--brand)" stroke-width="1.5"/><text x="44" y="723" class="f-cmd">/review</text><text x="44" y="752" class="f-desc">Conduct independent review and decide whether a separate VERIFY gate</text><text x="44" y="773" class="f-desc">is required</text><text x="44" y="802" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-read">blind-reviewer</tspan>, <tspan class="f-read">code-reviewer</tspan>, <tspan class="f-read">distributed-systems-reviewer</tspan>, </text><text x="44" y="823" class="f-who"><tspan class="f-label">    </tspan><tspan class="f-read">security-auditor</tspan></text><text x="44" y="844" class="f-out"><tspan class="f-label">Leaves </tspan>findings: BLOCKER / REQUIRED / ADVISORY</text><rect x="640" y="888" width="340" height="171" rx="6" fill="var(--sunk)" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="7 5"/><text x="660" y="924" class="f-cmd">/test</text><text x="660" y="953" class="f-desc">Independently verify built work when</text><text x="660" y="974" class="f-desc">risk or explicit request warrants a</text><text x="660" y="995" class="f-desc">separate verifier</text><text x="660" y="1024" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-write">test-engineer</tspan></text><text x="660" y="1045" class="f-out"><tspan class="f-label">Leaves </tspan>VERIFY PASS / FAIL / BLOCKED</text><path d="M584,828 H810.0 V886" fill="none" class="f-edge" stroke-dasharray="6 5" marker-end="url(#f-arw)"/><text x="596" y="820" class="f-edge-label">if /review requires it</text><line x1="304.0" y1="858" x2="304.0" y2="1097" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="983.5" class="f-edge-label">findings and evidence</text><rect x="24" y="1099" width="560" height="150" rx="6" fill="var(--surface)" stroke="var(--brand)" stroke-width="1.5"/><text x="44" y="1135" class="f-cmd">/ship</text><text x="44" y="1164" class="f-desc">Final release gate — synthesize review evidence into a GO/NO-GO</text><text x="44" y="1185" class="f-desc">decision with rollback</text><text x="44" y="1214" class="f-who"><tspan class="f-label">Who </tspan><tspan class="f-read">the session itself</tspan></text><text x="44" y="1235" class="f-out"><tspan class="f-label">Leaves </tspan>GO / NO-GO with a rollback plan</text><line x1="304.0" y1="1249" x2="304.0" y2="1281" class="f-edge" marker-end="url(#f-arw)"/><text x="316.0" y="1271.0" class="f-edge-label">GO and rollback plan</text><rect x="291.0" y="1285" width="26" height="26" fill="var(--gate-bg)" stroke="var(--gate)" stroke-width="2" transform="rotate(45 304.0 1298)"/><text x="336.0" y="1303" class="f-gate">You decide: push / merge</text><path d="M810.0,1059 V1133 H586" fill="none" class="f-edge" stroke-dasharray="6 5" marker-end="url(#f-arw)"/><text x="822.0" y="1101.0" class="f-edge-label">VERIFY PASS</text></svg></div><figcaption>Every arrow names what it carries. Nothing reaches the next stage past an orange diamond until you decide; /test runs only when /review requires it, and /ship then needs its VERIFY PASS.</figcaption></figure></div>
 <p class="note">Outside the pipeline: <code>/explain</code> — Render a built candidate as one HTML review page — requirement trace, touched modules, findings, rollback — from existing artifacts only.</p>
 </section>
 <section id="personas"><div class="sec-head"><h2>Personas</h2><p class="summary">7 personas; 2 can change files. Read-only is a tool grant, not an instruction.</p></div><div class="panel tablewrap"><table><thead><tr><th>Persona</th><th>Access</th><th>Model</th><th>Effort</th><th>Max turns</th><th>Started by</th><th>Hooks</th></tr></thead><tbody>
 <tr><td><span class="persona-name write">executor</span><span class="sub">Implements one planned task end-to-end and can be resumed for later tasks in the same workstream.</span></td><td><span class="badge write">writes</span></td><td class="cmdcell nowrap">claude-sonnet-5-5</td><td>—</td><td class="num">—</td><td class="cmdcell">/build</td><td class="cmdcell">block-agent-push<br>require-commit-trailers<br>require-handoff-report</td></tr>
-<tr><td><span class="persona-name write">test-engineer</span><span class="sub">Independent verifier for /test — checks a built candidate against its acceptance criteria and may add test-only changes.</span></td><td><span class="badge write">writes</span> <span class="badge read">worktree</span></td><td class="cmdcell nowrap">claude-sonnet-5-5</td><td>—</td><td class="num">—</td><td class="cmdcell">/test</td><td class="cmdcell">block-agent-push<br>require-commit-trailers<br>require-handoff-report</td></tr>
+<tr><td><span class="persona-name write">test-engineer</span><span class="sub">Independent verifier for /test — checks a built candidate against its acceptance criteria and may add test-only changes.</span></td><td><span class="badge write">writes</span> <span class="badge plain">worktree</span></td><td class="cmdcell nowrap">claude-sonnet-5-5</td><td>—</td><td class="num">—</td><td class="cmdcell">/test</td><td class="cmdcell">block-agent-push<br>require-commit-trailers<br>require-handoff-report</td></tr>
 <tr><td><span class="persona-name">blind-reviewer</span><span class="sub">Reviews a diff with no knowledge of what it was supposed to do — no spec, plan, acceptance criteria, goal, or build evidence.</span></td><td><span class="badge read">read-only</span></td><td class="cmdcell nowrap">opus[1m]</td><td>high</td><td class="num">100</td><td class="cmdcell">/review</td><td class="cmdcell">—</td></tr>
 <tr><td><span class="persona-name">code-reviewer</span><span class="sub">Senior code reviewer that evaluates changes across five dimensions — correctness, readability, architecture, security, and performance.</span></td><td><span class="badge read">read-only</span></td><td class="cmdcell nowrap">opus[1m]</td><td>high</td><td class="num">100</td><td class="cmdcell">/review</td><td class="cmdcell">—</td></tr>
 <tr><td><span class="persona-name">distributed-systems-reviewer</span><span class="sub">Reviews changes that materially alter retries, idempotency, ordering, delivery, concurrency, queue/job recovery, or other cross-process fai…</span></td><td><span class="badge read">read-only</span></td><td class="cmdcell nowrap">opus[1m]</td><td>high</td><td class="num">100</td><td class="cmdcell">/review</td><td class="cmdcell">—</td></tr>
@@ -295,20 +299,20 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">incremental-implementation</td><td><span class="badge gate">explicit</span></td><td>Delivers changes in small, verifiable increments.</td></tr>
 <tr><td class="cmdcell">planning-and-task-breakdown</td><td><span class="badge gate">explicit</span></td><td>Breaks an approved spec into ordered tasks.</td></tr>
 <tr><td class="cmdcell">spec-driven-development</td><td><span class="badge gate">explicit</span></td><td>Create or revise a specification for a feature, significant change, or bugfix before planning implementation.</td></tr>
-<tr><td class="cmdcell">adr-recording</td><td><span class="badge read">on match</span></td><td>Records a technical/architectural decision as one file in that project&#x27;s docs/adr/*.md, in the Decision/Rejected format this machine uses everywhere.</td></tr>
-<tr><td class="cmdcell">api-and-interface-design</td><td><span class="badge read">on match</span></td><td>Guides stable API and interface design.</td></tr>
-<tr><td class="cmdcell">browser-testing-with-devtools</td><td><span class="badge read">on match</span></td><td>Tests in real browsers via Chrome DevTools MCP.</td></tr>
-<tr><td class="cmdcell">c4-architecture</td><td><span class="badge read">on match</span></td><td>Generates a C4 model architecture workspace (Context and Container by default; Component, Deployment, and Dynamic views opt-in) for a codebase by inspecting it…</td></tr>
-<tr><td class="cmdcell">deprecation-and-migration</td><td><span class="badge read">on match</span></td><td>Manages deprecation and migration.</td></tr>
-<tr><td class="cmdcell">dotfiles-sync</td><td><span class="badge read">on match</span></td><td>How to add, edit, or relink files in this dotfiles/setup_scripts repo so dotfiles/tools/setup/link_dotfiles.sh and dotfiles/README.md&#x27;s synced-files list stay…</td></tr>
-<tr><td class="cmdcell">git-workflow-and-versioning</td><td><span class="badge read">on match</span></td><td>Git workflow safety and version-control discipline.</td></tr>
-<tr><td class="cmdcell">jira-ticket</td><td><span class="badge read">on match</span></td><td>Jira ticket intake only.</td></tr>
-<tr><td class="cmdcell">project-docs</td><td><span class="badge read">on match</span></td><td>Create or refresh repository documentation from the actual project.</td></tr>
-<tr><td class="cmdcell">security-and-hardening</td><td><span class="badge read">on match</span></td><td>Hardens code against vulnerabilities.</td></tr>
-<tr><td class="cmdcell">test-driven-development</td><td><span class="badge read">on match</span></td><td>Drives development with tests.</td></tr>
-<tr><td class="cmdcell">vercel-composition-patterns</td><td><span class="badge read">on match</span></td><td>React composition patterns that scale.</td></tr>
-<tr><td class="cmdcell">vite</td><td><span class="badge read">on match</span></td><td>Vite build tool configuration, plugin API, SSR, and Vite 8 Rolldown migration.</td></tr>
-<tr><td class="cmdcell">vitest</td><td><span class="badge read">on match</span></td><td>Vitest fast unit testing framework powered by Vite with Jest-compatible API.</td></tr>
+<tr><td class="cmdcell">adr-recording</td><td><span class="badge plain">on match</span></td><td>Records a technical/architectural decision as one file in that project&#x27;s docs/adr/*.md, in the Decision/Rejected format this machine uses everywhere.</td></tr>
+<tr><td class="cmdcell">api-and-interface-design</td><td><span class="badge plain">on match</span></td><td>Guides stable API and interface design.</td></tr>
+<tr><td class="cmdcell">browser-testing-with-devtools</td><td><span class="badge plain">on match</span></td><td>Tests in real browsers via Chrome DevTools MCP.</td></tr>
+<tr><td class="cmdcell">c4-architecture</td><td><span class="badge plain">on match</span></td><td>Generates a C4 model architecture workspace (Context and Container by default; Component, Deployment, and Dynamic views opt-in) for a codebase by inspecting it…</td></tr>
+<tr><td class="cmdcell">deprecation-and-migration</td><td><span class="badge plain">on match</span></td><td>Manages deprecation and migration.</td></tr>
+<tr><td class="cmdcell">dotfiles-sync</td><td><span class="badge plain">on match</span></td><td>How to add, edit, or relink files in this dotfiles/setup_scripts repo so dotfiles/tools/setup/link_dotfiles.sh and dotfiles/README.md&#x27;s synced-files list stay…</td></tr>
+<tr><td class="cmdcell">git-workflow-and-versioning</td><td><span class="badge plain">on match</span></td><td>Git workflow safety and version-control discipline.</td></tr>
+<tr><td class="cmdcell">jira-ticket</td><td><span class="badge plain">on match</span></td><td>Jira ticket intake only.</td></tr>
+<tr><td class="cmdcell">project-docs</td><td><span class="badge plain">on match</span></td><td>Create or refresh repository documentation from the actual project.</td></tr>
+<tr><td class="cmdcell">security-and-hardening</td><td><span class="badge plain">on match</span></td><td>Hardens code against vulnerabilities.</td></tr>
+<tr><td class="cmdcell">test-driven-development</td><td><span class="badge plain">on match</span></td><td>Drives development with tests.</td></tr>
+<tr><td class="cmdcell">vercel-composition-patterns</td><td><span class="badge plain">on match</span></td><td>React composition patterns that scale.</td></tr>
+<tr><td class="cmdcell">vite</td><td><span class="badge plain">on match</span></td><td>Vite build tool configuration, plugin API, SSR, and Vite 8 Rolldown migration.</td></tr>
+<tr><td class="cmdcell">vitest</td><td><span class="badge plain">on match</span></td><td>Vitest fast unit testing framework powered by Vite with Jest-compatible API.</td></tr>
 </tbody></table></div></section>
 <section id="references"><div class="sec-head"><h2>References</h2><p class="summary">15 references and 4 templates. Each rule is written once, here, and the commands point at it.</p></div><div class="panel tablewrap"><table><thead><tr><th>File</th><th>Title</th></tr></thead><tbody>
 <tr><td class="cmdcell">agent-run-metrics.md</td><td>Agent Run Metrics</td></tr>
