@@ -46,6 +46,12 @@ class Parsing(unittest.TestCase):
         self.assertIn(('routes/api.php', True), pr.planned_entries(PLAN))
         self.assertIn(('app/Billing/InvoiceTotals.php', False), pr.planned_entries(PLAN))
 
+    def test_every_path_on_a_bullet_counts(self):
+        text = ('**Files/areas likely touched:**\n- `lang/en/*.php`, `lang/de/*.php`\n'
+                '- `config/services.php` (new `google_places.key`)\n')
+        self.assertEqual([e for e, _ in pr.planned_entries(text)], ['lang/en/*.php', 'lang/de/*.php',
+                                                                   'config/services.php'])
+
     def test_field_ends_at_next_field(self):
         self.assertNotIn('rg -n "InvoiceTotals" app/ routes/ tests/', [e for e, _ in pr.planned_entries(PLAN)])
 

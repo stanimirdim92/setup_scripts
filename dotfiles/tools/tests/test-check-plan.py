@@ -114,6 +114,14 @@ class CheckPlan(unittest.TestCase):
         _, warn = run(todo=TODO.replace('**Requirements:** REQ-001', '**Requirements:** REQ-002', 1))
         self.assertTrue(any('T001: packet names REQ-002' in m for m in warn))
 
+    def test_shorthand_file_paths_warn(self):
+        todo = TODO.replace("- `app/Reminders.php`", "- `app/Http/Controllers/Api/`, `Http/Requests/`, `Data/`", 1)
+        _, warn = run(todo=todo)
+        self.assertTrue(any('`Http/Requests/` is shorthand' in m for m in warn))
+        self.assertTrue(any('`Data/` is shorthand' in m for m in warn))
+        _, warn = run(todo=TODO.replace("- `app/Reminders.php`", "- `lang/en/*.php`, `lang/de/*.php`", 1))
+        self.assertEqual(warn, [])
+
     def test_without_spec_or_todo_only_the_plan_is_checked(self):
         fail, warn = cp.check(PLAN, None, [])
         self.assertEqual((fail, warn), ([], []))

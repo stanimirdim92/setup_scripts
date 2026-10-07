@@ -54,7 +54,9 @@ references rather than copied documents]
 **Files/areas likely touched:** [For a task that changes a shared surface,
 every consumer and registration point the search below found
 (`../plan-quality-gates.md` §4); a location found but deliberately left alone is
-listed as `unchanged — <reason>`.]
+listed as `unchanged — <reason>`. One full repository path per bullet: plan
+coverage cannot resolve shorthand such as `Http/Requests/` or prose such as
+"and its interface".]
 - `src/path/to/file.ts`
 - `tests/path/to/test.ts`
 

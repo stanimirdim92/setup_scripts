@@ -21,8 +21,9 @@ Failures (exit 1):
     `**Acceptance criteria:**` or `**Verification:**`.
 
 Warnings: a packet without `**Files/areas likely touched:**` (plan coverage
-cannot score it), and a packet whose Requirements line names other ids than
-its index line.
+cannot score it), a Files path written as shorthand that drops the first
+path's root (`Http/Requests/` after `Modules/.../Api/`), and a packet whose
+Requirements line names other ids than its index line.
 
 Usage:
     check-plan.py docs/tasks/LD-123-plan.md --todo docs/tasks/LD-123-todo.md --spec docs/specs/LD-123-SPEC.md
@@ -57,6 +58,17 @@ def spec_requirements(text):
             reqs[m.group(1)] = 'withdrawn' in near
     return reqs
 
+
+def shorthand_paths(body):
+    """Paths on a Files bullet that drop the first path's root, like `Http/Requests/`
+    after `Modules/Advertisers/app/Http/Controllers/Api/`."""
+    files = re.search(r'\*\*Files/areas likely touched:\*\*(.*?)(?=\n\*\*[^*\n]+:\*\*|\n#|\Z)', body, re.S)
+    short = []
+    for bullet in re.findall(r'^\s*[-*]\s+(.*)$', files.group(1) if files else '', re.M):
+        paths = re.findall(r'`([^`]+)`', bullet)
+        root = paths[0].split('/')[0] if paths else ''
+        short += [p for p in paths[1:] if '/' in p and p.split('/')[0] != root]
+    return short
 
 def check(plan, spec=None, todos=()):
     """(failures, warnings), each a list of (file label, line, message)."""
@@ -128,6 +140,9 @@ def check(plan, spec=None, todos=()):
                 fail.append((label, line, f'{tid}: Status is {status.group(1)!r}, not Pending or Done'))
             if '**Files/areas likely touched:**' not in body:
                 warn.append((label, line, f'{tid}: no **Files/areas likely touched:**, so plan coverage cannot score it'))
+            for short in shorthand_paths(body):
+                warn.append((label, line, f'{tid}: `{short}` is shorthand; write the full repository path, '
+                                          'or plan coverage cannot match it'))
             req_line = re.search(r'\*\*Requirements:\*\*(.*)', body)
             if req_line and tid in tasks:
                 named = set(IDS.findall(req_line.group(1)))

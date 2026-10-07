@@ -40,6 +40,7 @@ from pathlib import Path
 FIELD = re.compile(r'^\*\*Files/areas likely touched:\*\*', re.IGNORECASE)
 NEXT_FIELD = re.compile(r'^(\*\*[^*]+:\*\*|#{1,6} )')
 BULLET_PATH = re.compile(r'^\s*[-*]\s+`([^`]+)`(.*)$')
+CODE = re.compile(r'`([^`]+)`')
 UNCHANGED = re.compile(r'unchanged', re.IGNORECASE)
 
 # Files a ticket changes that no task plans: the pipeline's own artifacts and
@@ -64,8 +65,13 @@ def planned_entries(text):
             continue
         match = BULLET_PATH.match(line)
         if match:
-            path = match.group(1).strip().removeprefix('./')
-            entries.append((path, bool(UNCHANGED.search(match.group(2)))))
+            # Every path on the bullet counts, not only the first:
+            # "- `lang/en/*.php`, `lang/de/*.php`" plans both. A later code span
+            # counts only when it holds a "/": `config_key` or `methodName` is prose.
+            unchanged = bool(UNCHANGED.search(match.group(2)))
+            later = [c for c in CODE.findall(match.group(2)) if '/' in c]
+            for path in [match.group(1)] + later:
+                entries.append((path.strip().removeprefix('./'), unchanged))
     return entries
 
 
