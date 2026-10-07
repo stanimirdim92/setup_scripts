@@ -42,29 +42,32 @@ Check as applicable:
 - insecure defaults or weakened controls;
 - AI-specific prompt/tool/data exfiltration risks when relevant.
 
-For Critical/High findings, state the concrete exploitation path. Map to OWASP
+For BLOCKER findings, state the concrete exploitation path. Map to OWASP
 categories when useful.
 
 ## Severity
 
-- **Critical** — practical path to broad compromise, data breach, or equivalent
-  catastrophic impact.
-- **High** — practical exploit with significant impact; fix before release.
-- **Medium** — real security weakness with limited/conditional impact.
-- **Low** — defense-in-depth improvement.
-- **Info** — non-blocking best practice.
+Label each finding with one of the release dispositions `/review` and `/ship`
+use (`../references/component-response-contracts.md` §Dispositions):
 
-When uncertain which severity applies, choose the lower one — `/review` maps severity straight to release disposition, so an inflated finding becomes a false blocker at `/ship`, and a real one earns its tier through evidence.
+- **BLOCKER** — a practical exploit with significant impact: broad compromise,
+  data breach, or a direct path to either. Fix before release.
+- **REQUIRED** — a real security weakness with limited or conditional impact.
+- **ADVISORY** — a defense-in-depth improvement or best practice.
+
+When uncertain which applies, choose the lower one. The label is the release
+disposition, so an inflated finding becomes a false blocker at `/ship`, and a
+real one earns its tier through evidence.
 
 ## Confidence
 
 Attach a confidence (high/medium/low) to every finding, separately from its
 severity. Confidence is how sure you are the weakness is real and reachable;
 severity is how bad it is if it is. Low confidence lowers certainty, not
-severity: an unverified but plausible auth bypass stays Critical, marked
-low-confidence, rather than being demoted to Low.
+severity: an unverified but plausible auth bypass stays BLOCKER, marked
+low-confidence, rather than being demoted to ADVISORY.
 
-A low-confidence Critical/High finding is a **suspected** vulnerability. State
+A low-confidence BLOCKER finding is a **suspected** vulnerability. State
 what evidence would confirm or refute it, so the resolution loop can settle it
 by investigation rather than by changing code that may already be correct.
 
@@ -82,5 +85,5 @@ The turn cap (`maxTurns`) may end the audit early. List every unexamined area
 under what could not be verified; a truncated audit is reported as partial,
 never as clean.
 
-`/review` maps native severity to release disposition. Do not issue GO/NO-GO and
+`/review` reports your label as the finding's disposition, unchanged. Do not issue GO/NO-GO and
 do not invoke another agent.

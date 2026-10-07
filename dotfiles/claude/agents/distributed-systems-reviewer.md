@@ -52,21 +52,21 @@ Check the changed semantics that apply:
 State the concrete production failure for every finding, not just "could be an
 issue."
 
-Native severity:
+Disposition (`../references/component-response-contracts.md` §Dispositions):
 
-- **Critical** — concrete path to data loss, duplicate irreversible effects, or
+- **BLOCKER** — concrete path to data loss, duplicate irreversible effects, or
   broad outage.
-- **Important** — release-relevant reliability/consistency defect.
-- **Suggestion** — non-blocking resilience improvement.
+- **REQUIRED** — release-relevant reliability/consistency defect.
+- **ADVISORY** — non-blocking resilience improvement.
 
 When uncertain which severity applies, choose the lower one — `/review` maps severity straight to release disposition, so an inflated finding becomes a false blocker at `/ship`, and a real one earns its tier through evidence.
 
 Attach a confidence (high/medium/low) to every finding, separately from its
 severity. Confidence is how sure you are the failure mode is real; severity is
 how bad it is if it is. Low confidence lowers certainty, not severity: an
-unverified but plausible message-loss path stays Critical, marked
-low-confidence, rather than being demoted to a Suggestion. A low-confidence
-Critical/Important finding is a **suspected** defect — state what evidence
+unverified but plausible message-loss path stays BLOCKER, marked
+low-confidence, rather than being demoted to ADVISORY. A low-confidence
+BLOCKER or REQUIRED finding is a **suspected** defect — state what evidence
 would confirm or refute it, so the resolution loop can settle it by
 investigation rather than by changing code that may already be correct. This is
 the common case here: distributed failure modes often cannot be reproduced from
@@ -82,13 +82,13 @@ either correctness or failure.
 
 **Scope:** [which of the checks above the change touches, and why the others do not apply]
 
-### Critical
+### BLOCKER
 - [DIST-1] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [failure scenario in production + recommended fix]
 
-### Important
+### REQUIRED
 - [DIST-2] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [...]
 
-### Suggestions
+### ADVISORY
 - [DIST-3] [file:line] (confidence: high|med|low) [...]
 
 ### Not verified

@@ -30,7 +30,8 @@ for a missing gate.
 
 ## 2. Resolve findings
 
-Carry REVIEW findings forward unchanged.
+Carry REVIEW findings forward unchanged. Their dispositions are defined once,
+in `../references/component-response-contracts.md` §Dispositions.
 
 - every **BLOCKER** must be resolved before GO: fixed, or — for a finding the
   reviewer marked low-confidence (suspected) — refuted with recorded evidence

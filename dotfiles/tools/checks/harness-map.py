@@ -641,7 +641,7 @@ CONVENTIONS = [
     ('Status words', 'Pending / Done', 'Task status in the todo; flipped to Done in the commit that finishes it', 'executor', 'references/templates/task.md', '**Status:** Pending'),
     ('Status words', 'BUILD COMPLETE / BUILD BLOCKED', 'The /build result', '/build', 'commands/build.md', 'BUILD COMPLETE'),
     ('Status words', 'VERIFY PASS / FAIL / BLOCKED', 'The /test result', '/test', 'commands/test.md', 'VERIFY BLOCKED'),
-    ('Status words', 'BLOCKER / REQUIRED / ADVISORY', 'How serious a review finding is', '/review', 'commands/review.md', 'ADVISORY'),
+    ('Status words', 'BLOCKER / REQUIRED / ADVISORY', 'How serious a review finding is: the reviewer sets it, /ship decides on it', 'reviewers', 'references/component-response-contracts.md', '#### Dispositions'),
     ('Status words', 'killed / survived', 'A mutation probe: a surviving mutant is a missing test', 'test-engineer', 'agents/test-engineer.md', 'has survived'),
     ('Status words', 'Weakened tests: none found / Not verified', 'The /review result of the weakened-test guard', '/review', 'commands/review.md', 'Weakened tests: none found'),
     ('Status words', 'GO / NO-GO / SHIP BLOCKED', 'The /ship decision', '/ship', 'commands/ship.md', 'SHIP BLOCKED'),

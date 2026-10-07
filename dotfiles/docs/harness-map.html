@@ -173,9 +173,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="layout">
-<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>44</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>21</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>23</span></a><a href="#decisions">Decisions<span>81</span></a></nav>
+<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>44</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>21</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>23</span></a><a href="#decisions">Decisions<span>82</span></a></nav>
 <main>
-<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>44</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>21</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>23</b>self-tests</span><span class="count"><b>81</b>decisions</span></div></header>
+<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>44</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>21</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>23</b>self-tests</span><span class="count"><b>82</b>decisions</span></div></header>
 <section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The amber rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">grey</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
 <div class="tabs" role="tablist" aria-label="Pipeline views">
 <button type="button" role="tab" id="tab-list" aria-controls="view-list" aria-selected="false" tabindex="-1" data-view="list"><span>1</span>Stage list</button>
@@ -242,7 +242,7 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">Pending / Done</td><td>Task status in the todo; flipped to Done in the commit that finishes it</td><td class="cmdcell">executor</td><td class="cmdcell">references/templates/task.md</td><td><span class="sub">Harness</span></td></tr>
 <tr><td class="cmdcell">BUILD COMPLETE / BUILD BLOCKED</td><td>The /build result</td><td class="cmdcell">/build</td><td class="cmdcell">commands/build.md</td><td><span class="sub">Harness</span></td></tr>
 <tr><td class="cmdcell">VERIFY PASS / FAIL / BLOCKED</td><td>The /test result</td><td class="cmdcell">/test</td><td class="cmdcell">commands/test.md</td><td><span class="sub">Harness</span></td></tr>
-<tr><td class="cmdcell">BLOCKER / REQUIRED / ADVISORY</td><td>How serious a review finding is</td><td class="cmdcell">/review</td><td class="cmdcell">commands/review.md</td><td><span class="sub">Harness</span></td></tr>
+<tr><td class="cmdcell">BLOCKER / REQUIRED / ADVISORY</td><td>How serious a review finding is: the reviewer sets it, /ship decides on it</td><td class="cmdcell">reviewers</td><td class="cmdcell">references/component-response-contracts.md</td><td><span class="sub">Harness</span></td></tr>
 <tr><td class="cmdcell">killed / survived</td><td>A mutation probe: a surviving mutant is a missing test</td><td class="cmdcell">test-engineer</td><td class="cmdcell">agents/test-engineer.md</td><td>Mutation testing</td></tr>
 <tr><td class="cmdcell">Weakened tests: none found / Not verified</td><td>The /review result of the weakened-test guard</td><td class="cmdcell">/review</td><td class="cmdcell">commands/review.md</td><td><span class="sub">Harness</span></td></tr>
 <tr><td class="cmdcell">GO / NO-GO / SHIP BLOCKED</td><td>The /ship decision</td><td class="cmdcell">/ship</td><td class="cmdcell">commands/ship.md</td><td><span class="sub">Harness</span></td></tr>
@@ -358,7 +358,8 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td><b>Batch spec runner</b><span class="sub">The batch spec runner&#x27;s decisions, with <code>claude</code> stubbed.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-batch-spec.sh</td></tr>
 <tr><td><b>Run metrics</b><span class="sub">Measurement: the transcript metrics&#x27; large-result section.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-run-metrics.sh</td></tr>
 </tbody></table></div></section>
-<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">81 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">82 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<tr><td class="cmdcell">0082</td><td>Reviewers label findings with the release dispositions</td></tr>
 <tr><td class="cmdcell">0081</td><td>Spec and plan checks, and a commit trailer hook</td></tr>
 <tr><td class="cmdcell">0080</td><td>Reviewer turn cap raised to 100</td></tr>
 <tr><td class="cmdcell">0079</td><td>Eval integrity and paired comparison</td></tr>
@@ -368,7 +369,6 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">0075</td><td>RFC 2119 keywords in requirements</td></tr>
 <tr><td class="cmdcell">0074</td><td>Review findings exported as SARIF</td></tr>
 <tr><td class="cmdcell">0073</td><td>Ticket trailers on commits</td></tr>
-<tr><td class="cmdcell">0072</td><td>Frontend skills: three vendored, Figma&#x27;s fetched</td></tr>
 </tbody></table></div></section>
 <footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. Do not edit by hand.</footer></main></div>
 <script>

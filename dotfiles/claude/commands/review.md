@@ -97,23 +97,10 @@ when the matched risk is both high-impact and materially ambiguous.
 
 ## 4. Report
 
-Preserve every reviewer's native severity and add the canonical disposition:
-
-| Source | Native severity | Disposition | SARIF level |
-|---|---|---|---|
-| `code-reviewer` | Critical | BLOCKER | `error` |
-|  | Important | REQUIRED | `warning` |
-|  | Suggestion | ADVISORY | `note` |
-| `blind-reviewer` | Critical | BLOCKER | `error` |
-|  | Important | REQUIRED | `warning` |
-|  | Suggestion | ADVISORY | `note` |
-|  | Intent-dependent | resolve here — see below | — |
-| `security-auditor` | Critical, High | BLOCKER | `error` |
-|  | Medium | REQUIRED | `warning` |
-|  | Low, Info | ADVISORY | `note` |
-| `distributed-systems-reviewer` | Critical | BLOCKER | `error` |
-|  | Important | REQUIRED | `warning` |
-|  | Suggestion | ADVISORY | `note` |
+Every finding carries the disposition its reviewer gave it: BLOCKER,
+REQUIRED or ADVISORY, as defined in
+`../references/component-response-contracts.md` §Dispositions. Report it
+unchanged; change one only with a stated reason.
 
 `blind-reviewer` also returns two things no other reviewer produces, and both
 are yours to resolve because you are the only participant holding the diff
@@ -121,18 +108,18 @@ are yours to resolve because you are the only participant holding the diff
 
 - **"What this change appears to do"** — its reading of the diff without the
   goal. Compare it against the actual goal. A material mismatch is a finding in
-  its own right at the severity the gap warrants: either the code does not do
+  its own right at the disposition the gap warrants: either the code does not do
   what was asked, or it does but says so badly enough that a careful reader
   cannot tell.
 - **Intent-dependent findings** — where correctness genuinely turns on
   information the reviewer was not given. Settle each against the acceptance
   criteria you hold: close it as answered, or promote it to its warranted
-  severity when the criteria confirm the defect. Never pass one through
+  disposition when the criteria confirm the defect. Never pass one through
   unresolved; an unresolved intent-dependent finding is work you skipped, not a
   finding you reported.
 
-Every finding keeps a stable id, source, native severity, confidence,
-disposition, file/location, and resolution state. Confidence travels with the
+Every finding keeps a stable id, source, disposition, confidence,
+file/location, and resolution state. Confidence travels with the
 finding so `/ship` can distinguish a confirmed BLOCKER (resolved only by a fix)
 from a suspected one (resolvable by a fix or by recorded refuting evidence).
 

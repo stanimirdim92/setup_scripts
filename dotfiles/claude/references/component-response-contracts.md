@@ -250,13 +250,13 @@ Analysis` template (Current Coverage / Recommended Tests / Priority).
 
 **Overview:** [1-2 sentences]
 
-### Critical Issues
+### BLOCKER
 - [CODE-1] [file:line] (confidence: high|med|low) [problem + fix]
 
-### Important Issues
+### REQUIRED
 - [CODE-2] ...
 
-### Suggestions
+### ADVISORY
 - [CODE-3] ...
 
 ### What's Done Well
@@ -266,7 +266,7 @@ Analysis` template (Current Coverage / Recommended Tests / Priority).
 - Tests reviewed / Build verified / Security checked / Not verified
 ```
 
-`REQUEST CHANGES` while any Critical or Important finding is unresolved,
+`REQUEST CHANGES` while any BLOCKER or REQUIRED finding is unresolved,
 `APPROVE` otherwise — a review recommendation, never a release verdict.
 
 ### `blind-reviewer`
@@ -276,13 +276,13 @@ Analysis` template (Current Coverage / Recommended Tests / Priority).
 
 **What this change appears to do:** [2-4 sentences, read from the diff alone]
 
-### Critical
+### BLOCKER
 - [BLIND-1] [file:line] (confidence: high|med|low) [...]
 
-### Important
+### REQUIRED
 - [BLIND-2] ...
 
-### Suggestions
+### ADVISORY
 - [BLIND-3] ...
 
 ### Intent-dependent
@@ -299,24 +299,20 @@ holds the diff and the actual intent together.
 
 ### `security-auditor`
 
-`SEC-N`, severity, confidence, file:line, attack path/failure mode, impact,
-specific remediation. Severity: **Critical** (broad compromise/breach) /
-**High** (significant, practical exploit) / **Medium** (limited/conditional) /
-**Low** (defense-in-depth) / **Info** (non-blocking). No GO/NO-GO, no dispatch
-of another agent.
+`SEC-N`, disposition (§Dispositions), confidence, file:line, attack
+path/failure mode, impact, specific remediation. No GO/NO-GO, no dispatch of
+another agent.
 
 ### `distributed-systems-reviewer`
 
-`DIST-N`, severity, confidence, file:line, failure scenario, recommendation.
-Severity: **Critical** (data loss, duplicate irreversible effects, broad
-outage) / **Important** (release-relevant reliability/consistency defect) /
-**Suggestion** (non-blocking). No fenced template — findings are reported
-inline in this shape.
+`DIST-N`, disposition (§Dispositions), confidence, file:line, failure
+scenario, recommendation. No fenced template — findings are reported inline in
+this shape.
 
 ### Shared conventions across all seven
 
-Confidence (`high`/`medium`/`low`) travels separately from severity — a
-low-confidence finding stays at its true severity, marked low-confidence,
+Confidence (`high`/`medium`/`low`) travels separately from the disposition — a
+low-confidence finding keeps its true disposition, marked low-confidence,
 rather than being downgraded. A `maxTurns` cap ending a run early is reported
 as a partial result with everything unexamined named explicitly; a truncated
 report is never presented as clean or complete. No persona issues GO/NO-GO,
@@ -396,23 +392,20 @@ production-code fix invalidates a prior VERIFY result.
 
 ### `/review` → disposition table + requirement evidence
 
-Every reviewer's native severity maps to one of three canonical dispositions:
+Every reviewer labels each finding with one of three dispositions. The
+label is set once, by the reviewer, and carried unchanged to `/ship`.
 
-| Source | Native severity | Disposition | SARIF level |
+#### Dispositions
+
+| Disposition | Means | `/ship` resolves it by | SARIF level |
 |---|---|---|---|
-| `code-reviewer` | Critical | BLOCKER | `error` |
-|  | Important | REQUIRED | `warning` |
-|  | Suggestion | ADVISORY | `note` |
-| `blind-reviewer` | Critical | BLOCKER | `error` |
-|  | Important | REQUIRED | `warning` |
-|  | Suggestion | ADVISORY | `note` |
-|  | Intent-dependent | resolved by `/review` itself | — |
-| `security-auditor` | Critical, High | BLOCKER | `error` |
-|  | Medium | REQUIRED | `warning` |
-|  | Low, Info | ADVISORY | `note` |
-| `distributed-systems-reviewer` | Critical | BLOCKER | `error` |
-|  | Important | REQUIRED | `warning` |
-|  | Suggestion | ADVISORY | `note` |
+| BLOCKER | Incorrect behavior, data loss, a security exposure, or a broken contract | a fix; a suspected (low-confidence) one also by recorded refuting evidence | `error` |
+| REQUIRED | A defect to fix before merge: an unhandled path, a missing test, a weak contract | a fix, refuting evidence, accepted risk, or a deferral with a reason | `warning` |
+| ADVISORY | An optional improvement | nothing; it never blocks | `note` |
+
+`blind-reviewer` also returns intent-dependent findings with no disposition
+yet; `/review` gives each one a disposition or closes it. This table is the
+only definition: personas, `/review` and `/ship` point here.
 
 Report includes: candidate branch/diff scope, BUILD candidate and any accepted
 post-BUILD test-only commits, **Independent verification: NOT REQUIRED \|
@@ -425,7 +418,7 @@ each finding so `/ship` can tell a confirmed BLOCKER from a suspected one.
 ### Review SARIF
 
 `/review` also writes its findings as SARIF 2.1.0 (OASIS). One run per
-reviewer; the disposition decides `level` through the table above:
+reviewer; the disposition decides `level` (§Dispositions):
 
 ```json
 {
@@ -440,9 +433,8 @@ reviewer; the disposition decides `level` through the table above:
       "locations": [{"physicalLocation": {
         "artifactLocation": {"uri": "app/Services/Feed.php"},
         "region": {"startLine": 42}}}],
-      "properties": {"nativeSeverity": "Critical", "disposition": "BLOCKER",
-                     "confidence": "high", "requirement": "REQ-003",
-                     "resolution": "open"}
+      "properties": {"disposition": "BLOCKER", "confidence": "high",
+                     "requirement": "REQ-003", "resolution": "open"}
     }]
   }]
 }

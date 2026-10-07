@@ -13,7 +13,7 @@ Multi-dimensional code review with quality gates. Every change gets reviewed bef
 
 **The approval standard:** Approve a change when it definitely improves overall code health, even if it isn't perfect. Perfect code doesn't exist — the goal is continuous improvement. Don't block a change because it isn't exactly how you would have written it. If it improves the codebase and follows the project's conventions, approve it.
 
-**The finding standard:** Finding and filtering are separate steps. At the finding stage, record every issue you discover, including ones you are uncertain about or consider low-severity — do not pre-filter for importance or confidence. It is better to surface a finding that gets labeled Suggestion (or declined by the author) than to silently drop a real bug. The only things you may omit entirely are pure style or naming preferences already enforced by a formatter or explicitly covered by the style guide. Severity labels, confidence, and ordering — not omission — are how the review stays readable.
+**The finding standard:** Finding and filtering are separate steps. At the finding stage, record every issue you discover, including ones you are uncertain about or consider low-severity — do not pre-filter for importance or confidence. It is better to surface a finding that gets labeled ADVISORY (or declined by the author) than to silently drop a real bug. The only things you may omit entirely are pure style or naming preferences already enforced by a formatter or explicitly covered by the style guide. Severity labels, confidence, and ordering — not omission — are how the review stays readable.
 
 ## Usage
 
@@ -210,16 +210,16 @@ optional:
 
 | Label | Meaning | Author Action |
 |-------|---------|---------------|
-| **Critical** | Blocks merge | Security vulnerability, data loss risk, broken functionality — must fix |
-| **Important** | Should fix before merge | Missing test, wrong abstraction, poor error handling |
-| **Suggestion** | Optional improvement | Naming, style, optional optimization — author may decline |
+| **BLOCKER** | Blocks merge | Security vulnerability, data loss risk, broken functionality — must fix |
+| **REQUIRED** | Should fix before merge | Missing test, wrong abstraction, poor error handling |
+| **ADVISORY** | Optional improvement | Naming, style, optional optimization — author may decline |
 
-Concrete labeling bar: label Critical or Important any finding that could
+Concrete labeling bar: label BLOCKER or REQUIRED any finding that could
 cause incorrect behavior, a test failure, a security exposure, data loss, or
 a misleading result for a future reader; everything else that survives the
-finding standard is a Suggestion. Low confidence lowers certainty, not
-severity — a low-confidence possible race condition is still Critical, marked
-low-confidence, not a Suggestion.
+finding standard is ADVISORY. Low confidence lowers certainty, not
+severity — a low-confidence possible race condition is still BLOCKER, marked
+low-confidence, not ADVISORY.
 
 When uncertain which severity applies, choose the lower one. A pipeline maps
 severity straight to release disposition, so an inflated finding becomes a false
@@ -228,7 +228,7 @@ severity, not the finding standard: still record the finding; just tier it
 conservatively. (Uncertain *whether* a defect exists is confidence, above, and
 never lowers severity.)
 
-A low-confidence Critical or Important finding is a **suspected** defect, not a
+A low-confidence BLOCKER or REQUIRED finding is a **suspected** defect, not a
 confirmed one: state what evidence would confirm or refute it (the input, the
 interleaving, the state) so the resolution step can settle it by investigation.
 Downstream, such a finding is resolved either by a fix or by recorded evidence
@@ -236,8 +236,8 @@ refuting its failure scenario — never by changing code that investigation show
 to be correct, and never by dropping it.
 
 **Structural smells** — for each of these, always record the finding and
-propose the simpler design; label it Suggestion by default, escalating to
-Important when the change actively makes structure worse than before:
+propose the simpler design; label it ADVISORY by default, escalating to
+REQUIRED when the change actively makes structure worse than before:
 
 - a refactor that relocates complexity instead of reducing it;
 - a change that pushes a file past the size boundary with no decomposition;
@@ -247,36 +247,30 @@ Important when the change actively makes structure worse than before:
 
 This prevents authors from treating all feedback as mandatory and wasting time on optional suggestions.
 
-Use exactly these three native labels. When the review participates in the SDLC
-pipeline, their canonical dispositions are:
-
-| Native label | Pipeline disposition |
-|--------------|----------------------|
-| Critical | BLOCKER |
-| Important | REQUIRED |
-| Suggestion | ADVISORY |
-
-Splitting optional work across more labels makes the blocking set ambiguous.
+Use exactly these three labels. They are also the release dispositions
+`/review` reports and `/ship` decides on, so a finding keeps one label from
+review to release. Splitting optional work across more labels makes the
+blocking set ambiguous.
 
 ### Output Contract
 
 Every finding includes a stable id (`CODE-1`, `CODE-2`, ...), native label,
 confidence (high/medium/low), file/location, evidence, and concrete
-recommendation. Critical and Important findings must explain the required
+recommendation. BLOCKER and REQUIRED findings must explain the required
 correction rather than merely naming a problem.
 
 Report:
 
 - review scope and one-line goal;
 - **Recommendation: APPROVE | REQUEST CHANGES**;
-- Critical issues;
-- Important issues;
-- Suggestions;
+- BLOCKER findings;
+- REQUIRED findings;
+- ADVISORY findings;
 - specific strengths worth preserving;
 - verification story: tests inspected or run, build evidence, manual/runtime
   checks, and anything not verified.
 
-Use **REQUEST CHANGES** while any Critical or Important finding is unresolved;
+Use **REQUEST CHANGES** while any BLOCKER or REQUIRED finding is unresolved;
 otherwise use **APPROVE**. This is a code-review recommendation, not a release
 verdict.
 
@@ -288,8 +282,8 @@ findings before `/ship`; do not also load this skill for the same review.
 severity section, order findings by leverage: correctness and security first,
 then structural regressions and missed simplifications, then everything else.
 The severity sections already keep a real issue from being buried under
-Suggestions; a structural problem leads its section, and the ten nits still
-appear — as Suggestions, after it.
+ADVISORY findings; a structural problem leads its section, and the ten nits still
+appear — as ADVISORY findings, after it.
 
 ### Step 5: Verify the Verification
 
@@ -456,8 +450,8 @@ owns the separate GO/NO-GO release verdict.
 After review is complete:
 
 - [ ] Every finding from Step 3 appears in the output with an id, label, and confidence — none were silently dropped
-- [ ] All Critical issues are resolved
-- [ ] All Important issues are resolved or deferred via a filed, self-assigned, linked ticket (inside the pipeline, `/ship`'s resolution rules apply)
+- [ ] All BLOCKER findings are resolved
+- [ ] All REQUIRED findings are resolved or deferred via a filed, self-assigned, linked ticket (inside the pipeline, `/ship`'s resolution rules apply)
 - [ ] Tests pass
 - [ ] Build succeeds
 - [ ] The verification story is documented (what changed, how it was verified)

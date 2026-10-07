@@ -28,15 +28,15 @@ ever disagree, the skill wins, and the fix belongs in the skill.
 Finding and filtering are separate steps. Record **every** issue you find,
 including ones you are uncertain about or consider low-severity — do not
 pre-filter for importance or confidence. It is better to surface a finding that
-gets labeled Suggestion (or declined) than to silently drop a real bug. The only
+gets labeled ADVISORY (or declined) than to silently drop a real bug. The only
 things you may omit entirely are pure style/naming preferences already enforced
 by a formatter or the project's style guide.
 
 Severity labels, a confidence level, and ordering — never omission — are how the
 review stays readable. Attach a confidence (high/medium/low) to each finding.
 Low confidence lowers certainty, not severity: a low-confidence possible race
-condition is still Critical, marked low-confidence, not downgraded to a
-Suggestion. A low-confidence Critical/Important finding is a **suspected**
+condition is still BLOCKER, marked low-confidence, not downgraded to
+ADVISORY. A low-confidence BLOCKER or REQUIRED finding is a **suspected**
 defect: state what evidence would confirm or refute it, so the resolution loop
 can settle it by investigation (fix, or refute with recorded evidence) rather
 than by changing code that may be correct.
@@ -117,28 +117,28 @@ Small, focused changes are easier to review and safer to deploy:
 
 ## Severity labels
 
-Use exactly these three (the skill defines the bar; `/review` maps them to
-release dispositions):
+Use exactly these three. They are the release dispositions `/review` reports
+and `/ship` decides on (`../references/component-response-contracts.md`
+§Dispositions); the skill defines the bar:
 
-**Critical** — blocks merge (security vulnerability, data loss risk, broken
+**BLOCKER** — blocks merge (security vulnerability, data loss risk, broken
 functionality).
 
-**Important** — should fix before merge (missing test, wrong abstraction, poor
+**REQUIRED** — should fix before merge (missing test, wrong abstraction, poor
 error handling).
 
-**Suggestion** — optional improvement (naming, style, optional optimization).
+**ADVISORY** — optional improvement (naming, style, optional optimization).
 
-Concrete bar: label Critical or Important any finding that could cause incorrect
+Concrete bar: label BLOCKER or REQUIRED any finding that could cause incorrect
 behavior, a test failure, a security exposure, data loss, or a misleading result
 for a future reader; everything else that survives the finding standard is a
-Suggestion.
+ADVISORY.
 
 When uncertain which severity applies, choose the lower one (the skill's
 severity bar owns the rule and its reason).
 
-Give every finding a stable id (`CODE-1`, `CODE-2`, ...). `/review` preserves
-your native severity and maps it to the canonical release disposition defined in
-the command.
+Give every finding a stable id (`CODE-1`, `CODE-2`, ...). `/review` reports
+your label as the finding's disposition, unchanged.
 
 ## Review Output Template
 
@@ -149,13 +149,13 @@ the command.
 
 **Overview:** [1-2 sentences: the change and overall assessment]
 
-### Critical Issues
+### BLOCKER
 - [CODE-1] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem + recommended fix]
 
-### Important Issues
+### REQUIRED
 - [CODE-2] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem + recommended fix]
 
-### Suggestions
+### ADVISORY
 - [CODE-3] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem]
 
 ### What's Done Well
@@ -171,7 +171,7 @@ the command.
 
 Order findings within each section by leverage (correctness/security first, then
 structural, then the rest) — by ordering, never by dropping. Use **REQUEST
-CHANGES** while any Critical or Important finding is unresolved; otherwise
+CHANGES** while any BLOCKER or REQUIRED finding is unresolved; otherwise
 **APPROVE**. This is a review recommendation, not a release verdict.
 
 ## Rules
@@ -183,8 +183,8 @@ CHANGES** while any Critical or Important finding is unresolved; otherwise
    for the spec or task description rather than reviewing without it.
 3. Record every finding; never drop one to keep the list short (finding standard
    above).
-4. Every Critical and Important finding includes a specific fix recommendation.
-5. Don't approve code with Critical issues.
+4. Every BLOCKER and REQUIRED finding includes a specific fix recommendation.
+5. Don't approve code with BLOCKER findings.
 6. Acknowledge what's done well — specific praise motivates good practices.
 7. If uncertain about something, record it with low confidence and suggest
    investigation rather than guessing or omitting it.

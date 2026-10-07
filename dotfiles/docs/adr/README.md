@@ -40,7 +40,7 @@ that explanation here, just the index.
 | [0030](0030-ship-accessibility-axis-dropped.md) | `/ship`'s accessibility axis dropped rather than improvised | Accepted |
 | [0031](0031-parallel-executors-via-worktree-isolation.md) | Parallel executors enabled via worktree isolation, superseding 0003 | Partially superseded by [0042](0042-third-executor-as-conditional-exception.md) (conditional third executor) and [0054](0054-executor-concurrency-condition-gated-not-capped.md) (cap removed; worktree isolation shown not to cover runtime state) |
 | [0032](0032-unblock-triage-persona-removed.md) | `unblock-triage` persona removed; blocked-item triage belongs to each gate | Accepted |
-| [0033](0033-canonical-disposition-and-scoped-commit-authority.md) | Canonical release disposition, scoped commit authority, gate-state integrity | Clarified by [0038](0038-verify-pass-test-only-candidate-identity.md); local tags allowed and push hook-denied by [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md) |
+| [0033](0033-canonical-disposition-and-scoped-commit-authority.md) | Canonical release disposition, scoped commit authority, gate-state integrity | Clarified by [0038](0038-verify-pass-test-only-candidate-identity.md); local tags allowed and push hook-denied by [0055](0055-multi-agent-enforcement-and-parallel-when-safe.md); reviewers label with the dispositions directly per [0082](0082-reviewers-label-with-dispositions.md) |
 | [0034](0034-spec-driven-development-narrowed-to-define.md) | `spec-driven-development` narrowed to the DEFINE stage | Accepted |
 | [0035](0035-independent-verify-made-risk-triggered.md) | Independent VERIFY made risk-triggered; `/review` owns the decision | Clarified by [0038](0038-verify-pass-test-only-candidate-identity.md) |
 | [0036](0036-specialist-reviewers-to-sonnet-and-narrowed-triggers.md) | Specialist reviewers to Sonnet/medium with narrowed triggers | Partially superseded by [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md) (tier reversed to Opus/xhigh; narrowed triggers and reference loading stand) |
@@ -89,6 +89,7 @@ that explanation here, just the index.
 | [0079](0079-eval-integrity-and-paired-comparison.md) | Eval integrity and paired comparison | Accepted |
 | [0080](0080-reviewer-turn-cap-raised-to-100.md) | Reviewer turn cap raised to 100 | Accepted |
 | [0081](0081-spec-plan-checks-and-trailer-hook.md) | Spec and plan checks, and a commit trailer hook | Accepted |
+| [0082](0082-reviewers-label-with-dispositions.md) | Reviewers label findings with the release dispositions | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

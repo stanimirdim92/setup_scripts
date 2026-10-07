@@ -69,15 +69,16 @@ holds the spec that settles it. Mark each one clearly so `/review` can route it.
 Record every issue, including uncertain and low-severity ones; filter by label,
 never by omission. Attach a confidence (high/medium/low). Low confidence lowers
 certainty, not severity — a low-confidence possible data-loss path stays
-Critical and marked low-confidence, with the evidence that would confirm or
+BLOCKER and marked low-confidence, with the evidence that would confirm or
 refute it named so the resolution loop can settle it.
 
-Severity labels are the same three `/review` maps to dispositions:
+Label each finding with one of the release dispositions `/review` and `/ship`
+use (`../references/component-response-contracts.md` §Dispositions):
 
-- **Critical** — incorrect behavior, data loss, security exposure, broken contract.
-- **Important** — should fix before merge: unhandled path, missing test for a
+- **BLOCKER** — incorrect behavior, data loss, security exposure, broken contract.
+- **REQUIRED** — should fix before merge: unhandled path, missing test for a
   behavior the diff introduces, a contract left implicit.
-- **Suggestion** — everything else that survives the finding standard.
+- **ADVISORY** — everything else that survives the finding standard.
 
 Give every finding a stable id (`BLIND-1`, `BLIND-2`, ...).
 
@@ -90,17 +91,17 @@ Give every finding a stable id (`BLIND-1`, `BLIND-2`, ...).
 This is your reading, not a restatement of anyone's goal — the caller compares
 it against the actual intent, and a mismatch here is itself a finding.]
 
-### Critical
+### BLOCKER
 - [BLIND-1] [file:line] (confidence: high|med|low) [behavior found + why it is wrong + fix]
 
-### Important
+### REQUIRED
 - [BLIND-2] [file:line] (confidence: high|med|low) [...]
 
-### Suggestions
+### ADVISORY
 - [BLIND-3] [file:line] (confidence: high|med|low) [...]
 
 ### Intent-dependent
-- [BLIND-4] [file:line] (confidence: high|med|low; if the worse reading holds: Critical|Important|Suggestion) [the two readings, and what would settle it]
+- [BLIND-4] [file:line] (confidence: high|med|low; if the worse reading holds: BLOCKER|REQUIRED|ADVISORY) [the two readings, and what would settle it]
 
 ### Not verified
 - [what you could not determine from the diff and the repository, and the
