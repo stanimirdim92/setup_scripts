@@ -93,7 +93,7 @@ if [ -n "$ROW_TICKET" ]; then
     def human: if . >= 1000000 then "\((. / 10000 | round) / 100)M"
                elif . >= 1000 then "\(. / 1000 | round)k" else tostring end;
     [ .[] | select(inwin) ] as $w
-    | ([ $w[] | select(.message.usage) | .message.usage ]) as $u
+    | ([ $w[] | select(.message.usage) ] | to_entries | map(.value + {k: (.value.message.id // .value.requestId // "rec\(.key)")}) | group_by(.k) | map(max_by(.message.usage.output_tokens // 0) | .message.usage)) as $u
     | ([ $w[] | select(.type=="assistant" and main and (.message.content|type=="array"))
          | .message.content[] | select(.type=="tool_use" and (.name=="Agent" or .name=="Task"))
          | (.input.subagent_type // .input.agent_type // "") ] ) as $agents
@@ -136,7 +136,8 @@ fi
 echo
 
 # Parallel tool calls are written as SEPARATE assistant records sharing one
-# requestId. Counting per record reports mean 1.0 and zero batching regardless
+# requestId, and each record repeats the whole reply's usage. Token totals
+# therefore count one usage per reply (message.id), never one per record. Counting per record reports mean 1.0 and zero batching regardless
 # of what actually happened, so every batching figure below groups by requestId.
 jq -rs --arg since "$SINCE" --arg until "$UNTIL" '
   def inwin: (($since == "") or (.timestamp >= $since))
@@ -156,7 +157,7 @@ jq -rs --arg since "$SINCE" --arg until "$UNTIL" '
   [ .[] | select(.type=="assistant" and .requestId and .message.content) | select(inwin)
     | {r:.requestId, side:(.isSidechain//false),
        n:(.message.content|if type=="array" then map(select(.type=="tool_use"))|length else 0 end)} ] as $all
-  | [ .[] | select(.message.usage) | select(inwin) | .message.usage ] as $u
+  | ([ .[] | select(.message.usage) | select(inwin) ] | to_entries | map(.value + {k: (.value.message.id // .value.requestId // "rec\(.key)")}) | group_by(.k) | map(max_by(.message.usage.output_tokens // 0) | .message.usage)) as $u
 
   | "TOOL BATCHING - main session", batching([$all[]|select(.side|not)]),
     "", "TOOL BATCHING - subagents", batching([$all[]|select(.side)]),

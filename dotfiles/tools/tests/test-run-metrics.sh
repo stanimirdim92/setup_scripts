@@ -106,7 +106,7 @@ check bad_threshold_msg     '--large-lines needs a whole number' "$(run --large-
 
 # --row: one observation-log row; measured columns filled, the rest FILL.
 OUT="$(run --row LD-412 /spec "$T")"
-check row_shape     '| 2026-09-13 | LD-412 | `/spec` | No | FILL: subagent reports (capped?) | n/a | 25 out · 0 cache read | FILL: /cost | 2 |' "$OUT"
+check row_shape     '| 2026-09-13 | LD-412 | `/spec` | No | FILL: subagent reports (capped?) | n/a | 20 out · 0 cache read | FILL: /cost | 2 |' "$OUT"
 check_absent row_only 'TOOL BATCHING' "$OUT"
 OUT="$(run --row LD-412 /spec --until 2026-09-13T10:04:00Z "$T")"
 check row_window    '| 1 |' "$OUT"
@@ -183,8 +183,20 @@ mkdir -p "$TMP/main/subagents"
 OUT="$(run "$M")"
 check subagent_files   'subagents  : 1 transcript(s)' "$OUT"
 check subagent_batch   'largest batch  : 2' "$OUT"
-check subagent_tokens  'output         : 15' "$OUT"
+check subagent_tokens  'output         : 10' "$OUT"   # one usage per reply, not per record
 check subagent_main    'tool results   : 1  (Agent 1)' "$OUT"
+
+# Each content block of one reply is its own record and repeats the reply's
+# usage; the totals count it once.
+D="$TMP/dup.jsonl"
+for b in text tool tool; do
+  jq -nc --arg b "$b" '{type:"assistant",timestamp:"2026-09-18T09:00:00Z",requestId:"d1",
+    message:{id:"msg_1",role:"assistant",content:[{type:"text",text:$b}],
+             usage:{input_tokens:3,output_tokens:400,cache_read_input_tokens:90000}}}'
+done > "$D"
+OUT="$(run "$D")"
+check usage_once_out   'output         : 400' "$OUT"
+check usage_once_cache 'cache read     : 90000' "$OUT"
 
 # The project folder: every non-alphanumeric character of the cwd becomes "-",
 # the "." of .claude/worktrees included.
