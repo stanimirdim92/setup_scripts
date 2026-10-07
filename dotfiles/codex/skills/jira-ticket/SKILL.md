@@ -7,4 +7,4 @@ Resolve this file's symlink before opening the relative links below.
 
 Read [Codex workflow conventions](../../references/workflow-runtime.md), then
 follow the shared [Jira intake skill](../../../claude/skills/jira-ticket/SKILL.md).
-Finish intake and report `$spec` as the next action. Do not invoke it.
+Finish intake and report `$spec`, in a new session, as the next action. Do not invoke it.

@@ -9,4 +9,4 @@ Read [Codex workflow conventions](../../references/workflow-runtime.md), then
 follow the shared [spec command](../../../claude/commands/spec.md) and its
 required [specification skill](../../../claude/skills/spec-driven-development/SKILL.md).
 Use the user's prompt as the command argument. Finish at the spec approval and
-handoff boundary; report `$plan` as the next stage without invoking it.
+handoff boundary; report `$plan` as the next stage, in a new session, without invoking it.

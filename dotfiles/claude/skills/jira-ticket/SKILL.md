@@ -6,9 +6,11 @@ model: opus[1m]
 
 # Jira Ticket — Intake Only
 
-Fetch and restate the ticket, return the summary below with `/spec` as the next
-action, then stop. Intake does not inspect the repository, perform recon,
-propose architecture, plan, implement, test, review, modify files, execute
+Fetch and restate the ticket, save the summary below to
+`docs/specs/<TICKET>-intake.md`, return it with `/spec` as the next action, then
+stop. That file is the only one intake writes. Intake does not inspect the
+repository, perform recon, propose architecture, plan, implement, test, review,
+modify other files, execute
 implementation commands, commit, push, open a PR, or update Jira. It does not
 invoke `/spec` or another pipeline stage.
 
@@ -153,10 +155,13 @@ exist; do not invent relationships or fill unknown fields with guesses.
 - ...
 - None. <!-- if no true blocker exists -->
 
-**Next action:** `/spec`
+**Next action:** `/clear`, then `/spec <TICKET>`
 
 The summary is `/spec`'s handoff payload: reuse the collected Jira information
-rather than requiring `/spec` to refetch it.
+rather than requiring `/spec` to refetch it. Save it to
+`docs/specs/<TICKET>-intake.md` with the fetch date, so `/spec` can start in a
+fresh context. Every request re-reads the whole context, so raw Jira payloads
+left in it are paid for on each `/spec` turn (ADR 0084).
 
 For implementation or fixes, the expected pipeline is `/jira-ticket` → `/spec`
 → `/plan` → `/build` → `/review` → `/ship`, with `/test` between `/build` and

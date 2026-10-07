@@ -221,14 +221,14 @@ than overwriting it. New specs use the selected template's Draft header.
 ### Handoff after specification
 
 Save and present the spec, then stop for human approval. Approval completes
-this stage; the user invokes `/plan` separately. Spec and plan may share a
-session, while `/build` may start fresh after plan approval; each stage must
-also work without the previous conversation.
+this stage; the user invokes `/plan` separately, after `/clear` (ADR 0084).
+Each stage starts in a fresh context and works from the previous stage's
+committed file, not the conversation.
 
 The saved spec owns requirements and sources, accepted material decisions,
 constraints, preserved behavior, and the relevant repository/verification
-pointers. Reuse current recon in the same session, but put conclusions needed
-by planning into the spec rather than relying on a chat-only report. Link
+pointers. Put every recon conclusion planning needs into the spec: `/plan`
+starts fresh and does not see the recon report. Link
 source evidence instead of copying transcripts or creating another handoff file.
 The plan and task packets own the later implementation handoff.
 

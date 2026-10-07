@@ -91,6 +91,7 @@ that explanation here, just the index.
 | [0081](0081-spec-plan-checks-and-trailer-hook.md) | Spec and plan checks, and a commit trailer hook | Accepted |
 | [0082](0082-reviewers-label-with-dispositions.md) | Reviewers label findings with the release dispositions | Accepted |
 | [0083](0083-tdd-skill-back-in-the-executor.md) | The TDD skill is back in the executor | Accepted |
+| [0084](0084-each-stage-starts-in-a-fresh-context.md) | Each pipeline stage starts in a fresh context | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

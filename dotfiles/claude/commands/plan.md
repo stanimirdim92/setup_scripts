@@ -58,5 +58,6 @@ packet missing Status, Requirements, Acceptance criteria or Verification. Report
 plan status, remaining blockers, and handoff state.
 
 Only explicit human approval permits Approved and Ready for /build. After
-approval, stop. `/plan` authorizes planning only; it does not implement or invoke
+approval, stop and recommend `/clear` before `/build`, which resumes from the
+plan and task packets (ADR 0084). `/plan` authorizes planning only; it does not implement or invoke
 `/build`, `/test`, `/review`, or `/ship`.

@@ -13,7 +13,8 @@ material information still missing. Do not repeat a questionnaire or ask the
 user to supply facts the repository establishes.
 
 For ticket-backed work, accept Jira intake only when its complete output is in
-the current conversation or the user manually supplies it in this conversation.
+the current conversation, in `docs/specs/<TICKET>-intake.md`, or the user
+manually supplies it in this conversation.
 If it is absent, incomplete, or stale for the requested scope, refetch the main
 ticket and every discovered ticket/subticket by following `jira-ticket` §§1–3,
 including its source-coverage and blocker rules, before repository recon or
@@ -61,6 +62,8 @@ reads mechanically is missing: a `Source:` line, a scenario's THEN, an RFC 2119
 keyword. Read each warning and fix the ones that are slips. Report the result.
 
 Report the spec's path, status, and remaining blockers. `/spec` ends
-here; it does not invoke `/plan` or implementation. After approval, the user
-may invoke `/plan` in this session or a new one. Preserve the durable handoff
-described by the skill so either works without the conversation transcript.
+here; it does not invoke `/plan` or implementation. After approval and commit,
+recommend `/clear` before `/plan`: `/plan` reads the committed spec, and a fresh
+context stops every planning request from re-reading this stage's conversation
+(ADR 0084). Preserve the durable handoff described by the skill so `/plan`
+works without the conversation transcript.
