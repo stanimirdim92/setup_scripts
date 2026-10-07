@@ -44,6 +44,16 @@ class RepoProject(unittest.TestCase):
         self.assertFalse((self.project / 'Shipped.php').exists())
         self.assertFalse((self.project / 'docs/specs/LD-2-SPEC.md').exists())
 
+    def test_export_ignore_paths_are_kept(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / 'app'
+            (repo / 'tests').mkdir(parents=True)
+            (repo / 'tests/Pest.php').write_text('<?php\n')
+            (repo / '.gitattributes').write_text('/tests export-ignore\n')
+            git(repo, 'init', '-q'); git(repo, 'add', '-A'); git(repo, 'commit', '-qm', 'base')
+            project = run.build_project(Path(tmp) / 'project', repo, 'HEAD')
+            self.assertTrue((project / 'tests/Pest.php').is_file())
+
     def test_no_history_reaches_the_run(self):
         self.assertEqual(git(self.project, 'rev-list', '--count', 'HEAD'), '1')
         self.assertNotIn('shipped', git(self.project, 'log', '--all', '--format=%s'))
@@ -211,6 +221,7 @@ class EvaluatorIntegrity(unittest.TestCase):
         for term, text in cases.items():
             self.assertRegex(text, run.term_pattern(term), term)
         self.assertNotRegex('the row exists today', run.term_pattern('exists()'))
+        self.assertRegex('the `findDeletedMatch` path', run.term_pattern('findDeletedMatch()'))
         self.assertNotRegex('a services layer', run.term_pattern('Modules/Core/app/Services'))
 
     def test_prose_fragments_are_not_terms(self):

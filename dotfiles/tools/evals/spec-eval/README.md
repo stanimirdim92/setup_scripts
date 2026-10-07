@@ -71,7 +71,8 @@ The run lists every item gained and lost, and ends with one verdict:
 | WORSE | a `must` item the baseline met is now missed | 1 |
 
 One run per side is noisy: a term can flip between two runs of the same
-harness. Read each lost item before you blame the change. Run each side twice
+harness. Two LD-380 runs of one harness (2026-10-07) scored 23/35 and 26/35,
+with 5 terms flipped. Read each lost item before you blame the change. Run each side twice
 when the verdict decides a change you care about.
 
 To make a finding permanent, edit `fixtures/LD-441/expectations.json`: change
@@ -88,8 +89,10 @@ python3 run.py --fixture LD-441 --repo ~/code/leadbuster   # repo-backed: the pr
 
 A fixture with a `"repo": {"at": "<commit>"}` block runs against the project
 as it was at that commit. `--repo` names the checkout; `--at` overrides the
-commit. The files are exported with `git archive`: no `.git`, no history, so
-the run can see neither the shipped implementation nor the final spec.
+commit. The files are checked out through a throwaway git index: no `.git`,
+no history, so the run can see neither the shipped implementation nor the
+final spec. `git archive` is not used, because it drops `export-ignore` paths
+such as `tests/`.
 Gitignored files are absent, which `/spec` does not need. The project keeps its
 own `.claude/` and `CLAUDE.md`; the harness is added beside them.
 `test_produce.py` covers the layout and runs in CI.

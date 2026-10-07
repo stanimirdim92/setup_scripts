@@ -30,6 +30,7 @@ you re-judge yesterday's spec under today's expectations.
 """
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -112,15 +113,19 @@ def build_project(project, repo=None, at=None):
 
     Without a repository: an empty project, so the fixture measures what the
     spec does with the tickets alone. With one: the files of `repo` at commit
-    `at`, exported with `git archive` -- no `.git`, no history, so the run can
-    see neither the shipped implementation nor the final spec. Gitignored files
-    (`.env`, `vendor/`) are absent; specification needs none of them.
+    `at`, checked out through a throwaway index -- no `.git`, no history, so the
+    run can see neither the shipped implementation nor the final spec. Not
+    `git archive`: it drops `export-ignore` paths, and a project that keeps
+    `tests/` out of its release archives would look like it has no tests.
+    Gitignored files (`.env`, `vendor/`) are absent; specification needs none.
     """
     project.mkdir(parents=True)
     if repo:
-        archive = subprocess.run(['git', '-C', str(repo), 'archive', '--format=tar', at],
-                                 check=True, capture_output=True)
-        subprocess.run(['tar', '-x', '-C', str(project)], input=archive.stdout, check=True)
+        env = {**os.environ, 'GIT_INDEX_FILE': str(project.parent / 'export.index')}
+        subprocess.run(['git', '-C', str(repo), 'read-tree', at], env=env, check=True, capture_output=True)
+        subprocess.run(['git', '-C', str(repo), 'checkout-index', '-a', f'--prefix={project.resolve()}/'],
+                       env=env, check=True, capture_output=True)
+        Path(env['GIT_INDEX_FILE']).unlink()
     else:
         # No application source on purpose: a stand-in repository would measure
         # the stand-in. Expectations assert the spec says so rather than inventing.
@@ -180,6 +185,8 @@ def produce(fixture, fixture_dir, budget, repo=None, at=None):
             ['claude', '-p', prompt, '--setting-sources', 'project,local',
              '--add-dir', str(HARNESS), '--permission-mode', 'acceptEdits',
              '--allowedTools', 'Read', 'Glob', 'Grep', 'Write', 'Edit', 'Task', 'Agent', 'TodoWrite', 'Skill',
+             # /spec runs its shape check before presenting (commands/spec.md).
+             'Bash(python3 *check-spec.py*)',
              '--max-budget-usd', str(budget), '--output-format', 'json'],
             cwd=project, capture_output=True, text=True, timeout=1800)
         if result.returncode != 0:
@@ -247,9 +254,10 @@ def term_pattern(term):
     """A regex that finds `term` in the forms a spec writes it: `X::y` for
     `X::y()`, `Mail` for `App\\Mail`, `RequestModal` for `RequestModal.tsx`,
     `/v1/x` for `POST /v1/x`, and `BaseAI` for `Core/Services/AI/BaseAI`.
-    A bare call like `exists()` stays exact: `exists` is an English word."""
+    A bare call like `exists()` stays exact: `exists` is an English word;
+    `findDeletedMatch()` does not, so `findDeletedMatch` counts."""
     forms = [term]
-    if term.endswith('()') and '::' in term:
+    if term.endswith('()') and ('::' in term or re.search(r'[a-z][A-Z_]|_', term[:-2])):
         forms.append(term[:-2])
     method = re.match(r'^(GET|POST|PUT|PATCH|DELETE)\s+(/\S+)$', term)
     if method:
