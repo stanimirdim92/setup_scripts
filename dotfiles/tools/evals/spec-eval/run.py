@@ -299,7 +299,8 @@ def fetch_intake(ticket, jira, repo, budget, as_of=None):
     cutoff = (f' Report the tickets as they stood at the end of {as_of}: leave out every comment, '
               f'status change, link and description edit made after {as_of}, and say in Source '
               'Coverage how many items you left out for that reason.') if as_of else ''
-    prompt = (f'Use the jira-ticket skill on {jira or ticket}.{cutoff} Reply with only its complete intake '
+    prompt = (f'Use the jira-ticket skill on {jira or ticket}.{cutoff} Do not save the intake file: '
+              'this run freezes the intake itself. Reply with only its complete intake '
               'summary, exactly as the skill formats it, and nothing else.')
     result = subprocess.run(['claude', '-p', prompt, '--allowedTools', 'Skill', 'Read', 'mcp__jira',
                              '--max-budget-usd', str(budget), '--output-format', 'json'],
