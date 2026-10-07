@@ -156,6 +156,45 @@ check signals_repeat   '3x  yarn test' "$OUT"
 OUT="$(run "$T")"
 check signals_clean    'errored tool results : 0' "$OUT"
 
+# Sandbox failures are not guard denials: a bwrap error is the command sandbox
+# failing, and the same command works when rerun outside it.
+B="$TMP/sandbox.jsonl"
+{
+  call 2026-09-16T08:00:00Z false b1 X1 Bash '{"command":"sleep 1"}'
+  err  2026-09-16T08:00:01Z false X1 "bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted"
+} > "$B"
+OUT="$(run "$B")"
+check sandbox_counted  'sandbox failures     : 1' "$OUT"
+check sandbox_not_deny 'denials / blocks     : 0' "$OUT"
+
+# Subagent transcripts live in <session>/subagents/, beside the main one.
+M="$TMP/main.jsonl"
+mkdir -p "$TMP/main/subagents"
+{
+  call   2026-09-17T09:00:00Z false m1 M1 Agent '{"subagent_type":"repo-recon","prompt":"survey"}'
+  result 2026-09-17T09:05:00Z false M1 "survey done"
+} > "$M"
+{
+  call   2026-09-17T09:01:00Z true sa1 S1 Read '{"file_path":"/w/a.ts"}'
+  call   2026-09-17T09:01:00Z true sa1 S2 Read '{"file_path":"/w/b.ts"}'
+  result 2026-09-17T09:01:01Z true S1 "a"
+  result 2026-09-17T09:01:01Z true S2 "b"
+} > "$TMP/main/subagents/agent-x.jsonl"
+OUT="$(run "$M")"
+check subagent_files   'subagents  : 1 transcript(s)' "$OUT"
+check subagent_batch   'largest batch  : 2' "$OUT"
+check subagent_tokens  'output         : 15' "$OUT"
+check subagent_main    'tool results   : 1  (Agent 1)' "$OUT"
+
+# The project folder: every non-alphanumeric character of the cwd becomes "-",
+# the "." of .claude/worktrees included.
+W="$TMP/repo/.claude/worktrees/LD-1_x"
+mkdir -p "$W" "$TMP/projects/$(printf '%s' "$W" | sed 's|[^A-Za-z0-9]|-|g')"
+cp "$M" "$TMP/projects/$(printf '%s' "$W" | sed 's|[^A-Za-z0-9]|-|g')/s.jsonl"
+OUT="$(cd "$W" && CLAUDE_PROJECTS_DIR="$TMP/projects" bash "$SCRIPT" 2>&1)"
+check slug_dot         'subagents  : 0 transcript(s)' "$OUT"
+check_absent slug_dot_found 'no transcripts at' "$OUT"
+
 echo "run-metrics: $PASS passed, $FAIL failed"
 if [ "$FAIL" -gt 0 ]; then
   printf '\n'; for f in "${FAILED[@]}"; do echo "  FAIL $f"; done; exit 1

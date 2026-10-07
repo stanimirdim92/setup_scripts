@@ -15,6 +15,7 @@
 #   dotfiles/tools/run/run-metrics.sh --row LD-412 /build --since ... --until ...
 #                                             # one dotfiles/docs/observation-log.md row
 #
+# Subagent transcripts (<session>/subagents/*.jsonl) are read with the main one.
 # Scope one BUILD by passing --since (the /build invocation) and --until
 # (BUILD COMPLETE); without them the whole session is reported.
 # Transcript timestamps are UTC - convert from local time before comparing.
@@ -25,8 +26,9 @@ command -v jq >/dev/null || { echo "run-metrics: jq is required" >&2; exit 1; }
 PROJECTS="${CLAUDE_PROJECTS_DIR:-$HOME/.claude/projects}"
 SINCE="" ; UNTIL="" ; FILE="" ; LIST=0 ; LARGE=350 ; ROW_TICKET="" ; ROW_STAGE=""
 
-# Claude Code's project-dir slug replaces both "/" and "_" with "-".
-slug() { printf '%s' "$PWD" | sed 's|[/_]|-|g'; }
+# Claude Code's project-dir slug replaces every character that is not a letter
+# or digit with "-" ("/", "_" and the "." of a .claude/worktrees checkout alike).
+slug() { printf '%s' "$PWD" | sed 's|[^A-Za-z0-9]|-|g'; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -35,7 +37,7 @@ while [ $# -gt 0 ]; do
     --large-lines) LARGE="${2:?--large-lines needs a number}"; shift 2 ;;
     --list)  LIST=1; shift ;;
     --row)   ROW_TICKET="${2:?--row needs TICKET STAGE}"; ROW_STAGE="${3:?--row needs TICKET STAGE}"; shift 3 ;;
-    -h|--help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "run-metrics: unknown option $1" >&2; exit 1 ;;
     *)  FILE="$1"; shift ;;
   esac
@@ -67,6 +69,14 @@ if [ -z "$FILE" ]; then
   [ -n "$FILE" ] || { echo "run-metrics: no .jsonl transcripts in $DIR" >&2; exit 1; }
 fi
 [ -r "$FILE" ] || { echo "run-metrics: cannot read $FILE" >&2; exit 1; }
+
+# Subagent turns are written to <session>/subagents/agent-*.jsonl, next to the
+# main transcript, with isSidechain set. Read them with it, or every subagent
+# figure is empty and the token totals cover the main session only.
+FILES=("$FILE")
+for f in "${FILE%.jsonl}"/subagents/*.jsonl; do
+  [ -r "$f" ] && FILES+=("$f")
+done
 
 SPAN_FIRST=$(head -400 "$FILE" | jq -rs '[.[]|select(.timestamp)|.timestamp]|first // empty' 2>/dev/null || true)
 SPAN_LAST=$(tail -400  "$FILE" | jq -rs '[.[]|select(.timestamp)|.timestamp]|last  // empty' 2>/dev/null || true)
@@ -101,11 +111,12 @@ if [ -n "$ROW_TICKET" ]; then
       + (if $stage == "/build" then "FILL: BUILD report" else "n/a" end)
       + " | \($u | map(.output_tokens // 0) | add // 0 | human) out · \($u | map(.cache_read_input_tokens // 0) | add // 0 | human) cache read"
       + " | FILL: /cost | \($over) |"
-  ' "$FILE"
+  ' "${FILES[@]}"
   exit 0
 fi
 
 echo "transcript : $FILE"
+echo "subagents  : $(( ${#FILES[@]} - 1 )) transcript(s)"
 echo "spans (UTC): ${SPAN_FIRST:-?} .. ${SPAN_LAST:-?}"
 [ -n "$SINCE$UNTIL" ] && echo "window     : ${SINCE:-start} .. ${UNTIL:-end}"
 
@@ -155,7 +166,7 @@ jq -rs --arg since "$SINCE" --arg until "$UNTIL" '
     "  output         : \($u|map(.output_tokens//0)|add // 0)",
     "  cache read     : \($u|map(.cache_read_input_tokens//0)|add // 0)",
     "  cache creation : \($u|map(.cache_creation_input_tokens//0)|add // 0)"
-' "$FILE"
+' "${FILES[@]}"
 
 echo
 echo "TOP SOLO-CALL TOOLS (issued alone in their request - batching candidates)"
@@ -168,7 +179,7 @@ jq -rs --arg since "$SINCE" --arg until "$UNTIL" '
   | map(select(.n==1)) | group_by(.tool)
   | map({tool:.[0].tool, solo:length}) | sort_by(-.solo) | .[:6][]
   | "  \(.tool): \(.solo)"
-' "$FILE"
+' "${FILES[@]}"
 
 # A tool result is the text that actually entered the context, so its size is
 # measured from the transcript, not from the file on disk (which may have
@@ -203,7 +214,7 @@ jq -rs --arg since "$SINCE" --arg until "$UNTIL" --argjson large "$LARGE" '
         ($res | sort_by(-.lines) | .[:5][]
           | "  \(.lines | rpad(6)) lines  \(.t | .[0:6] | lpad(6))  \(.target)")
     end
-' "$FILE"
+' "${FILES[@]}"
 
 # Failure signals: the things a failure row in dotfiles/docs/observation-log.md is made
 # of, pulled from the transcript instead of noticed by eye. Main session and
@@ -224,7 +235,9 @@ jq -rs --arg since "$SINCE" --arg until "$UNTIL" '
   | [ $w[] | select(.type=="user" and (.message.content|type=="array"))
       | .message.content[] | select(.type=="tool_result" and .is_error == true)
       | {t: ($uses[.tool_use_id].t // "?"), target: ($uses[.tool_use_id].target // ""), c: (.content | text)} ] as $err
-  | [ $err[] | select(.c | test("denied|refus|not permitted|blocked|outside (the )?(allowed|working)"; "i")) ] as $deny
+  | [ $err[] | select(.c | test("bwrap|sandbox"; "i")) ] as $sandbox
+  | [ $err[] | select(.c | test("bwrap|sandbox"; "i") | not)
+             | select(.c | test("denied|refus|not permitted|blocked|outside (the )?(allowed|working)"; "i")) ] as $deny
   | ([ $w[] | (.message.content? // .content? // "") | text | select(test("Handoff report incomplete")) ] | length) as $handoff
   | ([ $w[] | select(.type=="user" and (.message.content|type=="array")) | .message.content[]
        | select(.type=="tool_result") | (.content | text)
@@ -235,11 +248,12 @@ jq -rs --arg since "$SINCE" --arg until "$UNTIL" '
   | "  errored tool results : \($err|length)" + (if ($err|length) > 0 then "  (\($err | group_by(.t) | map("\(.[0].t) \(length)") | join(" · ")))" else "" end),
     "  denials / blocks     : \($deny|length)",
     ( $deny[:5][] | "    \(.t | .[0:6])  \(.target)" ),
+    "  sandbox failures     : \($sandbox|length)  (the command sandbox failed, not a guard: rerun outside it)",
     "  handoff-gate blocks  : \($handoff)",
     "  turn-cap mentions    : \($capped)",
     "  repeated commands    : \($repeats|length)  (same Bash command 3+ times: a blind-retry signal)",
     ( $repeats[:5][] | "    \(.n)x  \(.cmd)" )
-' "$FILE"
+' "${FILES[@]}"
 
 cat <<'NOTE'
 
