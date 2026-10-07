@@ -200,6 +200,19 @@ class EvaluatorIntegrity(unittest.TestCase):
                   '- Comment by Ann (2026-09-20): drop the lock.\n')
         self.assertEqual([n for n, _ in run.dates_after(intake, '2026-09-06')], [6])
 
+    def test_reference_terms_match_the_forms_a_spec_writes(self):
+        cases = {
+            'BaseAI::googlePlace()': 'calls `BaseAI::googlePlace` once',
+            'Modules\\Advertisers\\Jobs\\FillAdvertiserDataFromAI': 'dispatch `FillAdvertiserDataFromAI`',
+            'RequestAdvertiserModal.tsx': 'the `RequestAdvertiserModal` stays',
+            'POST /v1/advertiser-request': '`POST /api/v1/advertiser-request` stays',
+            'Modules/Core/app/Services/AI/BaseAI': 'through `BaseAI`',
+        }
+        for term, text in cases.items():
+            self.assertRegex(text, run.term_pattern(term), term)
+        self.assertNotRegex('the row exists today', run.term_pattern('exists()'))
+        self.assertNotRegex('a services layer', run.term_pattern('Modules/Core/app/Services'))
+
     def test_prose_fragments_are_not_terms(self):
         spec = ('Throws `UnexpectedValueException` (REQ-004`). Both ` and `in:` and '
                 '`for **newly generated** rows` and `) and continues to strip`, but '

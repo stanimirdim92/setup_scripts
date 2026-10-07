@@ -243,6 +243,24 @@ def reference_terms(spec, limit=40):
     return ranked[:limit]
 
 
+def term_pattern(term):
+    """A regex that finds `term` in the forms a spec writes it: `X::y` for
+    `X::y()`, `Mail` for `App\\Mail`, `RequestModal` for `RequestModal.tsx`,
+    `/v1/x` for `POST /v1/x`, and `BaseAI` for `Core/Services/AI/BaseAI`.
+    A bare call like `exists()` stays exact: `exists` is an English word."""
+    forms = [term]
+    if term.endswith('()') and '::' in term:
+        forms.append(term[:-2])
+    method = re.match(r'^(GET|POST|PUT|PATCH|DELETE)\s+(/\S+)$', term)
+    if method:
+        forms.append(method.group(2))
+    last = re.split(r'[\\/]', term)[-1]
+    stem = re.sub(r'\.(php|tsx?|jsx?)$', '', last)
+    if stem != term and re.fullmatch(r'[A-Z][a-z0-9]+(?:[A-Z][A-Za-z0-9]*)+', stem):
+        forms.append(stem)
+    return '|'.join(re.escape(f) for f in dict.fromkeys(forms))
+
+
 APPROVED = re.compile(r'^\**Status:?\**:?\s*Approved', re.M)
 
 
@@ -357,7 +375,7 @@ def new_fixture(ticket, repo, reference, intake=None, jira=None, at=None, budget
          'regex': r'REQ-\d{3}'},
     ] + [{'id': f'term:{term}', 'severity': 'should', 'reference_term': True,
           'why': 'The deployed spec names this; a fresh spec that does not may have missed it.',
-          'regex': re.escape(term)} for term in terms]
+          'regex': term_pattern(term)} for term in terms]
     (out / 'expectations.json').write_text(json.dumps({
         'ticket': ticket, 'intake': 'intake.md', 'reference': 'reference-spec.md',
         'repo': {'at': at}, 'reference_commit': ref_commit, 'reference_version': which, 'as_of': as_of,
