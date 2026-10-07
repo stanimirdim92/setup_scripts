@@ -39,7 +39,8 @@ mechanism with the command's bounded packet, the persona file pointer, and this
 runtime reference. The child must read the persona body and any skills listed
 in its frontmatter before working; Claude's automatic skill preloading does not
 occur in Codex. In particular, executors must load
-[executor-development-discipline](../../claude/skills/executor-development-discipline/SKILL.md).
+[executor-development-discipline](../../claude/skills/executor-development-discipline/SKILL.md)
+and [test-driven-development](../../claude/skills/test-driven-development/SKILL.md).
 
 Claude model names and tool allowlists are not Codex configuration. Installed
 native roles in `~/.codex/agents/` set the Codex model, effort, sandbox default,

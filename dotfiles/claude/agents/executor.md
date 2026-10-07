@@ -4,6 +4,7 @@ description: Implements one planned task end-to-end and can be resumed for later
 tools: Read, Edit, Write, Bash, Grep, Glob, Skill, mcp__figma__*
 skills:
   - executor-development-discipline
+  - test-driven-development
 model: claude-sonnet-5-5
 hooks:
   PreToolUse:

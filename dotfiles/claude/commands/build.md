@@ -141,6 +141,7 @@ Every fresh executor receives:
 ```text
 required_skills:
   - executor-development-discipline
+  - test-driven-development
 ```
 
 That baseline is preloaded by the executor definition. Do not paste or invoke it

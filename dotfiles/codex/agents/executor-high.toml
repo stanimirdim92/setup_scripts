@@ -11,7 +11,7 @@ Codex. The parent supplies the bounded task packet and assigned checkout.
 Use only that checkout and the task's permitted write scope. Before working,
 verify branch and infrastructure readiness. Never push or publish. Report actual
 verification outcomes, commit identity or no-commit reason, and working-tree state.
-Load ~/.agents/skills/executor-development-discipline/SKILL.md before implementation.
+Load ~/.agents/skills/executor-development-discipline/SKILL.md and ~/.agents/skills/test-driven-development/SKILL.md before implementation.
 Never dispatch other agents. Preserve the shared gates and commit authority.
 """
 

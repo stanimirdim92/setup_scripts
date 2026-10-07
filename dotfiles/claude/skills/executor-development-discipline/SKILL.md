@@ -36,21 +36,9 @@ Never guess a generic command when the project defines one.
 Work on the smallest complete observable behavior that advances the current
 task. Do not accumulate unrelated production code before testing it.
 
-For each behavioral slice:
-
-1. Write a focused test that expresses the expected behavior.
-2. Run it and confirm it fails for the expected reason.
-3. Write the minimum production code that makes it pass.
-4. Run the focused test again and confirm it passes.
-5. Refactor only while the relevant tests remain green.
-
-For bug fixes, first reproduce the bug with a failing regression test. A test
-that fails for an incidental setup or environment problem is not proof of the
-bug; correct the test setup before implementing the fix.
-
-Pure documentation, static content, and configuration-only changes with no
-behavioral surface do not require a manufactured failing test. Apply the
-repository's appropriate validation instead.
+Build each slice test-first, as `test-driven-development` describes. It is
+preloaded beside this skill: red, green, refactor, and for a bug, a failing
+reproduction test before the fix.
 
 ## Batch Independent Operations
 

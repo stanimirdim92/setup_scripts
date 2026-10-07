@@ -46,7 +46,7 @@ that explanation here, just the index.
 | [0036](0036-specialist-reviewers-to-sonnet-and-narrowed-triggers.md) | Specialist reviewers to Sonnet/medium with narrowed triggers | Partially superseded by [0056](0056-role-tiered-models-blind-review-recon-width-writer-isolation.md) (tier reversed to Opus/xhigh; narrowed triggers and reference loading stand) |
 | [0037](0037-fixed-session-context-reduced.md) | Fixed session context reduced: compact prompts and settings | Partially superseded by [0043](0043-automatic-memory-and-compaction-window-restored.md) (both settings changes reversed; the prompt compression stands) |
 | [0038](0038-verify-pass-test-only-candidate-identity.md) | VERIFY PASS test-only commits may advance the BUILD candidate | Accepted |
-| [0039](0039-runtime-catalog-narrowed-by-observed-use.md) | Runtime plugins narrowed; standalone engineering skills retained | Partially superseded by [0043](0043-automatic-memory-and-compaction-window-restored.md) (automatic memory no longer disabled) |
+| [0039](0039-runtime-catalog-narrowed-by-observed-use.md) | Runtime plugins narrowed; standalone engineering skills retained | Partially superseded by [0043](0043-automatic-memory-and-compaction-window-restored.md) (automatic memory no longer disabled); TDD skill re-enabled by [0083](0083-tdd-skill-back-in-the-executor.md) |
 | [0040](0040-openspec-conventions-adopted.md) | Four conventions adopted from Fission-AI/openspec; nothing vendored | Accepted |
 | [0041](0041-recon-delegated-to-repo-recon-subagent.md) | Repository recon delegated to a `repo-recon` subagent | Partially superseded by [0051](0051-repository-recon-made-evidence-triggered.md) (agent isolation retained; dispatch is no longer mandatory) |
 | [0042](0042-third-executor-as-conditional-exception.md) | A third concurrent executor as a conditional exception, not a raised cap | Superseded by [0054](0054-executor-concurrency-condition-gated-not-capped.md) |
@@ -90,6 +90,7 @@ that explanation here, just the index.
 | [0080](0080-reviewer-turn-cap-raised-to-100.md) | Reviewer turn cap raised to 100 | Accepted |
 | [0081](0081-spec-plan-checks-and-trailer-hook.md) | Spec and plan checks, and a commit trailer hook | Accepted |
 | [0082](0082-reviewers-label-with-dispositions.md) | Reviewers label findings with the release dispositions | Accepted |
+| [0083](0083-tdd-skill-back-in-the-executor.md) | The TDD skill is back in the executor | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and
