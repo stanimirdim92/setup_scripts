@@ -37,8 +37,8 @@ BROWSER_USE_TINYSKY_ENABLED = "1"
 NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = ""
 NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = ""
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.930.51102"
-NODE_REPL_TRUSTED_SERVICES = '{"browser":"/home/stanimir/.codex/plugins/cache/openai-bundled/browser/26.930.51102/scripts/browser-service.mjs"}'
+BROWSER_USE_CODEX_APP_VERSION = "26.930.61225"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/home/stanimir/.codex/plugins/cache/openai-bundled/browser/26.930.61225/scripts/browser-service.mjs"}'
 CODEX_CLI_PATH = "/usr/lib/chatgpt/resources/codex"
 
 [mcp_servers.chrome-devtools]

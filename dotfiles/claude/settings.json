@@ -141,65 +141,6 @@
       }
     ]
   },
-  "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true,
-    "excludedCommands": [
-      "php artisan *",
-      "composer test*",
-      "vendor/bin/phpunit*",
-      "vendor/bin/pest*",
-      "docker *",
-      "mysql *",
-      "redis-cli *",
-      "git push*",
-      "git fetch*",
-      "git pull*",
-      "ssh *"
-    ],
-    "filesystem": {
-      "allowWrite": [
-        "~/.cache",
-        "~/.composer",
-        "~/.config/composer",
-        "~/.npm",
-        "~/.yarn",
-        "~/.local/share/pnpm"
-      ]
-    },
-    "credentials": {
-      "files": [
-        { "path": "~/.ssh", "mode": "deny" },
-        { "path": "~/.aws", "mode": "deny" },
-        { "path": "~/.config/gh", "mode": "deny" },
-        { "path": "~/.git-credentials", "mode": "deny" },
-        { "path": "~/.docker/config.json", "mode": "deny" },
-        { "path": "~/.npmrc", "mode": "deny" },
-        { "path": "~/.config/composer/auth.json", "mode": "deny" },
-        { "path": "~/.composer/auth.json", "mode": "deny" },
-        { "path": "~/.claude/.credentials.json", "mode": "deny" },
-        { "path": "~/.codex/auth.json", "mode": "deny" }
-      ],
-      "envVars": [
-        { "name": "GITHUB_TOKEN", "mode": "deny" },
-        { "name": "GH_TOKEN", "mode": "deny" },
-        { "name": "NPM_TOKEN", "mode": "deny" },
-        { "name": "ANTHROPIC_API_KEY", "mode": "deny" },
-        { "name": "OPENAI_API_KEY", "mode": "deny" }
-      ]
-    },
-    "network": {
-      "allowedDomains": [
-        "github.com",
-        "*.github.com",
-        "*.githubusercontent.com",
-        "registry.npmjs.org",
-        "registry.yarnpkg.com",
-        "repo.packagist.org",
-        "*.packagist.org"
-      ]
-    }
-  },
   "worktree": {
     "baseRef": "head"
   },
