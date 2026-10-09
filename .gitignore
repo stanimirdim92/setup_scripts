@@ -5,6 +5,8 @@
 # synced" list for the same category of auto-regenerated files.
 /dotfiles/claude/skills/synced/
 /dotfiles/claude/skills/session-start-hook/
+# The Claude app moves removed skills here; they are licensed copies, not repo content.
+/dotfiles/claude/skills/.trash/
 # Fetched at a pinned commit by dotfiles/tools/setup/fetch-figma-skill.sh;
 # the upstream repo has no licence, so it is never committed (dotfiles/docs/adr/0072).
 /dotfiles/claude/skills/figma-design-to-code/
