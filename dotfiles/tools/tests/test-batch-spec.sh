@@ -260,12 +260,12 @@ contains help_shows_usage       "--dry-run" "$OUT"
 OUT="$(cd "$TMP" && bash "$BATCH" --dry-run </dev/null 2>&1)"; RC=$?
 check    outside_repo_rc        1 "$RC"
 
-# the committed manifest must parse
+# the committed example manifest must parse
 D="$(new_repo real)"
-cp "$REPO/dotfiles/tools/run/spec-batch.txt" "$D/jobs.txt"
+cp "$REPO/dotfiles/tools/run/spec-batch.example.txt" "$D/jobs.txt"
 run "$D" -m jobs.txt --dry-run
-check    real_manifest_rc       0 "$RC"
-contains real_manifest_jobs     "17 job(s)" "$OUT"
+check    example_manifest_rc    0 "$RC"
+contains example_manifest_jobs  "4 job(s)" "$OUT"
 
 echo "batch-spec: $PASS passed, $FAIL failed"
 if [ "$FAIL" -gt 0 ]; then printf '\n'; for f in "${FAILED[@]}"; do echo "  FAIL $f"; done; exit 1; fi

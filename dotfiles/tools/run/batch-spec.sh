@@ -58,7 +58,7 @@ ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "batch-spec: not a
 cd "$ROOT"
 MANIFEST="${MANIFEST:-$(dirname "${BASH_SOURCE[0]}")/spec-batch.txt}"
 OUT="${OUT:-$ROOT/.spec-batch}"
-[ -f "$MANIFEST" ] || { echo "batch-spec: no manifest at $MANIFEST" >&2; exit 1; }
+[ -f "$MANIFEST" ] || { echo "batch-spec: no manifest at $MANIFEST (copy spec-batch.example.txt to spec-batch.txt and list your tickets)" >&2; exit 1; }
 command -v "$CLAUDE_BIN" >/dev/null || { echo "batch-spec: '$CLAUDE_BIN' not on PATH" >&2; exit 1; }
 
 # ------------------------------------------------------------- the manifest

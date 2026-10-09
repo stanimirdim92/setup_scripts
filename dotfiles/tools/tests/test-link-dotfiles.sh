@@ -106,6 +106,25 @@ check  codex_agents_installed    1 "$([ -r "$H/.codex/agents/executor.toml" ] &&
 check  codex_hooks_installed     1 "$([ -r "$H/.codex/hooks.json" ] && [ -r "$H/.codex/hooks/policy.py" ] && echo 1 || echo 0)"
 check  codex_reference_installed 1 "$([ -r "$H/.codex/references/workflow-runtime.md" ] && echo 1 || echo 0)"
 check  codex_launcher_installed  1 "$([ -x "$H/.local/bin/codex-worktree" ] && echo 1 || echo 0)"
+check  codex_config_local_file   1 "$([ -f "$H/.codex/config.toml" ] && [ ! -L "$H/.codex/config.toml" ] && echo 1 || echo 0)"
+check  codex_config_merged       1 "$(grep -q '^approvals_reviewer = "user"' "$H/.codex/config.toml" && echo 1 || echo 0)"
+
+# An old symlink into the repo becomes a local file; the app's state stays local
+# and the harness settings win (dotfiles/docs/adr/0086).
+H="$(fresh_home config_link)"
+OLD="$TMP/old-config.toml"
+printf 'approvals_reviewer = "auto_review"\n\n[projects."/srv/app"]\ntrust_level = "trusted"\n' > "$OLD"
+ln -s "$OLD" "$H/.codex/config.toml"
+run "$H" --dry-run
+contains config_merge_planned    "merge     harness settings into ~/.codex/config.toml" "$OUT"
+run "$H" --yes
+check  config_link_rc            0 "$RC"
+check  config_now_local          1 "$([ -f "$H/.codex/config.toml" ] && [ ! -L "$H/.codex/config.toml" ] && echo 1 || echo 0)"
+check  config_project_kept       1 "$(grep -q '^\[projects."/srv/app"\]' "$H/.codex/config.toml" && echo 1 || echo 0)"
+check  config_harness_wins       1 "$(grep -q '^approvals_reviewer = "user"' "$H/.codex/config.toml" && echo 1 || echo 0)"
+check  config_old_untouched      1 "$(grep -q 'auto_review' "$OLD" && echo 1 || echo 0)"
+run "$H" --dry-run
+contains config_rerun_noop       "nothing to do" "$OUT"
 
 # Migrate the retired source filename for both clients, without recreating it.
 H="$(fresh_home renamed_rules)"

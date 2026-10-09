@@ -135,6 +135,10 @@ jobs:
 
       - name: Codex native roles and hook adapters
         run: python3 dotfiles/tools/tests/test-codex-harness.py
+      # The committed Codex config holds harness settings only; the app's
+      # projects, desktop state and hook trust stay in the local file (adr/0086).
+      - name: Codex config base holds no machine state
+        run: python3 dotfiles/codex/install-config.py --lint
 
       - name: Codex CLI ticket worktrees and concurrent sessions
         run: python3 dotfiles/tools/tests/test-codex-worktree.py

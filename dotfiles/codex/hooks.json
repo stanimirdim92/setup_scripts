@@ -5,7 +5,7 @@
       "hooks": [{"type": "command", "command": "python3 \"$HOME/.codex/hooks/policy.py\"", "timeout": 20}]
     }],
     "PreToolUse": [{
-      "matcher": "Bash|Agent|spawn_agent",
+      "matcher": "Bash|exec_command|shell|shell_command|Agent|spawn_agent",
       "hooks": [{"type": "command", "command": "python3 \"$HOME/.codex/hooks/policy.py\"", "timeout": 20}]
     }],
     "SubagentStop": [{

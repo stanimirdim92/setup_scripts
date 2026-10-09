@@ -13,8 +13,9 @@ from that source's own directory. Do not copy or rewrite the shared sources.
 - Use available Codex tools for file reads, searches, questions, and Jira
   access. A configured Claude connector is not proof of Codex access; report
   unavailable sources under the shared intake's coverage and blocker rules.
-- Tool-dependent skills still require callable tools. Claude MCP setup examples
-  and hooks do not configure or enforce anything in Codex. Report missing
+- Tool-dependent skills still require callable tools. Claude MCP setup and hook
+  configuration do not apply in Codex; `hooks/policy.py` reuses the shared hook
+  scripts and applies the persona MCP grants. Report missing
   capabilities instead of claiming successful browser, diagram, or Jira checks.
   When a task packet selects `browser-testing-with-devtools`, use the available
   Codex browser tooling for equivalent runtime evidence or block the required
@@ -114,8 +115,10 @@ when surfaced. Until trusted, Codex skips them. Restart after installing agents
 or hooks; an existing session is not proof the new configuration loaded.
 
 These are accident guards for supported tool paths, not a complete security
-boundary. Live parent permission overrides can supersede a role's sandbox;
-MCP and specialized tools need their own permission controls. `write_stdin`
+boundary. Live parent permission overrides can supersede a role's sandbox.
+Persona MCP calls follow the Claude grants: readers get none, executors Figma,
+test-engineer Figma and chrome-devtools; the main session is not limited. Codex
+roles have no turn cap like Claude's `maxTurns: 100`. `write_stdin`
 does not rerun PreToolUse, and shell guards do not parse arbitrary scripts.
 Never use another tool, interpreter, session, or directory change to evade a
 denial. Report missing enforcement honestly instead of claiming Claude parity.

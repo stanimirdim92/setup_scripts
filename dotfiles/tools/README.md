@@ -15,7 +15,7 @@ Grouped by what you do with them. Paths below are from the repository root. Each
 | File | Does | Run |
 | --- | --- | --- |
 | `batch-spec.sh` | `/spec` for many tickets at once, one worktree each | `dotfiles/tools/run/batch-spec.sh --help` |
-| `spec-batch.txt` | The ticket list `batch-spec.sh` reads by default | — |
+| `spec-batch.example.txt` | The ticket-list format; copy it to `spec-batch.txt` (gitignored), which `batch-spec.sh` reads by default | — |
 | `run-metrics.sh` | Tokens, batching, large reads and failure signals from a transcript; `--row` prints an observation-log row | `dotfiles/tools/run/run-metrics.sh --help` |
 
 ## `checks/`

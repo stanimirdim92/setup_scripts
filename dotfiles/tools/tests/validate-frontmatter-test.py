@@ -59,8 +59,10 @@ SETTINGS_OK = """{
   "model": "opus[1m]",
   "effortLevel": "medium",
   "permissions": {"deny": [
-    "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.config/gh/**)", "Read(~/.git-credentials)"
-  ]},
+    "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.config/gh/**)", "Read(~/.git-credentials)",
+    "Bash(*~/.ssh*)", "Bash(*~/.aws*)", "Bash(*~/.config/gh*)", "Bash(*~/.git-credentials*)"
+  ], "allow": ["Bash(ls:*)"], "ask": ["Bash(git push:*)", "Bash(gh pr create:*)"]},
+  "enableAllProjectMcpServers": false,
   "env": {
     "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "0",
@@ -161,6 +163,19 @@ class DenyCases(unittest.TestCase):
         body = REVIEWER.replace('model: opus[1m]', 'model: claude-sonnet-5-5')
         problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
         self.assertTrue(any("expected 'opus[1m]'" in p for p in problems))
+
+    def test_credential_shell_denial_removed(self):
+        problems = vf.check_settings(SETTINGS_OK.replace('"Bash(*~/.ssh*)", ', ''))
+        self.assertTrue(any('no Bash(*~/.ssh*) rule' in p for p in problems))
+
+    def test_publishing_and_echo_must_not_be_allowed(self):
+        problems = vf.check_settings(SETTINGS_OK.replace('"allow": ["Bash(ls:*)"]', '"allow": ["Bash(gh pr create:*)", "Bash(echo:*)"]'))
+        self.assertTrue(any('gh pr create' in p for p in problems))
+        self.assertTrue(any('Bash(echo:*)' in p for p in problems))
+
+    def test_project_mcp_servers_not_auto_trusted(self):
+        problems = vf.check_settings(SETTINGS_OK.replace('"enableAllProjectMcpServers": false', '"enableAllProjectMcpServers": true'))
+        self.assertTrue(any('enableAllProjectMcpServers' in p for p in problems))
 
     def test_credential_read_denial_removed(self):
         problems = vf.check_settings(SETTINGS_OK.replace('"Read(~/.ssh/**)", ', ''))

@@ -177,9 +177,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="layout">
-<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>45</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>23</span></a><a href="#decisions">Decisions<span>85</span></a></nav>
+<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>45</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>24</span></a><a href="#decisions">Decisions<span>86</span></a></nav>
 <main>
-<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>45</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>23</b>self-tests</span><span class="count"><b>85</b>decisions</span></div></header>
+<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>45</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>24</b>self-tests</span><span class="count"><b>86</b>decisions</span></div></header>
 <section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The orange rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">teal</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
 <div class="tabs" role="tablist" aria-label="Pipeline views">
 <button type="button" role="tab" id="tab-list" aria-controls="view-list" aria-selected="false" tabindex="-1" data-view="list"><span>1</span>Stage list</button>
@@ -290,7 +290,7 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <dt>effortLevel</dt><dd>medium</dd>
 <dt>advisorModel</dt><dd>claude-fable-5-1</dd>
 <dt>modelSettings</dt><dd>claude-fable-5-1 → high, claude-sonnet-5-5 → high</dd>
-<dt>permissions</dt><dd>auto · 64 allow · 21 deny</dd>
+<dt>permissions</dt><dd>auto · 62 allow · 48 deny</dd>
 <dt>sandbox</dt><dd>off (adr 0085) · 10 credential files denied to Read</dd>
 <dt>worktree.baseRef</dt><dd>head</dd>
 </dl></div><p class="note">AGENTS.md also covers: Session and context, Writing for humans, Worktrees, Agent orchestration, Models, Durable project records.</p></div></div></section>
@@ -336,7 +336,7 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">templates/spec.md</td><td>Spec Template</td></tr>
 <tr><td class="cmdcell">templates/task.md</td><td>Task Template</td></tr>
 </tbody></table></div></section>
-<section id="ci"><div class="sec-head"><h2>Self-tests</h2><p class="summary">23 CI steps on every push to main and every pull request. Runs that spend model tokens stay manual.</p></div><div class="panel tablewrap"><table><thead><tr><th>Step</th><th>Command</th></tr></thead><tbody>
+<section id="ci"><div class="sec-head"><h2>Self-tests</h2><p class="summary">24 CI steps on every push to main and every pull request. Runs that spend model tokens stay manual.</p></div><div class="panel tablewrap"><table><thead><tr><th>Step</th><th>Command</th></tr></thead><tbody>
 <tr><td><b>Preflight — required tools</b></td><td class="cmdcell">for tool in bash git jq python3; do<br>command -v &quot;$tool&quot; &gt;/dev/null || { echo &quot;missing: $tool&quot;; exit 1; }<br>done<br>jq --version &amp;&amp; python3 --version &amp;&amp; git --version</td></tr>
 <tr><td><b>Hooks — deny, ask, and allow cases</b><span class="sub">Enforcement: the three PreToolUse hooks, deny/ask/allow, including the alias, typo, global-option and quoted-target bypasses (adr/0049).</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-hooks.sh</td></tr>
 <tr><td><b>Hooks — commit trailers</b><span class="sub">Enforcement: the SubagentStop handoff gate — complete, partial, claim-only, second attempt, unknown agent, unreadable transcript. Writers&#x27; commits carry a Refs: trailer (adr/0081).</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-commit-trailers.sh</td></tr>
@@ -355,13 +355,15 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td><b>Workflow runner logic</b><span class="sub">Orchestration: the workflow runner&#x27;s own assertion and fixture logic. NOT the live cases — those spend tokens and stay manual.</span></td><td class="cmdcell">cd dotfiles/tools/evals/workflow &amp;&amp; python3 -m unittest -q test_runner</td></tr>
 <tr><td><b>Codex skill installer</b><span class="sub">Installation: preflight conflict detection and injected-failure rollback.</span></td><td class="cmdcell">python3 dotfiles/tools/tests/test-install-skills.py</td></tr>
 <tr><td><b>Codex native roles and hook adapters</b></td><td class="cmdcell">python3 dotfiles/tools/tests/test-codex-harness.py</td></tr>
+<tr><td><b>Codex config base holds no machine state</b><span class="sub">The committed Codex config holds harness settings only; the app&#x27;s projects, desktop state and hook trust stay in the local file (adr/0086).</span></td><td class="cmdcell">python3 dotfiles/codex/install-config.py --lint</td></tr>
 <tr><td><b>Codex CLI ticket worktrees and concurrent sessions</b></td><td class="cmdcell">python3 dotfiles/tools/tests/test-codex-worktree.py</td></tr>
 <tr><td><b>Dotfile linker confirmation</b><span class="sub">The dotfile linker&#x27;s confirmation gate, against a throwaway $HOME.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-link-dotfiles.sh</td></tr>
 <tr><td><b>Figma skill fetch</b><span class="sub">The Figma skill fetch refuses a file whose hash differs from the pin.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-fetch-figma-skill.sh</td></tr>
 <tr><td><b>Batch spec runner</b><span class="sub">The batch spec runner&#x27;s decisions, with <code>claude</code> stubbed.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-batch-spec.sh</td></tr>
 <tr><td><b>Run metrics</b><span class="sub">Measurement: the transcript metrics&#x27; large-result section.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-run-metrics.sh</td></tr>
 </tbody></table></div></section>
-<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">85 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">86 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<tr><td class="cmdcell">0086</td><td>Public-repo and permission hardening after the 2026-10-09 review</td></tr>
 <tr><td class="cmdcell">0085</td><td>The OS sandbox is off; credential files keep Read denials</td></tr>
 <tr><td class="cmdcell">0084</td><td>Each pipeline stage starts in a fresh context</td></tr>
 <tr><td class="cmdcell">0083</td><td>The TDD skill is back in the executor</td></tr>
@@ -371,7 +373,6 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">0079</td><td>Eval integrity and paired comparison</td></tr>
 <tr><td class="cmdcell">0078</td><td>Mutation probes, a weakened-test guard, and checked section references</td></tr>
 <tr><td class="cmdcell">0077</td><td>Writing rule checked in CI</td></tr>
-<tr><td class="cmdcell">0076</td><td>EARS requirement statements</td></tr>
 </tbody></table></div></section>
 <footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. Do not edit by hand.</footer></main></div>
 <script>

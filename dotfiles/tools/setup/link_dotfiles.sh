@@ -43,7 +43,6 @@ SOURCES=(
   "$DOTFILES/claude/commands"
   "$DOTFILES/claude/references"
   "$DOTFILES/claude/docs"
-  "$DOTFILES/codex/config.toml"
   "$DOTFILES/codex/rules/harness.rules"
   "$DOTFILES/claude/AGENTS.md"
   "$DOTFILES/codex/agents"
@@ -65,7 +64,6 @@ DESTINATIONS=(
   "$HOME/.claude/commands"
   "$HOME/.claude/references"
   "$HOME/.claude/docs"
-  "$HOME/.codex/config.toml"
   "$HOME/.codex/rules/harness.rules"
   "$HOME/.codex/AGENTS.md"
   "$HOME/.codex/agents"
@@ -218,9 +216,13 @@ done
 # The Codex adapters install separately and can have work pending on their own.
 CODEX_PENDING=0
 python3 "$DOTFILES/codex/install-skills.py" --check >/dev/null 2>&1 || CODEX_PENDING=1
+# ~/.codex/config.toml is a local file the harness settings merge into, not a
+# link: the Codex app writes machine state there (dotfiles/docs/adr/0086).
+CONFIG_PENDING=0
+python3 "$DOTFILES/codex/install-config.py" --check >/dev/null 2>&1 || CONFIG_PENDING=1
 
-if [ "$CHANGES" -eq 0 ] && [ "$CODEX_PENDING" -eq 0 ]; then
-  echo "link_dotfiles: all ${#DESTINATIONS[@]} path(s) already linked here, Codex adapters in place; nothing to do."
+if [ "$CHANGES" -eq 0 ] && [ "$CODEX_PENDING" -eq 0 ] && [ "$CONFIG_PENDING" -eq 0 ]; then
+  echo "link_dotfiles: all ${#DESTINATIONS[@]} path(s) already linked here, Codex adapters and config in place; nothing to do."
   exit 0
 fi
 
@@ -228,6 +230,7 @@ echo "link_dotfiles: linking ${#DESTINATIONS[@]} path(s) from $REPO_DIR/dotfiles
 echo
 printf '%s\n' "${PLAN[@]}"
 [ "$CODEX_PENDING" -eq 1 ] && echo "  install   Codex skill adapters in ~/.agents/skills"
+[ "$CONFIG_PENDING" -eq 1 ] && echo "  merge     harness settings into ~/.codex/config.toml (kept a local file)"
 echo
 echo "Each path above becomes a symlink into this repo. An existing symlink is replaced"
 echo "outright; a real file or directory is moved aside to <name>.bak first, and a real"
@@ -264,6 +267,7 @@ for i in "${!DESTINATIONS[@]}"; do
   link "${SOURCES[$i]}" "${DESTINATIONS[$i]}"
 done
 python3 "$DOTFILES/codex/install-skills.py"
+python3 "$DOTFILES/codex/install-config.py"
 trap - ERR
 
 # MCP servers are NOT symlinked: `claude mcp add` writes into ~/.claude.json,

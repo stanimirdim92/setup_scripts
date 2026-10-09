@@ -54,6 +54,7 @@ REVIEWERS = {'code-reviewer', 'blind-reviewer', 'security-auditor',
 SONNET_PERSONAS = {'repo-recon', 'executor', 'test-engineer'}
 REVIEWER_EFFORT = 'high'
 CREDENTIAL_FILES = {'~/.ssh', '~/.aws', '~/.config/gh', '~/.git-credentials'}
+PUBLISH_ASK = {'Bash(git push:*)', 'Bash(gh pr create:*)', 'Bash(gh pr merge:*)', 'Bash(gh release:*)'}
 SESSION_EFFORT = 'medium'
 
 # Personas that must never mutate anything. 0055: "reviewers read-only by tool
@@ -182,6 +183,15 @@ def check_settings(text):
     for path in sorted(CREDENTIAL_FILES):
         if not {f'Read({path})', f'Read({path}/**)'} & deny:
             problems.append(f'settings.json: permissions.deny has no Read({path}) rule -- the credential file can be read (adr/0085)')
+        if f'Bash(*{path}*)' not in deny:
+            problems.append(f'settings.json: permissions.deny has no Bash(*{path}*) rule -- a shell command can print it (adr/0086)')
+    allow = set(data.get('permissions', {}).get('allow', []))
+    for rule in sorted(PUBLISH_ASK & allow):
+        problems.append(f'settings.json: {rule} is in permissions.allow -- publishing must ask (adr/0086)')
+    if 'Bash(echo:*)' in allow:
+        problems.append('settings.json: Bash(echo:*) is allowed -- `echo $TOKEN` would run unasked (adr/0086)')
+    if data.get('enableAllProjectMcpServers') is True:
+        problems.append('settings.json: enableAllProjectMcpServers is true -- a cloned repo\'s .mcp.json runs unasked (adr/0086)')
 
     if data.get('effortLevel') != SESSION_EFFORT:
         problems.append(f'settings.json: effortLevel is {data.get("effortLevel")!r}, expected {SESSION_EFFORT!r} -- Opus 5.5 at medium matches Opus 5 at high (adr/0066)')

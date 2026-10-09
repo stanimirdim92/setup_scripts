@@ -119,6 +119,22 @@ class CodexHarnessTest(unittest.TestCase):
                     self.assertEqual(self.decision(self.invoke(self.payload(tool, command), role)), "deny")
         self.assertFalse((self.ticket / "marker").exists())
 
+    def test_mcp_servers_follow_the_claude_grants(self):
+        mcp = lambda tool: {"hook_event_name": "PreToolUse", "cwd": str(self.ticket),
+                            "tool_name": tool, "tool_input": {"issueIdOrKey": "AB-1"}}
+        for role in POLICIES.READERS:
+            with self.subTest(role=role):
+                self.assertEqual(self.decision(self.invoke(mcp("mcp__atlassian__editJiraIssue"), role)), "deny")
+        self.assertEqual(self.invoke(mcp("mcp__figma__get_screenshot"), "executor"), {})
+        self.assertEqual(self.decision(self.invoke(mcp("mcp__atlassian__editJiraIssue"), "executor")), "deny")
+        self.assertEqual(self.invoke(mcp("mcp__chrome-devtools__navigate_page"), "test-engineer"), {})
+        self.assertEqual(self.invoke(mcp("mcp__atlassian__getJiraIssue")), {})   # main session unrestricted
+
+    def test_main_session_hook_matches_codex_shell_tools(self):
+        matcher = json.loads((CODEX / "hooks.json").read_text())["hooks"]["PreToolUse"][0]["matcher"]
+        for tool in ("Bash", "exec_command", "shell", "shell_command", "spawn_agent"):
+            self.assertRegex(tool, f"^(?:{matcher})$")
+
     def test_reader_shell_allows_quoted_metacharacters_only(self):
         # PHP searches need these characters as literal patterns.
         for command in ["rg -n '->save(' .", "rg -n '\\$this' .", 'rg -n "fn() => 1" .',

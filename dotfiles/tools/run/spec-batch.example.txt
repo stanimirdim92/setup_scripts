@@ -1,0 +1,15 @@
+# batch-spec.sh manifest — tickets, optional slug. One line = one /spec run.
+# Copy this file to spec-batch.txt beside it and list your own tickets there.
+# spec-batch.txt is gitignored: a real backlog names private tickets and
+# features, and this repository is public.
+#
+# Tickets that touch the same files go on ONE line: separate specs over one
+# code path each propose their own helper.
+
+# --- clusters: one spec, several REQs ----------------------------------------
+AB-101,AB-102,AB-103   invoice-reminders
+AB-110,AB-111          export-filters
+
+# --- singles -----------------------------------------------------------------
+AB-120                 audit-log-retention
+AB-121

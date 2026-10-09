@@ -18,6 +18,10 @@ SHARED = Path(__file__).resolve().parents[2] / "claude" / "hooks"
 WRITERS = {"executor", "executor-high", "test-engineer"}
 READERS = {"repo-recon", "code-reviewer", "blind-reviewer", "security-auditor",
            "distributed-systems-reviewer"}
+# MCP servers each persona may call, as the Claude frontmatter grants them.
+# Readers get none: a reviewer that can edit Jira is not read-only (ADR 0086).
+MCP_SERVERS = {"executor": {"figma"}, "executor-high": {"figma"},
+               "test-engineer": {"figma", "chrome-devtools", "chrome_devtools"}}
 
 
 def deny(reason):
@@ -201,6 +205,11 @@ def policy(payload, role=""):
         return shared("require-worktree-for-writers.sh", {**payload, "tool_input": {"agent_type": "executor" if persona == "executor-high" else persona}})
     shell = tool in {"Bash", "exec_command", "shell", "shell_command"}
     edit = tool in {"apply_patch", "Edit", "Write"}
+    if role and tool.startswith("mcp__"):
+        server = tool.split("__")[1] if tool.count("__") >= 2 else ""
+        if server not in MCP_SERVERS.get(role, set()):
+            return deny(f"The {role} persona may not call the {server or 'unnamed'} MCP server.")
+        return {}
     if role in READERS:
         if edit or tool in {"js_repl", "python", "notebook", "spawn_agent", "Agent"}:
             return deny("This persona may only read repository evidence; implementation and test execution belong to writers.")

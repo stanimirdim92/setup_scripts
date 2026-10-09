@@ -12,7 +12,8 @@
 /dotfiles/claude/skills/figma-design-to-code/
 __pycache__/
 
-# batch-spec.sh run logs and metadata
+# batch-spec.sh run logs and metadata, and the local ticket list (a private backlog)
+/dotfiles/tools/run/spec-batch.txt
 /.spec-batch/
 
 # Codex writes TUI approvals here; machine-local by design (dotfiles/docs/adr/0062).
