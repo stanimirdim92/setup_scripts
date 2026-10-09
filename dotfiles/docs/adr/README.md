@@ -75,7 +75,7 @@ that explanation here, just the index.
 | [0065](0065-one-spec-per-ticket-capability-map-as-section.md) | One spec per ticket; the capability map is a section of it | Accepted |
 | [0066](0066-opus-5-5-effort-and-early-stop-continuations.md) | Opus 5.5: medium session effort, and bounded continuations for early stops | Accepted |
 | [0067](0067-change-surface-in-plans-and-plan-recall.md) | Change surface in plans, touch points in recon, and a plan-recall eval | Accepted |
-| [0068](0068-sandbox-resumable-build-and-failure-signals.md) | OS sandbox, resumable `/build`, and failure signals from transcripts | Accepted |
+| [0068](0068-sandbox-resumable-build-and-failure-signals.md) | OS sandbox, resumable `/build`, and failure signals from transcripts | Sandbox decision superseded by [0085](0085-sandbox-off-credential-read-denials.md) |
 | [0069](0069-plain-writing-explain-page-and-generated-map.md) | Plain writing, an `/explain` review page, a generated harness map, and ticket-scoped plan recall | Accepted |
 | [0070](0070-browser-checks-route-to-test-engineer.md) | Browser checks route to test-engineer, and the DevTools MCP is installed | Accepted |
 | [0071](0071-harness-files-live-under-dotfiles.md) | Harness files live under `dotfiles/` | Accepted |
@@ -92,6 +92,7 @@ that explanation here, just the index.
 | [0082](0082-reviewers-label-with-dispositions.md) | Reviewers label findings with the release dispositions | Accepted |
 | [0083](0083-tdd-skill-back-in-the-executor.md) | The TDD skill is back in the executor | Accepted |
 | [0084](0084-each-stage-starts-in-a-fresh-context.md) | Each pipeline stage starts in a fresh context | Accepted |
+| [0085](0085-sandbox-off-credential-read-denials.md) | The OS sandbox is off; credential files keep Read denials | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

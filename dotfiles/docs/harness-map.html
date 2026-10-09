@@ -177,9 +177,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="layout">
-<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>45</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>23</span></a><a href="#decisions">Decisions<span>84</span></a></nav>
+<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>6</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>45</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>23</span></a><a href="#decisions">Decisions<span>85</span></a></nav>
 <main>
-<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>45</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>23</b>self-tests</span><span class="count"><b>84</b>decisions</span></div></header>
+<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>6</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>45</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>23</b>self-tests</span><span class="count"><b>85</b>decisions</span></div></header>
 <section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The orange rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">teal</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
 <div class="tabs" role="tablist" aria-label="Pipeline views">
 <button type="button" role="tab" id="tab-list" aria-controls="view-list" aria-selected="false" tabindex="-1" data-view="list"><span>1</span>Stage list</button>
@@ -290,8 +290,8 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <dt>effortLevel</dt><dd>medium</dd>
 <dt>advisorModel</dt><dd>claude-fable-5-1</dd>
 <dt>modelSettings</dt><dd>claude-fable-5-1 → high, claude-sonnet-5-5 → high</dd>
-<dt>permissions</dt><dd>auto · 64 allow · 16 deny</dd>
-<dt>sandbox</dt><dd>off · 0 excluded commands · 0 credential paths denied</dd>
+<dt>permissions</dt><dd>auto · 64 allow · 21 deny</dd>
+<dt>sandbox</dt><dd>off (adr 0085) · 10 credential files denied to Read</dd>
 <dt>worktree.baseRef</dt><dd>head</dd>
 </dl></div><p class="note">AGENTS.md also covers: Session and context, Writing for humans, Worktrees, Agent orchestration, Models, Durable project records.</p></div></div></section>
 <section id="skills"><div class="sec-head"><h2>Skills</h2><p class="summary">19 skills. 5 are explicit-only: a stage or role loads them, never a keyword match.</p></div><div class="panel tablewrap"><table><thead><tr><th>Skill</th><th>Loading</th><th>What it is for</th></tr></thead><tbody>
@@ -361,7 +361,8 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td><b>Batch spec runner</b><span class="sub">The batch spec runner&#x27;s decisions, with <code>claude</code> stubbed.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-batch-spec.sh</td></tr>
 <tr><td><b>Run metrics</b><span class="sub">Measurement: the transcript metrics&#x27; large-result section.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-run-metrics.sh</td></tr>
 </tbody></table></div></section>
-<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">84 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">85 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<tr><td class="cmdcell">0085</td><td>The OS sandbox is off; credential files keep Read denials</td></tr>
 <tr><td class="cmdcell">0084</td><td>Each pipeline stage starts in a fresh context</td></tr>
 <tr><td class="cmdcell">0083</td><td>The TDD skill is back in the executor</td></tr>
 <tr><td class="cmdcell">0082</td><td>Reviewers label findings with the release dispositions</td></tr>
@@ -371,7 +372,6 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">0078</td><td>Mutation probes, a weakened-test guard, and checked section references</td></tr>
 <tr><td class="cmdcell">0077</td><td>Writing rule checked in CI</td></tr>
 <tr><td class="cmdcell">0076</td><td>EARS requirement statements</td></tr>
-<tr><td class="cmdcell">0075</td><td>RFC 2119 keywords in requirements</td></tr>
 </tbody></table></div></section>
 <footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. Do not edit by hand.</footer></main></div>
 <script>

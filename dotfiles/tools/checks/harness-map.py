@@ -857,8 +857,8 @@ def render():
     env = settings.get('env', {})
     pins = [(k, v) for k, v in sorted(env.items()) if k.startswith('CLAUDE_CODE_')]
     sandbox = settings.get('sandbox', {})
-    denied = [f['path'] for f in sandbox.get('credentials', {}).get('files', []) if f.get('mode') == 'deny']
     perms = settings.get('permissions', {})
+    read_denied = [r for r in perms.get('deny', []) if r.startswith('Read(')]
     defaults = [
         ('model', settings.get('model', '—')),
         ('effortLevel', settings.get('effortLevel', '—')),
@@ -867,8 +867,8 @@ def render():
                                     for k, v in sorted(settings.get('modelSettings', {}).items())) or '—'),
         ('permissions', f'{perms.get("defaultMode", "default")} · {len(perms.get("allow", []))} allow · '
                         f'{len(perms.get("deny", []))} deny'),
-        ('sandbox', f'{"on" if sandbox.get("enabled") else "off"} · {len(sandbox.get("excludedCommands", []))} '
-                    f'excluded commands · {len(denied)} credential paths denied'),
+        ('sandbox', f'{"on" if sandbox.get("enabled") else "off"} (adr 0085) · '
+                    f'{len(read_denied)} credential files denied to Read'),
         ('worktree.baseRef', settings.get('worktree', {}).get('baseRef', '—')),
     ]
     out.append('<section id="session"><div class="sec-head"><h2>Session setup</h2>'

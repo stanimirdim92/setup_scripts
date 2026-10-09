@@ -94,7 +94,12 @@
       "Read(~/.aws/**)",
       "Read(~/.config/gh/**)",
       "Read(~/.git-credentials)",
-      "Read(~/.docker/config.json)"
+      "Read(~/.docker/config.json)",
+      "Read(~/.npmrc)",
+      "Read(~/.config/composer/auth.json)",
+      "Read(~/.composer/auth.json)",
+      "Read(~/.claude/.credentials.json)",
+      "Read(~/.codex/auth.json)"
     ],
     "defaultMode": "auto",
     "enableAllProjectMcpServers": true

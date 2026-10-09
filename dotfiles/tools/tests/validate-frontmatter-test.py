@@ -58,13 +58,9 @@ maxTurns: 60
 SETTINGS_OK = """{
   "model": "opus[1m]",
   "effortLevel": "medium",
-  "sandbox": {
-    "enabled": true,
-    "credentials": {"files": [
-      {"path": "~/.ssh", "mode": "deny"}, {"path": "~/.aws", "mode": "deny"},
-      {"path": "~/.config/gh", "mode": "deny"}, {"path": "~/.git-credentials", "mode": "deny"}
-    ]}
-  },
+  "permissions": {"deny": [
+    "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.config/gh/**)", "Read(~/.git-credentials)"
+  ]},
   "env": {
     "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "1",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "0",
@@ -166,13 +162,9 @@ class DenyCases(unittest.TestCase):
         problems = vf.check_agent('blind-reviewer', agent('blind-reviewer', body))
         self.assertTrue(any("expected 'opus[1m]'" in p for p in problems))
 
-    def test_sandbox_switched_off(self):
-        problems = vf.check_settings(SETTINGS_OK.replace('"enabled": true', '"enabled": false'))
-        self.assertTrue(any('sandbox.enabled' in p for p in problems))
-
-    def test_sandbox_credential_block_removed(self):
-        problems = vf.check_settings(SETTINGS_OK.replace('{"path": "~/.ssh", "mode": "deny"}, ', ''))
-        self.assertTrue(any('does not deny ~/.ssh' in p for p in problems))
+    def test_credential_read_denial_removed(self):
+        problems = vf.check_settings(SETTINGS_OK.replace('"Read(~/.ssh/**)", ', ''))
+        self.assertTrue(any('no Read(~/.ssh) rule' in p for p in problems))
 
     def test_reviewer_effort_dropped_to_session_default(self):
         body = REVIEWER.replace('effort: high\n', '')
