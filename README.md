@@ -11,7 +11,7 @@ provisioning scripts.
 | `database/` | MySQL `my.cnf` |
 | `linux/etc/` | `limits.conf` and network `sysctl` tuning |
 | `tools/php_update.sh` | Installs a PHP version and its extensions (run as root; `./tools/php_update.sh 8.3`) |
-| `docs/terminal.md` | Terminal tooling notes |
+| `terminal.md` | Terminal tooling notes |
 
 ## AI tool dotfiles
 

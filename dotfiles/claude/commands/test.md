@@ -105,7 +105,9 @@ The verifier should:
 `/test` may create test-only changes: tests, fixtures, and test configuration.
 It must not modify production code.
 
-Passing test-only changes may be committed as a separate `test:` local commit.
+Passing test-only changes may be committed as a separate `test:` local commit
+ending with the `Refs: <TICKET>` trailer. Pass the ticket key in the
+`test-engineer` packet.
 No push, deploy, history rewrite, or unrelated change is authorized; local
 tags are allowed but never pushed.
 

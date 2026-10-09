@@ -23,7 +23,8 @@ Read the selected spec from disk. Apply the skill's Preconditions: approved
 status, stable requirement ids, and a committed spec with no uncommitted edits.
 Record its commit pin under `../references/plan-quality-gates.md` §2.
 
-Reuse the spec's pointers and current recon evidence. Follow
+Start from the committed spec's repository pointers: `/plan` runs in a fresh
+context and does not see `/spec`'s recon report (ADR 0084). Follow
 `../references/repository-precedent.md` §1 for missing or stale evidence.
 
 If the spec contradicts itself, repository evidence contradicts its behavior,

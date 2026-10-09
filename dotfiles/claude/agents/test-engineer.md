@@ -26,6 +26,7 @@ You are an experienced QA Engineer focused on test strategy and quality assuranc
 
 When dispatched by `/test`, expect a bounded packet:
 
+- the ticket key, for the `Refs:` trailer of any test-only commit;
 - candidate identity (branch, HEAD, commit range, and any declared uncommitted
   BUILD diff), baseline tree changes, and selected scope;
 - acceptance criteria as the spec's `REQ-###` requirements and scenarios;
@@ -157,7 +158,9 @@ except for the one-run mutation in §6.
 
 - Verify every test-only change with the repository's own commands.
 - Commit a **passing** test-only change separately with a clear `test:` commit
-  message; `/test` invocation authorizes only that scoped local commit.
+  message that ends with the `Refs: <TICKET>` trailer (`git-workflow-and-versioning`
+  §Ticket trailers); the commit hook denies a message without it. `/test`
+  invocation authorizes only that scoped local commit.
 - If a test proves a production defect, preserve the failing reproduction as an
   external patch/report, then restore only the test changes you introduced. Do
   not commit it onto the candidate branch, create a pipeline branch/worktree,

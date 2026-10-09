@@ -60,6 +60,9 @@ Approved at: —
 ### Requirement: REQ-001 — [Corrected behavior]
 Source: [ticket / reproduction above]
 
+[One EARS sentence with an uppercase RFC 2119 keyword, as in `spec.md`; for
+example: When <the reproduction trigger>, the <system> MUST <correct outcome>.]
+
 #### Scenario: Previously failing case
 - GIVEN [the reproduction preconditions]
 - WHEN [the reproduction action]
@@ -69,6 +72,9 @@ Source: [ticket / reproduction above]
 
 ### Requirement: REQ-002 — [Existing behavior that must not change]
 Source: [existing REQ id, or current production behavior as observed]
+
+[One EARS sentence with an uppercase RFC 2119 keyword; for example: When
+<adjacent valid input>, the <system> MUST <keep today's outcome>.]
 
 #### Scenario: Adjacent valid case remains unchanged
 - GIVEN [...]

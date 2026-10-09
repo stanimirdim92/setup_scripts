@@ -31,7 +31,8 @@ required by the `/build` pipeline.
 2. Require the spec committed with no uncommitted edits. Record the commit that
    last touched it as `Spec revision: git-commit:<sha>:<spec path>` according to
    `../../references/plan-quality-gates.md` §2.
-3. Start from the spec's repository pointers and any current recon report. Use
+3. Start from the spec's repository pointers; a fresh `/plan` does not see the
+   spec's recon report (ADR 0084). Use
    the smallest adequate evidence path in
    `../../references/repository-precedent.md`; never guess a command or repeat
    an unchanged survey. Evidence order is `spec-driven-development`'s

@@ -25,6 +25,10 @@ Use `/review`'s independent-verification status:
 - `NOT REQUIRED` is valid when REVIEW recorded that decision for this candidate;
 - `PASS` is required when REVIEW required `/test`.
 
+Use `/review`'s weakened-test result: **Weakened tests: none found**, or every
+listed entry resolved as a finding or a stated reason. A missing result or
+**Weakened tests: Not verified** is **SHIP BLOCKED** (ADR 0078).
+
 Do not independently re-run the trigger matrix or substitute new inline testing
 for a missing gate.
 

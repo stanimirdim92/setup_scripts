@@ -28,7 +28,7 @@ a gate that should have fired and did not).
 |---|---|---|---|---|---|---|
 | 2026-09-14 | LD-380 | `jira-ticket` | Two cross-ticket contradictions not surfaced. LD-238 says the user "receives an email once the advertiser is ready"; LD-380 says "No email or other notification is sent" — flat contradiction, unflagged. LD-362's comment thread decides the `list content not complete` frame becomes the incomplete-Google-data fallback (`—` / "No category"); that decision reached neither the intake nor LD-380's state table. The third contradiction, Outscraper vs Google Places, **was** caught and routed to `/spec`. | None — found by reading the run, not by the harness. Would have surfaced in `/review` or QA at the earliest. | first | Open. §2 asks for requirement-bearing comments to be *retained*; it never asks for conflicting statements across tickets to be *reconciled*. One caught of three suggests the behavior is incidental, not instructed. |
 | 2026-09-14 | LD-380 | `/plan` | Ran its full precondition check and wrote its report having never read `plan-quality-gates.md`, `templates/plan.md` or `templates/task.md` — all three denied (`is_error`) on every route it tried: the `.claude/*` symlink path, the resolved absolute path, `cat` via Bash, then a repeat `Read`. 15 of the stage's 23 tool results were denials. It disclosed this, but as a "secondary (non-blocking) note" under a blocker that happened to be fatal anyway. Had the primary blocker been absent, it would have written a plan shaped only by the skill body, with no template and no quality gates, and nothing would have flagged it. | None. The primary block was correct and stopped everything. | first | **Cause was the fixture, not the harness.** The fixture mounted `.claude/` as symlinks into the dotfiles checkout and the nested session was never given that directory, so the resolved paths sat outside its working directory. A real install links `~/.claude`, which Claude Code reads natively. Verified on the approver's own machine the same day: `Read ~/.claude/references/plan-quality-gates.md` from an unrelated project returns the file, no denial. The three shipped tickets ran with their gates intact. What survives as a harness observation is narrower and unproven in production: a stage that loses a reference discloses it in a footnote and keeps going. `dotfiles/tools/checks/check-references.py` covers references that do not resolve; nothing covers one that resolves and is refused, and there is now no evidence that happens outside a misbuilt fixture. |
-| 2026-10-03 | LD-442 | `/plan` | Plan recall 67% over existing files (precision 92%). All six misses were consumers of a changed surface the plan did not follow: the second locale `lang/de/ticker.php` (the English file was planned), `FrontendTranslationsTest.php` that checks the locales match, the existing tests of three changed components or hooks, and the shared `ticker.utils.ts` edited by T001's extraction. | None measured. Executors found and changed all six during `/build`; no rework loop is attributed to them. | first | Open. The plan predates the change-surface rule (ADR 0067), so this is the baseline. Not yet `Fixed`: watch whether the next frontend ticket's plan lists sibling locales and existing tests. Scored with `recall.py --ticket LD-442 --subject-only`. |
+| 2026-10-03 | LD-442 | `/plan` | Plan recall 67% over existing files (precision 92%). All six misses were consumers of a changed surface the plan did not follow: the second locale `lang/de/ticker.php` (the English file was planned), `FrontendTranslationsTest.php` that checks the locales match, the existing tests of three changed components or hooks, and the shared `ticker.utils.ts` edited by T001's extraction. | None measured. Executors found and changed all six during `/build`; no rework loop is attributed to them. | first | Open. The plan predates the change-surface rule (ADR 0067), so this is the baseline. Not yet `Fixed`: watch whether the next frontend ticket's plan lists sibling locales and existing tests. Scored with `recall.py --ticket LD-442 --subject-only`. **2026-10-09:** the plan did list `lang/de/ticker.php`; the miss came from a parser bug (fixed in 1bdb32c, 33f9f22). Re-score LD-442 to correct the figures. |
 
 - **Stage / persona** — `/spec`, `/plan`, `/build`, `/review`, `/ship`, `/test`,
   or the persona name when it is a subagent failure.
@@ -46,13 +46,13 @@ a gate that should have fired and did not).
 ## Run metrics
 
 One row per pipeline run, failure or not. These are what calibrate the
-uncalibrated numbers — `maxTurns` 100/60 above all — and what the freeze is
+uncalibrated numbers — `maxTurns` 100 above all — and what the freeze is
 waiting on.
 
 | Date | Ticket | Stages run | Recon dispatched? | Max turns used | Fan-out (concurrent/queued) | Tokens | Cost | Large reads (>350) |
 |---|---|---|---|---|---|---|---|---|
-| 2026-09-14 | LD-380 | `jira-ticket`, offline sources | n/a — intake does not inspect the repository | n/a | n/a | 8.0k out · 256k cache read | $0.38 | 0 |
-| 2026-09-14 | LD-380 | `/spec` | **No** — bounded check inline (37 tool calls, 0 subagents) | n/a, no subagent ran | n/a | 109k out · 3.07M cache read | $0.85 | 0 |
+| 2026-09-14 | LD-380 | `jira-ticket`, offline sources | n/a — intake does not inspect the repository | n/a | n/a | 8.0k out · 256k cache read (counted before the per-reply fix of 0e0eb6d, about 2.5× too high) | $0.38 | 0 |
+| 2026-09-14 | LD-380 | `/spec` | **No** — bounded check inline (37 tool calls, 0 subagents) | n/a, no subagent ran | n/a | 109k out · 3.07M cache read (counted before the per-reply fix of 0e0eb6d, about 2.5× too high) | $0.85 | 0 |
 | 2026-09-14 | LD-380 | `/plan` | No — refused at the precondition check | n/a | n/a | — | $0.26 | 0 |
 | 2026-09-14 | LD-380 | `/spec` revision + approval | No | n/a | n/a | — | $0.78 | 0 |
 | 2026-09-14 | LD-380 | `/plan` on the approved spec | No — blocked before evidence gathering | n/a | n/a | — | $0.35 | 0 |
@@ -217,14 +217,14 @@ the `SocialPostType` refactor to LD-441 as misses (10% instead of 100%).
 | Scored | Ticket | Recall (existing) | Recall (all) | Precision | Changed / excluded | Misses | Notes |
 |---|---|---|---|---|---|---|---|
 | 2026-10-03 | LD-441 | 100% | 88% | 88% | 8 / 3 | `tests/Feature/Socials/TickerFeedSeeder.php` (new) | `TickerService.php` planned, never changed. Plan predates the change-surface rule. |
-| 2026-10-03 | LD-442 | 67% | 62% | 92% | 16 / 3 | `lang/de/ticker.php`, `FrontendTranslationsTest.php`, 3 existing test files, `ticker.utils.ts` | All misses were consumers; see the Failures row. `resources/js/components/icons/` planned, never changed. Plan predates the change-surface rule. |
+| 2026-10-03 | LD-442 | 67% | 62% | 92% | 16 / 3 | `lang/de/ticker.php`, `FrontendTranslationsTest.php`, 3 existing test files, `ticker.utils.ts` | All misses were consumers; see the Failures row. `resources/js/components/icons/` planned, never changed. Plan predates the change-surface rule. **2026-10-09:** the plan did list `lang/de/ticker.php`; the miss came from a parser bug (fixed in 1bdb32c, 33f9f22). Re-score LD-442 to correct the figures. |
 | 2026-10-07 | LD-380 (harness-test plan of 2026-10-07) | 69% | 60% | 60% | 43 / 5 | 2 real: `useAdvertiserOnboardingSearch.ts`, `useAdvertiserOnboardingSubmit.ts`. 5 written as shorthand (`Http/Requests/`, `Data/`, "its contract interface"). 10 outside today's design or later fixes: the Pending status files, `PublishAdvertiser.php`, the Details endpoint, `Utils.php`, `package.json` | A fresh plan scored against the 08-27 build and its 09-02 rework, so the shipped design differs (Pending status, a details endpoint). With full paths it would find 31/43. The 08-27 plan cannot be scored: 1 of its 10 packets lists files. First LD-380 baseline (`~/ld380-fresh.json`). Scored after the parser fixes of 2026-10-07. |
 
 ## What to look for
 
 Per `references/agent-run-metrics.md`, after roughly 10–20 comparable tickets:
 
-- `maxTurns` — how close real runs come to 100 (`repo-recon`) and 60 (reviewers),
+- `maxTurns` — how close real runs come to 100 (`repo-recon` and the reviewers, ADR 0080),
   and whether any run reported a capped partial
 - recon — how often `/spec` and `/plan` dispatch rather than bounded-check, and
   whether the bounded checks were adequate in hindsight (ADR 0051's revisit

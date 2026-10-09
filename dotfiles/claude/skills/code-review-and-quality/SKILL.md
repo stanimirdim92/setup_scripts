@@ -208,11 +208,11 @@ Step 3 appears in the output with a severity label and a confidence level
 (high/medium/low). Label every comment so the author knows what's required vs
 optional:
 
-| Label | Meaning | Author Action |
-|-------|---------|---------------|
-| **BLOCKER** | Blocks merge | Security vulnerability, data loss risk, broken functionality — must fix |
-| **REQUIRED** | Should fix before merge | Missing test, wrong abstraction, poor error handling |
-| **ADVISORY** | Optional improvement | Naming, style, optional optimization — author may decline |
+BLOCKER, REQUIRED and ADVISORY, and what the author must do for each, are
+defined once in `../../references/component-response-contracts.md`
+§Dispositions. Typical cases: a security hole, data loss or broken behavior is
+BLOCKER; a missing test, wrong abstraction or poor error handling is REQUIRED;
+naming, style or an optional optimization is ADVISORY.
 
 Concrete labeling bar: label BLOCKER or REQUIRED any finding that could
 cause incorrect behavior, a test failure, a security exposure, data loss, or
@@ -221,9 +221,9 @@ finding standard is ADVISORY. Low confidence lowers certainty, not
 severity — a low-confidence possible race condition is still BLOCKER, marked
 low-confidence, not ADVISORY.
 
-When uncertain which severity applies, choose the lower one. A pipeline maps
-severity straight to release disposition, so an inflated finding becomes a false
-blocker at release, while a real one earns its tier through evidence. This is
+When uncertain which disposition applies, choose the lower one. `/ship` acts on
+the disposition as written, so an inflated finding becomes a false blocker at
+release, while a real one earns its tier through evidence. This is
 severity, not the finding standard: still record the finding; just tier it
 conservatively. (Uncertain *whether* a defect exists is confidence, above, and
 never lowers severity.)
@@ -254,7 +254,7 @@ blocking set ambiguous.
 
 ### Output Contract
 
-Every finding includes a stable id (`CODE-1`, `CODE-2`, ...), native label,
+Every finding includes a stable id (`CODE-1`, `CODE-2`, ...), disposition,
 confidence (high/medium/low), file/location, evidence, and concrete
 recommendation. BLOCKER and REQUIRED findings must explain the required
 correction rather than merely naming a problem.
