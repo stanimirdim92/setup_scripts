@@ -51,7 +51,7 @@ doing, not just what it is.
 
 | Idea | Reason rejected |
 |---|---|
-| — | — |
+| `repo-recon` on Haiku 5.5 (`claude-haiku-5-5`) to cut recon cost | Spec-eval on LD-380 (2026-10-11, branch `experiment/haiku-recon`) scored worse than the Sonnet 5.5 baseline. The spec's recurring misses are code-reading gaps, so the recon reader is the wrong place to save. Recon stays on Sonnet 5.5. |
 
 - **Delta specs merged into living per-capability specs** (from
   Fission-AI/openspec): per-ticket specs become deltas
