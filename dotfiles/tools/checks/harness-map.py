@@ -36,13 +36,15 @@ CODEX = ROOT / 'dotfiles/codex'
 OUT = ROOT / 'dotfiles/docs/harness-map.html'
 
 # The gate order is design, not data: no file states it as a list. Everything
-# else on a stage card is read from the command file.
-PIPELINE = ['spec', 'plan', 'build', 'review', 'test', 'ship']
+# else on a stage card is read from the command file. Intake is a skill, not
+# a command, so its card is read from the skill file instead.
+PIPELINE = ['intake', 'spec', 'plan', 'build', 'review', 'test', 'ship']
 HUMAN_GATE_AFTER = {'spec': 'approve spec', 'plan': 'approve plan', 'ship': 'push / merge'}
 CONDITIONAL = {'test': 'only when /review requires it'}
 # What each stage leaves behind. Artifact paths are the ones
 # validate-artifact-paths.py guards; the gate words are the commands' own.
 STAGE_OUTPUT = {
+    'intake': 'docs/specs/[TICKET]-intake.md',
     'spec': 'docs/specs/[TICKET]-SPEC.md, Status: Draft',
     'plan': 'docs/tasks/[TICKET]-plan.md + -todo.md',
     'build': 'local commits, task Status: Done',
@@ -50,6 +52,11 @@ STAGE_OUTPUT = {
     'test': 'VERIFY PASS / FAIL / BLOCKED',
     'ship': 'GO / NO-GO with a rollback plan',
 }
+INTAKE_SKILL = 'jira-ticket'
+
+
+def stage_name(name):
+    return 'Jira intake' if name == 'intake' else f'/{name}'
 
 
 
@@ -313,6 +320,13 @@ def commands(persona_names):
         named = sorted({n for n in persona_names if f'`{n}`' in text})
         out[path.stem] = {'description': data.get('description', ''), 'model': data.get('model', ''),
                           'personas': named, 'path': rel(path)}
+    path = CLAUDE / 'skills' / INTAKE_SKILL / 'SKILL.md'
+    data, _ = frontmatter(read(path))
+    # The card shows the sentence that names the hand-off, not the "intake only" lead.
+    sentences = re.split(r'(?<=[.!?])\s', data.get('description', '').strip())
+    desc = next((x for x in sentences if '/spec' in x), sentences[0]).rstrip('.')
+    out['intake'] = {'description': desc, 'model': data.get('model', ''),
+                     'personas': [], 'path': rel(path)}
     return out
 
 
@@ -463,7 +477,7 @@ def pipeline_list(cmds, writers):
         badge = f' <span class="badge cond">{e(CONDITIONAL[name])}</span>' if cond else ''
         who = ''.join(persona_label(p, writers) for p in c['personas']) or '<span class="note">the session itself</span>'
         cls = ' class="cond"' if cond else ''
-        rows.append(f'<li{cls}><span class="cmd">/{e(name)}</span>'
+        rows.append(f'<li{cls}><span class="cmd">{e(stage_name(name))}</span>'
                     f'<span class="does">{e(c["description"])}{badge}'
                     f'<span class="leaves">Leaves {e(STAGE_OUTPUT.get(name, ""))}</span></span>'
                     f'<span class="who">{who}</span></li>')
@@ -479,10 +493,10 @@ def pipeline_strip(cmds, writers):
             continue
         if parts:
             parts.append('<span class="sep">→</span>')
-        parts.append(f'<span class="box{" cond" if name in CONDITIONAL else ""}">/{e(name)}</span>')
+        parts.append(f'<span class="box{" cond" if name in CONDITIONAL else ""}">{e(stage_name(name))}</span>')
         if name in HUMAN_GATE_AFTER:
             parts.append(f'<i class="diamond" title="{e(HUMAN_GATE_AFTER[name])}"></i>')
-    rows = ''.join(f'<tr><td class="cmdcell">/{e(n)}</td><td><div class="who">'
+    rows = ''.join(f'<tr><td class="cmdcell">{e(stage_name(n))}</td><td><div class="who">'
                    + (''.join(persona_label(p, writers) for p in cmds[n]['personas']) or '<span class="note">—</span>')
                    + '</div></td></tr>' for n in PIPELINE if n in cmds)
     return (f'<div class="panel"><div class="strip">{"".join(parts)}</div>'
@@ -531,7 +545,7 @@ def pipeline_flow(cmds, writers):
         out.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="6" fill="{fill}" stroke="{stroke}" '
                    f'stroke-width="1.5"{dash}/>')
         ty = y + PAD + 16
-        out.append(f'<text x="{x + PAD}" y="{ty}" class="f-cmd">/{e(name)}</text>')
+        out.append(f'<text x="{x + PAD}" y="{ty}" class="f-cmd">{e(stage_name(name))}</text>')
         ty += 8
         for line in desc:
             ty += LINE
@@ -563,7 +577,7 @@ def pipeline_flow(cmds, writers):
             out.append(f'<text x="{x + 12}" y="{(y1 + y2) / 2 + 5}" class="f-edge-label">{e(label)}</text>')
 
     cx = X + W / 2
-    edge_label = {'spec': 'draft spec', 'plan': 'draft plan', 'build': 'candidate commits',
+    edge_label = {'intake': 'intake summary', 'spec': 'draft spec', 'plan': 'draft plan', 'build': 'candidate commits',
                   'ship': 'GO and rollback plan'}
     after_gate = {'spec': 'approved spec', 'plan': 'approved plan', 'ship': None}
     main = [n for n in PIPELINE if n in cmds and n not in CONDITIONAL]
@@ -605,7 +619,7 @@ def pipeline_flow(cmds, writers):
         out.append(f'<text x="{TX + TW / 2 + 12}" y="{(boxes["_test_join"] + jy) / 2 + 5}" '
                    f'class="f-edge-label">VERIFY PASS</text>')
     height = y + 16
-    svg = (f'<svg viewBox="0 0 {SVGW} {height}" role="img" aria-label="The pipeline from /spec to /ship: each '
+    svg = (f'<svg viewBox="0 0 {SVGW} {height}" role="img" aria-label="The pipeline from Jira intake to /ship: each '
            'stage, who runs it and what it leaves behind, with the three human decisions and the conditional '
            '/test detour.">'
            '<defs><marker id="f-arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" '

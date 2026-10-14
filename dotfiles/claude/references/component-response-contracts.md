@@ -352,7 +352,8 @@ instead, but the response shape each role produces is identical either way.
 
 Six commands in `../../claude/commands/` own the pipeline
 (`docs/agents.md`): `/spec -> /plan -> /build -> /review -> /ship`, with `/test`
-as an optional branch before `/review`. Each ends in exactly one named terminal
+as an optional branch before `/review`. Jira intake (`jira-ticket` skill) comes
+before `/spec`; `/explain` sits outside the gates. Each ends in exactly one named terminal
 state and, except `/ship`, writes an artifact to a fixed path.
 
 | Command | Artifact | Terminal states |

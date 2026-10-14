@@ -24,12 +24,22 @@ the caller to run.
 ## Pipeline
 
 ```text
-/spec -> /plan -> /build -> /review -> /ship
-   |       |                 \
-   |       |                  -> /test -> /review
-   |       |                     when required
-   +-------+-> repo-recon (when needed; reused within a conversation)
+intake -> /spec -> /plan -> /build -> /review -> /ship
+(Jira)      |       |                 \
+            |       |                  -> /test -> /review
+            |       |                     when required
+            +-------+-> repo-recon (when needed; reused within a conversation)
+
+/explain: after /build or /review, outside the gates
 ```
+
+### Intake
+
+Ticket-backed work starts with the `jira-ticket` skill. It fetches the ticket,
+saves `docs/specs/<TICKET>-intake.md`, and stops with `/spec` as the next
+action. It does not read the repository or start `/spec`.
+
+Source: `../skills/jira-ticket/SKILL.md`.
 
 ### `/spec` and `/plan`
 

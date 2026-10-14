@@ -29,11 +29,13 @@ independently planned behavior wins over file count.
 The harness has these user-invoked stages:
 
 ```text
-DEFINE      PLAN       BUILD       REVIEW       SHIP
-/spec  ->   /plan  ->  /build  ->  /review  ->  /ship
-                              \
-                               -> /test -> /review
-                                  VERIFY, when required
+INTAKE      DEFINE      PLAN       BUILD       REVIEW       SHIP
+intake  ->  /spec  ->   /plan  ->  /build  ->  /review  ->  /ship
+(Jira)                                    \
+                                           -> /test -> /review
+                                              VERIFY, when required
+
+/explain: a review page after /build or /review, outside the gates
 ```
 
 ### Phase 0: Scope Check
