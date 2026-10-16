@@ -179,6 +179,20 @@ push 'gh pr list'                               allow
 push 'echo "do not git push"'                   deny   # conservative: text mentions push; documented false positive
 push 'yarn test'                                allow
 
+# ------------------------------------------------------------------ no jq
+# A guard that cannot parse its input must deny, not exit with an error that
+# Claude Code reads as "allow". Only exit code 2 blocks a tool call.
+mkdir "$TMP/no-jq"
+ln -s "$(command -v cat)" "$TMP/no-jq/cat"
+BASH_BIN="$(command -v bash)"
+for hook in "$BLOCK" "$WARN" "$PUSH" "$HOOKS/require-commit-trailers.sh" "$HOOKS/require-isolated-test-runner.sh"; do
+  out="$(jq -n --arg d "$TMP/on-feature" '{tool_input:{command:"git status"},cwd:$d}' \
+    | PATH="$TMP/no-jq" "$BASH_BIN" "$hook" 2>/dev/null)"
+  got="$(jq -r '.hookSpecificOutput.permissionDecision // "allow"' <<<"$out" 2>/dev/null)"
+  [ -n "$got" ] || got="allow"
+  if [ "$got" = "deny" ]; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); FAILED+=("[no-jq] $(basename "$hook") — expected deny, got $got"); fi
+done
+
 # ------------------------------------------------------------------ report
 echo "hooks: $PASS passed, $FAIL failed"
 if [ "$FAIL" -gt 0 ]; then

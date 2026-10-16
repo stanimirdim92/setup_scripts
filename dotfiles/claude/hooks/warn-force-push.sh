@@ -9,6 +9,13 @@
 # see https://code.claude.com/docs/en/hooks.
 set -euo pipefail
 
+# Fail closed: without jq this guard cannot read the command, and a crash
+# reads as "allow" to Claude Code. Deny with a fixed, jq-free response.
+command -v jq >/dev/null || {
+  printf '%s\n' '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"warn-force-push.sh needs jq to check this command. Install jq, then retry."}}'
+  exit 0
+}
+
 input="$(cat)"
 command="$(jq -r '.tool_input.command // empty' <<<"$input")"
 cwd="$(jq -r '.cwd // empty' <<<"$input")"

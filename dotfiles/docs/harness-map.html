@@ -177,9 +177,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="layout">
-<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>7</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>45</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>24</span></a><a href="#decisions">Decisions<span>86</span></a></nav>
+<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>7</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>45</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>19</span></a><a href="#ci">Self-tests<span>24</span></a><a href="#decisions">Decisions<span>87</span></a></nav>
 <main>
-<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>7</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>45</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>24</b>self-tests</span><span class="count"><b>86</b>decisions</span></div></header>
+<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>7</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>45</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>19</b>references</span><span class="count"><b>24</b>self-tests</span><span class="count"><b>87</b>decisions</span></div></header>
 <section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The orange rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">teal</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
 <div class="tabs" role="tablist" aria-label="Pipeline views">
 <button type="button" role="tab" id="tab-list" aria-controls="view-list" aria-selected="false" tabindex="-1" data-view="list"><span>1</span>Stage list</button>
@@ -208,9 +208,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="group" colspan="4">Any shell command<span>PreToolUse · Bash</span></td></tr>
 <tr><td class="cmdcell">block-destructive-bash.sh</td><td>every session</td><td>Hard-blocks a short list of commands that are almost never intentional and hard to undo.</td><td class="tested">test-hooks.sh</td></tr>
 <tr><td class="cmdcell">warn-force-push.sh</td><td>every session</td><td>Force-pushing to main/master always asks, everywhere — it&#x27;s the harder-to-undo case regardless of surface.</td><td class="tested">test-hooks.sh</td></tr>
-<tr><td class="cmdcell">require-isolated-test-runner.sh</td><td>every session</td><td>Denies a bare test-suite run when the project ships an isolating runner and more than one worktree is live.</td><td class="tested">test-isolated-test-runner.sh</td></tr>
+<tr><td class="cmdcell">require-isolated-test-runner.sh</td><td>every session</td><td>Denies a bare test-suite run when the project ships an isolating runner and more than one worktree is live.</td><td class="tested">test-hooks.sh<br>test-isolated-test-runner.sh</td></tr>
 <tr><td class="cmdcell">block-agent-push.sh</td><td>executor, test-engineer (frontmatter)</td><td>Hard-denies anything that moves work off the machine: <code>git push</code> in every spelling, and the <code>gh</code> commands that push or publish for you.</td><td class="tested">test-hooks.sh</td></tr>
-<tr><td class="cmdcell">require-commit-trailers.sh</td><td>executor, test-engineer (frontmatter)</td><td>Denies a <code>git commit</code> whose message has no <code>Refs:</code> trailer (git-workflow-and-versioning §Ticket trailers, ADR 0073).</td><td class="tested">test-commit-trailers.sh</td></tr>
+<tr><td class="cmdcell">require-commit-trailers.sh</td><td>executor, test-engineer (frontmatter)</td><td>Denies a <code>git commit</code> whose message has no <code>Refs:</code> trailer (git-workflow-and-versioning §Ticket trailers, ADR 0073).</td><td class="tested">test-commit-trailers.sh<br>test-hooks.sh</td></tr>
 <tr><td class="group" colspan="4">A writer tries to finish<span>SubagentStop</span></td></tr>
 <tr><td class="cmdcell">require-handoff-report.sh</td><td>executor, test-engineer (frontmatter)</td><td>The orchestrator otherwise takes &quot;done&quot; on faith; this refuses to let an executor or test-engineer finish until its final report carries what the persona already promises: verification commands *wi…</td><td class="tested">test-handoff-hook.sh</td></tr>
 </tbody></table></div></section>
@@ -362,7 +362,8 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td><b>Batch spec runner</b><span class="sub">The batch spec runner&#x27;s decisions, with <code>claude</code> stubbed.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-batch-spec.sh</td></tr>
 <tr><td><b>Run metrics</b><span class="sub">Measurement: the transcript metrics&#x27; large-result section.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-run-metrics.sh</td></tr>
 </tbody></table></div></section>
-<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">86 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">87 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<tr><td class="cmdcell">0087</td><td>Command guards fail closed without jq</td></tr>
 <tr><td class="cmdcell">0086</td><td>Public-repo and permission hardening after the 2026-10-09 review</td></tr>
 <tr><td class="cmdcell">0085</td><td>The OS sandbox is off; credential files keep Read denials</td></tr>
 <tr><td class="cmdcell">0084</td><td>Each pipeline stage starts in a fresh context</td></tr>
@@ -372,7 +373,6 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">0080</td><td>Reviewer turn cap raised to 100</td></tr>
 <tr><td class="cmdcell">0079</td><td>Eval integrity and paired comparison</td></tr>
 <tr><td class="cmdcell">0078</td><td>Mutation probes, a weakened-test guard, and checked section references</td></tr>
-<tr><td class="cmdcell">0077</td><td>Writing rule checked in CI</td></tr>
 </tbody></table></div></section>
 <footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. Do not edit by hand.</footer></main></div>
 <script>

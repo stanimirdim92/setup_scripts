@@ -94,6 +94,7 @@ that explanation here, just the index.
 | [0084](0084-each-stage-starts-in-a-fresh-context.md) | Each pipeline stage starts in a fresh context | Accepted |
 | [0085](0085-sandbox-off-credential-read-denials.md) | The OS sandbox is off; credential files keep Read denials | Accepted |
 | [0086](0086-public-repo-and-permission-hardening.md) | Public-repo and permission hardening after the 2026-10-09 review | Accepted |
+| [0087](0087-guards-fail-closed-without-jq.md) | Command guards fail closed without jq | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and
