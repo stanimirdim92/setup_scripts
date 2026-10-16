@@ -142,6 +142,9 @@ Surface uncertainty, skipped steps, and unverified claims explicitly. Never let 
 - Before compaction/session boundaries, preserve only goal/success criteria,
   user decisions, architectural decisions, changed files, verification evidence,
   blockers, and remaining work.
+- For ticket work, write remaining work, open questions and known failures to
+  `docs/tasks/<TICKET>-open.md` (`references/plan-quality-gates.md` §6), not
+  only to the chat or a compaction summary.
 
 ## Writing for humans
 

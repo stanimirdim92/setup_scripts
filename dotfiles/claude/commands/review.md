@@ -123,6 +123,17 @@ file/location, and resolution state. Confidence travels with the
 finding so `/ship` can distinguish a confirmed BLOCKER (resolved only by a fix)
 from a suspected one (resolvable by a fix or by recorded refuting evidence).
 
+Check that the ticket's records still agree
+(`../references/plan-quality-gates.md` §6):
+
+```bash
+python3 "$HOME/.claude/skills/spec-driven-development/scripts/check-ledger.py" <TICKET>
+```
+
+Report each FAIL as a REQUIRED finding with the id `LEDGER-#`. Report each
+warning as an ADVISORY finding. Exit 2 means the spec was not found: record
+**Ledger: Not verified**.
+
 Report:
 
 - candidate branch/diff scope;
@@ -130,6 +141,8 @@ Report:
 - **Independent verification: NOT REQUIRED | PASS**;
 - required-reviewer list and trigger decisions;
 - the weakened-test result, and how each listed change was resolved;
+- the ledger result: **Ledger: clean**, the `LEDGER-#` findings, or
+  **Ledger: Not verified**;
 - each reviewer result under its own heading;
 - all findings with canonical disposition, each tagged with the `REQ-###` it
   bears on when it bears on one;

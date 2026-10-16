@@ -312,3 +312,14 @@ Never estimate unavailable token/cost/time data.
 Do not dispatch independent verifiers or reviewers here. The next stage is
 `/review`; `/review` decides whether the separate `/test` gate is required for
 this candidate.
+
+## 4. Work outside `/build`
+
+A fix or change made in conversation on a ticket branch skips this command,
+so none of its records update. Record it in the same session:
+
+- Add an `unplanned commit` item to `docs/tasks/<TICKET>-open.md` that names
+  the commit's short sha (`../references/plan-quality-gates.md` §6).
+- For a behavior change, also add a `DEC-###` to the spec. Add an `Amends:`
+  line when it changes an earlier rule, and set the plan to `Needs replan`.
+- Run `check-ledger.py <TICKET>` before you end the session.

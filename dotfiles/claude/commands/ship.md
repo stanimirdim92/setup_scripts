@@ -29,6 +29,17 @@ Use `/review`'s weakened-test result: **Weakened tests: none found**, or every
 listed entry resolved as a finding or a stated reason. A missing result or
 **Weakened tests: Not verified** is **SHIP BLOCKED** (ADR 0078).
 
+Run the ledger check with `--ship` on the current tree
+(`../references/plan-quality-gates.md` §6):
+
+```bash
+python3 "$HOME/.claude/skills/spec-driven-development/scripts/check-ledger.py" <TICKET> --ship
+```
+
+Any FAIL is **SHIP BLOCKED**: an `Open` item, a `Pending` task that is not
+superseded, a spec that changed after the plan pin, or untracked deferred work.
+Exit 2 is **SHIP BLOCKED** too. Warnings go into the report.
+
 Do not independently re-run the trigger matrix or substitute new inline testing
 for a missing gate.
 
@@ -96,6 +107,7 @@ GO requires:
 - unchanged reviewed candidate;
 - independent verification satisfied exactly as REVIEW required;
 - no unresolved BLOCKER;
+- `check-ledger.py --ship` passing;
 - every spec requirement carrying both implementation and verification evidence;
 - every REQUIRED finding resolved (fixed or refuted), explicitly risk-accepted,
   or deferred with a concrete reason;

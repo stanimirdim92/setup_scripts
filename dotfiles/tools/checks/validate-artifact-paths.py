@@ -37,6 +37,7 @@ ALLOWED = [re.compile(p + r'\Z') for p in (
     r'docs/specs/\[TICKET\]-SPEC\.md',
     r'docs/tasks/\[TICKET\]-plan\.md',
     r'docs/tasks/\[TICKET\]-todo\.md',
+    r'docs/tasks/\[TICKET\]-open\.md',
 )]
 
 # Every file that produces, consumes, or describes a pipeline artifact path.
