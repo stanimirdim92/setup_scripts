@@ -52,7 +52,8 @@ in `../references/component-response-contracts.md` §Dispositions.
   reviewer marked low-confidence (suspected) — refuted with recorded evidence
   that addresses its specific failure scenario. Low confidence alone never
   waives a BLOCKER, and refutation evidence comes from the resolution loop
-  (`/build` or the user), not from `/ship` itself;
+  (`/build` or the user) or from `/review`'s independent verification
+  (a REFUTED verdict with `file:line` evidence), not from `/ship` itself;
 - every **REQUIRED** finding must be fixed, refuted with recorded evidence that
   addresses its specific claim, explicitly accepted as risk, or deferred with a
   concrete reason. Refutation is the resolution for a false positive; do not

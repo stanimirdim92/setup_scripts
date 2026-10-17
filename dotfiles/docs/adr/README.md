@@ -99,6 +99,7 @@ that explanation here, just the index.
 | [0089](0089-review-converges-in-three-rounds.md) | Review converges in three rounds | Accepted |
 | [0090](0090-pre-existing-findings-do-not-block.md) | Pre-existing findings do not block | Accepted |
 | [0091](0091-review-md-guides-every-reviewer.md) | A project REVIEW.md guides every reviewer | Accepted |
+| [0092](0092-every-blocker-gets-an-independent-check.md) | Every BLOCKER gets an independent check | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

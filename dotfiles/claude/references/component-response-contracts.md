@@ -449,13 +449,16 @@ reviewer; the disposition decides `level` (§Dispositions):
         "region": {"startLine": 42}}}],
       "baselineState": "new",
       "properties": {"disposition": "BLOCKER", "confidence": "high",
-                     "requirement": "REQ-003", "resolution": "open"}
+                     "requirement": "REQ-003", "resolution": "open",
+                     "verification": "CONFIRMED"}
     }]
   }]
 }
 ```
 
 `baselineState` is `unchanged` for a pre-existing finding and `new` otherwise.
+`verification` is the BLOCKER check's verdict (CONFIRMED, REFUTED or UNSURE);
+other findings omit it.
 `uri` is relative to the repository root. A finding without a line keeps the
 `artifactLocation` and drops `region`; one without a file drops `locations`.
 `properties` keeps what SARIF has no field for, so nothing in the markdown

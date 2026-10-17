@@ -161,6 +161,27 @@ file/location, and resolution state. Confidence travels with the
 finding so `/ship` can distinguish a confirmed BLOCKER (resolved only by a fix)
 from a suspected one (resolvable by a fix or by recorded refuting evidence).
 
+### Verify each BLOCKER
+
+Before reporting, give every BLOCKER one independent check that tries to refute
+it (ADR 0092). Dispatch a fresh reviewer that did not raise it: `code-reviewer`
+for a `BLIND-#` finding, `blind-reviewer` for a `CODE-#` finding, and a fresh
+instance of the same specialist for a `SEC-#` or `DIST-#` finding. The packet
+holds the diff and that one finding (id, `file:line`, claim, failure scenario),
+nothing from the other reviewers. For `blind-reviewer`, remove any `REQ-###`
+or goal wording from the finding first. Ask for one verdict with `file:line`
+evidence:
+
+- **CONFIRMED** — the failure scenario follows from the code. Record the
+  confidence as high.
+- **REFUTED** — the code prevents it. Keep the BLOCKER, record the confidence
+  as low, and attach the refuting evidence.
+- **UNSURE** — leave the finding as it is.
+
+Keep the two-concurrent limit. In a later round, verify only new BLOCKERs.
+
+### Ledger
+
 Check that the ticket's records still agree
 (`../references/plan-quality-gates.md` §6):
 
@@ -184,6 +205,7 @@ Report:
 - the ledger result: **Ledger: clean**, the `LEDGER-#` findings, or
   **Ledger: Not verified**;
 - each reviewer result under its own heading;
+- the verification verdict of every BLOCKER, with its evidence;
 - all findings with canonical disposition, each tagged with the `REQ-###` it
   bears on when it bears on one;
 - **requirement evidence**: one line per `REQ-###` in the spec — the change that
