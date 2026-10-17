@@ -66,6 +66,13 @@ in `../references/component-response-contracts.md` §Dispositions.
   under follow-ups with where it is tracked: a ticket, or an observation-log
   row. A pre-existing BLOCKER with no tracked follow-up is NO-GO.
 
+Write each finding's resolution into the review SARIF file
+(`properties.resolution`): `fixed`, `refuted`, `accepted`, `deferred`,
+`follow-up` for a tracked pre-existing finding, or `open`. ADVISORY findings
+the author declined are `declined`. `review-noise.py` counts these to show
+which reviewers raise findings that end as fixes and which raise noise
+(ADR 0093).
+
 A production fix returns to `/build`, then the new candidate goes through
 `/review` again; REVIEW will decide whether `/test` is required.
 

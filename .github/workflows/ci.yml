@@ -124,6 +124,14 @@ jobs:
       - name: Plan-recall scoring logic
         working-directory: dotfiles/tools/evals/plan-recall
         run: python3 test_recall.py
+      # Review eval: case building and judging (adr/0093). Producing runs the
+      # real /review and stays manual.
+      - name: Review eval
+        working-directory: dotfiles/tools/evals/review-eval
+        run: python3 test_review_eval.py
+      # How review findings ended, per reviewer (adr/0093).
+      - name: Review noise count
+        run: python3 dotfiles/tools/tests/test-review-noise.py
 
       # Orchestration: the workflow runner's own assertion and fixture logic.
       # NOT the live cases — those spend tokens and stay manual.

@@ -1,0 +1,4 @@
+# Cases name commits and file paths of a private project, and this repository
+# is public. Keep them local. Run output (--output folders) too.
+fixtures/
+/*/

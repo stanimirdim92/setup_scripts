@@ -14,6 +14,7 @@ free.
 | --- | --- | --- |
 | `plan-recall/` | Did the plan name the files that really changed? Before coding, a plan lists the files it expects to touch. After the ticket ships, this compares that list with the real diff. 18 of 20 files named is 90%. | Free: it reads git and the plan |
 | `spec-eval/` | How close does today's harness get to the spec you approved? It writes a fresh spec for a shipped ticket, on the code as it was before the work began, then compares it with the approved one. | One real `/spec` run, about $1.40. Scoring a spec you already have is free |
+| `review-eval/` | Does `/review` catch bugs that really shipped? A bugfix commit points, through blame, at the commit that wrote the bug; `/review` runs on that commit and must flag those lines. Clean commits count noise. | One real `/review` per case |
 | `workflow/` | Does the pipeline make the right calls on small made-up cases: which reviewers run, and whether `/test` is needed? | Real model runs |
 
 ## Did my harness change help?
