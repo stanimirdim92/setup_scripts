@@ -79,15 +79,24 @@ python3 "$HOME/.claude/skills/code-review-and-quality/scripts/weakened-tests.py"
 - Exit 2: record **Weakened tests: Not verified** with the error. Never read
   it as clean.
 
+Read the project's `REVIEW.md`: the one at the repository root, and any in a
+directory the diff touches (template: `../references/templates/review.md`).
+It says what failure looks like in this repository, what to always check,
+which paths to skip, and the rules for findings. It describes the area, not
+the change, so every reviewer gets it (ADR 0091). Without one, say so in the
+report.
+
 Dispatch `code-reviewer` with:
 
 - the integrated diff;
+- the project's `REVIEW.md`, when there is one;
 - a one-line goal;
 - the relevant acceptance criteria;
 - the build/verify evidence needed to understand what was checked;
 - the weakened-test list, when there is one.
 
-Dispatch `blind-reviewer` with **the integrated diff and nothing else**. No
+Dispatch `blind-reviewer` with **the integrated diff and nothing else**, except
+the project's `REVIEW.md`, which describes the area rather than the change. No
 goal, no acceptance criteria, no build evidence, no ticket id in the packet
 text. Assembling this packet is a deliberate act of withholding: everything you
 naturally reach for is exactly what must not go in. A reviewer told what the
@@ -98,6 +107,7 @@ Do not send either reviewer the full spec or plan.
 
 Use `../references/reviewer-triggers.md` to decide whether
 `security-auditor` and/or `distributed-systems-reviewer` are also required.
+Give each specialist the project's `REVIEW.md` too.
 
 Run at most **2 reviewers concurrently**. Reviewers form judgments
 independently; do not pass one reviewer's findings to another — least of all
@@ -169,6 +179,7 @@ Report:
 - BUILD candidate and any accepted post-BUILD test-only commits;
 - **Independent verification: NOT REQUIRED | PASS**;
 - required-reviewer list and trigger decisions;
+- whether the project has a `REVIEW.md`, and which ones were used;
 - the weakened-test result, and how each listed change was resolved;
 - the ledger result: **Ledger: clean**, the `LEDGER-#` findings, or
   **Ledger: Not verified**;
