@@ -33,6 +33,18 @@ BLOCKED**.
 Standalone review may still be performed when directly requested, but it is not
 the pipeline REVIEW gate.
 
+Count the review round: one more than the ticket's earlier review files.
+
+```bash
+ls "$(git rev-parse --git-common-dir)/review/<TICKET>-"*.sarif 2>/dev/null | wc -l
+```
+
+Round 1 reviews the whole candidate. A later round reviews a fix (§3 Later
+rounds). Round 4 means three rounds did not converge. Return **REVIEW
+BLOCKED**, list the findings that came back in more than one round, and ask
+the user to reconsider the approach before another fix (ADR 0089). Delete the
+ticket's old review files only when the user starts a new approach.
+
 ## 2. Independent-verification gate
 
 Evaluate the candidate against
@@ -95,6 +107,22 @@ Use each persona's configured model and effort. The reviewers already sit at
 the highest tier their definitions declare; raise a specialist beyond it only
 when the matched risk is both high-impact and materially ambiguous.
 
+### Later rounds
+
+From round 2 the candidate fixes earlier findings. Review the fix, not the
+whole change again. The last reviewed commit is the short sha in the newest
+review file name.
+
+- Give `code-reviewer` the diff since that commit and the earlier findings with
+  their resolutions. It does not raise a resolved finding again unless the new
+  diff brings it back.
+- Give `blind-reviewer` the diff since that commit and nothing else. Drop any of
+  its findings that repeat a resolved finding at the same location, and say so
+  in the report.
+- Run a specialist again only when the new diff matches its trigger.
+- Run the weakened-test guard and the ledger check on the whole candidate, as
+  in round 1.
+
 ## 4. Report
 
 Every finding carries the disposition its reviewer gave it: BLOCKER,
@@ -136,6 +164,7 @@ warning as an ADVISORY finding. Exit 2 means the spec was not found: record
 
 Report:
 
+- the review round, and for a later round the commit it was reviewed from;
 - candidate branch/diff scope;
 - BUILD candidate and any accepted post-BUILD test-only commits;
 - **Independent verification: NOT REQUIRED | PASS**;

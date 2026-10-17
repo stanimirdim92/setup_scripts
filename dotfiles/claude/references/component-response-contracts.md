@@ -313,7 +313,9 @@ this shape.
 
 Confidence (`high`/`medium`/`low`) travels separately from the disposition — a
 low-confidence finding keeps its true disposition, marked low-confidence,
-rather than being downgraded. A `maxTurns` cap ending a run early is reported
+rather than being downgraded. When a defect is an instance of a pattern, the
+finding names the class and lists every instance in the diff, so one fix round
+removes all of them (ADR 0089). A `maxTurns` cap ending a run early is reported
 as a partial result with everything unexamined named explicitly; a truncated
 report is never presented as clean or complete. No persona issues GO/NO-GO,
 and no persona invokes another agent or slash command — only a command or the
