@@ -79,8 +79,11 @@ python3 "$HOME/.claude/skills/code-review-and-quality/scripts/weakened-tests.py"
 - Exit 2: record **Weakened tests: Not verified** with the error. Never read
   it as clean.
 
-Read the project's `REVIEW.md`: the one at the repository root, and any in a
-directory the diff touches (template: `../references/templates/review.md`).
+Read the project's `REVIEW.md` from the candidate base, never from the
+candidate: the one at the repository root, and any in a directory the diff
+touches (`git show <base>:REVIEW.md`, `git show <base>:<dir>/REVIEW.md`).
+A change to `REVIEW.md` does not apply to its own review, so a change cannot
+lower its own bar (ADR 0094). Template: `../references/templates/review.md`.
 It says what failure looks like in this repository, what to always check,
 which paths to skip, and the rules for findings. It describes the area, not
 the change, so every reviewer gets it (ADR 0091). Without one, say so in the
@@ -130,6 +133,8 @@ review file name.
   its findings that repeat a resolved finding at the same location, and say so
   in the report.
 - Run a specialist again only when the new diff matches its trigger.
+- Report no new ADVISORY or pre-existing finding. Count them, and end the
+  summary with "<n> found and not reported in this round".
 - Run the weakened-test guard and the ledger check on the whole candidate, as
   in round 1.
 

@@ -98,9 +98,10 @@ that explanation here, just the index.
 | [0088](0088-ticket-ledger-check.md) | A ticket ledger check after planning | Accepted |
 | [0089](0089-review-converges-in-three-rounds.md) | Review converges in three rounds | Accepted |
 | [0090](0090-pre-existing-findings-do-not-block.md) | Pre-existing findings do not block | Accepted |
-| [0091](0091-review-md-guides-every-reviewer.md) | A project REVIEW.md guides every reviewer | Accepted |
+| [0091](0091-review-md-guides-every-reviewer.md) | A project REVIEW.md guides every reviewer | Amended by [0094](0094-review-md-from-the-base-branch.md) (read from the base branch) |
 | [0092](0092-every-blocker-gets-an-independent-check.md) | Every BLOCKER gets an independent check | Accepted |
 | [0093](0093-review-eval-and-noise-count.md) | A review eval from shipped bugs, and a count of review noise | Accepted |
+| [0094](0094-review-md-from-the-base-branch.md) | REVIEW.md is read from the base branch | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and
