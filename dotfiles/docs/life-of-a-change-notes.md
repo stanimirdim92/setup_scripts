@@ -182,3 +182,77 @@ Add your note under each bullet as `> Note: ...`.
    after merge, naming the layer that should have caught it — and each one
    becomes a review-eval case.
 8. **Flag question at `/ship`** (layer 6) for risky new behavior.
+
+---
+
+## "How you can adopt this process" — their checklist against the harness
+
+Their intro: "Most of the pieces to do this with your team exist today."
+
+### Before the pull request
+
+| Their item | Harness | Gap |
+|---|---|---|
+| Checks the agent can run, listed in a short `CLAUDE.md` | ✅ Task packets carry the project's test/lint commands; `CLAUDE.md` holds them | — |
+| Hooks that run formatters and linters | ❌ No PostToolUse hook. Formatting is an instruction (`pint --dirty`), not enforced | 9 |
+| `/code-review`, `/security-review` locally, or a fresh-context subagent review | ✅ `/review` with `blind-reviewer`; ◐ `/security-review` not run on every candidate | 6 |
+| A `REVIEW.md`, and move repeated review comments into it | ✅ `REVIEW.md` (ADRs 0091, 0094); ◐ nothing proposes the move | 10 |
+
+### On every pull request
+
+| Their item | Harness | Gap |
+|---|---|---|
+| Require CI; PR template with "Testing", "Risk", "How to revert" | ✅ Requirement evidence and rollback plan at `/ship`; ◐ no "Risk" line | 2 |
+| An AI reviewer on one repo, tune `REVIEW.md` for a few weeks, then widen | ✅ `/review`; the managed Code Review is optional | — |
+| Automated security review; every thread resolved before merge | ◐ Security by trigger; ✅ every finding resolved at `/ship` | 6 |
+| Effort matched to risk: Quick / Standard / Deep | ◐ Reviewer triggers only; no depth by risk | 2 |
+| Cap review rounds; after the first few, review only the new diff | ✅ ADR 0089 | — |
+
+### Approval
+
+| Their item | Harness | Gap |
+|---|---|---|
+| Written risk tiers, set from the change; start strict, loosen with evidence | ❌ No written tiers | 2 |
+| Lighter paths only for trusted authors | — One developer | — |
+| CODEOWNERS and branch protection: auth, billing, CI and release workflows, installers always need a person | ❌ No such path list in the harness; CODEOWNERS is the project's | 2 |
+| A bot's approval never replaces a human's; dismiss approvals on new commits | ✅ Agents never approve; `/ship` binds to the reviewed candidate | — |
+
+### Merge and after
+
+| Their item | Harness | Gap |
+|---|---|---|
+| Merge queue, flags, internal use first, staged releases, one-step rollback | ◐ Rollback plan ✅; no re-run on current main; no flag question | 1, 8 |
+| Incidents and reverts as an eval set; rescore when the reviewer's prompts, tools or model change | ◐ `review-eval` exists (ADR 0093); nothing requires a rescore when a reviewer changes | 7, 11 |
+| Measure human time, with revert and incident rates as the guardrail | ❌ Run metrics measure tokens and cost, not your time or shipped bugs | 12 |
+
+### New gaps from the checklist
+
+9. **Formatter and linter hooks** — a PostToolUse hook that runs the project's
+   formatter on edited files when the project declares one (e.g. `pint` for
+   PHP, `prettier`/`eslint --fix` for TS), so formatting is enforced, not asked.
+
+   > Note:
+
+10. **Repeated findings into `REVIEW.md`** — when `review-noise.py` or `/ship`
+    sees the same class of finding across tickets, propose a `REVIEW.md` line
+    for the owner to accept.
+
+   > Note:
+
+11. **Rescore on reviewer change** — a change to a reviewer persona, to
+    `/review`, or to a reviewer's model must come with a review-eval run
+    against the baseline; the commit or ADR names the result.
+
+   > Note:
+
+12. **Human time and shipped bugs** — record per ticket how many times you
+    were asked to decide (questions, approvals, review rounds) and any bug
+    found after merge, so automation can be loosened only while the
+    shipped-bug rate holds.
+
+   > Note:
+
+Gap 2 grows: written risk tiers (low / medium / high, set by the change),
+review depth matched to the tier, a "Risk" line in the `/ship` report, and
+the paths that always need a person (auth, billing, CI and release workflows,
+installers, migrations).
