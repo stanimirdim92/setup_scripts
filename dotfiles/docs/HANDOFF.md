@@ -8,7 +8,7 @@ Replace this file at the next handoff; git keeps the old ones.
 - Branch `main` holds everything (last commit `3b7c3ff`). The session branch
   `claude/dotfiles-harness-review-gtsrw6` matches it.
 - All 28 CI checks pass locally.
-- ADRs end at 0086.
+- ADRs end at 0093 (0087–0088 came from other sessions).
 
 ## What changed in this period
 
@@ -44,6 +44,16 @@ Replace this file at the next handoff; git keeps the old ones.
 - Old commits still hold the leaked Codex config, the backlog and the
   `.trash` skills. The owner chose not to rewrite history.
 
+**Code review, from Anthropic's write-up (2026-10-17):**
+- Review converges in three rounds; later rounds see only the fix diff
+  (ADR 0089).
+- Pre-existing findings do not block; `/ship` tracks them as follow-ups
+  (ADR 0090).
+- A project `REVIEW.md` guides every reviewer; template in
+  `references/templates/review.md` (ADR 0091).
+- Every BLOCKER gets an independent check (ADR 0092).
+- `tools/evals/review-eval/` and `tools/run/review-noise.py` (ADR 0093).
+
 ## Measured results
 
 - LD-380 single-session run: $9.75. About a third of the cache reads would
@@ -73,7 +83,10 @@ Replace this file at the next handoff; git keeps the old ones.
    Change the recon brief, then measure with spec-eval.
 5. **Next ticket:** run intake → `/clear` → `/spec` → `/clear` → `/plan`,
    with `/cost` before each `/clear`, to confirm the fresh-context saving.
-6. **Proposed, not built:** a measurement script (`eval-ticket.sh`) that
+6. **Code review:** put a `REVIEW.md` in leadbuster (a draft was given in
+   the session), build 3–5 review-eval cases from real bugfixes plus 2 clean
+   commits, and run a baseline.
+7. **Proposed, not built:** a measurement script (`eval-ticket.sh`) that
    runs plan coverage, spec-eval and run-metrics in one go; and dropping
    plan approval when check-plan is clean (from the AMPECO comparison).
 
