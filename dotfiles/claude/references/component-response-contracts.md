@@ -315,7 +315,8 @@ Confidence (`high`/`medium`/`low`) travels separately from the disposition — a
 low-confidence finding keeps its true disposition, marked low-confidence,
 rather than being downgraded. When a defect is an instance of a pattern, the
 finding names the class and lists every instance in the diff, so one fix round
-removes all of them (ADR 0089). A `maxTurns` cap ending a run early is reported
+removes all of them (ADR 0089). A defect present at the candidate base that the
+diff does not introduce or reach is marked `pre-existing` (§Dispositions). A `maxTurns` cap ending a run early is reported
 as a partial result with everything unexamined named explicitly; a truncated
 report is never presented as clean or complete. No persona issues GO/NO-GO,
 and no persona invokes another agent or slash command — only a command or the
@@ -410,6 +411,13 @@ label is set once, by the reviewer, and carried unchanged to `/ship`.
 yet; `/review` gives each one a disposition or closes it. This table is the
 only definition: personas, `/review` and `/ship` point here.
 
+**Pre-existing.** A finding is marked `pre-existing` when the defect already
+exists at the candidate base and the change neither introduces it nor makes it
+reachable or worse. It keeps its disposition, so its seriousness stays visible.
+It does not block `/ship`; `/ship` records it as a follow-up. A change that
+adds a caller of the old defect, copies it, or depends on it makes it new, and
+then it is not pre-existing (ADR 0090).
+
 Report includes: candidate branch/diff scope, BUILD candidate and any accepted
 post-BUILD test-only commits, **Independent verification: NOT REQUIRED \|
 PASS**, required-reviewer list and trigger decisions, each reviewer's result,
@@ -436,6 +444,7 @@ reviewer; the disposition decides `level` (§Dispositions):
       "locations": [{"physicalLocation": {
         "artifactLocation": {"uri": "app/Services/Feed.php"},
         "region": {"startLine": 42}}}],
+      "baselineState": "new",
       "properties": {"disposition": "BLOCKER", "confidence": "high",
                      "requirement": "REQ-003", "resolution": "open"}
     }]
@@ -443,6 +452,7 @@ reviewer; the disposition decides `level` (§Dispositions):
 }
 ```
 
+`baselineState` is `unchanged` for a pre-existing finding and `new` otherwise.
 `uri` is relative to the repository root. A finding without a line keeps the
 `artifactLocation` and drops `region`; one without a file drops `locations`.
 `properties` keeps what SARIF has no field for, so nothing in the markdown
@@ -458,6 +468,9 @@ report is lost.
 
 ### Required findings / refutations / accepted risks
 - ...
+
+### Pre-existing findings (follow-ups)
+- [id] [disposition] — tracked in [ticket or observation-log row]
 
 ### Requirement evidence
 - REQ-001: [implementing change] / [verification evidence]
@@ -478,7 +491,8 @@ report is lost.
 ```
 
 GO requires an unchanged reviewed candidate, independent verification
-satisfied exactly as REVIEW required, no unresolved BLOCKER, every requirement
+satisfied exactly as REVIEW required, no unresolved BLOCKER (a pre-existing one
+tracked as a follow-up does not count), every requirement
 carrying both implementation and verification evidence, every REQUIRED finding
 resolved/risk-accepted/deferred with a reason, passed release-readiness
 attestations, a concrete rollback plan, and an explained tree state. **GO is a

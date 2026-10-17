@@ -92,7 +92,7 @@ This is your reading, not a restatement of anyone's goal — the caller compares
 it against the actual intent, and a mismatch here is itself a finding.]
 
 ### BLOCKER
-- [BLIND-1] [file:line] (confidence: high|med|low) [behavior found + why it is wrong + fix]
+- [BLIND-1] [file:line] (confidence: high|med|low) [pre-existing, if so] [behavior found + why it is wrong + fix]
 
 ### REQUIRED
 - [BLIND-2] [file:line] (confidence: high|med|low) [...]

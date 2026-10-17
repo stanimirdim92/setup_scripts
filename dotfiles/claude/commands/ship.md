@@ -61,6 +61,9 @@ in `../references/component-response-contracts.md` §Dispositions.
   confidence, but the evidence — not the reviewer's own uncertainty — is what
   resolves it, and it comes from the resolution loop, not from `/ship` itself;
 - **ADVISORY** findings do not block shipping.
+- A finding marked **pre-existing** does not block at any disposition. List it
+  under follow-ups with where it is tracked: a ticket, or an observation-log
+  row. A pre-existing BLOCKER with no tracked follow-up is NO-GO.
 
 A production fix returns to `/build`, then the new candidate goes through
 `/review` again; REVIEW will decide whether `/test` is required.
@@ -106,7 +109,7 @@ GO requires:
 
 - unchanged reviewed candidate;
 - independent verification satisfied exactly as REVIEW required;
-- no unresolved BLOCKER;
+- no unresolved BLOCKER, except a pre-existing one tracked as a follow-up;
 - `check-ledger.py --ship` passing;
 - every spec requirement carrying both implementation and verification evidence;
 - every REQUIRED finding resolved (fixed or refuted), explicitly risk-accepted,
@@ -125,6 +128,9 @@ Return:
 
 ### Required findings / refutations / accepted risks
 - ...
+
+### Pre-existing findings (follow-ups)
+- [id] [disposition] — tracked in [ticket or observation-log row]
 
 ### Requirement evidence
 - REQ-001: [implementing change] / [verification evidence]

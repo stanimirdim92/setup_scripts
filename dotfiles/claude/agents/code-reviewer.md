@@ -150,7 +150,7 @@ your label as the finding's disposition, unchanged.
 **Overview:** [1-2 sentences: the change and overall assessment]
 
 ### BLOCKER
-- [CODE-1] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem + recommended fix]
+- [CODE-1] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [pre-existing, if so] [problem + recommended fix]
 
 ### REQUIRED
 - [CODE-2] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem + recommended fix]
