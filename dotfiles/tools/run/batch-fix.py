@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""Fix open review findings overnight, then review again (ADR 0108).
+"""Fix open review findings overnight (ADR 0108).
 
 Anthropic's reviewers find, and "often an agent fixes overnight". This does
 that for the harness. It reads the review SARIF files `/review` writes, finds
 every ticket whose newest review left BLOCKER or REQUIRED findings open, and,
-in the worktree still sitting at the reviewed commit, runs two headless
-sessions:
+in the worktree still sitting at the reviewed commit, runs one headless
+session:
 
     /build <TICKET> review fixes      fix test-first, commit locally
-    /review <TICKET>                  the next round, on the fix only
 
-It stops there. Nothing is pushed, nothing reaches `/ship`, and GO stays
-yours. A ticket is skipped, with the reason, when:
+It stops there. /test and /review accept a BUILD COMPLETE only from the
+current conversation or from you (target-selection.md §Gate handoffs), so a
+separate headless session cannot run them. The job saves the BUILD COMPLETE
+message verbatim to `<out>/<TICKET>-BUILD-COMPLETE.md`; you paste it into /test,
+then /review. Nothing is pushed, nothing reaches `/ship`, and GO stays yours.
+A ticket is skipped, with the reason, when:
 
   - its review files already number three: the next review would be round 4,
     which means the approach needs you (ADR 0089);
@@ -37,13 +40,12 @@ Usage (from the project's main checkout):
 Overnight, from cron or `at`:
     echo 'cd ~/code/project && batch-fix.py --yes' | at 01:00
 
-A job counts as reviewed only when /review ends with a count line and has
-written the review file for the exact commit now at HEAD. A CLI error, an
-empty or unparseable result, REVIEW BLOCKED, a missing count line or a missing
-review file all fail the job.
+A job counts as built only when /build ends with a BUILD COMPLETE line and a
+new commit. A CLI error, an empty or unparseable result or a missing BUILD
+COMPLETE line fails the job. BUILD BLOCKED blocks it, and saves nothing.
 
-Exit: 0 nothing to do, or every job reached a complete review · 1 declined, or
-a job failed or was blocked · 2 not in a git repository.
+Exit: 0 nothing to do, or every job was built · 1 declined, or a job failed,
+was blocked or made no fix · 2 not in a git repository.
 """
 import argparse
 import fcntl
@@ -197,14 +199,13 @@ def plan(directory, only=None):
 
 
 def outcome(text):
-    """(kind, line): how a /review ended. kind is 'blocked', 'done' or 'missing'."""
-    m = re.search(r'^\W*(REVIEW BLOCKED[^\n]*)', text, re.M)
+    """(kind, line): how a /build ended. kind is 'blocked', 'done' or 'missing'."""
+    m = re.search(r'^\W*(BUILD BLOCKED[^\n]*)', text, re.M)
     if m:
-        return 'blocked', m.group(1).strip('*').strip()
-    m = re.search(r'^\*\*(Findings:[^\n]*?|Nothing to fix\.)\*\*', text, re.M)
-    if m:
-        return 'done', m.group(1)
-    return 'missing', 'no result line'
+        return 'blocked', m.group(1).replace('**', '').strip()
+    if re.search(r'^\W*BUILD COMPLETE\b', text, re.M):
+        return 'done', 'BUILD COMPLETE'
+    return 'missing', 'no BUILD COMPLETE line'
 
 
 def claude(binary, prompt, cwd, budget, mode, log):
@@ -229,20 +230,6 @@ def claude(binary, prompt, cwd, budget, mode, log):
     return error, data.get('result', out.stdout), data.get('total_cost_usd') or 0
 
 
-def review_file(job):
-    """The review file /review wrote for the commit now at HEAD, or None."""
-    head = git('rev-parse', 'HEAD', cwd=job['worktree'])[1]
-    for path in Path(job['sarif']).parent.glob(f'{job["ticket"]}-*.sarif'):
-        m = NAME.match(path.name)
-        if m and m.group('ticket') == job['ticket'] and head.startswith(m.group('sha')):
-            try:
-                json.loads(path.read_text())
-            except (OSError, ValueError):
-                continue
-            return path
-    return None
-
-
 def run_job(job, args, out_dir):
     try:
         with checkout_lock(job['worktree']):
@@ -262,21 +249,18 @@ def work(job, args, out_dir):
     error, text, cost = claude(args.claude, f'/build {job["ticket"]} review fixes', cwd, args.budget, args.permission_mode, log)
     if error:
         return dict(job, state='FAILED', detail=f'/build {error}', cost=cost, log=str(log))
-    after = git('rev-parse', 'HEAD', cwd=cwd)[1]
-    if after == before:
-        return dict(job, state='NO FIX', detail='no commit; every finding disputed or blocked (see log)', cost=cost, log=str(log))
-    error, text, more = claude(args.claude, f'/review {job["ticket"]}', cwd, args.budget, args.permission_mode, log)
-    done = dict(job, cost=cost + more, log=str(log))
-    if error:
-        return dict(done, state='FAILED', detail=f'/review {error}')
+    done = dict(job, cost=cost, log=str(log))
     kind, line = outcome(text)
     if kind == 'blocked':
         return dict(done, state='BLOCKED', detail=line)
     if kind == 'missing':
-        return dict(done, state='FAILED', detail=f'/review gave {line}')
-    if not review_file(job):
-        return dict(done, state='FAILED', detail=f'/review wrote no review file for {after[:7]}; the count line alone is not the gate result')
-    return dict(done, state='reviewed', detail=line)
+        return dict(done, state='FAILED', detail=f'/build gave {line}')
+    after = git('rev-parse', 'HEAD', cwd=cwd)[1]
+    if after == before:
+        return dict(done, state='NO FIX', detail='no commit; every finding disputed or blocked (see log)')
+    handoff = out_dir / f'{job["ticket"]}-BUILD-COMPLETE.md'
+    handoff.write_text(text.rstrip('\n') + '\n')
+    return dict(done, state='built', detail=f'{after[:7]}; give {handoff} to /test, then /review')
 
 
 def main(argv=None):
@@ -307,7 +291,7 @@ def main(argv=None):
         print(f'  {"skip" if j["skip"] else "fix ":<5} {j["ticket"]:<14} round {j["round"]}  {what}')
     if not run:
         return 0
-    print(f'Each: /build <TICKET> review fixes, then /review <TICKET>. No push, no /ship. Worst case ${len(run) * 2 * args.budget:g}.')
+    print(f'Each: /build <TICKET> review fixes only. No /test, /review, push or /ship. Worst case ${len(run) * args.budget:g}.')
     if args.dry_run:
         print('batch-fix: dry run; nothing started.')
         return 0
@@ -329,8 +313,8 @@ def main(argv=None):
     total = sum(r['cost'] for r in results)
     if total:
         print(f'\n  measured total: ${total:.2f}')
-    print('\nRead each review in the morning; /ship stays yours.')
-    return 0 if all(r['state'] == 'reviewed' for r in results) else 1
+    print('\nIn the morning, paste each saved BUILD COMPLETE into /test, then /review; /ship stays yours.')
+    return 0 if all(r['state'] == 'built' for r in results) else 1
 
 
 if __name__ == '__main__':
