@@ -41,11 +41,12 @@ STAGES = {
 }
 WORKSTREAMS = ('ws-label', 'ws-report')
 REVIEWERS = ('code-reviewer', 'blind-reviewer', 'security-auditor', 'distributed-systems-reviewer')
-# The two that run on every review; the rest are trigger-gated. Named rather
-# than sliced, because adding blind-reviewer to REVIEWERS silently shifted a
-# REVIEWERS[1:] slice and the specialist assertions kept passing regardless.
+# The two that run on every review, with the same packet rule. security-auditor
+# also runs every time (ADR 0102) and is asserted by name; only
+# distributed-systems-reviewer is trigger-gated. Named rather than sliced,
+# because adding blind-reviewer to REVIEWERS silently shifted a REVIEWERS[1:]
+# slice and the specialist assertions kept passing regardless.
 ALWAYS = REVIEWERS[:2]
-SPECIALISTS = REVIEWERS[2:]
 
 
 def spec(status='Approved', conflict=False):
@@ -533,7 +534,10 @@ def checks(name, result, reads, directory):
         else:
             # A label rename is a production change: /test is required (ADR 0104).
             checks['verification_pass_recorded'] = bool(re.search(r'Independent verification:\s*PASS', text, re.I))
-            checks['no_specialist_for_plain_diff'] = all(reviewers.get(r) == 'not dispatched' for r in SPECIALISTS)
+            # security-auditor runs on every review (ADR 0102); only the
+            # distributed-systems reviewer stays gated on its trigger.
+            checks['security_auditor_always'] = reviewers.get('security-auditor') == 'dispatched'
+            checks['no_distributed_for_plain_diff'] = reviewers.get('distributed-systems-reviewer') == 'not dispatched'
         # BLIND-# is blind-reviewer's id prefix; omitting it let a trial that wrote
         # findings pass the "dispatch decision only" check.
         checks['no_review_findings_written'] = not re.search(r'^\s*-\s*\[?(CODE|BLIND|SEC|DIST)-\d+', text, re.M)

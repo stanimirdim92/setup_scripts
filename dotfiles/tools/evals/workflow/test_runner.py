@@ -83,13 +83,18 @@ class OrchestrationDecisionTests(unittest.TestCase):
         over = dict(good, reviewers=good['reviewers'].replace('distributed-systems-reviewer: not dispatched', 'distributed-systems-reviewer: dispatched'))
         self.assertFalse(checks('review_auth_diff', over, set(), Path('.'))['distributed_not_triggered'])
 
-    def test_plain_diff_gets_code_reviewer_only(self):
+    def test_plain_diff_dispatches_security_auditor_but_not_distributed(self):
+        # ADR 0102: security-auditor runs on every review; only the
+        # distributed-systems reviewer stays trigger-gated.
         good = result(explanation='Independent verification: PASS — VERIFY PASS for this candidate.',
-                      reviewers='code-reviewer: dispatched — always\nsecurity-auditor: not dispatched — no trust boundary\ndistributed-systems-reviewer: not dispatched — none')
+                      reviewers='code-reviewer: dispatched — always\nsecurity-auditor: dispatched — always, no trust boundary touched\ndistributed-systems-reviewer: not dispatched — none')
         got = checks('review_plain_diff', good, set(), Path('.'))
-        self.assertTrue(got['no_specialist_for_plain_diff'] and got['verification_pass_recorded'] and got['code_reviewer_always'])
-        eager = dict(good, reviewers=good['reviewers'].replace('security-auditor: not dispatched', 'security-auditor: dispatched'))
-        self.assertFalse(checks('review_plain_diff', eager, set(), Path('.'))['no_specialist_for_plain_diff'])
+        self.assertTrue(got['security_auditor_always'] and got['no_distributed_for_plain_diff']
+                        and got['verification_pass_recorded'] and got['code_reviewer_always'])
+        skipped = dict(good, reviewers=good['reviewers'].replace('security-auditor: dispatched', 'security-auditor: not dispatched'))
+        self.assertFalse(checks('review_plain_diff', skipped, set(), Path('.'))['security_auditor_always'])
+        eager = dict(good, reviewers=good['reviewers'].replace('distributed-systems-reviewer: not dispatched', 'distributed-systems-reviewer: dispatched'))
+        self.assertFalse(checks('review_plain_diff', eager, set(), Path('.'))['no_distributed_for_plain_diff'])
 
     def test_review_findings_are_not_written_by_the_gate(self):
         leaked = result(explanation='Independent verification: NOT REQUIRED', reviewers='code-reviewer: dispatched — always',
