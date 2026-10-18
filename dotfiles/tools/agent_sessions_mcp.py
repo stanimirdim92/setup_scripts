@@ -22,6 +22,8 @@ no tool output.
 """
 import json
 import os
+import re
+import shlex
 import sys
 import time
 from pathlib import Path
@@ -31,6 +33,8 @@ VERSION = "1.0.0"
 HEAD_LINES = 400
 TAIL_BYTES = 96 * 1024
 TITLE_MAX = 140
+RESUME = {"claude": "claude --resume ", "codex": "codex resume ", "gemini": "gemini --resume "}
+SESSION_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 SKIP_PREFIXES = ("<command", "<local-command", "Caveat:", "<environment_context", "<user_instructions",
                  "# AGENTS.md", "<system-reminder", "[Request interrupted")
 
@@ -351,6 +355,16 @@ def list_sessions(args):
 
 # ---------- local dashboard (--serve) ----------
 
+def resume_command(s):
+    """Shell command that resumes a session, or None when its id is not a plain id.
+    The folder and id come from transcript files, so both are quoted for the shell."""
+    sid, prefix = s.get("id"), RESUME.get(s.get("agent"))
+    if not prefix or not isinstance(sid, str) or not SESSION_ID_RE.match(sid):
+        return None
+    cd = "cd -- " + shlex.quote(s["cwd"]) + " && " if s.get("cwd") else ""
+    return cd + prefix + shlex.quote(sid)
+
+
 PAGE = r"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent sessions</title>
@@ -397,7 +411,7 @@ h3{display:flex;gap:8px;align-items:center;font-size:13.5px;margin:16px 2px 8px}
 <main id="main"></main></div><div class="toast" id="toast"></div>
 <script>
 const ST={working:["Working","var(--work)"],needs:["Needs input","var(--need)"],review:["Ready for review","var(--rev)"],blocked:["Blocked","var(--block)"],parked:["Parked","var(--park)"],done:["Done","var(--done)"]};
-const AG={claude:["Claude Code","var(--cl)","CC",id=>"claude --resume "+id],codex:["Codex","var(--cx)","CX",id=>"codex resume "+id],gemini:["Gemini CLI","var(--gm)","GM",id=>"gemini --resume "+id]};
+const AG={claude:["Claude Code","var(--cl)","CC"],codex:["Codex","var(--cx)","CX"],gemini:["Gemini CLI","var(--gm)","GM"]};
 let data={sessions:[]},ok=false,f={st:null,ag:"all",q:""};
 const $=i=>document.getElementById(i),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ago=t=>{const s=(Date.now()-t)/1e3;return s<60?"just now":s<3600?Math.floor(s/60)+"m ago":s<86400?Math.floor(s/3600)+"h ago":Math.floor(s/86400)+"d ago"};
@@ -411,10 +425,10 @@ function draw(){
  const list=data.sessions.filter(s=>(f.ag==="all"||s.agent===f.ag)&&(!f.st||s.status===f.st)&&(!q||[s.title,s.project,s.branch,s.id,s.cwd].join(" ").toLowerCase().includes(q)));
  if(!list.length){$("main").innerHTML=`<div class="empty">${data.sessions.length?"Nothing matches.":"No sessions found in the last "+(data.days||14)+" days."}</div>`;return}
  $("main").innerHTML=Object.keys(ST).map(k=>{const it=list.filter(s=>(ST[s.status]?s.status:"parked")===k);if(!it.length)return"";
-  return `<h3 style="--c:${ST[k][1]}"><i></i>${ST[k][0]}<small>${it.length}</small></h3>`+it.map(s=>{const a=AG[s.agent]||AG.claude;const cmd=(s.cwd?"cd "+JSON.stringify(s.cwd)+" && ":"")+a[3](s.id);
+  return `<h3 style="--c:${ST[k][1]}"><i></i>${ST[k][0]}<small>${it.length}</small></h3>`+it.map(s=>{const a=AG[s.agent]||AG.claude;
   return `<div class="row" style="--c:${ST[k][1]}"><span class="ag" style="--t:${a[1]}" title="${a[0]}">${a[2]}</span><div class="mid"><div class="t" title="${esc(s.title)}">${esc(s.title)}</div>
   <div class="m"><span>${esc(s.project||a[0])}</span>${s.branch?`<span>⎇ ${esc(s.branch)}</span>`:""}<span>${ago(s.lastActive)}</span><span>${esc(String(s.id).slice(0,8))}</span></div></div>
-  <button class="btn" data-cp="${esc(cmd)}">Copy resume</button></div>`}).join("")}).join("");
+  ${s.resume?`<button class="btn" data-cp="${esc(s.resume)}">Copy resume</button>`:""}</div>`}).join("")}).join("");
 }
 document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
  if(b.id==="rf")return load();
@@ -450,7 +464,10 @@ def serve(host, port):
             if u.path == "/api/sessions":
                 qs = parse_qs(u.query)
                 args = {"days": qs.get("days", ["14"])[0], "limit": qs.get("limit", ["300"])[0]}
-                return self._send(200, json.dumps(list_sessions(args)), "application/json")
+                data = list_sessions(args)
+                for s in data["sessions"]:
+                    s["resume"] = resume_command(s)
+                return self._send(200, json.dumps(data), "application/json")
             self._send(404, "not found", "text/plain")
 
     srv = ThreadingHTTPServer((host, port), H)
