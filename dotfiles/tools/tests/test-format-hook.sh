@@ -10,6 +10,7 @@ set -uo pipefail
 
 HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../claude/hooks" && pwd)/format-edited-file.sh"
 command -v jq >/dev/null || { echo "test-format-hook: jq is required" >&2; exit 1; }
+REAL_RUSTFMT="$(command -v rustfmt || true)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 PASS=0; FAIL=0
@@ -60,7 +61,24 @@ edit "$p/pkg/m.py"; expect "ruff with [tool.ruff]" "^ruff format -q $p/pkg/m.py$
 # Rust: rustfmt with the crate's edition.
 p="$TMP/rs"; mkdir -p "$p/src" && stub "$TMP/bin/rustfmt" && echo 'fn main(){}' > "$p/src/main.rs"
 printf '[package]\nname="x"\nedition = "2024"\n' > "$p/Cargo.toml"
-edit "$p/src/main.rs"; expect "rustfmt with the Cargo edition" "^rustfmt --edition 2024 $p/src/main.rs$"
+edit "$p/src/main.rs"; expect "rustfmt with the Cargo edition" "^rustfmt --edition 2024 --emit stdout$"
+
+# Rust, real rustfmt: formatting a module root must not follow `mod child;`
+# into files the edit did not touch. The stub above cannot show this.
+if [ -n "$REAL_RUSTFMT" ]; then
+  p="$TMP/rsmod"; mkdir -p "$p/src" "$TMP/realbin" && ln -sf "$REAL_RUSTFMT" "$TMP/realbin/rustfmt"
+  printf '[package]\nname="x"\nedition = "2021"\n' > "$p/Cargo.toml"
+  printf 'mod child;\nfn  a( ){}\n' > "$p/src/lib.rs"
+  printf 'fn  b( ){}\n' > "$p/src/child.rs"
+  jq -n --arg f "$p/src/lib.rs" '{tool_name:"Edit", tool_input:{file_path:$f}}' | PATH="$TMP/realbin:/usr/bin:/bin" "$HOOK"
+  if grep -q '^fn a() {}$' "$p/src/lib.rs"; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); echo "FAIL: real rustfmt formats the edited module root"; fi
+  if [ "$(cat "$p/src/child.rs")" = 'fn  b( ){}' ]; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); echo "FAIL: real rustfmt left the child module alone (got: $(cat "$p/src/child.rs"))"; fi
+  printf 'fn  a( {' > "$p/src/bad.rs"
+  out="$(jq -n --arg f "$p/src/bad.rs" '{tool_name:"Edit", tool_input:{file_path:$f}}' | PATH="$TMP/realbin:/usr/bin:/bin" "$HOOK")"; rc=$?
+  if [ "$rc" = 0 ] && [ "$(cat "$p/src/bad.rs")" = 'fn  a( {' ] && printf '%s' "$out" | grep -q 'left as written'; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); echo "FAIL: real rustfmt syntax error leaves the file (rc=$rc out=$out)"; fi
+else
+  echo "SKIP: real rustfmt not installed; module-root scope check not run"
+fi
 
 # A file type no formatter owns, and a missing file.
 edit "$p/Cargo.toml"; expect "toml is not formatted" -

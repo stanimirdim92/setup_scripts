@@ -93,7 +93,18 @@ case "$file" in
   *.rs)
     if root="$(up "$dir" Cargo.toml)" && command -v rustfmt >/dev/null; then
       edition="$(sed -nE 's/^edition[[:space:]]*=[[:space:]]*"([0-9]+)".*/\1/p' "$root/Cargo.toml" | head -1)"
-      run "$root" rustfmt --edition "${edition:-2021}" "$file"
+      # Format through stdin: rustfmt on a named module root also rewrites the
+      # external `mod child;` files it finds, and skip_children is nightly-only.
+      # stdin formats the one file; write back only on success. Run from the
+      # file's directory so rustfmt.toml discovery matches a named-file run.
+      tmp="$(mktemp)"
+      if err="$(cd "$dir" && rustfmt --edition "${edition:-2021}" --emit stdout < "$file" 2>&1 >"$tmp")"; then
+        [ -s "$tmp" ] && cat "$tmp" > "$file"
+      else
+        echo "format-edited-file: rustfmt failed on $file; left as written: $(printf '%s' "$err" | tail -1)"
+      fi
+      rm -f "$tmp"
+      exit 0
     fi
     ;;
   *.go)
