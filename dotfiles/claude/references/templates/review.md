@@ -28,6 +28,16 @@ code, lockfiles, checks CI already enforces. -->
 
 - `path/to/generated/**`
 
+## Always a person
+
+<!-- Paths so costly to get wrong that a person reads every change to them,
+one glob per bullet in backticks. A change touching one runs every specialist
+reviewer and /test, and /ship lists the files under "Read these yourself"
+(ADR 0096). In a directory's own REVIEW.md, globs are relative to it. -->
+
+- `.github/workflows/**`
+- `database/migrations/**`
+
 ## Always check
 
 <!-- What a reviewer must look at on every change in this area, and the

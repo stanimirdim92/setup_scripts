@@ -17,6 +17,10 @@ Single source of truth for `/review` specialist dispatch.
   multi-step/background-job recovery, or state coordination across a
   process/network boundary.
 
+A change that touches a path in the project's "Always a person" list
+(`always-person.py`, ADR 0096) runs **every** specialist, whatever the diff's
+content.
+
 A generic config edit, ordinary HTTP call, existing worker touch, or third-party
 integration does **not** trigger a specialist merely because that category is
 present. The change must alter a failure/trust boundary the specialist owns.

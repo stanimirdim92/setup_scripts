@@ -89,6 +89,17 @@ which paths to skip, and the rules for findings. It describes the area, not
 the change, so every reviewer gets it (ADR 0091). Without one, say so in the
 report.
 
+Check the project's "Always a person" list, read from the base branch:
+
+```bash
+python3 "$HOME/.claude/skills/code-review-and-quality/scripts/always-person.py" --base <candidate base>
+```
+
+Exit 1 means the change touches a path that always needs a person (ADR 0096):
+run every specialist (`../references/reviewer-triggers.md`) and require
+`/test` (`../references/verification-triggers.md`). Exit 2 is **Always a
+person: Not verified**; report it.
+
 Dispatch `code-reviewer` with:
 
 - the integrated diff;
@@ -206,6 +217,7 @@ Report:
 - **Independent verification: NOT REQUIRED | PASS**;
 - required-reviewer list and trigger decisions;
 - whether the project has a `REVIEW.md`, and which ones were used;
+- the "Always a person" result: no list, no match, or the matched files;
 - the weakened-test result, and how each listed change was resolved;
 - the ledger result: **Ledger: clean**, the `LEDGER-#` findings, or
   **Ledger: Not verified**;

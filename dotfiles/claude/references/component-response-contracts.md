@@ -469,6 +469,9 @@ report is lost.
 ```markdown
 ## Ship Decision: GO | NO-GO | SHIP BLOCKED
 
+### Read these yourself
+- [file] — matches `[glob]` in REVIEW.md "Always a person" (or: none)
+
 ### Blockers
 - ...
 

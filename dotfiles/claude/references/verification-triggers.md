@@ -24,6 +24,8 @@ additional context and agent cost.
   navigation, console, or network behavior. Executors have no browser tools, so
   `/build` lists these as `Needs real-browser check`; only test-engineer can
   produce the evidence.
+- The change touches a path in the project's "Always a person" list
+  (`always-person.py`, ADR 0096).
 - The user explicitly asks for independent verification.
 
 Normally do **not** require `/test` for:

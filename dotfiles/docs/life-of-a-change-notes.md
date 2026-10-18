@@ -195,6 +195,8 @@ Add your note under each bullet as `> Note: ...`.
    and `/ship` (say it plainly).
 
    > Note: Not sure. I do not understand.
+   > Decision: option A (list, all specialists + /test, warning at /ship).
+   > Done: ADR 0096, `always-person.py`.
 
 3. **Root cause on bug fixes** (layer 2): `code-reviewer` checks a bugfix
    against the spec's root cause, not just the symptom.

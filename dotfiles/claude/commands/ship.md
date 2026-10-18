@@ -43,6 +43,14 @@ Exit 2 is **SHIP BLOCKED** too. Warnings go into the report.
 Do not independently re-run the trigger matrix or substitute new inline testing
 for a missing gate.
 
+### Paths that always need a person
+
+Carry `/review`'s "Always a person" result forward (ADR 0096). When it lists
+files, put them first in the report, under "Read these yourself", with the
+reason each matched. GO stays the user's decision; the warning makes sure the
+user reads those files before merging. A missing or Not verified result is
+**SHIP BLOCKED**.
+
 ### Current base
 
 Check that the candidate still passes on the current base, as a merge queue
@@ -153,6 +161,9 @@ Return:
 
 ```markdown
 ## Ship Decision: GO | NO-GO | SHIP BLOCKED
+
+### Read these yourself
+- [file] — matches `[glob]` in REVIEW.md "Always a person" (or: none)
 
 ### Blockers
 - ...
