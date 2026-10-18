@@ -8,8 +8,7 @@ The session folder and id come from transcript files, so they are untrusted:
 the command must run the same program whatever those values contain. The
 command runs in real bash with a stub `claude`.
 
-The session list holds prompts, paths and branches. Like agent_deck.py, the
-server refuses a foreign Host or Origin (DNS rebinding) and an API call
+The session list holds prompts, paths and branches. The server refuses a foreign Host or Origin (DNS rebinding) and an API call
 without the token."""
 import http.client
 import importlib.util

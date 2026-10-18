@@ -279,10 +279,7 @@ a query sanitizer for hyphenated terms.
   - This is the `hermes doctor` idea. It would have found the M1 fault on day one.
   - Verify: run on this machine; a test with a fake `$HOME`.
 - **T2 — Keep only Claude and Codex in the session tools.** Size XS. No ADR.
-  - Remove the Gemini CLI parts from `tools/agent_deck.py` and
-    `tools/agent_sessions_mcp.py`.
-  - Another session has uncommitted edits in `agent_sessions_mcp.py`, and
-    `agent_deck.py` is untracked. Do this after that work is committed.
+  - Remove the Gemini CLI parts from `tools/agent_sessions_mcp.py`.
   - Verify: `--print` lists only Claude and Codex sessions.
 - **T3 — Scheduled health run, scripts only.** Size S. No ADR.
   - A user cron entry or systemd timer runs T1 and S1 weekly and writes the
