@@ -128,6 +128,36 @@ def markdown_findings(text):
     return found
 
 
+COUNT_LINE = re.compile(r'Findings:\s*(\d+)\s*BLOCKER\s*·\s*(\d+)\s*REQUIRED\s*·\s*(\d+)\s*ADVISORY')
+
+
+def review_findings(meta, sarifs):
+    """(findings, source) from a finished review, or RuntimeError.
+
+    A review that did not finish proves nothing: an error result, REVIEW
+    BLOCKED, empty output or a count line the findings do not back up must not
+    score as a quiet review. Zero findings count only when the report says so."""
+    result = meta.get('result') or ''
+    if meta.get('is_error') or meta.get('subtype', 'success') != 'success':
+        raise RuntimeError(f'review did not finish ({meta.get("subtype") or "is_error"}): {result[:300]}')
+    if 'REVIEW BLOCKED' in result:
+        raise RuntimeError(f'review blocked: {result[:300]}')
+    if sarifs:
+        try:
+            return [f for s in sarifs for f in sarif_findings(s)], 'sarif'
+        except ValueError as err:
+            raise RuntimeError(f'unreadable SARIF: {err}')
+    findings = markdown_findings(result)
+    if findings:
+        return findings, 'markdown'
+    counts = COUNT_LINE.search(result)
+    if counts and sum(map(int, counts.groups())):
+        raise RuntimeError(f'report counts {"/".join(counts.groups())} findings, none could be read: {result[:300]}')
+    if counts or 'Nothing to fix' in result:
+        return [], 'markdown'
+    raise RuntimeError(f'no SARIF and no findings report in the output: {result[:300]}')
+
+
 def judge(case, findings):
     """{'caught', 'caught_any', 'blocking', 'findings'} for one case."""
     def hits(path, line):
@@ -166,9 +196,8 @@ def produce(case, repo, budget):
             raise RuntimeError(f'claude exited {result.returncode}: {result.stderr[-600:]}')
         meta = json.loads(result.stdout)
         sarifs = sorted((project / '.git' / 'review').glob('*.sarif'))
-        if sarifs:
-            return [f for s in sarifs for f in sarif_findings(s.read_text())], meta, 'sarif'
-        return markdown_findings(meta.get('result', '')), meta, 'markdown'
+        findings, source = review_findings(meta, [s.read_text() for s in sarifs])
+        return findings, meta, source
 
 
 # ---------------------------------------------------------------- cli
@@ -200,7 +229,7 @@ def main(argv=None):
 
     if not args.fixture:
         parser.error('give --new, or one or more --fixture')
-    results, items, spent = {}, {}, 0.0
+    results, items, spent, errored = {}, {}, 0.0, []
     for name in args.fixture:
         case = json.loads((FIXTURES / name / 'case.json').read_text())
         if args.findings:
@@ -208,7 +237,14 @@ def main(argv=None):
         else:
             if not args.repo:
                 parser.error('producing needs --repo')
-            findings, meta, source = produce(case, args.repo, args.budget)
+            try:
+                findings, meta, source = produce(case, args.repo, args.budget)
+            except RuntimeError as err:
+                # No usable review: leave the case unscored, never count it quiet.
+                results[name] = {'kind': case['kind'], 'error': str(err)}
+                errored.append(name)
+                print(f'  {name:<32} {case["kind"]:<6} {"ERRORED (not scored)":<24} {str(err)[:200]}')
+                continue
             spent += meta.get('total_cost_usd', 0) or 0
         result = judge(case, findings)
         results[name] = {**result, 'kind': case['kind'], 'source': source}
@@ -217,12 +253,14 @@ def main(argv=None):
             ('quiet' if result['blocking'] == 0 else f'{result["blocking"]} blocking finding(s)')
         print(f'  {name:<32} {case["kind"]:<6} {mark:<24} findings {result["findings"]} ({source})')
 
-    bugs = [n for n in results if results[n]['kind'] == 'bug']
-    clean = [n for n in results if results[n]['kind'] == 'clean']
+    bugs = [n for n in items if results[n]['kind'] == 'bug']
+    clean = [n for n in items if results[n]['kind'] == 'clean']
     if bugs:
         print(f'Bugs caught: {sum(results[n]["caught"] for n in bugs)}/{len(bugs)}')
     if clean:
         print(f'Clean cases quiet: {sum(results[n]["blocking"] == 0 for n in clean)}/{len(clean)}')
+    if errored:
+        print(f'Errored, not scored: {len(errored)} ({", ".join(errored)})')
     if spent:
         print(f'Cost: ${spent:.2f}')
 
@@ -237,8 +275,8 @@ def main(argv=None):
         for n in pair['regressions']:
             print(f'  lost   {n}')
         print(f'{word}: {why}')
-        return 0 if word in ('BETTER', 'SAME') else 1
-    return 0
+        return 0 if word in ('BETTER', 'SAME') and not errored else 1
+    return 1 if errored else 0
 
 
 if __name__ == '__main__':

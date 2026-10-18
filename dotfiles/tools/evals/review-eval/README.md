@@ -31,6 +31,11 @@ python3 run.py --fixture feed-order --fixture quiet-1 --repo $P --output ./after
 python3 run.py --fixture feed-order --findings path/to/review.sarif
 ```
 
+A review that did not finish is not scored. An error result, REVIEW BLOCKED,
+empty output, or a findings count the report does not back up marks the case
+`ERRORED (not scored)`, and the run exits 1. A quiet review counts only when
+the SARIF exists or the report says `Nothing to fix`.
+
 `--bug <sha>` overrides the blame guess when the fix touched lines from more
 than one commit. The run ends with BETTER, SAME, NOT BETTER or WORSE, as in
 spec-eval. Run each side twice before you trust a small difference.

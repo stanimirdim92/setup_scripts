@@ -6,6 +6,8 @@ F fixes line 3. The case must name B and the line B wrote, and a finding there
 must count as caught. Producing drives the model and is not tested here."""
 import importlib.util
 import json
+import os
+import stat
 import subprocess
 import tempfile
 import unittest
@@ -65,6 +67,85 @@ class History(unittest.TestCase):
     def test_markdown_fallback(self):
         text = '### BLOCKER\n- [CODE-1] [feed.py:3] (confidence: high) drops the first post\n### ADVISORY\n- [CODE-2] [feed.py:1] name\n'
         self.assertEqual(rev.markdown_findings(text), [('feed.py', 3, 'BLOCKER'), ('feed.py', 1, 'ADVISORY')])
+
+
+class Produce(unittest.TestCase):
+    """produce() with a stub `claude` on PATH: a review that did not finish is
+    an error, never an empty finding list that scores as a quiet review."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        base = Path(self.tmp.name)
+        self.repo = base / 'repo'
+        self.repo.mkdir()
+        git(self.repo, 'init', '-q')
+        (self.repo / 'feed.py').write_text('x = 1\n')
+        git(self.repo, 'add', '-A'); git(self.repo, 'commit', '-qm', 'A')
+        (self.repo / 'feed.py').write_text('x = 2\n')
+        git(self.repo, 'commit', '-qam', 'B')
+        self.case = rev.clean_case(self.repo, 'HEAD')
+        self.bin = base / 'bin'
+        self.bin.mkdir()
+        self.path = os.environ['PATH']
+        os.environ['PATH'] = f'{self.bin}:{self.path}'
+
+    def tearDown(self):
+        os.environ['PATH'] = self.path
+        self.tmp.cleanup()
+
+    def stub(self, **meta):
+        out = self.bin / 'claude'
+        out.write_text(f"#!/bin/sh\ncat <<'EOF'\n{json.dumps(meta)}\nEOF\n")
+        out.chmod(out.stat().st_mode | stat.S_IEXEC)
+
+    def test_error_result_is_not_a_quiet_review(self):
+        self.stub(is_error=True, result='REVIEW BLOCKED: verification missing')
+        with self.assertRaises(RuntimeError):
+            rev.produce(self.case, self.repo, '1')
+
+    def test_review_blocked_text_is_not_a_quiet_review(self):
+        self.stub(is_error=False, result='**REVIEW BLOCKED** - run /test first')
+        with self.assertRaises(RuntimeError):
+            rev.produce(self.case, self.repo, '1')
+
+    def test_empty_output_is_not_a_quiet_review(self):
+        self.stub(is_error=False, result='')
+        with self.assertRaises(RuntimeError):
+            rev.produce(self.case, self.repo, '1')
+
+    def test_budget_stop_is_not_a_quiet_review(self):
+        self.stub(is_error=False, subtype='error_max_budget_usd', result='**Nothing to fix.**')
+        with self.assertRaises(RuntimeError):
+            rev.produce(self.case, self.repo, '1')
+
+    def test_count_line_without_parsable_findings_is_not_a_quiet_review(self):
+        self.stub(is_error=False, result='**Findings: 1 BLOCKER · 0 REQUIRED · 0 ADVISORY**\n- CODE-1 something odd')
+        with self.assertRaises(RuntimeError):
+            rev.produce(self.case, self.repo, '1')
+
+    def test_stated_zero_findings_is_a_valid_quiet_review(self):
+        self.stub(is_error=False, result='**Findings: 0 BLOCKER · 0 REQUIRED · 0 ADVISORY**\n**Nothing to fix.**')
+        findings, _, source = rev.produce(self.case, self.repo, '1')
+        self.assertEqual((findings, source), ([], 'markdown'))
+
+    def test_parsed_markdown_findings_are_a_valid_review(self):
+        self.stub(is_error=False, result='### REQUIRED\n- [CODE-1] [feed.py:1] wrong\n')
+        findings, _, _ = rev.produce(self.case, self.repo, '1')
+        self.assertEqual(findings, [('feed.py', 1, 'REQUIRED')])
+
+    def test_errored_case_is_reported_and_not_scored(self):
+        fixtures = Path(self.tmp.name) / 'fixtures'
+        (fixtures / 'quiet').mkdir(parents=True)
+        (fixtures / 'quiet' / 'case.json').write_text(json.dumps({'name': 'quiet', **self.case}))
+        saved_fixtures, rev.FIXTURES = rev.FIXTURES, fixtures
+        self.addCleanup(setattr, rev, 'FIXTURES', saved_fixtures)
+        out = Path(self.tmp.name) / 'out'
+        self.stub(is_error=True, result='REVIEW BLOCKED')
+        rc = rev.main(['--fixture', 'quiet', '--repo', str(self.repo), '--output', str(out)])
+        saved = json.loads((out / 'results.json').read_text())
+        self.assertEqual(saved['results'], {})
+        self.assertIn('error', saved['detail']['quiet'])
+        self.assertEqual(rc, 1)
 
 
 if __name__ == '__main__':
