@@ -66,6 +66,10 @@ jobs:
       - name: Hooks — handoff report gate
         run: bash dotfiles/tools/tests/test-handoff-hook.sh
 
+      # The formatter hook runs only a formatter the project declares and installs (adr/0107).
+      - name: Hooks — project formatter
+        run: bash dotfiles/tools/tests/test-format-hook.sh
+
       # Enforcement: the two worktree-base guards (adr/0057). Real git
       # fixtures -- bare origin, main checkout, linked worktree, feature
       # branch -- because both hooks decide from git state.

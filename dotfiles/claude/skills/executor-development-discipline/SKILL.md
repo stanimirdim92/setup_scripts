@@ -57,6 +57,13 @@ such as migrations, configuration, shared modules, or public contracts.
 At task completion:
 
 - run every verification command required by the task packet;
+- run the project's own linter and static analyser on the changed files when
+  the project defines them (its scripts, CI, or config such as PHPStan,
+  ESLint, ruff, clippy); fix what the change introduced, and leave older
+  errors in untouched code alone, reported as pre-existing;
+- format with the project's formatter, never by hand against it. In Claude
+  Code the `format-edited-file.sh` hook formats each edited file; where no
+  hook runs (Codex), run the project's formatter on the changed files;
 - if this is the last selected task in the workstream, also run the supplied
   workstream-level or full relevant verification;
 - record exact commands and outcomes;

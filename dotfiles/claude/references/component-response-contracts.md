@@ -315,7 +315,10 @@ Confidence (`high`/`medium`/`low`) travels separately from the disposition — a
 low-confidence finding keeps its true disposition, marked low-confidence,
 rather than being downgraded. When a defect is an instance of a pattern, the
 finding names the class and lists every instance in the diff, so one fix round
-removes all of them (ADR 0089). A defect present at the candidate base that the
+removes all of them (ADR 0089). Style is not a finding: formatting, layout,
+import order and naming taste belong to the project's formatter and linter,
+unless that linter fails on a changed line or `REVIEW.md` asks (ADR 0107).
+A defect present at the candidate base that the
 diff does not introduce or reach is marked `pre-existing` (§Dispositions).
 When the packet holds the project's `REVIEW.md`, its definition of Important
 (BLOCKER or REQUIRED), its nit cap (ADVISORY), its do-not-report list and its

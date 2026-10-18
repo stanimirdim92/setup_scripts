@@ -285,6 +285,9 @@ Their intro: "Most of the pieces to do this with your team exist today."
    PHP, `prettier`/`eslint --fix` for TS), so formatting is enforced, not asked.
 
    > Note: Yes, but only if project has it. I have python and rust projects. Therefore it must be project agnostic.
+   > Done: ADR 0107. `format-edited-file.sh` runs the project's own formatter
+   > (PHP, JS/TS, Python, Rust, Go) only when it is configured and installed;
+   > executors run the project's linter; reviewers drop style findings.
 
 10. **Repeated findings into `REVIEW.md`** — when `review-noise.py` or `/ship`
     sees the same class of finding across tickets, propose a `REVIEW.md` line

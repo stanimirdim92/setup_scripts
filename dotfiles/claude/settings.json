@@ -175,6 +175,17 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/format-edited-file.sh"
+          }
+        ]
+      }
     ]
   },
   "worktree": {

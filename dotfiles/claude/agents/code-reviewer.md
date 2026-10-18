@@ -29,8 +29,11 @@ Finding and filtering are separate steps. Record **every** issue you find,
 including ones you are uncertain about or consider low-severity — do not
 pre-filter for importance or confidence. It is better to surface a finding that
 gets labeled ADVISORY (or declined) than to silently drop a real bug. The only
-things you may omit entirely are pure style/naming preferences already enforced
-by a formatter or the project's style guide.
+thing you omit entirely is style: formatting, layout, import order, and naming
+taste. The project's formatter and linter own those (ADR 0107). Report one
+only when the project's own linter fails on a changed line (name the rule) or
+its `REVIEW.md` asks for it. A misleading name is not style; it is
+readability.
 
 Severity labels, a confidence level, and ordering — never omission — are how the
 review stays readable. Attach a confidence (high/medium/low) to each finding.
@@ -163,7 +166,7 @@ functionality).
 **REQUIRED** — should fix before merge (missing test, wrong abstraction, poor
 error handling).
 
-**ADVISORY** — optional improvement (naming, style, optional optimization).
+**ADVISORY** — optional improvement (a clearer name, a simpler shape, optional optimization).
 
 Concrete bar: label BLOCKER or REQUIRED any finding that could cause incorrect
 behavior, a test failure, a security exposure, data loss, or a misleading result
