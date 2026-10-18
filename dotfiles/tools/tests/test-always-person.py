@@ -90,6 +90,18 @@ class AlwaysPerson(unittest.TestCase):
         rc, out = self.run_script()
         self.assertEqual(rc, 1)                             # the base branch's list still applies
 
+    def test_moving_a_protected_file_out_of_its_directory_still_matches(self):
+        self.git('checkout', '-q', 'main')
+        self.write('app/Billing/Invoice.php', '<?php\n// invoice\n')
+        self.git('add', '-A'); self.git('commit', '-qm', 'invoice')
+        self.git('checkout', '-q', '-B', 'ticket')
+        self.git('mv', 'app/Billing/Invoice.php', 'app/Invoice.php')
+        self.git('commit', '-qm', 'move out of Billing')
+        rc, out = self.run_script()
+        self.assertEqual(rc, 1)
+        self.assertIn('app/Billing/Invoice.php', out)
+        self.assertIn('app/Billing/*.php', out)
+
     def test_no_list(self):
         self.assertEqual(ap.globs_in('# REVIEW.md\n\n## Cap the nits\n'), [])
 

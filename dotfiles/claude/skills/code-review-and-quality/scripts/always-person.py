@@ -60,11 +60,13 @@ def main(argv=None):
     parser.add_argument('--json', action='store_true')
     args = parser.parse_args(argv)
 
-    rc, out = git('diff', '--name-only', f'{args.base}...HEAD')
+    # --no-renames: a move lists both paths, so a protected file moved out of
+    # its directory still matches there. -z keeps odd file names unquoted.
+    rc, out = git('diff', '--name-only', '--no-renames', '-z', f'{args.base}...HEAD')
     if rc:
         print(f'always-person: cannot diff {args.base}...HEAD', file=sys.stderr)
         return 2
-    changed = [p for p in out.splitlines() if p]
+    changed = [p for p in out.split('\0') if p]
     rc, base = git('merge-base', args.base, 'HEAD')
     if rc:
         print(f'always-person: no merge base with {args.base}', file=sys.stderr)
