@@ -45,8 +45,10 @@ for a missing gate.
 
 ### Human time
 
-Count what the ticket needed from a person (ADR 0112) and print the row for
-the harness's `observation-log.md` "Per ticket" table under "Human time":
+Count what the ticket needed from a person (ADR 0112) and what it cost
+(ADR 0113), and print the row for the harness's `observation-log.md`
+"Per ticket" table under "Human time". The row adds active minutes, tokens and
+list-price dollars from the ticket's transcripts:
 
 ```bash
 python3 "$HOME/.claude/skills/spec-driven-development/scripts/ticket-stats.py" <TICKET>
@@ -237,7 +239,7 @@ Return:
 - [class] — [N] tickets; [lint rule | REVIEW.md line | CLAUDE.md line | Do not report]: "[proposed text]" (or: none)
 
 ### Human time
-- [ticket-stats.py row: decisions, open items, approvals, review rounds, findings]
+- [ticket-stats.py row: decisions, open items, approvals, review rounds, findings, active time, tokens, cost]
 
 ### Shipped-bug record
 - [observation-log row] · eval: `review-eval/run.py --new [name] --repo [project] --fix [sha]` (or: not an escaped bug)

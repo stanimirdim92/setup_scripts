@@ -81,7 +81,8 @@ Replace this file at the next handoff; git keeps the old ones.
   overnight (0108).
 - Proposed: unattended pipeline with one batched morning reply (0109).
 - A reviewer change needs a `Review-eval:` trailer, checked in CI (0111).
-- `ticket-stats.py` counts person stops per ticket at `/ship` (0112).
+- `ticket-stats.py` counts person stops per ticket at `/ship` (0112), and
+  active minutes, tokens and list-price cost from the transcripts (0113).
 
 ## Measured results
 

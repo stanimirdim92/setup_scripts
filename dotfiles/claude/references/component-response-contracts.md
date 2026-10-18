@@ -494,7 +494,7 @@ report is lost.
 - [class] — [N] tickets; [lint rule | REVIEW.md line | CLAUDE.md line | Do not report]: "[proposed text]" (or: none)
 
 ### Human time
-- [ticket-stats.py row: decisions, open items, approvals, review rounds, findings]
+- [ticket-stats.py row: decisions, open items, approvals, review rounds, findings, active time, tokens, cost]
 
 ### Shipped-bug record
 - [observation-log row] · eval: `review-eval/run.py --new [name] --repo [project] --fix [sha]` (or: not an escaped bug)

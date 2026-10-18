@@ -1,0 +1,9 @@
+{
+  "as_of": "2026-10-06",
+  "source": "Anthropic first-party API list prices, US dollars per million tokens. Cache writes are 1.25x input for the 5-minute TTL and 2x for the 1-hour TTL. Fast mode is 2x. Update this file when prices change; ticket-stats.py prints the as_of date with every cost.",
+  "models": {
+    "claude-fable-5-1": {"input": 10.0, "output": 50.0, "cache_read": 0.25, "cache_write_5m": 12.5, "cache_write_1h": 20.0},
+    "claude-opus-5-5": {"input": 4.0, "output": 20.0, "cache_read": 0.20, "cache_write_5m": 5.0, "cache_write_1h": 8.0, "fast": 2.0},
+    "claude-sonnet-5-5": {"input": 2.0, "output": 10.0, "cache_read": 0.20, "cache_write_5m": 2.5, "cache_write_1h": 4.0}
+  }
+}
