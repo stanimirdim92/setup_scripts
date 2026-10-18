@@ -82,8 +82,7 @@ skill's "Five-Axis Review".)
 - Insecure deserialization, path traversal, SSRF?
 - Any new dependency with known vulnerabilities?
 
-(When the change materially alters a trust boundary, `/review` also dispatches
-`security-auditor` per `../references/reviewer-triggers.md`; you still cover the
+(`/review` also dispatches `security-auditor` on every review (ADR 0102); you still cover the
 basics above.)
 
 ### 5. Performance

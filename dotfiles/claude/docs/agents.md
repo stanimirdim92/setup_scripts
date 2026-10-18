@@ -12,7 +12,7 @@ and gates. Personas never dispatch other personas.
 | `test-engineer` | independent verification | `/test` when risk/request warrants it |
 | `code-reviewer` | general code review against the goal and criteria | every `/review` |
 | `blind-reviewer` | review of the diff alone, with no goal or criteria | every `/review` |
-| `security-auditor` | security trust-boundary review | triggered `/review` only |
+| `security-auditor` | security trust-boundary review | every `/review` round (ADR 0102) |
 | `distributed-systems-reviewer` | distributed failure-semantics review | triggered `/review` only |
 
 `repo-recon` and the four reviewers are read-only by tool grant (Read/Grep/Glob

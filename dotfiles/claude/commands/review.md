@@ -63,7 +63,9 @@ Do not re-run `/test` inline and do not duplicate the trigger matrix here.
 
 ## 3. Dispatch reviewers
 
-Two reviewers always run, on the same diff, from opposite directions.
+Three reviewers always run: `code-reviewer` and `blind-reviewer` read the same
+diff from opposite directions, and `security-auditor` reviews it for security
+(ADR 0102).
 
 First, list the changes that make passing easier instead of making the code
 right: deleted or skipped tests, removed assertions, new suppressions, changed
@@ -121,9 +123,10 @@ is for; this one asks only what the code does.
 
 Do not send either reviewer the full spec or plan.
 
-Use `../references/reviewer-triggers.md` to decide whether
-`security-auditor` and/or `distributed-systems-reviewer` are also required.
-Give each specialist the project's `REVIEW.md` too.
+Dispatch `security-auditor` on every round, with the same packet as
+`code-reviewer`. Use `../references/reviewer-triggers.md` to decide whether
+`distributed-systems-reviewer` is also required. Give each specialist the
+project's `REVIEW.md` too.
 
 Run at most **2 reviewers concurrently**. Reviewers form judgments
 independently; do not pass one reviewer's findings to another — least of all
@@ -145,7 +148,9 @@ review file name.
 - Give `blind-reviewer` the diff since that commit and nothing else. Drop any of
   its findings that repeat a resolved finding at the same location, and say so
   in the report.
-- Run a specialist again only when the new diff matches its trigger.
+- Run `security-auditor` again on the new diff; run
+  `distributed-systems-reviewer` again only when the new diff matches its
+  trigger.
 - Report no new ADVISORY or pre-existing finding. Count them, and end the
   summary with "<n> found and not reported in this round".
 - Run the weakened-test guard and the ledger check on the whole candidate, as

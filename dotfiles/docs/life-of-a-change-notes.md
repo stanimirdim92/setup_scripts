@@ -220,8 +220,8 @@ Add your note under each bullet as `> Note: ...`.
 6. **Security pass on every candidate** (layer 3): a light always-on check,
    `security-auditor` still by trigger.
 
-   > Decision: A — leave it. `code-reviewer` checks security on every review;
-   > `security-auditor` runs by trigger and on "Always a person" paths.
+   > Decision (2026-10-18, MY_NOTE): every pass. `security-auditor` runs on
+   > every review round. Done: ADR 0102.
 
 7. **Shipped-bug rows** (layer 7): an observation-log row type for a bug found
    after merge, naming the layer that should have caught it — and each one
