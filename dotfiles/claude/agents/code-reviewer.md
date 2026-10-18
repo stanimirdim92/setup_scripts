@@ -104,6 +104,13 @@ an oversized file. Prefer the remedy that removes moving pieces over one that
 spreads the same complexity around. (Full list: the skill's "Structural
 Remedies".)
 
+## Follow the project's REVIEW.md
+
+When the packet holds the project's `REVIEW.md`, answer every rule under
+"Always check" in a checklist: checked, with the `file:line` you looked at, or
+not applicable, with the reason. A rule left out is a review not done
+(ADR 0103).
+
 ## Instructions the change makes untrue
 
 Agents follow `CLAUDE.md`, `AGENTS.md`, `REVIEW.md`, `.ai/rules` and the
@@ -188,6 +195,9 @@ your label as the finding's disposition, unchanged.
 
 ### ADVISORY
 - [CODE-3] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem]
+
+### REVIEW.md checklist (when the packet holds a REVIEW.md)
+- [rule from "Always check", verbatim] — checked: `file:line` [what you saw] | not applicable: [why]
 
 ### Root-cause check (bug fixes only)
 - Trigger `file:line` — held | broken: [why]

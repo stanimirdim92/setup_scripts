@@ -110,6 +110,7 @@ that explanation here, just the index.
 | [0100](0100-shipped-bugs-become-eval-cases.md) | Bugs found after merge are logged by layer and become eval cases | Accepted |
 | [0101](0101-ship-asks-about-a-feature-flag.md) | /ship asks how new behavior is turned off | Accepted |
 | [0102](0102-security-review-on-every-round.md) | Security review runs on every round | Accepted |
+| [0103](0103-reviewers-answer-every-review-md-rule.md) | Reviewers answer every REVIEW.md rule | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

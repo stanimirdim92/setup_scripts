@@ -184,6 +184,14 @@ file/location, and resolution state. Confidence travels with the
 finding so `/ship` can distinguish a confirmed BLOCKER (resolved only by a fix)
 from a suspected one (resolvable by a fix or by recorded refuting evidence).
 
+### REVIEW.md checklist
+
+When the project has a `REVIEW.md` with "Always check" rules, `code-reviewer`
+answers each one in its checklist (ADR 0103). Compare the checklist with the
+rules. Send a missing or unanswered rule back to `code-reviewer` once, with
+only that rule and the diff. If it is still missing, report "REVIEW.md not
+followed: <rule>" as a REQUIRED finding with the id `RULE-#`.
+
 ### Verify each BLOCKER
 
 Before reporting, give every BLOCKER one independent check that tries to refute
@@ -240,6 +248,8 @@ Report, starting with one count line before anything else (ADR 0099):
 - required-reviewer list and trigger decisions;
 - whether the project has a `REVIEW.md`, and which ones were used;
 - the "Always a person" result: no list, no match, or the matched files;
+- the REVIEW.md checklist: every "Always check" rule answered, or the
+  `RULE-#` findings;
 - the stale-instructions result: **Stale instructions: none found**, the
   `STALE-#` findings, or **Not verified**;
 - the weakened-test result, and how each listed change was resolved;
