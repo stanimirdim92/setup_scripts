@@ -43,6 +43,16 @@ Exit 2 is **SHIP BLOCKED** too. Warnings go into the report.
 Do not independently re-run the trigger matrix or substitute new inline testing
 for a missing gate.
 
+### Shipped-bug record
+
+When the spec has an `## Escaped From` section (ADR 0110), the bug reached
+the base branch once already. After GO, print under "Shipped-bug record" the
+row for the harness's `observation-log.md` "Shipped bugs" table (found, the
+ticket that shipped it, the bug, this fix's commit, the layer, why it
+missed). Also print the eval command for the fix:
+`review-eval/run.py --new <short-name> --repo <project> --fix <fix sha>`.
+The owner adds both to the harness repository; `/ship` does not write them.
+
 ### Risk
 
 Carry `/review`'s **Risk · Depth** line forward (ADR 0106) and put it at the
@@ -213,6 +223,9 @@ Return:
 
 ### Fix at the source
 - [class] — [N] tickets; [lint rule | REVIEW.md line | CLAUDE.md line | Do not report]: "[proposed text]" (or: none)
+
+### Shipped-bug record
+- [observation-log row] · eval: `review-eval/run.py --new [name] --repo [project] --fix [sha]` (or: not an escaped bug)
 
 ### Requirement evidence
 - REQ-001: [implementing change] / [verification evidence]

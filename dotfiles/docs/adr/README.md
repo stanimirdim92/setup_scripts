@@ -107,7 +107,7 @@ that explanation here, just the index.
 | [0097](0097-bug-fixes-carry-a-root-cause-trace.md) | Bug fixes carry a root-cause trace | Accepted |
 | [0098](0098-reviews-catch-stale-instructions.md) | Reviews catch instruction lines a change makes untrue | Accepted |
 | [0099](0099-review-reports-start-with-a-count.md) | Review reports start with a count | Accepted |
-| [0100](0100-shipped-bugs-become-eval-cases.md) | Bugs found after merge are logged by layer and become eval cases | Accepted |
+| [0100](0100-shipped-bugs-become-eval-cases.md) | Bugs found after merge are logged by layer and become eval cases | Accepted; amended by [0110](0110-shipped-bugs-become-bug-tickets.md) |
 | [0101](0101-ship-asks-about-a-feature-flag.md) | /ship asks how new behavior is turned off | Accepted |
 | [0102](0102-security-review-on-every-round.md) | Security review runs on every round | Accepted |
 | [0103](0103-reviewers-answer-every-review-md-rule.md) | Reviewers answer every REVIEW.md rule | Accepted |
@@ -116,6 +116,8 @@ that explanation here, just the index.
 | [0106](0106-risk-tiers-and-review-depth.md) | Risk tiers set review depth | Accepted |
 | [0107](0107-project-formatter-hook-and-no-style-findings.md) | The project's formatter formats; reviewers drop style | Accepted |
 | [0108](0108-overnight-review-fixes.md) | Review findings are fixed overnight | Accepted |
+| [0109](0109-unattended-pipeline-with-batched-decisions.md) | Unattended pipeline with batched decisions | Proposed |
+| [0110](0110-shipped-bugs-become-bug-tickets.md) | A shipped bug becomes a bug ticket the pipeline fixes | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

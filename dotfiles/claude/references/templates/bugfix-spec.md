@@ -48,6 +48,15 @@ Approved at: —
 - Scope of impact: [who or what data is affected, and whether any of it is
   already wrong and needs correcting separately from the fix]
 
+## Escaped From
+[Only for a bug that reached the base branch (ADR 0110); delete otherwise.]
+- Shipped by: [ticket and commit that introduced it]
+- Should have caught it: [layer 1-7: 1 verification before review · 2 AI
+  review · 3 security review · 4 automated checks · 5 human approval · 6 base
+  check and flags · 7 detection and rollback]
+- Why it missed: [the concrete gap, such as "no /test runtime check of the
+  export endpoint"]
+
 ## Change Impact
 - Modified behavior: [the incorrect behavior, and the REQ id it violated if one
   exists]

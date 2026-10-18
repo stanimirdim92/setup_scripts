@@ -149,6 +149,7 @@ Harness:
   MY_NOTE: For all of the above. I need suggestions and examples. I think we can automate jira/spec/plan/build. 
  The only problem I know is all the open questions and decisions that must be taken and in 99% of the cases it needs a person.
  I am looking forward to automate this, but do not know how.
+  > Proposed: ADR 0109 (batched morning questions, one reply, night-2 build). Four open points for you there.
 
 ## 6. Merge queue, flags and a gradual release
 
@@ -233,6 +234,8 @@ Add your note under each bullet as `> Note: ...`.
    becomes a review-eval case.
 
    > Decision: yes. Done: ADR 0100, "Shipped bugs" in `observation-log.md`.
+   > Amended (owner): a shipped bug is raised as a bug ticket and the agent
+   > fixes it through the pipeline; no circuit breaker. Done: ADR 0110.
 
 8. **Flag question at `/ship`** (layer 6) for risky new behavior.
 

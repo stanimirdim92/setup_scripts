@@ -222,8 +222,10 @@ the `SocialPostType` refactor to LD-441 as misses (10% instead of 100%).
 
 ## Shipped bugs
 
-One row per bug found after merge (ADR 0100). Name the layer that should have
-caught it, and say why it did not. Every row becomes a review-eval case, so
+One row per bug found after merge (ADR 0100). The bug is raised as a bug
+ticket and goes through the pipeline like any other work (ADR 0110). Its
+bugfix spec's "Escaped From" section names the layer that should have caught
+it, and `/ship` prints this row when the fix ships. Every row becomes a review-eval case, so
 the next reviewer change is scored against the bugs that really shipped:
 
 ```bash

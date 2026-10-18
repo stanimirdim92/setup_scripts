@@ -493,6 +493,9 @@ report is lost.
 ### Fix at the source
 - [class] — [N] tickets; [lint rule | REVIEW.md line | CLAUDE.md line | Do not report]: "[proposed text]" (or: none)
 
+### Shipped-bug record
+- [observation-log row] · eval: `review-eval/run.py --new [name] --repo [project] --fix [sha]` (or: not an escaped bug)
+
 ### Requirement evidence
 - REQ-001: [implementing change] / [verification evidence]
 
