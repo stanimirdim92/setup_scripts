@@ -67,16 +67,13 @@ def main(argv=None):
         print(f'always-person: cannot diff {args.base}...HEAD', file=sys.stderr)
         return 2
     changed = [p for p in out.split('\0') if p]
-    rc, base = git('merge-base', args.base, 'HEAD')
-    if rc:
-        print(f'always-person: no merge base with {args.base}', file=sys.stderr)
-        return 2
-    base = base.strip()
 
+    # The change set is base...HEAD (from the merge base); the rules come from
+    # the base ref itself, so a rule added to base after branching still applies.
     dirs = {''} | {str(p) for f in changed for p in PurePosixPath(f).parents if str(p) != '.'}
     globs = []
     for d in sorted(dirs):
-        rc, text = git('show', f'{base}:{d + "/" if d else ""}REVIEW.md')
+        rc, text = git('show', f'{args.base}:{d + "/" if d else ""}REVIEW.md')
         if rc == 0:
             globs += globs_in(text, d)
 

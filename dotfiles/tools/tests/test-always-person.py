@@ -102,6 +102,17 @@ class AlwaysPerson(unittest.TestCase):
         self.assertIn('app/Billing/Invoice.php', out)
         self.assertIn('app/Billing/*.php', out)
 
+    def test_rule_added_to_base_after_branching_applies(self):
+        self.commit('auth.py')                              # the ticket edits auth.py
+        self.git('checkout', '-q', 'main')
+        self.write('REVIEW.md', ROOT_REVIEW.replace('- `database/migrations/*.php`',
+                                                    '- `database/migrations/*.php`\n- `auth.py`'))
+        self.git('add', '-A'); self.git('commit', '-qm', 'main adds an auth rule')
+        self.git('checkout', '-q', 'ticket')
+        rc, out = self.run_script()
+        self.assertEqual(rc, 1)
+        self.assertIn('auth.py', out)
+
     def test_no_list(self):
         self.assertEqual(ap.globs_in('# REVIEW.md\n\n## Cap the nits\n'), [])
 
