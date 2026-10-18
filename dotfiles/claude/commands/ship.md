@@ -43,6 +43,28 @@ Exit 2 is **SHIP BLOCKED** too. Warnings go into the report.
 Do not independently re-run the trigger matrix or substitute new inline testing
 for a missing gate.
 
+### Current base
+
+Check that the candidate still passes on the current base, as a merge queue
+would (ADR 0095). The candidate itself is not touched: the script merges the
+base into a scratch worktree, runs the plan's integrated verification commands
+there, and removes it.
+
+```bash
+"$HOME/.claude/skills/git-workflow-and-versioning/scripts/base-check.sh" \
+    --base origin/<base branch> [--setup "<worktree setup command>"] -- "<integrated command>" ...
+```
+
+Take the commands from the plan's Verification Strategy (Integrated), and the
+setup command from the project's `CLAUDE.md` when a fresh worktree needs one
+(dependencies, environment).
+
+- Exit 0: record the result line ("Base: current" or every check passing).
+- Exit 1: a merge conflict or a failing check is **NO-GO**. The fix is a new
+  candidate through `/build` and `/review`. A failure listed in the project's
+  known-failures file is pre-existing; say so.
+- Exit 2: **SHIP BLOCKED** with the error; the check did not run.
+
 ## 2. Resolve findings
 
 Carry REVIEW findings forward unchanged. Their dispositions are defined once,
@@ -116,6 +138,7 @@ only when that is genuinely sufficient and safe.
 GO requires:
 
 - unchanged reviewed candidate;
+- the current-base check passing, or the base unchanged;
 - independent verification satisfied exactly as REVIEW required;
 - no unresolved BLOCKER, except a pre-existing one tracked as a follow-up;
 - `check-ledger.py --ship` passing;
@@ -153,6 +176,7 @@ Return:
 - Recovery target: ...
 
 ### Candidate
+- Base check: [Base: current | merged clean, checks pass]
 - Branch:
 - Commits:
 - Diff/status:

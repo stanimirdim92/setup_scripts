@@ -491,12 +491,14 @@ report is lost.
 - Recovery target: ...
 
 ### Candidate
+- Base check: [Base: current | merged clean, checks pass]
 - Branch:
 - Commits:
 - Diff/status:
 ```
 
-GO requires an unchanged reviewed candidate, independent verification
+GO requires an unchanged reviewed candidate, a passing current-base check
+(ADR 0095), independent verification
 satisfied exactly as REVIEW required, no unresolved BLOCKER (a pre-existing one
 tracked as a follow-up does not count), every requirement
 carrying both implementation and verification evidence, every REQUIRED finding

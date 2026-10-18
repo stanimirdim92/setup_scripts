@@ -102,6 +102,7 @@ that explanation here, just the index.
 | [0092](0092-every-blocker-gets-an-independent-check.md) | Every BLOCKER gets an independent check | Accepted |
 | [0093](0093-review-eval-and-noise-count.md) | A review eval from shipped bugs, and a count of review noise | Accepted |
 | [0094](0094-review-md-from-the-base-branch.md) | REVIEW.md is read from the base branch | Accepted |
+| [0095](0095-ship-checks-the-current-base.md) | /ship checks the candidate on the current base | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

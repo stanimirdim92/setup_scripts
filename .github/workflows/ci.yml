@@ -50,6 +50,10 @@ jobs:
       # Writers' commits carry a Refs: trailer (adr/0081).
       - name: Hooks — commit trailers
         run: bash dotfiles/tools/tests/test-commit-trailers.sh
+      # /ship's current-base check: merge the base into a scratch worktree
+      # and re-run the checks (adr/0095).
+      - name: Current-base check
+        run: bash dotfiles/tools/tests/test-base-check.sh
 
       - name: Hooks — handoff report gate
         run: bash dotfiles/tools/tests/test-handoff-hook.sh

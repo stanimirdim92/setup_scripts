@@ -188,6 +188,7 @@ Add your note under each bullet as `> Note: ...`.
    base into a scratch copy of the candidate and re-runs the task commands.
 
    > Note: yes! worktree or a scratch copy or a scratchpad is fine.
+   > Done: ADR 0095, `base-check.sh`.
 
 2. **Paths that always need a person** (layer 5): a list in `REVIEW.md`
    ("Always a person"), honoured by `/review` (force `/test` + all specialists)
