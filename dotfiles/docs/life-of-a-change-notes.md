@@ -219,10 +219,19 @@ Add your note under each bullet as `> Note: ...`.
 
 6. **Security pass on every candidate** (layer 3): a light always-on check,
    `security-auditor` still by trigger.
+
+   > Decision: A — leave it. `code-reviewer` checks security on every review;
+   > `security-auditor` runs by trigger and on "Always a person" paths.
+
 7. **Shipped-bug rows** (layer 7): an observation-log row type for a bug found
    after merge, naming the layer that should have caught it — and each one
    becomes a review-eval case.
+
+   > Decision: yes. Done: ADR 0100, "Shipped bugs" in `observation-log.md`.
+
 8. **Flag question at `/ship`** (layer 6) for risky new behavior.
+
+   > Decision: yes. Done: ADR 0101, the Feature flag attestation.
 
 ---
 

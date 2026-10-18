@@ -107,6 +107,8 @@ that explanation here, just the index.
 | [0097](0097-bug-fixes-carry-a-root-cause-trace.md) | Bug fixes carry a root-cause trace | Accepted |
 | [0098](0098-reviews-catch-stale-instructions.md) | Reviews catch instruction lines a change makes untrue | Accepted |
 | [0099](0099-review-reports-start-with-a-count.md) | Review reports start with a count | Accepted |
+| [0100](0100-shipped-bugs-become-eval-cases.md) | Bugs found after merge are logged by layer and become eval cases | Accepted |
+| [0101](0101-ship-asks-about-a-feature-flag.md) | /ship asks how new behavior is turned off | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

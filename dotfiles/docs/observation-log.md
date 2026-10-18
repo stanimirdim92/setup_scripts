@@ -220,6 +220,23 @@ the `SocialPostType` refactor to LD-441 as misses (10% instead of 100%).
 | 2026-10-03 | LD-442 | 67% | 62% | 92% | 16 / 3 | `lang/de/ticker.php`, `FrontendTranslationsTest.php`, 3 existing test files, `ticker.utils.ts` | All misses were consumers; see the Failures row. `resources/js/components/icons/` planned, never changed. Plan predates the change-surface rule. **2026-10-09:** the plan did list `lang/de/ticker.php`; the miss came from a parser bug (fixed in 1bdb32c, 33f9f22). Re-score LD-442 to correct the figures. |
 | 2026-10-07 | LD-380 (harness-test plan of 2026-10-07) | 69% | 60% | 60% | 43 / 5 | 2 real: `useAdvertiserOnboardingSearch.ts`, `useAdvertiserOnboardingSubmit.ts`. 5 written as shorthand (`Http/Requests/`, `Data/`, "its contract interface"). 10 outside today's design or later fixes: the Pending status files, `PublishAdvertiser.php`, the Details endpoint, `Utils.php`, `package.json` | A fresh plan scored against the 08-27 build and its 09-02 rework, so the shipped design differs (Pending status, a details endpoint). With full paths it would find 31/43. The 08-27 plan cannot be scored: 1 of its 10 packets lists files. First LD-380 baseline (`~/ld380-fresh.json`). Scored after the parser fixes of 2026-10-07. |
 
+## Shipped bugs
+
+One row per bug found after merge (ADR 0100). Name the layer that should have
+caught it, and say why it did not. Every row becomes a review-eval case, so
+the next reviewer change is scored against the bugs that really shipped:
+
+```bash
+python3 dotfiles/tools/evals/review-eval/run.py --new <short-name> --repo <project> --fix <fix sha>
+```
+
+Layers, from the life-of-a-change notes: 1 verification before review ·
+2 AI review · 3 security review · 4 automated checks · 5 human approval ·
+6 base check and flags · 7 detection and rollback.
+
+| Found | Ticket that shipped it | Bug | Fix commit | Should have caught it | Why it missed | Eval case |
+|---|---|---|---|---|---|---|
+
 ## What to look for
 
 Per `references/agent-run-metrics.md`, after roughly 10–20 comparable tickets:

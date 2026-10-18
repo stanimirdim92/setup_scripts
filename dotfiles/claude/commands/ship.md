@@ -133,6 +133,11 @@ Record `PASS`, `FAIL`, or `BLOCKED` with evidence for:
   safe; flags have defaults/owners; monitoring exists for meaningful new risk.
 - **Documentation** — README/changelog/ADR/runbook updated when the change
   actually requires them.
+- **Feature flag** — for new user-facing or risky behavior, the flag that
+  hides it and how to turn it off; or why it ships without one (ADR 0101).
+  A change that touches an "Always a person" path or migrates data and ships
+  without a flag needs that reason stated, not assumed. `PASS — not
+  applicable` covers changes with no new behavior: a refactor, docs, tests.
 
 Use `PASS — not applicable: <reason>` when an axis genuinely does not apply.
 
@@ -180,6 +185,7 @@ Return:
 ### Release-readiness
 - Infrastructure: ...
 - Documentation: ...
+- Feature flag: [flag name and how to turn it off | none, because ... | not applicable]
 
 ### Rollback plan
 - Trigger conditions: ...

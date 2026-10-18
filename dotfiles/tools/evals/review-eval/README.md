@@ -35,6 +35,11 @@ python3 run.py --fixture feed-order --findings path/to/review.sarif
 than one commit. The run ends with BETTER, SAME, NOT BETTER or WORSE, as in
 spec-eval. Run each side twice before you trust a small difference.
 
+## Where cases come from
+
+Every row in the "Shipped bugs" table of `dotfiles/docs/observation-log.md`
+becomes a case (ADR 0100). Add the case when you add the row.
+
 ## Good cases
 
 - A revert, or a fix whose message names the defect.
