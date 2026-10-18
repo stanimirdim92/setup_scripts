@@ -239,6 +239,17 @@ Layers, from the life-of-a-change notes: 1 verification before review ·
 | Found | Ticket that shipped it | Bug | Fix commit | Should have caught it | Why it missed | Eval case |
 |---|---|---|---|---|---|---|
 
+## Per ticket
+
+One row per shipped ticket, from `ticket-stats.py` at `/ship` (ADR 0112).
+Fewer person stops is the goal of automation (ADR 0109). The last column
+shows whether loosening it costs bugs: add one when a later bug ticket's
+spec names this ticket under "Escaped From" (ADR 0110). Loosen automation
+only while that column stays at 0.
+
+| Shipped | Ticket | Decisions | Open items | Approvals | Review rounds | Findings | Shipped bugs |
+|---|---|---|---|---|---|---|---|
+
 ## What to look for
 
 Per `references/agent-run-metrics.md`, after roughly 10–20 comparable tickets:

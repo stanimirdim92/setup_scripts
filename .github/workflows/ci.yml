@@ -193,6 +193,10 @@ jobs:
       - name: Batch spec runner
         run: bash dotfiles/tools/tests/test-batch-spec.sh
 
+      # Person-time per ticket: decisions, approvals, review rounds (adr/0112).
+      - name: Ticket stats
+        run: python3 dotfiles/tools/tests/test-ticket-stats.py
+
       # The overnight fixer: round cap, moved candidate, nothing open (adr/0108).
       - name: Batch fix runner
         run: python3 dotfiles/tools/tests/test-batch-fix.py

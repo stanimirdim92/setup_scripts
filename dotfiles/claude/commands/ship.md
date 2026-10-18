@@ -43,6 +43,18 @@ Exit 2 is **SHIP BLOCKED** too. Warnings go into the report.
 Do not independently re-run the trigger matrix or substitute new inline testing
 for a missing gate.
 
+### Human time
+
+Count what the ticket needed from a person (ADR 0112) and print the row for
+the harness's `observation-log.md` "Per ticket" table under "Human time":
+
+```bash
+python3 "$HOME/.claude/skills/spec-driven-development/scripts/ticket-stats.py" <TICKET>
+```
+
+The owner adds it to the harness repository; `/ship` does not write it. It
+never affects GO.
+
 ### Shipped-bug record
 
 When the spec has an `## Escaped From` section (ADR 0110), the bug reached
@@ -223,6 +235,9 @@ Return:
 
 ### Fix at the source
 - [class] — [N] tickets; [lint rule | REVIEW.md line | CLAUDE.md line | Do not report]: "[proposed text]" (or: none)
+
+### Human time
+- [ticket-stats.py row: decisions, open items, approvals, review rounds, findings]
 
 ### Shipped-bug record
 - [observation-log row] · eval: `review-eval/run.py --new [name] --repo [project] --fix [sha]` (or: not an escaped bug)

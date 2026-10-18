@@ -177,9 +177,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="layout">
-<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>7</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>9</span></a><a href="#conventions">Conventions<span>45</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>22</span></a><a href="#ci">Self-tests<span>32</span></a><a href="#decisions">Decisions<span>111</span></a></nav>
+<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>7</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>9</span></a><a href="#conventions">Conventions<span>45</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>22</span></a><a href="#ci">Self-tests<span>33</span></a><a href="#decisions">Decisions<span>112</span></a></nav>
 <main>
-<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>7</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>9</b>guards</span><span class="count"><b>45</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>22</b>references</span><span class="count"><b>32</b>self-tests</span><span class="count"><b>111</b>decisions</span></div></header>
+<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>7</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>9</b>guards</span><span class="count"><b>45</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>22</b>references</span><span class="count"><b>33</b>self-tests</span><span class="count"><b>112</b>decisions</span></div></header>
 <section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The orange rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">teal</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
 <div class="tabs" role="tablist" aria-label="Pipeline views">
 <button type="button" role="tab" id="tab-list" aria-controls="view-list" aria-selected="false" tabindex="-1" data-view="list"><span>1</span>Stage list</button>
@@ -341,7 +341,7 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">templates/spec.md</td><td>Spec Template</td></tr>
 <tr><td class="cmdcell">templates/task.md</td><td>Task Template</td></tr>
 </tbody></table></div></section>
-<section id="ci"><div class="sec-head"><h2>Self-tests</h2><p class="summary">32 CI steps on every push to main and every pull request. Runs that spend model tokens stay manual.</p></div><div class="panel tablewrap"><table><thead><tr><th>Step</th><th>Command</th></tr></thead><tbody>
+<section id="ci"><div class="sec-head"><h2>Self-tests</h2><p class="summary">33 CI steps on every push to main and every pull request. Runs that spend model tokens stay manual.</p></div><div class="panel tablewrap"><table><thead><tr><th>Step</th><th>Command</th></tr></thead><tbody>
 <tr><td><b>Preflight — required tools</b></td><td class="cmdcell">for tool in bash git jq python3; do<br>command -v &quot;$tool&quot; &gt;/dev/null || { echo &quot;missing: $tool&quot;; exit 1; }<br>done<br>jq --version &amp;&amp; python3 --version &amp;&amp; git --version</td></tr>
 <tr><td><b>Hooks — deny, ask, and allow cases</b><span class="sub">Enforcement: the three PreToolUse hooks, deny/ask/allow, including the alias, typo, global-option and quoted-target bypasses (adr/0049).</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-hooks.sh</td></tr>
 <tr><td><b>Hooks — commit trailers</b><span class="sub">Enforcement: the SubagentStop handoff gate — complete, partial, claim-only, second attempt, unknown agent, unreadable transcript. Writers&#x27; commits carry a Refs: trailer (adr/0081).</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-commit-trailers.sh</td></tr>
@@ -372,10 +372,12 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td><b>Dotfile linker confirmation</b><span class="sub">The dotfile linker&#x27;s confirmation gate, against a throwaway $HOME.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-link-dotfiles.sh</td></tr>
 <tr><td><b>Figma skill fetch</b><span class="sub">The Figma skill fetch refuses a file whose hash differs from the pin.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-fetch-figma-skill.sh</td></tr>
 <tr><td><b>Batch spec runner</b><span class="sub">The batch spec runner&#x27;s decisions, with <code>claude</code> stubbed.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-batch-spec.sh</td></tr>
+<tr><td><b>Ticket stats</b><span class="sub">Person-time per ticket: decisions, approvals, review rounds (adr/0112).</span></td><td class="cmdcell">python3 dotfiles/tools/tests/test-ticket-stats.py</td></tr>
 <tr><td><b>Batch fix runner</b><span class="sub">The overnight fixer: round cap, moved candidate, nothing open (adr/0108).</span></td><td class="cmdcell">python3 dotfiles/tools/tests/test-batch-fix.py</td></tr>
 <tr><td><b>Run metrics</b><span class="sub">Measurement: the transcript metrics&#x27; large-result section.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-run-metrics.sh</td></tr>
 </tbody></table></div></section>
-<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">111 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">112 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<tr><td class="cmdcell">0112</td><td>Person-time and shipped bugs are counted per ticket</td></tr>
 <tr><td class="cmdcell">0111</td><td>Reviewer changes are rescored</td></tr>
 <tr><td class="cmdcell">0110</td><td>A shipped bug becomes a bug ticket the pipeline fixes</td></tr>
 <tr><td class="cmdcell">0109</td><td>Unattended pipeline with batched decisions (proposed)</td></tr>
@@ -385,7 +387,6 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">0105</td><td>Repeated findings are fixed at the source</td></tr>
 <tr><td class="cmdcell">0104</td><td><code>/test</code> runs every production change, and runs it for real</td></tr>
 <tr><td class="cmdcell">0103</td><td>Reviewers answer every REVIEW.md rule</td></tr>
-<tr><td class="cmdcell">0102</td><td>Security review runs on every round</td></tr>
 </tbody></table></div></section>
 <footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. Do not edit by hand.</footer></main></div>
 <script>

@@ -316,6 +316,7 @@ Their intro: "Most of the pieces to do this with your team exist today."
     shipped-bug rate holds.
 
    > Note: yes.
+   > Done: ADR 0112, `ticket-stats.py`; `/ship` prints the "Per ticket" row.
 
 Gap 2 grows: written risk tiers (low / medium / high, set by the change),
 review depth matched to the tier, a "Risk" line in the `/ship` report, and
