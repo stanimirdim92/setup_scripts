@@ -4,7 +4,11 @@
 `claude` is stubbed: these test the runner's decisions, not the model. The
 skips matter most, since each one stops an unattended run from fixing the
 wrong thing: the round cap, a candidate that moved after its review, and
-findings that are pre-existing or already resolved."""
+findings that are pre-existing or already resolved. So do the checkout
+rules: one checkout and branch per ticket, clean, locked, and still at the
+reviewed commit when the work starts."""
+import argparse
+import fcntl
 import importlib.util
 import io
 import json
@@ -118,6 +122,81 @@ class BatchFix(unittest.TestCase):
             self.assertEqual(bf.main(['--dir', str(self.reviews), '--dry-run']), 0)
         self.assertFalse(self.calls.exists())
         self.assertIn('fix   AB-1', out.getvalue())
+
+    def add_worktree(self, name, branch):
+        path = Path(self.tmp.name) / name
+        subprocess.run(['git', '-C', str(self.repo), 'worktree', 'add', '-q', '-b', branch, str(path)], check=True)
+        return path
+
+    def job(self, ticket='AB-1'):
+        return next(j for j in bf.plan(self.reviews) if j['ticket'] == ticket)
+
+    def run_args(self):
+        return argparse.Namespace(claude=self.env['CLAUDE_BIN'], budget=1, permission_mode='acceptEdits')
+
+    def run_job(self, job):
+        os.environ.update(self.env)
+        out = self.reviews.parent / 'out'
+        out.mkdir(exist_ok=True)
+        return bf.run_job(job, self.run_args(), out)
+
+    def test_two_tickets_at_one_commit_do_not_share_a_checkout(self):
+        self.write(f'AB-1-{self.sha}.sarif', finding('CODE-1'))
+        self.write(f'AB-2-{self.sha}.sarif', finding('CODE-2'))
+        jobs = bf.plan(self.reviews)
+        self.assertEqual([j['ticket'] for j in jobs if not j['skip']], [])
+        self.assertIn('AB-2', next(j for j in jobs if j['ticket'] == 'AB-1')['skip'])
+
+    def test_branch_name_binds_each_ticket_to_its_own_checkout(self):
+        one = self.add_worktree('wt-one', 'feature/AB-1')
+        two = self.add_worktree('wt-two', 'feature/AB-2')
+        self.write(f'AB-1-{self.sha}.sarif', finding('CODE-1'))
+        self.write(f'AB-2-{self.sha}.sarif', finding('CODE-2'))
+        jobs = {j['ticket']: j for j in bf.plan(self.reviews)}
+        self.assertEqual((jobs['AB-1']['skip'], jobs['AB-1']['worktree'], jobs['AB-1']['branch']),
+                         (None, str(one), 'feature/AB-1'))
+        self.assertEqual((jobs['AB-2']['skip'], jobs['AB-2']['worktree']), (None, str(two)))
+
+    def test_ambiguous_checkouts_at_one_commit_are_rejected(self):
+        self.add_worktree('wt-b', 'feature/b')
+        self.write(f'AB-1-{self.sha}.sarif', finding('CODE-1'))
+        self.assertIn('more than one worktree', self.job()['skip'])
+
+    def test_dirty_checkout_is_rejected(self):
+        (self.wt / 'notes.txt').write_text('mine\n')
+        self.write(f'AB-1-{self.sha}.sarif', finding('CODE-1'))
+        self.assertIn('uncommitted', self.job()['skip'])
+
+    def test_checkout_that_turns_dirty_after_planning_is_not_touched(self):
+        self.write(f'AB-1-{self.sha}.sarif', finding('CODE-1'))
+        job = self.job()
+        (self.wt / 'notes.txt').write_text('mine\n')
+        result = self.run_job(job)
+        self.assertEqual(result['state'], 'FAILED')
+        self.assertIn('uncommitted', result['detail'])
+        self.assertFalse(self.calls.exists())
+
+    def test_held_lock_blocks_a_second_job(self):
+        self.write(f'AB-1-{self.sha}.sarif', finding('CODE-1'))
+        job = self.job()
+        gitdir = subprocess.run(['git', '-C', str(self.wt), 'rev-parse', '--absolute-git-dir'],
+                                capture_output=True, text=True, check=True).stdout.strip()
+        with open(Path(gitdir) / 'batch-fix.lock', 'w') as held:
+            fcntl.flock(held, fcntl.LOCK_EX)
+            result = self.run_job(job)
+        self.assertEqual(result['state'], 'FAILED')
+        self.assertIn('locked', result['detail'])
+        self.assertFalse(self.calls.exists())
+
+    def test_head_that_moved_before_start_is_rejected(self):
+        self.write(f'AB-1-{self.sha}.sarif', finding('CODE-1'))
+        job = self.job()
+        subprocess.run(['git', '-C', str(self.wt), '-c', 'user.email=t@t', '-c', 'user.name=t',
+                        'commit', '-q', '--allow-empty', '-m', 'moved on'], check=True)
+        result = self.run_job(job)
+        self.assertEqual(result['state'], 'FAILED')
+        self.assertIn('reviewed commit', result['detail'])
+        self.assertFalse(self.calls.exists())
 
 
 if __name__ == '__main__':

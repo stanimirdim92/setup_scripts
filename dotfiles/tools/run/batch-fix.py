@@ -17,7 +17,16 @@ yours. A ticket is skipped, with the reason, when:
     which means the approach needs you (ADR 0089);
   - no worktree sits at the reviewed commit: the candidate moved after the
     review, so it must be reviewed again before anything is fixed;
+  - the checkout is not one ticket's alone: several worktrees sit at the
+    commit and the branch names do not tell them apart, two tickets claim the
+    same checkout, it is detached or on main/master, or it has uncommitted
+    changes (the job would mix its edits with yours);
   - nothing open is BLOCKER or REQUIRED, or what is open is pre-existing.
+
+Each job holds an exclusive lock (`batch-fix.lock` in the checkout's git dir)
+for its whole run. Under that lock it checks again that HEAD is still the
+reviewed commit, on the same branch, with a clean tree. A held lock fails the
+job at once; it never waits.
 
 Usage (from the project's main checkout):
     batch-fix.py --dry-run               # what would run, and what is skipped
@@ -32,16 +41,20 @@ Exit: 0 nothing to do, or every job reached a review · 1 declined, or a job
 failed · 2 not in a git repository.
 """
 import argparse
+import fcntl
 import json
 import os
 import re
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from pathlib import Path
 
 NAME = re.compile(r'^(?P<ticket>.+)-(?P<sha>[0-9a-f]{7,40})\.sarif$')
 ROUND_CAP = 3
+PROTECTED = ('main', 'master')
+LOCK_NAME = 'batch-fix.lock'
 
 
 def git(*args, cwd=None):
@@ -74,42 +87,108 @@ def open_findings(path):
 
 
 def worktrees():
-    """{HEAD sha: path} for every worktree of this repository."""
+    """[{path, head, branch}] for every worktree of this repository; branch is None when detached."""
     rc, out = git('worktree', 'list', '--porcelain')
-    heads, path = {}, None
-    for line in out.splitlines():
-        if line.startswith('worktree '):
-            path = line[9:]
-        elif line.startswith('HEAD ') and path:
-            heads[line[5:]] = path
-    return heads
+    found = []
+    for block in out.split('\n\n'):
+        entry = {'path': None, 'head': None, 'branch': None}
+        for line in block.splitlines():
+            if line.startswith('worktree '):
+                entry['path'] = line[9:]
+            elif line.startswith('HEAD '):
+                entry['head'] = line[5:]
+            elif line.startswith('branch refs/heads/'):
+                entry['branch'] = line[18:]
+        if entry['path'] and entry['head']:
+            found.append(entry)
+    return found
+
+
+def bind(ticket, sha, checkouts):
+    """(checkout, why not): the one worktree and branch this ticket's fix may use."""
+    at = [w for w in checkouts if w['head'].startswith(sha)]
+    if not at:
+        return None, f'no worktree at the reviewed commit {sha}; review the current candidate first'
+    usable = [w for w in at if w['branch'] and w['branch'] not in PROTECTED]
+    if not usable:
+        return None, f'worktree at {sha} is detached or on {"/".join(PROTECTED)}; a fix must go on the ticket branch'
+    if len(usable) > 1:
+        usable = [w for w in usable if ticket.lower() in w['branch'].lower()]
+    if len(usable) != 1:
+        return None, f'more than one worktree at {sha} and the branch names do not tell them apart; name the ticket branch for {ticket}'
+    return usable[0], None
+
+
+def checkout_problem(job):
+    """Why the checkout is not safe to work in right now, or None."""
+    cwd = job['worktree']
+    head = git('rev-parse', 'HEAD', cwd=cwd)[1]
+    if not head.startswith(job['sha']):
+        return f'HEAD is {head[:7]}, not the reviewed commit {job["sha"]}'
+    branch = git('symbolic-ref', '--short', '-q', 'HEAD', cwd=cwd)[1]
+    if branch != job['branch']:
+        return f'branch is {branch or "detached"}, not {job["branch"]}'
+    rc, status = git('status', '--porcelain', cwd=cwd)
+    if rc or status:
+        return 'uncommitted changes in the checkout'
+    return None
+
+
+class CheckoutBusy(Exception):
+    pass
+
+
+@contextmanager
+def checkout_lock(worktree):
+    """Hold an exclusive lock on the checkout. It never waits: a held lock raises CheckoutBusy."""
+    rc, gitdir = git('rev-parse', '--absolute-git-dir', cwd=worktree)
+    if rc:
+        raise CheckoutBusy(f'cannot find the git dir of {worktree}')
+    with open(Path(gitdir) / LOCK_NAME, 'w') as fh:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise CheckoutBusy(f'checkout is locked by another batch-fix job ({fh.name})') from None
+        yield
 
 
 def plan(directory, only=None):
-    """[{ticket, round, sha, open, worktree, skip}] for every reviewed ticket."""
-    heads = worktrees()
+    """[{ticket, round, sha, open, worktree, branch, skip}] for every reviewed ticket."""
+    checkouts = worktrees()
     jobs = []
     for ticket, files in sorted(reviews(directory).items()):
-        if only and ticket not in only:
-            continue
         _, sha, path = files[-1]
         job = {'ticket': ticket, 'round': len(files), 'sha': sha, 'sarif': str(path),
-               'open': [], 'worktree': None, 'skip': None}
+               'open': [], 'worktree': None, 'branch': None, 'skip': None}
         try:
             job['open'] = open_findings(path)
         except (OSError, ValueError) as err:
             job['skip'] = f'unreadable review file: {err}'
             jobs.append(job)
             continue
-        job['worktree'] = next((p for h, p in heads.items() if h.startswith(sha)), None)
+        found, why = bind(ticket, sha, checkouts)
+        if found:
+            job['worktree'], job['branch'] = found['path'], found['branch']
         if not job['open']:
             job['skip'] = 'nothing open that blocks'
         elif job['round'] >= ROUND_CAP:
             job['skip'] = f'round cap: {job["round"]} reviews already; the approach needs you (ADR 0089)'
-        elif not job['worktree']:
-            job['skip'] = f'no worktree at the reviewed commit {sha}; review the current candidate first'
+        elif not found:
+            job['skip'] = why
+        else:
+            problem = checkout_problem(job)
+            if problem:
+                job['skip'] = f'{job["worktree"]}: {problem}'
         jobs.append(job)
-    return jobs
+    claims = {}
+    for job in jobs:
+        if not job['skip']:
+            claims.setdefault(job['worktree'], []).append(job['ticket'])
+    for job in jobs:
+        others = [t for t in claims.get(job['worktree'], []) if t != job['ticket']] if not job['skip'] else []
+        if others:
+            job['skip'] = f'{job["worktree"]} is also the reviewed commit of {", ".join(others)}; one checkout per ticket'
+    return [j for j in jobs if not only or j['ticket'] in only]
 
 
 def outcome(text):
@@ -135,6 +214,17 @@ def claude(binary, prompt, cwd, budget, mode, log):
 
 
 def run_job(job, args, out_dir):
+    try:
+        with checkout_lock(job['worktree']):
+            problem = checkout_problem(job)
+            if problem:
+                return dict(job, state='FAILED', detail=problem, cost=0, log='-')
+            return work(job, args, out_dir)
+    except CheckoutBusy as err:
+        return dict(job, state='FAILED', detail=str(err), cost=0, log='-')
+
+
+def work(job, args, out_dir):
     log = out_dir / f'{job["ticket"]}.log'
     log.write_text('')
     cwd = job['worktree']
