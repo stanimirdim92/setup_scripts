@@ -104,6 +104,7 @@ that explanation here, just the index.
 | [0094](0094-review-md-from-the-base-branch.md) | REVIEW.md is read from the base branch | Accepted |
 | [0095](0095-ship-checks-the-current-base.md) | /ship checks the candidate on the current base | Accepted |
 | [0096](0096-paths-that-always-need-a-person.md) | Paths that always need a person | Accepted |
+| [0097](0097-bug-fixes-carry-a-root-cause-trace.md) | Bug fixes carry a root-cause trace | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

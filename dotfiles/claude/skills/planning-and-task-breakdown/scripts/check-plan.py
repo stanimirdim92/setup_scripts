@@ -16,6 +16,9 @@ Failures (exit 1):
   - with --spec: a requirement of the spec has no task (unless the spec marks it
     withdrawn, or the plan lists modules under `Not yet planned:`, which turns
     this into a warning), or a task names a REQ id the spec does not have;
+  - with --spec on a Bugfix spec: the plan has no `### Root-Cause Trace` with
+    Trigger, Path, Fault, Other paths and Proof, or its Path or Fault names no
+    `file:line` (ADR 0097);
   - with --todo: an index task has no packet or a packet has no index line, or a
     packet lacks `**Status:**` (Pending or Done), `**Requirements:**`,
     `**Acceptance criteria:**` or `**Verification:**`.
@@ -70,6 +73,27 @@ def shorthand_paths(body):
         short += [p for p in paths[1:] if '/' in p and p.split('/')[0] != root]
     return short
 
+FILE_LINE = re.compile(r'`[^`\s]+:\d+`')
+
+
+def root_cause_trace(plan):
+    """Failures for a bugfix plan's Root-Cause Trace (ADR 0097)."""
+    m = re.search(r'^###\s+Root-Cause Trace\s*$(.*?)(?=^##|\Z)', plan, re.M | re.S)
+    if not m:
+        return ['the spec is a Bugfix, so the plan needs a `### Root-Cause Trace` section (ADR 0097)']
+    body, fail = m.group(1), []
+    for field in ('Trigger', 'Path', 'Fault', 'Other paths', 'Proof'):
+        if not re.search(rf'^\s*[-*]\s+{field}:', body, re.M):
+            fail.append(f'Root-Cause Trace has no `{field}:` line')
+    fault = re.search(r'^\s*[-*]\s+Fault:(.*)$', body, re.M)
+    if fault and not FILE_LINE.search(fault.group(1)):
+        fail.append('Root-Cause Trace: the Fault names no `file:line`')
+    path = re.search(r'^\s*[-*]\s+Path:(.*?)(?=^\s*[-*]\s+Fault:|\Z)', body, re.M | re.S)
+    if path and not FILE_LINE.search(path.group(1)):
+        fail.append('Root-Cause Trace: the Path has no `file:line` hop')
+    return fail
+
+
 def check(plan, spec=None, todos=()):
     """(failures, warnings), each a list of (file label, line, message)."""
     fail, warn = [], []
@@ -102,6 +126,10 @@ def check(plan, spec=None, todos=()):
         for dep in t['deps']:
             if dep not in defined:
                 fail.append(('plan', t['line'], f'{tid} depends on {dep}, which the plan does not define'))
+
+    if spec is not None and re.search(r'^\**Change kind:?\**:?\s*Bugfix', spec, re.M):
+        line = next((n for n, l in enumerate(plan.splitlines(), 1) if 'Root-Cause Trace' in l), 1)
+        fail += [('plan', line, msg) for msg in root_cause_trace(plan)]
 
     if spec is not None:
         reqs = spec_requirements(spec)

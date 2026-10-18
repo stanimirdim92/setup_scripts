@@ -122,6 +122,19 @@ class CheckPlan(unittest.TestCase):
         _, warn = run(todo=TODO.replace("- `app/Reminders.php`", "- `lang/en/*.php`, `lang/de/*.php`", 1))
         self.assertEqual(warn, [])
 
+    def test_bugfix_plan_needs_a_root_cause_trace(self):
+        bugfix = SPEC.replace('Status: Approved', 'Status: Approved\nChange kind: Bugfix')
+        fail, _ = run(spec=bugfix)
+        self.assertTrue(any('Root-Cause Trace' in m for m in fail))
+        trace = ('### Root-Cause Trace\n- Trigger: `routes/api.php:12`\n- Path:\n  1. `app/Feed.php:30` — loads posts\n'
+                 '- Fault: `app/Feed.php:41` — drops the first post\n- Other paths: none, `rg -n order` finds one caller\n'
+                 '- Proof: `tests/FeedTest.php:8`\n\n')
+        plan = PLAN.replace('## Task Index', trace + '## Task Index')
+        self.assertEqual(run(plan=plan, spec=bugfix)[0], [])
+        fail, _ = run(plan=plan.replace('`app/Feed.php:41` — drops', 'the order line drops'), spec=bugfix)
+        self.assertIn('Root-Cause Trace: the Fault names no `file:line`', fail)
+        self.assertEqual(run()[0], [])            # a feature spec needs no trace
+
     def test_without_spec_or_todo_only_the_plan_is_checked(self):
         fail, warn = cp.check(PLAN, None, [])
         self.assertEqual((fail, warn), ([], []))

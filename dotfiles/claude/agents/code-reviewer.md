@@ -105,6 +105,26 @@ an oversized file. Prefer the remedy that removes moving pieces over one that
 spreads the same complexity around. (Full list: the skill's "Structural
 Remedies".)
 
+## Bug fixes — validate the root cause
+
+When the packet holds a Root-Cause Trace (a bugfix plan, ADR 0097), check it
+against the code, hop by hop. Read each `file:line`; do not trust the trace.
+
+1. **Walk the path.** At every hop, confirm the code does what the trace says
+   and the value or state is what it claims. A hop that does not hold is a
+   REQUIRED finding: "trace breaks at `file:line`: …".
+2. **Find the fault.** Confirm the diff changes the Fault line, or the code
+   that feeds it the wrong assumption. A diff that only guards a later hop —
+   catching the symptom downstream while the fault stays — is a BLOCKER:
+   "fixes the symptom at `file:line`; the fault at `file:line` remains".
+3. **Check the other paths.** Run the trace's search yourself. Every caller
+   that reaches the fault is fixed by the diff or safe for a stated reason. A
+   missed caller is a BLOCKER when it reproduces the bug, REQUIRED otherwise.
+4. **Check the proof.** The regression test must drive the Trigger, not only
+   the patched function, and must fail without the fix. Otherwise REQUIRED.
+
+Report the walk under "Root-cause check" in your output, one line per hop.
+
 ## Change Sizing
 
 Small, focused changes are easier to review and safer to deploy:
@@ -157,6 +177,13 @@ your label as the finding's disposition, unchanged.
 
 ### ADVISORY
 - [CODE-3] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem]
+
+### Root-cause check (bug fixes only)
+- Trigger `file:line` — held | broken: [why]
+- Hop 1 `file:line` — held | broken: [why]
+- Fault `file:line` — fixed by the diff | not fixed: [where the diff acts instead]
+- Other paths — [each caller `file:line`: fixed | safe because … | missed]
+- Proof — [test drives the trigger and fails without the fix | gap]
 
 ### What's Done Well
 - [Specific, useful positive observations.]

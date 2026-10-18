@@ -104,6 +104,8 @@ Dispatch `code-reviewer` with:
 
 - the integrated diff;
 - the project's `REVIEW.md`, when there is one;
+- for a bug fix, the plan's Root-Cause Trace section (ADR 0097), which
+  `code-reviewer` walks against the code;
 - a one-line goal;
 - the relevant acceptance criteria;
 - the build/verify evidence needed to understand what was checked;

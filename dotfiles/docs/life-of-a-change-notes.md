@@ -202,6 +202,7 @@ Add your note under each bullet as `> Note: ...`.
    against the spec's root cause, not just the symptom.
 
    > Note: yes. I need a real validation. files, paths, lines, logical trace of the bug.
+   > Done: ADR 0097, Root-Cause Trace in the plan, checked by check-plan, walked by code-reviewer.
 
 4. **Stale instruction lines** (layer 1): reviewers flag a change that makes a
    `CLAUDE.md` / `AGENTS.md` / `.ai/rules` line untrue.

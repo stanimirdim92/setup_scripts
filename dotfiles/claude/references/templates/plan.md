@@ -58,6 +58,24 @@ valid answer.]
 ### Proposed Flow
 [The ordered data/control flow after the change.]
 
+### Root-Cause Trace
+[Bugfix plans only (spec `Change kind: Bugfix`); delete otherwise. A logical
+trace from the reproduction to the faulty line, every hop a `file:line`
+(ADR 0097). `check-plan.py` fails a bugfix plan without it, and
+`code-reviewer` walks it against the code.]
+
+- Trigger: [the reproduction's entry point — route, command, job — `file:line`]
+- Path:
+  1. `file:line` — [what happens here; the value or state at this hop]
+  2. `file:line` — [...]
+- Fault: `file:line` — [the line where behavior goes wrong, and the wrong
+  assumption it makes]
+- Other paths: [every other caller that reaches the fault, from a search such
+  as `rg -n "<symbol>"`; each one fixed by the change or stated safe, with
+  `file:line`]
+- Proof: [the regression test that drives the Trigger and fails before the
+  fix, `file:line` or test name]
+
 ### Components and Responsibilities
 - `[existing or NEW component]`: [responsibility]
 
