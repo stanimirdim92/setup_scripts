@@ -32,6 +32,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # check-rescore reads the pushed commit range
 
       - name: Preflight — required tools
         run: |
@@ -145,6 +147,16 @@ jobs:
       - name: Review eval
         working-directory: dotfiles/tools/evals/review-eval
         run: python3 test_review_eval.py
+      # A reviewer change says how the review eval scored it (adr/0111).
+      - name: Reviewer changes carry a rescore
+        env:
+          BEFORE: ${{ github.event.before }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python3 dotfiles/tools/tests/test-check-rescore.py
+          if [ -n "$BASE" ]; then range="$BASE..HEAD"; elif [ -n "$BEFORE" ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then range="$BEFORE..HEAD"; else exit 0; fi
+          python3 dotfiles/tools/checks/check-rescore.py --range "$range"
+
       # How review findings ended, per reviewer, and which classes repeat (adr/0093, adr/0105).
       - name: Review noise count
         run: python3 dotfiles/tools/tests/test-review-noise.py

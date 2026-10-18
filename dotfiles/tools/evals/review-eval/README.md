@@ -35,6 +35,25 @@ python3 run.py --fixture feed-order --findings path/to/review.sarif
 than one commit. The run ends with BETTER, SAME, NOT BETTER or WORSE, as in
 spec-eval. Run each side twice before you trust a small difference.
 
+## When to run it, and what it costs
+
+A change to a reviewer persona, `/review`, the reviewer triggers, the risk
+tiers, or a reviewer's model needs a rescore (ADR 0111). CI checks that the
+commit says how it went, in a trailer:
+
+```text
+Review-eval: bugs 5/8 -> 6/8, clean 3/3 -> 3/3 (BETTER); ./after/results.json
+Review-eval: not run - wording only, no change to what is reported
+```
+
+Each case is one full headless `/review`: the three always-on reviewers, any
+specialist the case triggers, and the BLOCKER check. `--budget` caps each run
+(default $10), and the run prints the measured `Cost:` at the end. A rescore
+reuses the stored baseline, so it costs one run per case, two if you repeat
+it to trust a small difference. With 8 cases that is 8 to 16 runs, at most
+$80 to $160 at the default cap. Write down the first measured `Cost:` line
+and use it, not the cap, to decide when a change is worth a run.
+
 ## Where cases come from
 
 Every row in the "Shipped bugs" table of `dotfiles/docs/observation-log.md`

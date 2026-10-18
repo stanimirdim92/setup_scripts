@@ -118,6 +118,7 @@ that explanation here, just the index.
 | [0108](0108-overnight-review-fixes.md) | Review findings are fixed overnight | Accepted |
 | [0109](0109-unattended-pipeline-with-batched-decisions.md) | Unattended pipeline with batched decisions | Proposed |
 | [0110](0110-shipped-bugs-become-bug-tickets.md) | A shipped bug becomes a bug ticket the pipeline fixes | Accepted |
+| [0111](0111-reviewer-changes-are-rescored.md) | Reviewer changes are rescored | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

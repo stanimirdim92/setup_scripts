@@ -307,6 +307,8 @@ Their intro: "Most of the pieces to do this with your team exist today."
     against the baseline; the commit or ADR names the result.
 
    > Note: Ok. what it will cost
+   > Done: ADR 0111, `check-rescore.py` in CI. Cost: one capped /review per case
+   > per run (default cap $10); the first measured `Cost:` line sets the real number.
 
 12. **Human time and shipped bugs** — record per ticket how many times you
     were asked to decide (questions, approvals, review rounds) and any bug
