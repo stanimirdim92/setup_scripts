@@ -2,9 +2,12 @@
 """agent-sessions: read-only session lister for Claude Code, Codex and Gemini CLI.
 
 Modes (no dependencies, Python 3.8+):
-  python3 agent_sessions_mcp.py --serve [--port 8787]   live dashboard at http://127.0.0.1:8787
+  python3 agent_sessions_mcp.py --serve [--port 8787]   live dashboard at http://127.0.0.1:8787/?t=<token>  (printed)
   python3 agent_sessions_mcp.py --print                 dump JSON to stdout
   python3 agent_sessions_mcp.py                         MCP server over stdio
+
+The dashboard answers only Host 127.0.0.1:<port> or localhost:<port>. It refuses other
+Host and Origin values, and an API call without the printed token (X-Token header).
 
 
 Lists recent Claude Code, Codex and Gemini CLI sessions found on this machine
@@ -23,6 +26,7 @@ no tool output.
 import json
 import os
 import re
+import secrets
 import shlex
 import sys
 import time
@@ -30,6 +34,7 @@ from pathlib import Path
 
 HOME = Path(os.environ.get("AGENT_SESSIONS_HOME", str(Path.home())))
 VERSION = "1.0.0"
+TOKEN = os.environ.get("AGENT_SESSIONS_TOKEN") or secrets.token_urlsafe(18)
 HEAD_LINES = 400
 TAIL_BYTES = 96 * 1024
 TITLE_MAX = 140
@@ -415,9 +420,10 @@ const AG={claude:["Claude Code","var(--cl)","CC"],codex:["Codex","var(--cx)","CX
 let data={sessions:[]},ok=false,f={st:null,ag:"all",q:""};
 const $=i=>document.getElementById(i),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const ago=t=>{const s=(Date.now()-t)/1e3;return s<60?"just now":s<3600?Math.floor(s/60)+"m ago":s<86400?Math.floor(s/3600)+"h ago":Math.floor(s/86400)+"d ago"};
-async function load(){try{const r=await fetch("/api/sessions?days="+(new URLSearchParams(location.search).get("days")||14));data=await r.json();ok=true}catch(e){ok=false}draw()}
+const TOKEN=new URLSearchParams(location.search).get("t")||sessionStorage.getItem("ast")||"";if(TOKEN)sessionStorage.setItem("ast",TOKEN);
+async function load(){try{const r=await fetch("/api/sessions?days="+(new URLSearchParams(location.search).get("days")||14),{headers:{"X-Token":TOKEN}});if(!r.ok)throw new Error(r.status);data=await r.json();ok=true}catch(e){ok=false}draw()}
 function draw(){
- $("sub").innerHTML=ok?`<span class="dot"></span>${esc(data.host||"this PC")} · ${data.total} sessions · scanned ${ago(data.scannedAt)}`:`<span class="dot off"></span>can't reach the local server`;
+ $("sub").innerHTML=ok?`<span class="dot"></span>${esc(data.host||"this PC")} · ${data.total} sessions · scanned ${ago(data.scannedAt)}`:`<span class="dot off"></span>can't reach the local server (open the full link printed in the terminal, it ends with ?t=…)`;
  const c={};Object.keys(ST).forEach(k=>c[k]=0);data.sessions.forEach(s=>c[s.status]=(c[s.status]||0)+1);
  $("strip").innerHTML=["working","needs","parked","done"].map(k=>`<button class="st" style="--c:${ST[k][1]}" data-st="${k}" aria-pressed="${f.st===k}"><b>${c[k]||0}</b><span>${ST[k][0]}</span></button>`).join("");
  $("chips").innerHTML=[["all","All",""]].concat(Object.entries(AG).map(([k,v])=>[k,v[0],v[1]])).map(([k,l,col])=>`<button class="chip" ${col?`style="--c:${col}"`:""} data-ag="${k}" aria-pressed="${f.ag===k}"><i></i>${l}</button>`).join("");
@@ -448,6 +454,14 @@ def serve(host, port):
         def log_message(self, *a):
             pass
 
+        def _host_ok(self):
+            port = self.server.server_address[1]
+            host = (self.headers.get("Host") or "").lower()
+            if host not in (f"127.0.0.1:{port}", f"localhost:{port}"):
+                return False
+            origin = self.headers.get("Origin")
+            return origin in (None, f"http://127.0.0.1:{port}", f"http://localhost:{port}")
+
         def _send(self, code, body, ctype):
             b = body.encode("utf-8")
             self.send_response(code)
@@ -458,10 +472,14 @@ def serve(host, port):
             self.wfile.write(b)
 
         def do_GET(self):
+            if not self._host_ok():
+                return self._send(403, "forbidden", "text/plain")
             u = urlparse(self.path)
             if u.path in ("/", "/index.html"):
                 return self._send(200, PAGE, "text/html; charset=utf-8")
             if u.path == "/api/sessions":
+                if not secrets.compare_digest(self.headers.get("X-Token", ""), TOKEN):
+                    return self._send(401, "token", "text/plain")
                 qs = parse_qs(u.query)
                 args = {"days": qs.get("days", ["14"])[0], "limit": qs.get("limit", ["300"])[0]}
                 data = list_sessions(args)
@@ -471,7 +489,7 @@ def serve(host, port):
             self._send(404, "not found", "text/plain")
 
     srv = ThreadingHTTPServer((host, port), H)
-    print(f"agent-sessions dashboard on http://{host}:{port}  (Ctrl+C to stop)", flush=True)
+    print(f"agent-sessions dashboard on http://{host}:{port}/?t={TOKEN}  (Ctrl+C to stop)", flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

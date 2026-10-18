@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Fixture tests for dotfiles/tools/agent_sessions_mcp.py (--serve dashboard).
 
+Two things are checked, both through the real HTTP server on a fake HOME.
+
 The dashboard hands the user a "Copy resume" command to paste into a shell.
 The session folder and id come from transcript files, so they are untrusted:
-the command must run the same program whatever those values contain.
+the command must run the same program whatever those values contain. The
+command runs in real bash with a stub `claude`.
 
-Each test serves a fake HOME with one session and asks the real HTTP API for
-its command. The command then runs in real bash with a stub `claude`."""
+The session list holds prompts, paths and branches. Like agent_deck.py, the
+server refuses a foreign Host or Origin (DNS rebinding) and an API call
+without the token."""
 import http.client
 import importlib.util
 import json
@@ -22,6 +26,8 @@ from pathlib import Path
 SCRIPT = Path(__file__).resolve().parents[1] / 'agent_sessions_mcp.py'
 FAKE_HOME = tempfile.TemporaryDirectory()
 os.environ['AGENT_SESSIONS_HOME'] = FAKE_HOME.name
+TOKEN = 'test-token-0123456789'
+os.environ['AGENT_SESSIONS_TOKEN'] = TOKEN
 spec = importlib.util.spec_from_file_location('asm', SCRIPT)
 asm = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(asm)
@@ -69,7 +75,7 @@ def write_session(cwd, sid):
 
 def session_command(cwd, sid):
     write_session(cwd, sid)
-    status, body = get('/api/sessions')
+    status, body = get('/api/sessions', {'X-Token': TOKEN})
     assert status == 200, status
     return json.loads(body)['sessions'][0].get('resume')
 
@@ -136,6 +142,64 @@ class ResumeCommand(unittest.TestCase):
             with self.subTest(sid=bad):
                 self.assertIsNone(session_command(target, bad))
         self.assertEqual(self.markers(), [])
+
+
+class HttpGuard(unittest.TestCase):
+    def setUp(self):
+        write_session(Path(FAKE_HOME.name), GOOD_ID)
+        self.host = f'127.0.0.1:{PORT}'
+
+    def api(self, **headers):
+        headers.setdefault('Host', self.host)
+        return get('/api/sessions', headers)
+
+    def test_valid_local_request_is_accepted(self):
+        status, body = self.api(**{'X-Token': TOKEN})
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)['sessions'][0]['id'], GOOD_ID)
+
+    def test_localhost_host_and_same_origin_are_accepted(self):
+        status, _ = self.api(**{'X-Token': TOKEN, 'Host': f'localhost:{PORT}',
+                                'Origin': f'http://localhost:{PORT}'})
+        self.assertEqual(status, 200)
+
+    def test_foreign_host_is_rejected(self):
+        for host in ('evil.example', f'evil.example:{PORT}', f'127.0.0.1.evil.example:{PORT}', '127.0.0.1:1'):
+            with self.subTest(host=host):
+                status, body = self.api(**{'X-Token': TOKEN, 'Host': host})
+                self.assertEqual(status, 403)
+                self.assertNotIn(GOOD_ID, body)
+
+    def test_foreign_origin_is_rejected(self):
+        for origin in ('http://evil.example', f'http://evil.example:{PORT}', 'null'):
+            with self.subTest(origin=origin):
+                status, body = self.api(**{'X-Token': TOKEN, 'Origin': origin})
+                self.assertEqual(status, 403)
+                self.assertNotIn(GOOD_ID, body)
+
+    def test_missing_token_is_rejected(self):
+        status, body = self.api()
+        self.assertEqual(status, 401)
+        self.assertNotIn(GOOD_ID, body)
+
+    def test_wrong_token_is_rejected(self):
+        status, body = self.api(**{'X-Token': TOKEN + 'x'})
+        self.assertEqual(status, 401)
+        self.assertNotIn(GOOD_ID, body)
+
+    def test_token_in_the_query_string_is_not_accepted_by_the_api(self):
+        status, _ = get(f'/api/sessions?t={TOKEN}', {'Host': self.host})
+        self.assertEqual(status, 401)
+
+    def test_page_loads_without_token_and_holds_no_session_data(self):
+        status, body = get('/', {'Host': self.host})
+        self.assertEqual(status, 200)
+        self.assertIn('Agent sessions', body)
+        self.assertNotIn(GOOD_ID, body)
+
+    def test_page_is_refused_for_a_foreign_host(self):
+        status, _ = get('/', {'Host': 'evil.example'})
+        self.assertEqual(status, 403)
 
 
 if __name__ == '__main__':
