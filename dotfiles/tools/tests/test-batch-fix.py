@@ -31,7 +31,15 @@ echo "$prompt" >> "$STUB_CALLS"
 case "$prompt" in
   "/build "*) [ -n "${STUB_NOFIX:-}" ] || { echo fix >> fix.txt; git add fix.txt; git -c user.email=t@t -c user.name=t commit -qm "fix: CODE-1" ; }
               echo '{"result":"BUILD COMPLETE","total_cost_usd":1.5}' ;;
-  "/review "*) echo '{"result":"**Findings: 0 BLOCKER \\u00b7 1 REQUIRED \\u00b7 0 ADVISORY**\\nmore","total_cost_usd":2}' ;;
+  "/review "*) ticket="${prompt#/review }"
+               case "${STUB_REVIEW:-pass}" in
+                 blocked) echo '{"result":"REVIEW BLOCKED: BUILD handoff missing","total_cost_usd":2}' ;;
+                 error)   echo '{"is_error":true,"subtype":"error_max_budget_usd","result":"**Findings: 0 BLOCKER \\u00b7 1 REQUIRED \\u00b7 0 ADVISORY**","total_cost_usd":2}' ;;
+                 missing) echo '{"result":"I read the diff and it looks fine.","total_cost_usd":2}' ;;
+                 nojson)  echo 'Findings: not json' ;;
+                 *)       [ "${STUB_REVIEW:-pass}" = nosarif ] || echo '{"version":"2.1.0","runs":[]}' > "$STUB_REVIEWS/$ticket-$(git rev-parse --short HEAD).sarif"
+                          echo '{"result":"**Findings: 0 BLOCKER \\u00b7 1 REQUIRED \\u00b7 0 ADVISORY**\\nmore","total_cost_usd":2}' ;;
+               esac ;;
 esac
 '''
 
@@ -65,7 +73,8 @@ class BatchFix(unittest.TestCase):
         stub.write_text(STUB)
         stub.chmod(0o755)
         self.calls = root / 'calls.txt'
-        self.env = dict(os.environ, CLAUDE_BIN=str(stub), STUB_CALLS=str(self.calls))
+        self.env = dict(os.environ, CLAUDE_BIN=str(stub), STUB_CALLS=str(self.calls),
+                        STUB_REVIEWS=str(self.reviews))
         self.cwd = os.getcwd()
         os.chdir(self.repo)
 
@@ -197,6 +206,60 @@ class BatchFix(unittest.TestCase):
         self.assertEqual(result['state'], 'FAILED')
         self.assertIn('reviewed commit', result['detail'])
         self.assertFalse(self.calls.exists())
+
+    def review_job(self, mode):
+        self.write(f'AB-1-{self.sha}.sarif', finding('CODE-1'))
+        job = self.job()
+        os.environ['STUB_REVIEW'] = mode
+        try:
+            return self.run_job(job)
+        finally:
+            os.environ.pop('STUB_REVIEW')
+
+    def test_complete_review_of_the_fix_counts_as_reviewed(self):
+        result = self.review_job('pass')
+        self.assertEqual(result['state'], 'reviewed')
+        self.assertEqual(result['detail'], 'Findings: 0 BLOCKER \u00b7 1 REQUIRED \u00b7 0 ADVISORY')
+
+    def test_review_blocked_is_not_a_review_even_at_exit_zero(self):
+        result = self.review_job('blocked')
+        self.assertEqual(result['state'], 'BLOCKED')
+        self.assertIn('BUILD handoff missing', result['detail'])
+
+    def test_cli_error_result_is_a_failed_job(self):
+        result = self.review_job('error')
+        self.assertEqual(result['state'], 'FAILED')
+        self.assertIn('error_max_budget_usd', result['detail'])
+
+    def test_review_without_a_result_line_is_a_failed_job(self):
+        result = self.review_job('missing')
+        self.assertEqual(result['state'], 'FAILED')
+        self.assertIn('no result line', result['detail'])
+
+    def test_unparseable_cli_output_is_a_failed_job(self):
+        result = self.review_job('nojson')
+        self.assertEqual(result['state'], 'FAILED')
+        self.assertIn('no JSON', result['detail'])
+
+    def test_review_that_wrote_no_sarif_for_the_candidate_is_a_failed_job(self):
+        result = self.review_job('nosarif')
+        self.assertEqual(result['state'], 'FAILED')
+        self.assertIn('no review file for', result['detail'])
+
+    def test_exit_is_non_zero_unless_every_job_was_reviewed(self):
+        for mode, rc in (('pass', 0), ('blocked', 1), ('error', 1), ('missing', 1), ('nosarif', 1)):
+            with self.subTest(mode):
+                self.write(f'AB-1-{self.sha}.sarif', finding('CODE-1'))
+                os.environ.update(self.env, STUB_REVIEW=mode)
+                try:
+                    with redirect_stdout(io.StringIO()):
+                        got = bf.main(['--dir', str(self.reviews), '--yes', '--out', str(self.reviews.parent / 'out')])
+                finally:
+                    os.environ.pop('STUB_REVIEW')
+                self.assertEqual(got, rc)
+                subprocess.run(['git', '-C', str(self.wt), 'reset', '-q', '--hard', self.sha], check=True)
+                for f in self.reviews.glob('*.sarif'):
+                    f.unlink()
 
 
 if __name__ == '__main__':

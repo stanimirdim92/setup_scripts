@@ -37,8 +37,13 @@ Usage (from the project's main checkout):
 Overnight, from cron or `at`:
     echo 'cd ~/code/project && batch-fix.py --yes' | at 01:00
 
-Exit: 0 nothing to do, or every job reached a review · 1 declined, or a job
-failed · 2 not in a git repository.
+A job counts as reviewed only when /review ends with a count line and has
+written the review file for the exact commit now at HEAD. A CLI error, an
+empty or unparseable result, REVIEW BLOCKED, a missing count line or a missing
+review file all fail the job.
+
+Exit: 0 nothing to do, or every job reached a complete review · 1 declined, or
+a job failed or was blocked · 2 not in a git repository.
 """
 import argparse
 import fcntl
@@ -192,15 +197,18 @@ def plan(directory, only=None):
 
 
 def outcome(text):
-    """The review's first line that says how it ended."""
-    for pattern in (r'REVIEW BLOCKED[^\n]*', r'\*\*Findings:[^\n]*', r'\*\*Nothing to fix\.\*\*'):
-        m = re.search(pattern, text)
-        if m:
-            return m.group(0).strip('*').strip()
-    return 'no result line'
+    """(kind, line): how a /review ended. kind is 'blocked', 'done' or 'missing'."""
+    m = re.search(r'^\W*(REVIEW BLOCKED[^\n]*)', text, re.M)
+    if m:
+        return 'blocked', m.group(1).strip('*').strip()
+    m = re.search(r'^\*\*(Findings:[^\n]*?|Nothing to fix\.)\*\*', text, re.M)
+    if m:
+        return 'done', m.group(1)
+    return 'missing', 'no result line'
 
 
 def claude(binary, prompt, cwd, budget, mode, log):
+    """(error, result text, cost). error is None only for exit 0 and a successful JSON result."""
     cmd = [binary, '-p', prompt, '--permission-mode', mode,
            '--max-budget-usd', str(budget), '--output-format', 'json']
     out = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
@@ -209,8 +217,30 @@ def claude(binary, prompt, cwd, budget, mode, log):
     try:
         data = json.loads(out.stdout)
     except ValueError:
-        data = {}
-    return out.returncode, data.get('result', out.stdout), data.get('total_cost_usd') or 0
+        data = None
+    if not isinstance(data, dict) or not isinstance(data.get('result'), str):
+        data, error = {}, 'printed no JSON result'
+    elif data.get('is_error') or data.get('subtype', 'success') != 'success':
+        error = f'reported an error ({data.get("subtype") or "is_error"})'
+    else:
+        error = None
+    if out.returncode:
+        error = f'exited {out.returncode}'
+    return error, data.get('result', out.stdout), data.get('total_cost_usd') or 0
+
+
+def review_file(job):
+    """The review file /review wrote for the commit now at HEAD, or None."""
+    head = git('rev-parse', 'HEAD', cwd=job['worktree'])[1]
+    for path in Path(job['sarif']).parent.glob(f'{job["ticket"]}-*.sarif'):
+        m = NAME.match(path.name)
+        if m and m.group('ticket') == job['ticket'] and head.startswith(m.group('sha')):
+            try:
+                json.loads(path.read_text())
+            except (OSError, ValueError):
+                continue
+            return path
+    return None
 
 
 def run_job(job, args, out_dir):
@@ -229,17 +259,24 @@ def work(job, args, out_dir):
     log.write_text('')
     cwd = job['worktree']
     before = git('rev-parse', 'HEAD', cwd=cwd)[1]
-    rc, text, cost = claude(args.claude, f'/build {job["ticket"]} review fixes', cwd, args.budget, args.permission_mode, log)
-    if rc:
-        return dict(job, state='FAILED', detail=f'/build exited {rc}', cost=cost, log=str(log))
+    error, text, cost = claude(args.claude, f'/build {job["ticket"]} review fixes', cwd, args.budget, args.permission_mode, log)
+    if error:
+        return dict(job, state='FAILED', detail=f'/build {error}', cost=cost, log=str(log))
     after = git('rev-parse', 'HEAD', cwd=cwd)[1]
     if after == before:
         return dict(job, state='NO FIX', detail='no commit; every finding disputed or blocked (see log)', cost=cost, log=str(log))
-    rc, text, more = claude(args.claude, f'/review {job["ticket"]}', cwd, args.budget, args.permission_mode, log)
-    cost += more
-    if rc:
-        return dict(job, state='FAILED', detail=f'/review exited {rc}', cost=cost, log=str(log))
-    return dict(job, state='reviewed', detail=outcome(text), cost=cost, log=str(log))
+    error, text, more = claude(args.claude, f'/review {job["ticket"]}', cwd, args.budget, args.permission_mode, log)
+    done = dict(job, cost=cost + more, log=str(log))
+    if error:
+        return dict(done, state='FAILED', detail=f'/review {error}')
+    kind, line = outcome(text)
+    if kind == 'blocked':
+        return dict(done, state='BLOCKED', detail=line)
+    if kind == 'missing':
+        return dict(done, state='FAILED', detail=f'/review gave {line}')
+    if not review_file(job):
+        return dict(done, state='FAILED', detail=f'/review wrote no review file for {after[:7]}; the count line alone is not the gate result')
+    return dict(done, state='reviewed', detail=line)
 
 
 def main(argv=None):
