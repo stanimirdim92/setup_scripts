@@ -1,14 +1,17 @@
-# Handoff — harness work, 2026-10-07 to 2026-10-12
+# Handoff — harness work, 2026-10-07 to 2026-10-18
 
 The state at the end of one long session, so the next one can start cold.
 Replace this file at the next handoff; git keeps the old ones.
 
 ## State
 
-- Branch `main` holds everything (last commit `3b7c3ff`). The session branch
+- Branch `main` holds everything. The session branch
   `claude/dotfiles-harness-review-gtsrw6` matches it.
-- All 28 CI checks pass locally.
-- ADRs end at 0093 (0087–0088 came from other sessions).
+- 33 CI steps; all pass locally except "Codex config base holds no machine
+  state". It fails since `ad35c20`, an owner commit that put machine state
+  (`/home/` paths, `[desktop]`, `[plugins]`, `[mcp_servers.node_repl]`, …) into
+  `codex/config.toml`. Open item 1.
+- ADRs end at 0112. 0109 is Proposed; the rest are Accepted.
 
 ## What changed in this period
 
@@ -54,6 +57,32 @@ Replace this file at the next handoff; git keeps the old ones.
 - Every BLOCKER gets an independent check (ADR 0092).
 - `tools/evals/review-eval/` and `claude/skills/code-review-and-quality/scripts/review-noise.py` (ADR 0093, moved in 0105).
 
+**The life of a change, gap by gap (2026-10-17/18,
+`docs/life-of-a-change-notes.md`):**
+- `/ship` re-runs the checks on the current base before GO (0095).
+- REVIEW.md "Always a person" paths force every specialist and `/test` (0096).
+- Bug fixes carry a Root-Cause Trace that code-reviewer walks (0097).
+- Reviews flag instruction lines a change makes untrue (0098).
+- The report starts with a count, or "Nothing to fix" (0099).
+- Shipped bugs are logged by layer (0100). They become bug tickets the
+  pipeline fixes, with an "Escaped From" section (0110).
+- `/ship` asks about a feature flag for risky behavior (0101).
+- Security review runs on every round (0102).
+- code-reviewer answers every REVIEW.md "Always check" rule (0103).
+- `/test` runs on every production change, FE and BE, on a local instance:
+  browser, HTTP, worker, shell (0104).
+- Each finding has a class; a class repeated in 3+ tickets becomes a
+  fix-at-the-source proposal at `/ship` (0105).
+- Risk tier → review depth Quick/Standard/Deep; Risk line first at `/ship`
+  (0106).
+- A PostToolUse hook runs the project's own formatter. Reviewers drop style
+  findings (0107).
+- `/build <TICKET> review fixes`, and `tools/run/batch-fix.py` to run it
+  overnight (0108).
+- Proposed: unattended pipeline with one batched morning reply (0109).
+- A reviewer change needs a `Review-eval:` trailer, checked in CI (0111).
+- `ticket-stats.py` counts person stops per ticket at `/ship` (0112).
+
 ## Measured results
 
 - LD-380 single-session run: $9.75. About a third of the cache reads would
@@ -68,6 +97,9 @@ Replace this file at the next handoff; git keeps the old ones.
 ## Open items
 
 1. **Owner, on the machine:**
+   - fix `codex/config.toml` (machine state since `ad35c20`, red in CI):
+     move the machine-only sections back to `~/.codex/config.toml` and run
+     `python3 dotfiles/codex/install-config.py --lint`;
    - before the next `git pull`, run the steps in `dotfiles/README.md` for
      `~/.codex/config.toml` and keep a copy of `spec-batch.txt`;
    - re-trust the Codex hooks in `/hooks` (`hooks.json` changed);
@@ -84,8 +116,14 @@ Replace this file at the next handoff; git keeps the old ones.
 5. **Next ticket:** run intake → `/clear` → `/spec` → `/clear` → `/plan`,
    with `/cost` before each `/clear`, to confirm the fresh-context saving.
 6. **Code review:** put a `REVIEW.md` in leadbuster (a draft was given in
-   the session), build 3–5 review-eval cases from real bugfixes plus 2 clean
-   commits, and run a baseline.
+   the session; it now has "Always a person" and "Review depth"), build 3–5
+   review-eval cases from real bugfixes plus 2 clean commits, and run a
+   baseline. Four commits changed `/review` or code-reviewer before the
+   rescore rule (ADR 0111) and were never scored: `2150cc4`, `459d86e`,
+   `87a3a51`, `f57413b`. Score them with the first baseline.
+8. **ADR 0109 decisions:** plan auto-approval, "defaults" on High risk,
+   where the morning message lands, draft PR or not.
+9. **Leadbuster CI:** to be set up with the owner in another session.
 7. **Proposed, not built:** a measurement script (`eval-ticket.sh`) that
    runs plan coverage, spec-eval and run-metrics in one go; and dropping
    plan approval when check-plan is clean (from the AMPECO comparison).
