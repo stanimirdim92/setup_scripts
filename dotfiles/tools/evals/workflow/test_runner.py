@@ -84,10 +84,10 @@ class OrchestrationDecisionTests(unittest.TestCase):
         self.assertFalse(checks('review_auth_diff', over, set(), Path('.'))['distributed_not_triggered'])
 
     def test_plain_diff_gets_code_reviewer_only(self):
-        good = result(explanation='Independent verification: NOT REQUIRED — localized change with green focused test.',
+        good = result(explanation='Independent verification: PASS — VERIFY PASS for this candidate.',
                       reviewers='code-reviewer: dispatched — always\nsecurity-auditor: not dispatched — no trust boundary\ndistributed-systems-reviewer: not dispatched — none')
         got = checks('review_plain_diff', good, set(), Path('.'))
-        self.assertTrue(got['no_specialist_for_plain_diff'] and got['verification_not_required'] and got['code_reviewer_always'])
+        self.assertTrue(got['no_specialist_for_plain_diff'] and got['verification_pass_recorded'] and got['code_reviewer_always'])
         eager = dict(good, reviewers=good['reviewers'].replace('security-auditor: not dispatched', 'security-auditor: dispatched'))
         self.assertFalse(checks('review_plain_diff', eager, set(), Path('.'))['no_specialist_for_plain_diff'])
 
@@ -126,7 +126,7 @@ class OrchestrationDecisionTests(unittest.TestCase):
                 self.assertIn('no Agent tool', evidence, name)
                 if name.startswith('review_'):
                     self.assertIn('BUILD COMPLETE', evidence, name)
-                    self.assertEqual('VERIFY PASS' in evidence, name == 'review_auth_diff', name)
+                    self.assertEqual('VERIFY PASS' in evidence, name in ('review_auth_diff', 'review_plain_diff'), name)
                     self.assertEqual('REQ-002' in (directory / 'requirements/WF-40-SPEC.md').read_text(), name != 'review_plain_diff', name)
                 else:
                     self.assertTrue((directory / 'work/WF-30-todo.md').is_file(), name)

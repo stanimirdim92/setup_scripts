@@ -1,6 +1,6 @@
 ---
 name: test
-description: "Independently verify built work when risk or explicit request warrants a separate verifier"
+description: "Independently verify built work by running it like an engineer, for every production change"
 ---
 
 Resolve this file's symlink before opening the relative links below.

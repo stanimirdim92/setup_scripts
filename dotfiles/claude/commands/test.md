@@ -1,17 +1,18 @@
 ---
-description: Independently verify built work when risk or explicit request warrants a separate verifier
+description: Independently verify built work by running it like an engineer, for every production change
 argument-hint: "[task number(s), ticket, commit range, or feature description]"
 ---
 
-`/test` is the optional independent **VERIFY** gate after `/build`.
+`/test` is the independent **VERIFY** gate after `/build`.
 
-`/build` already requires the implementing executor to test and verify its own
-work. `/test` exists for a second, independent verification context when
-`../references/verification-triggers.md` requires it or when the user explicitly
-asks for it.
+`/build` already requires the implementing executor to test its own work.
+`/test` is a second context that runs the change for real: the screen in a
+browser, the endpoint over HTTP, the job on a queue, the command in a shell.
+"The tests pass" and "it should work" are not evidence that it works
+(ADR 0104). `../references/verification-triggers.md` says when it is required:
+every production change, frontend and backend.
 
-If `/test` is invoked for a low-risk change anyway, run it; do not refuse merely
-because the trigger matrix would have allowed it to be skipped.
+If `/test` is invoked for an exempt change anyway, run it; do not refuse.
 
 ## 1. Resolve scope
 
@@ -68,9 +69,9 @@ uncommitted BUILD diff is not in its checkout. Before dispatch, have that diff
 committed through `/build`, or return **VERIFY BLOCKED**; never ask the verifier
 to reconstruct it.
 
-Include `required_skills`. Select `browser-testing-with-devtools` when an
-in-scope claim depends on actual rendering, browser APIs, navigation, console,
-or network behavior. The verifier invokes each selected skill before testing.
+Include `required_skills`. Select `browser-testing-with-devtools` whenever the
+candidate changes anything a browser renders or calls: templates, components,
+styles, frontend code, or an endpoint a page uses. The verifier invokes each selected skill before testing.
 When a required browser capability is unavailable, return `VERIFY BLOCKED` for
 that check; component tests cannot replace browser evidence.
 
@@ -91,6 +92,9 @@ transcript.
 
 The verifier should:
 
+- find the repository's own commands before running anything (`test-engineer`
+  §1); never assume a default such as `npm test`;
+- run every changed surface for real (`test-engineer` §2, Run the change);
 - inspect the implementation and existing tests;
 - prove each acceptance criterion has credible evidence;
 - add missing test-only coverage when needed;
@@ -135,7 +139,9 @@ to be committed.
 Before issuing PASS, reconcile the final tree with the recorded candidate:
 only the declared, verified test-only changes may have been introduced.
 Confirm the agent supplied executed evidence per requirement, not merely
-recommended tests. Confirm its mutation probes (`test-engineer` §6): every
+recommended tests. Each changed surface needs a runtime line: what was run,
+against what, and what was observed. A green suite with no runtime line is
+not a PASS; it is BLOCKED with the missing run named. Confirm its mutation probes (`test-engineer` §6): every
 production file is restored, and every surviving mutant has a new test that
 kills it or a stated reason why no test can. Missing in-scope evidence cannot be labeled an intentional
 coverage exclusion; obtain it or report why verification is blocked.

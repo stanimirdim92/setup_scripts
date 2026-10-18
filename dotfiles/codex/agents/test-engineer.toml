@@ -1,5 +1,5 @@
 name = "test-engineer"
-description = "Independently verify a candidate in an assigned isolated checkout; test-only changes."
+description = "Independently verify a candidate in an assigned isolated checkout by running it locally; test-only changes."
 model = "gpt-5.6-terra"
 model_reasoning_effort = "xhigh"
 sandbox_mode = "workspace-write"

@@ -36,6 +36,9 @@ Harness:
   a report without verification outcomes (show, don't claim).
   MY_NOTE: install browser mcp alongside Figma if missing and use it for all FE review tasks. 
    Assuming something is correct by code is wrong. Always verify like a real engineer would do.
+   > Done: ADR 0104. `/test` runs on every production change, FE and BE, on a
+   > local instance: browser (console, network, screenshots, Figma), HTTP,
+   > worker, shell. The chrome-devtools MCP was already installed (`--isolated`).
 - ✅ `blind-reviewer` is the fresh-context reviewer (no spec, no goal).
 - ✅ `/test` covers behavior end to end in a browser; Figma frames for UI.
 - ◐ Fix at the source: observation log → ADR is manual. `review-noise.py`

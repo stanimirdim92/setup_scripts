@@ -132,5 +132,5 @@ Keep the handoff factual and concise:
 Evidence is an executed check, not confidence.
 
 Never invoke another agent or slash command. `/build` owns orchestration and
-integration; `/test` is optional independent verification; `/review` owns
+integration; `/test` independently runs the change; `/review` owns
 independent review; `/ship` owns the final verdict.

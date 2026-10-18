@@ -77,14 +77,18 @@ Source: `../commands/build.md`.
 
 ### `/test`
 
-Independent VERIFY is **risk-triggered, not mandatory**.
+Independent VERIFY runs on **every production change**, frontend and backend
+(ADR 0104). Only documentation, test-only, formatting and generated changes are
+exempt.
 
-`/review` evaluates `../references/verification-triggers.md`. If a trigger
-matches, the exact candidate must have `VERIFY PASS` before review proceeds.
+`/review` evaluates `../references/verification-triggers.md`. Unless the
+candidate is exempt, it must have `VERIFY PASS` before review proceeds.
 
 `/test` dispatches one `test-engineer`, which may add test-only changes but never
 production fixes. It selects unit, integration, E2E, smoke, and real-browser
-checks from the candidate's claims and risks. It is the only persona with browser
+checks from the candidate's claims and risks, and runs every changed surface
+on a local instance: screens in a browser, endpoints over HTTP, jobs on a
+worker, commands in a shell. It is the only persona with browser
 tools: `/build` hands it every `Needs real-browser check`. Required browser checks block when
 the capability is unavailable.
 

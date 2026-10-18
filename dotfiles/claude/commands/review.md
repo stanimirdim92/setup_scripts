@@ -53,13 +53,13 @@ Evaluate the candidate against
 - If a **VERIFY PASS** already exists for this exact candidate, record
   **Independent verification: PASS**. This also covers explicitly requested
   `/test` runs whose test-only commits advanced the BUILD candidate.
-- Otherwise, if no trigger matches, record **Independent verification: NOT
-  REQUIRED** and use `/build`'s verification evidence.
+- Otherwise, if the candidate is exempt, record **Independent verification:
+  NOT REQUIRED** with the exemption and use `/build`'s verification evidence.
 - Otherwise, require a **VERIFY PASS** for this exact candidate.
 - If required verification is missing or stale, return **REVIEW BLOCKED** with
   `/test` as the next step.
 
-Do not re-run `/test` inline and do not duplicate the trigger matrix here.
+Do not re-run `/test` inline and do not duplicate the exemption list here.
 
 ## 3. Dispatch reviewers
 

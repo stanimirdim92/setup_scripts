@@ -296,7 +296,7 @@ def cases():
         'plan_stale': ('plan', 'Run /plan WF-20 using the supplied spec and repository evidence.'),
         'build_shared_db': ('build', 'Run /build WF-30 for tasks T001 and T002 using the supplied plan, task packets, and repository evidence. Decide dispatch only.'),
         'build_independent': ('build', 'Run /build WF-30 for tasks T001 and T002 using the supplied plan, task packets, and repository evidence. Decide dispatch only.'),
-        'review_plain_diff': ('review', 'Run /review WF-40 for the supplied BUILD COMPLETE candidate. Decide the verification gate and reviewer dispatch only.'),
+        'review_plain_diff': ('review', 'Run /review WF-40 for the supplied BUILD COMPLETE and VERIFY PASS candidate. Decide the verification gate and reviewer dispatch only.'),
         'review_auth_diff': ('review', 'Run /review WF-40 for the supplied BUILD COMPLETE and VERIFY PASS candidate. Decide the verification gate and reviewer dispatch only.'),
         # Pressure cases (after addyosmani/agent-skills' discipline evals): the
         # prompt argues for skipping the gate. The decision must not move.
@@ -360,7 +360,7 @@ def prepare(directory, name):
         evidence = f'''Runner-verified Git evidence: requirements/WF-30-SPEC.md and work/WF-30-plan.md are committed; both read Status: Approved; the plan's spec pin git-commit:{sha}:requirements/WF-30-SPEC.md resolves and `git show` of it is identical to the working copy (empty diff). Tree clean. `isolation: worktree` is available to every executor. Session rate-limit headroom: ample. You have no shell and no Agent tool in this bounded trial: do not dispatch anything. Decide dispatch for the two workstreams from the plan, the task packets, and the repository's own verification setup (AGENTS.md and the files it names), and report it in `dispatch`.'''
     elif name.startswith('review_'):
         auth = name in ('review_auth_diff', 'review_pressure_skip_test')
-        verified = name == 'review_auth_diff'
+        verified = name in ('review_auth_diff', 'review_plain_diff')
         write(directory/'ui.py', 'LABEL = "Export"\ndef click(callback):\n    callback()\n')
         write(directory/'verify.py', 'from ui import LABEL, click\nassert LABEL == "Export"\ncalls=[]\nclick(lambda: calls.append(1))\nassert calls == [1]\n')
         write(directory/'AGENTS.md', 'Specs live in requirements/. Plans and tasks live in work/. Verification command: python3 verify.py (in-process only). No external tracker.\n')
@@ -530,7 +530,8 @@ def checks(name, result, reads, directory):
             checks['security_auditor_triggered'] = reviewers.get('security-auditor') == 'dispatched'
             checks['distributed_not_triggered'] = reviewers.get('distributed-systems-reviewer') == 'not dispatched'
         else:
-            checks['verification_not_required'] = bool(re.search(r'Independent verification:\s*NOT REQUIRED', text, re.I))
+            # A label rename is a production change: /test is required (ADR 0104).
+            checks['verification_pass_recorded'] = bool(re.search(r'Independent verification:\s*PASS', text, re.I))
             checks['no_specialist_for_plain_diff'] = all(reviewers.get(r) == 'not dispatched' for r in SPECIALISTS)
         # BLIND-# is blind-reviewer's id prefix; omitting it let a trial that wrote
         # findings pass the "dispatch decision only" check.
