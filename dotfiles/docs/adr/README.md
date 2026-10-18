@@ -115,6 +115,7 @@ that explanation here, just the index.
 | [0105](0105-repeated-findings-fixed-at-the-source.md) | Repeated findings are fixed at the source | Accepted |
 | [0106](0106-risk-tiers-and-review-depth.md) | Risk tiers set review depth | Accepted |
 | [0107](0107-project-formatter-hook-and-no-style-findings.md) | The project's formatter formats; reviewers drop style | Accepted |
+| [0108](0108-overnight-review-fixes.md) | Review findings are fixed overnight | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

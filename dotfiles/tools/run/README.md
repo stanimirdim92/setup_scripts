@@ -7,4 +7,5 @@ These help while you work on tickets. They are optional: the pipeline
 | --- | --- | --- |
 | `batch-spec.sh` | Writes specs for many tickets at once. Each ticket gets its own worktree, and each run stops when the spec is ready for your approval. | `dotfiles/tools/run/batch-spec.sh --help` |
 | `spec-batch.example.txt` | The format of the ticket list. Copy it to `spec-batch.txt`, which `batch-spec.sh` reads when you give it no list. `spec-batch.txt` is gitignored, because a real list names private tickets. | — |
+| `batch-fix.py` | Overnight: for every ticket whose last review left BLOCKER or REQUIRED findings open, runs `/build <TICKET> review fixes` and then `/review` in the worktree at the reviewed commit. Skips at the round cap or when the candidate moved. Never pushes or ships. | `dotfiles/tools/run/batch-fix.py --dry-run` |
 | `run-metrics.sh` | Reads a finished session's transcript and reports what it cost: tokens, how well tool calls were batched, large file reads, and signs of trouble. `--row` prints a line for the observation log. | `dotfiles/tools/run/run-metrics.sh --help` |

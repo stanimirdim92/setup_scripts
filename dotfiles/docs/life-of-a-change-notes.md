@@ -84,8 +84,10 @@ Harness:
 - ◐ Style filtering: ADVISORY findings are kept; only `REVIEW.md`'s nit cap
   limits them.
   MY_NOTE: I need suggestions and examples to understand this.
+  > Done: ADR 0107. Style is no longer a finding; the project's formatter owns it.
 - — Overnight agent fixes: part of the batched-pipeline proposal, not built.
   MY_NOTE: I need suggestions and examples to understand this.
+  > Done: ADR 0108. `/build <TICKET> review fixes` and `tools/run/batch-fix.py`.
 
 ## 3. Security review that can block
 

@@ -1,6 +1,6 @@
 ---
 description: Dispatch implementation for one or more planned tasks by workstream
-argument-hint: "[task number(s) from docs/tasks/[TICKET]-todo.md, or a description naming planned task(s)]"
+argument-hint: "[task number(s) from docs/tasks/[TICKET]-todo.md, a description naming planned task(s), or <TICKET> review fixes]"
 ---
 
 Dispatch `executor` agents for implementation.
@@ -312,6 +312,34 @@ Never estimate unavailable token/cost/time data.
 Do not dispatch independent verifiers or reviewers here. The next stage is
 `/review`; `/review` decides whether the separate `/test` gate is required for
 this candidate.
+
+## Review fixes
+
+`/build <TICKET> review fixes` fixes what the last `/review` found, instead of
+planned tasks (ADR 0108). It is how a finding goes back to `/build`, by hand
+or overnight (`tools/run/batch-fix.py`).
+The plan checks in §1 still apply; task resume does not.
+
+1. Read the newest review SARIF for the ticket
+   (`$(git rev-parse --git-common-dir)/review/<TICKET>-<sha>.sarif`). Its sha
+   must be HEAD: a candidate that changed after the review is reviewed again
+   first, never fixed blind. Count the ticket's review files. With three,
+   the next review would be round 4: stop and report that the approach needs
+   the user (ADR 0089).
+2. The scope is every finding still `open` that is BLOCKER or REQUIRED and not
+   pre-existing (`baselineState` is not `unchanged`), plus any ADVISORY the user
+   named. Nothing else: no refactor, no plan task, no other finding.
+3. Group findings that touch the same files into one workstream. Dispatch an
+   executor per workstream with, for each finding: id, `file:line`, claim,
+   failure scenario and recommendation. A class finding lists every instance.
+4. The executor fixes test-first: a test that fails on the finding, then the
+   fix (Prove-It). If the code is already right, it changes nothing and
+   reports the finding as disputed, with `file:line` evidence; the next
+   `/review` round decides. Each commit carries a `Task:` trailer naming the
+   finding ids (`Task: CODE-2, SEC-1`) and the `Refs:` trailer.
+5. Report BUILD COMPLETE with one line per finding: fixed (commit), disputed
+   (evidence), or blocked (why). The plan and todo do not change. The next
+   stage is `/review`.
 
 ## 4. Work outside `/build`
 
