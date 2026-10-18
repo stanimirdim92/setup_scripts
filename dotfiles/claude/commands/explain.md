@@ -64,10 +64,20 @@ Put these sections in this order:
    Do not infer edges from imports you did not read.
 5. **Changed files**: grouped by module, with `+`/`-` counts. Mark a file as
    "unplanned" when no task's `Files/areas likely touched` covers it.
-6. **Findings**: every open finding with its disposition (BLOCKER, REQUIRED,
+6. **Ticket stats**: facts from git and the spec only.
+   - Commits whose message names the ticket: first date, calendar days so far,
+     days with commits, and the total.
+   - One inline-SVG bar per commit day.
+   - Commit counts by conventional-commit type (`feat`, `fix`, `test`, ...).
+   - Files and lines changed over the whole range.
+   - Every `DEC-###` heading from the spec, verbatim, tagged "in force",
+     "amended", or "superseded" from its heading text.
+
+   Say on the page that time outside commits is not counted.
+7. **Findings**: every open finding with its disposition (BLOCKER, REQUIRED,
    ADVISORY), id, file, and one-line claim. Resolved findings go in a closed
    `<details>` element.
-7. **Rollback and decision**: the `/ship` rollback plan and decision, or
+8. **Rollback and decision**: the `/ship` rollback plan and decision, or
    "not shipped".
 
 Copy text from sources verbatim where the section says so. Elsewhere, write
@@ -94,6 +104,7 @@ Return:
 - Sources used: <list>
 - Not available: <section — the stage that produces it>
 - Gaps shown on the page: <REQ ids with a missing cell, unplanned files>
+- Stats: <first commit date, calendar days, commit days, commits>
 ```
 
 Then stop. The page is not evidence for any gate. `/ship` still reads the

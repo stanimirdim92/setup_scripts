@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""agent-sessions: a read-only local MCP server (stdio, no dependencies).
+"""agent-sessions: read-only session lister for Claude Code, Codex and Gemini CLI.
+
+Modes (no dependencies, Python 3.8+):
+  python3 agent_sessions_mcp.py --serve [--port 8787]   live dashboard at http://127.0.0.1:8787
+  python3 agent_sessions_mcp.py --print                 dump JSON to stdout
+  python3 agent_sessions_mcp.py                         MCP server over stdio
+
 
 Lists recent Claude Code, Codex and Gemini CLI sessions found on this machine
 so the Session Command Center board can show them.
@@ -343,6 +349,118 @@ def list_sessions(args):
             "days": days, "total": len(sessions), "sessions": sessions[:limit], "errors": errors}
 
 
+# ---------- local dashboard (--serve) ----------
+
+PAGE = r"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent sessions</title>
+<style>
+:root{--bg:#f3f4f7;--s:#fff;--s2:#eceef3;--line:#dfe2ea;--fg:#141821;--mu:#5d6577;--fa:#8b92a3;
+--work:#2f6fed;--need:#d98a00;--rev:#8a4fe0;--block:#e0384d;--park:#7a8396;--done:#13a06b;--cl:#d2692e;--cx:#0d9488;--gm:#3f6fe8;
+--mono:ui-monospace,"JetBrains Mono","IBM Plex Mono",Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI",Ubuntu,Roboto,sans-serif;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1016;--s:#161a23;--s2:#1e2330;--line:#2a3040;--fg:#e9ecf3;--mu:#a2a9b8;--fa:#6f7789;
+--work:#5b8cff;--need:#f2a93b;--rev:#ad7dff;--block:#ff5c70;--park:#8e97aa;--done:#2fc98a;--cl:#ec8a4f;--cx:#2bbfae;--gm:#6f93ff;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 var(--sans)}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.w{max-width:1100px;margin:0 auto;padding:18px 16px 40px}
+header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.logo{width:34px;height:34px;border-radius:9px;background:conic-gradient(from 200deg,var(--cl),var(--cx),var(--gm),var(--cl));display:grid;place-items:center;color:#fff;font:700 16px var(--mono)}
+h1{margin:0;font-size:19px}.sub{font:12.5px var(--mono);color:var(--mu)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--done);margin-right:6px;vertical-align:1px}
+.dot.off{background:var(--block)}
+.grow{flex:1}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.st{display:flex;gap:10px;align-items:center;background:var(--s);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:12px;padding:10px 12px;text-align:left}
+.st b{font-size:22px;line-height:1}.st span{font-size:12px;color:var(--mu)}
+.st[aria-pressed=true]{box-shadow:0 0 0 1px var(--c) inset;border-color:var(--c)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.q{flex:1 1 220px;background:var(--s);border:1px solid var(--line);border-radius:9px;padding:9px 11px;outline:none}
+.chip{border:1px solid var(--line);background:var(--s);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500;color:var(--mu)}
+.chip i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c,var(--fa));margin-right:6px}
+.chip[aria-pressed=true]{color:var(--fg);border-color:var(--c,var(--fg))}
+h3{display:flex;gap:8px;align-items:center;font-size:13.5px;margin:16px 2px 8px}h3 i{width:10px;height:10px;border-radius:3px;background:var(--c)}h3 small{font:12px var(--mono);color:var(--mu)}
+.row{display:flex;gap:10px;align-items:center;background:var(--s);border:1px solid var(--line);border-left:3px solid var(--c);border-radius:11px;padding:10px 12px;margin-bottom:7px}
+.ag{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;background:var(--t);font:700 12px var(--mono);flex:none}
+.mid{flex:1;min-width:0}.t{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m{font:11.5px var(--mono);color:var(--mu);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--s);border-radius:8px;padding:6px 10px;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--fa)}
+.empty{text-align:center;color:var(--mu);padding:40px;border:1px dashed var(--line);border-radius:14px;background:var(--s)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:9px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}
+.toast.on{opacity:1}
+@media (max-width:640px){.strip{grid-template-columns:repeat(2,1fr)}.row{flex-wrap:wrap}.row .btn{margin-left:40px}}
+</style></head><body><div class="w">
+<header><div class="logo">&gt;_</div><div class="grow"><h1>Agent sessions</h1><div class="sub" id="sub">loading…</div></div>
+<button class="btn" id="rf">Refresh</button></header>
+<div class="strip" id="strip"></div>
+<div class="bar"><input class="q" id="q" placeholder="Search title, project, branch, id…"><div id="chips" style="display:flex;gap:6px;flex-wrap:wrap"></div></div>
+<main id="main"></main></div><div class="toast" id="toast"></div>
+<script>
+const ST={working:["Working","var(--work)"],needs:["Needs input","var(--need)"],review:["Ready for review","var(--rev)"],blocked:["Blocked","var(--block)"],parked:["Parked","var(--park)"],done:["Done","var(--done)"]};
+const AG={claude:["Claude Code","var(--cl)","CC",id=>"claude --resume "+id],codex:["Codex","var(--cx)","CX",id=>"codex resume "+id],gemini:["Gemini CLI","var(--gm)","GM",id=>"gemini --resume "+id]};
+let data={sessions:[]},ok=false,f={st:null,ag:"all",q:""};
+const $=i=>document.getElementById(i),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ago=t=>{const s=(Date.now()-t)/1e3;return s<60?"just now":s<3600?Math.floor(s/60)+"m ago":s<86400?Math.floor(s/3600)+"h ago":Math.floor(s/86400)+"d ago"};
+async function load(){try{const r=await fetch("/api/sessions?days="+(new URLSearchParams(location.search).get("days")||14));data=await r.json();ok=true}catch(e){ok=false}draw()}
+function draw(){
+ $("sub").innerHTML=ok?`<span class="dot"></span>${esc(data.host||"this PC")} · ${data.total} sessions · scanned ${ago(data.scannedAt)}`:`<span class="dot off"></span>can't reach the local server`;
+ const c={};Object.keys(ST).forEach(k=>c[k]=0);data.sessions.forEach(s=>c[s.status]=(c[s.status]||0)+1);
+ $("strip").innerHTML=["working","needs","parked","done"].map(k=>`<button class="st" style="--c:${ST[k][1]}" data-st="${k}" aria-pressed="${f.st===k}"><b>${c[k]||0}</b><span>${ST[k][0]}</span></button>`).join("");
+ $("chips").innerHTML=[["all","All",""]].concat(Object.entries(AG).map(([k,v])=>[k,v[0],v[1]])).map(([k,l,col])=>`<button class="chip" ${col?`style="--c:${col}"`:""} data-ag="${k}" aria-pressed="${f.ag===k}"><i></i>${l}</button>`).join("");
+ const q=f.q.toLowerCase();
+ const list=data.sessions.filter(s=>(f.ag==="all"||s.agent===f.ag)&&(!f.st||s.status===f.st)&&(!q||[s.title,s.project,s.branch,s.id,s.cwd].join(" ").toLowerCase().includes(q)));
+ if(!list.length){$("main").innerHTML=`<div class="empty">${data.sessions.length?"Nothing matches.":"No sessions found in the last "+(data.days||14)+" days."}</div>`;return}
+ $("main").innerHTML=Object.keys(ST).map(k=>{const it=list.filter(s=>(ST[s.status]?s.status:"parked")===k);if(!it.length)return"";
+  return `<h3 style="--c:${ST[k][1]}"><i></i>${ST[k][0]}<small>${it.length}</small></h3>`+it.map(s=>{const a=AG[s.agent]||AG.claude;const cmd=(s.cwd?"cd "+JSON.stringify(s.cwd)+" && ":"")+a[3](s.id);
+  return `<div class="row" style="--c:${ST[k][1]}"><span class="ag" style="--t:${a[1]}" title="${a[0]}">${a[2]}</span><div class="mid"><div class="t" title="${esc(s.title)}">${esc(s.title)}</div>
+  <div class="m"><span>${esc(s.project||a[0])}</span>${s.branch?`<span>⎇ ${esc(s.branch)}</span>`:""}<span>${ago(s.lastActive)}</span><span>${esc(String(s.id).slice(0,8))}</span></div></div>
+  <button class="btn" data-cp="${esc(cmd)}">Copy resume</button></div>`}).join("")}).join("");
+}
+document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+ if(b.id==="rf")return load();
+ if(b.dataset.st){f.st=f.st===b.dataset.st?null:b.dataset.st;return draw()}
+ if(b.dataset.ag){f.ag=b.dataset.ag;return draw()}
+ if(b.dataset.cp){navigator.clipboard.writeText(b.dataset.cp).then(()=>{const t=$("toast");t.textContent="Copied";t.classList.add("on");setTimeout(()=>t.classList.remove("on"),1300)})}});
+$("q").addEventListener("input",e=>{f.q=e.target.value;draw()});
+load();setInterval(()=>{if(document.visibilityState==="visible")load()},5000);
+</script></body></html>"""
+
+
+def serve(host, port):
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from urllib.parse import urlparse, parse_qs
+
+    class H(BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def _send(self, code, body, ctype):
+            b = body.encode("utf-8")
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(b)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(b)
+
+        def do_GET(self):
+            u = urlparse(self.path)
+            if u.path in ("/", "/index.html"):
+                return self._send(200, PAGE, "text/html; charset=utf-8")
+            if u.path == "/api/sessions":
+                qs = parse_qs(u.query)
+                args = {"days": qs.get("days", ["14"])[0], "limit": qs.get("limit", ["300"])[0]}
+                return self._send(200, json.dumps(list_sessions(args)), "application/json")
+            self._send(404, "not found", "text/plain")
+
+    srv = ThreadingHTTPServer((host, port), H)
+    print(f"agent-sessions dashboard on http://{host}:{port}  (Ctrl+C to stop)", flush=True)
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+
 # ---------- MCP over stdio ----------
 
 TOOLS = [{
@@ -389,8 +507,14 @@ def handle(req):
 
 
 def main():
-    if len(sys.argv) > 1 and sys.argv[1] == "--print":
+    argv = sys.argv[1:]
+    if "--print" in argv:
         print(json.dumps(list_sessions({"days": 30}), indent=2))
+        return
+    if "--serve" in argv:
+        port = int(argv[argv.index("--port") + 1]) if "--port" in argv else 8787
+        host = argv[argv.index("--host") + 1] if "--host" in argv else "127.0.0.1"
+        serve(host, port)
         return
     for line in sys.stdin:
         line = line.strip()

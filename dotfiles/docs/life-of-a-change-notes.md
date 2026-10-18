@@ -9,6 +9,7 @@ How to use: under each gap at the end, write your note (keep / change /
 drop, and why). Each noted gap becomes one change with its own ADR.
 
 Legend: ✅ the harness has it · ◐ partly · ❌ missing · — out of scope (project or team level)
+MY_NOTE - Is a note left from the engineer for the sentence above MY_NOTE!
 
 ---
 
@@ -33,17 +34,23 @@ What they do:
 Harness:
 - ✅ Executor runs the project's tests/lint per task; the handoff hook refuses
   a report without verification outcomes (show, don't claim).
+  MY_NOTE: install browser mcp alongside Figma if missing and use it for all FE review tasks. 
+   Assuming something is correct by code is wrong. Always verify like a real engineer would do.
 - ✅ `blind-reviewer` is the fresh-context reviewer (no spec, no goal).
 - ✅ `/test` covers behavior end to end in a browser; Figma frames for UI.
 - ◐ Fix at the source: observation log → ADR is manual. `review-noise.py`
   (ADR 0093) now shows which reviewer repeats noise; nothing turns a repeated
   finding into a rule automatically.
+  MY_NOTE: apply practices from the article.
 - ❌ No reviewer checks that a change makes a `CLAUDE.md` / `AGENTS.md` /
   `.ai/rules` line out of date.
+  MY_NOTE: do we need that? Usually engineer will do it or ask you to do it. Propose fixes.
 - ❌ No check that reviewers follow `REVIEW.md` (could be a review-eval case:
   a REVIEW.md rule plus a diff that breaks it).
+  MY_NOTE: FIX IT!
 - ❌ The "summary starts with a count; say plainly when nothing to fix" rule
   was dropped from the template in ADR 0094. It belongs in `/review`'s report.
+  MY_NOTE: FIX IT!
 
 ## 2. AI review on every pull request
 
@@ -67,11 +74,15 @@ Harness:
 - ❌ No explicit "on a bug fix, check the root cause, not the symptom" rule for
   reviewers. The bugfix spec template has a root-cause section; review does
   not use it.
+ MY_NOTE: ADD THIS!
 - ◐ Depth: no Quick/Standard/Deep knob. Reviewer triggers choose specialists;
   effort is fixed per persona.
+  MY_NOTE: I need suggestions and examples to understand this.
 - ◐ Style filtering: ADVISORY findings are kept; only `REVIEW.md`'s nit cap
   limits them.
+  MY_NOTE: I need suggestions and examples to understand this.
 - — Overnight agent fixes: part of the batched-pipeline proposal, not built.
+  MY_NOTE: I need suggestions and examples to understand this.
 
 ## 3. Security review that can block
 
@@ -84,6 +95,7 @@ What they do:
 Harness:
 - ◐ `security-auditor` runs only when `reviewer-triggers.md` matches. They run
   a security pass on every PR.
+  MY_NOTE: We will do the same. run on every pass.
 - ✅ Open BLOCKER/REQUIRED findings block `/ship`.
 - ✅ Later rounds re-check earlier findings against the fix (ADR 0089).
 - Note: a cheap always-on pass (e.g. the built-in `/security-review` on every
@@ -102,6 +114,7 @@ Harness:
   "how tested / how to undo").
 - ✅ Only a person approves; `/ship` GO is a recommendation.
 - — Leadbuster's own CI is the project's, not the harness's.
+  MY_NOTE:  We dont have a CI for Leadbuster. for now.
 
 ## 5. Human approval, scaled by risk
 
@@ -123,10 +136,14 @@ Harness:
 - ✅ Agents never approve; the user is the one who prompted and decides.
 - ◐ Risk shapes the pipeline (verification and reviewer triggers) but there
   is no written risk tier.
+  MY_NOTE: I need suggestions and examples before implementing this.
 - ❌ No "always needs a person" path list. Candidates: CI workflow files,
   migrations, auth/permission code, `.env*`, the harness's own config. These
   should force `/test` and every specialist, and tell the user plainly to read
   the diff.
+  MY_NOTE: For all of the above. I need suggestions and examples. I think we can automate jira/spec/plan/build. 
+ The only problem I know is all the open questions and decisions that must be taken and in 99% of the cases it needs a person.
+ I am looking forward to automate this, but do not know how.
 
 ## 6. Merge queue, flags and a gradual release
 
@@ -140,6 +157,7 @@ Harness:
   the checks on the current main with the change applied before GO.
 - ❌ `/ship` does not ask whether risky new behavior ships behind a flag.
 - — Release channels are the project's deployment, not the harness's.
+  MY_NOTE: For all 3, I need suggestions and examples.
 
 ## 7. Fast detection, fast rollback
 
@@ -158,6 +176,7 @@ Harness:
 - — Circuit breakers: they don't have them either. With review-noise and the
   review eval, a later step could tighten `/review` depth when shipped-bug
   rows rise.
+  MY_NOTE: For all of the above. I need suggestions and examples to understand this.
 
 ---
 
@@ -167,15 +186,30 @@ Add your note under each bullet as `> Note: ...`.
 
 1. **Re-run on current main before GO** (layer 6): `/ship` merges the latest
    base into a scratch copy of the candidate and re-runs the task commands.
+
+   > Note: yes! worktree or a scratch copy or a scratchpad is fine.
+
 2. **Paths that always need a person** (layer 5): a list in `REVIEW.md`
    ("Always a person"), honoured by `/review` (force `/test` + all specialists)
    and `/ship` (say it plainly).
+
+   > Note: Not sure. I do not understand.
+
 3. **Root cause on bug fixes** (layer 2): `code-reviewer` checks a bugfix
    against the spec's root cause, not just the symptom.
+
+   > Note: yes. I need a real validation. files, paths, lines, logical trace of the bug.
+
 4. **Stale instruction lines** (layer 1): reviewers flag a change that makes a
    `CLAUDE.md` / `AGENTS.md` / `.ai/rules` line untrue.
+
+   > Note: what should we do?
+
 5. **Report starts with a count** (layer 1): `/review` summary line
    "N BLOCKER · N REQUIRED · N ADVISORY", or "Nothing to fix."
+
+   > Note: yes.
+
 6. **Security pass on every candidate** (layer 3): a light always-on check,
    `security-auditor` still by trigger.
 7. **Shipped-bug rows** (layer 7): an observation-log row type for a bug found
@@ -231,26 +265,26 @@ Their intro: "Most of the pieces to do this with your team exist today."
    formatter on edited files when the project declares one (e.g. `pint` for
    PHP, `prettier`/`eslint --fix` for TS), so formatting is enforced, not asked.
 
-   > Note:
+   > Note: Yes, but only if project has it. I have python and rust projects. Therefore it must be project agnostic.
 
 10. **Repeated findings into `REVIEW.md`** — when `review-noise.py` or `/ship`
     sees the same class of finding across tickets, propose a `REVIEW.md` line
     for the owner to accept.
 
-   > Note:
+   > Note: what?
 
 11. **Rescore on reviewer change** — a change to a reviewer persona, to
     `/review`, or to a reviewer's model must come with a review-eval run
     against the baseline; the commit or ADR names the result.
 
-   > Note:
+   > Note: Ok. what it will cost
 
 12. **Human time and shipped bugs** — record per ticket how many times you
     were asked to decide (questions, approvals, review rounds) and any bug
     found after merge, so automation can be loosened only while the
     shipped-bug rate holds.
 
-   > Note:
+   > Note: yes.
 
 Gap 2 grows: written risk tiers (low / medium / high, set by the change),
 review depth matched to the tier, a "Risk" line in the `/ship` report, and
