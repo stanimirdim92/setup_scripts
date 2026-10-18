@@ -42,11 +42,33 @@ up() {
   done
 }
 
-# up_grep DIR FILE PATTERN: nearest DIR upwards whose FILE matches PATTERN.
-up_grep() {
-  local dir="$1" name="$2" pattern="$3"
+# declares_NAME DIR: DIR holds any supported declaration of formatter NAME.
+# Each one checks every declaration at that one level, so find_project stops at
+# the nearest project instead of one declaration style winning from afar.
+declares_pint() {
+  [ -e "$1/pint.json" ] || { [ -f "$1/composer.json" ] && grep -qE '"laravel/pint"' "$1/composer.json"; }
+}
+declares_php_cs_fixer() { [ -e "$1/.php-cs-fixer.php" ] || [ -e "$1/.php-cs-fixer.dist.php" ]; }
+declares_biome() { [ -e "$1/biome.json" ] || [ -e "$1/biome.jsonc" ]; }
+declares_prettier() {
+  local name
+  for name in .prettierrc .prettierrc.json .prettierrc.yml .prettierrc.yaml .prettierrc.js \
+              .prettierrc.cjs .prettierrc.mjs prettier.config.js prettier.config.cjs prettier.config.mjs; do
+    [ -e "$1/$name" ] && return 0
+  done
+  [ -f "$1/package.json" ] && grep -qE '"prettier"[[:space:]]*:[[:space:]]*\{' "$1/package.json"
+}
+declares_ruff() {
+  [ -e "$1/ruff.toml" ] || [ -e "$1/.ruff.toml" ] || { [ -f "$1/pyproject.toml" ] && grep -qE '^\[tool\.ruff' "$1/pyproject.toml"; }
+}
+declares_black() { [ -f "$1/pyproject.toml" ] && grep -qE '^\[tool\.black\]' "$1/pyproject.toml"; }
+
+# find_project DIR NAME: the nearest directory from DIR upwards where
+# declares_NAME holds; empty when none.
+find_project() {
+  local dir="$1"
   while :; do
-    [ -f "$dir/$name" ] && grep -qE "$pattern" "$dir/$name" && { printf '%s\n' "$dir"; return 0; }
+    "declares_$2" "$dir" && { printf '%s\n' "$dir"; return 0; }
     [ "$dir" = / ] || [ -z "$dir" ] && return 1
     dir="$(dirname "$dir")"
   done
@@ -65,28 +87,26 @@ file="$dir/$(basename "$file")"
 
 case "$file" in
   *.php)
-    if root="$(up "$dir" pint.json)" || root="$(up_grep "$dir" composer.json '"laravel/pint"')"; then
+    if root="$(find_project "$dir" pint)"; then
       [ -x "$root/vendor/bin/pint" ] && run "$root" vendor/bin/pint -q "$file"
     fi
-    if root="$(up "$dir" .php-cs-fixer.php .php-cs-fixer.dist.php)"; then
+    if root="$(find_project "$dir" php_cs_fixer)"; then
       [ -x "$root/vendor/bin/php-cs-fixer" ] && run "$root" vendor/bin/php-cs-fixer fix -q "$file"
     fi
     ;;
   *.js|*.jsx|*.ts|*.tsx|*.mjs|*.cjs|*.vue|*.css|*.scss|*.json|*.md|*.html|*.yml|*.yaml)
-    if root="$(up "$dir" biome.json biome.jsonc)"; then
+    if root="$(find_project "$dir" biome)"; then
       [ -x "$root/node_modules/.bin/biome" ] && run "$root" node_modules/.bin/biome format --write "$file"
     fi
-    if root="$(up "$dir" .prettierrc .prettierrc.json .prettierrc.yml .prettierrc.yaml .prettierrc.js \
-                 .prettierrc.cjs .prettierrc.mjs prettier.config.js prettier.config.cjs prettier.config.mjs)" \
-       || root="$(up_grep "$dir" package.json '"prettier"[[:space:]]*:[[:space:]]*\{')"; then
+    if root="$(find_project "$dir" prettier)"; then
       [ -x "$root/node_modules/.bin/prettier" ] && run "$root" node_modules/.bin/prettier --write --log-level warn "$file"
     fi
     ;;
   *.py)
-    if root="$(up "$dir" ruff.toml .ruff.toml)" || root="$(up_grep "$dir" pyproject.toml '^\[tool\.ruff')"; then
+    if root="$(find_project "$dir" ruff)"; then
       command -v ruff >/dev/null && run "$root" ruff format -q "$file"
     fi
-    if root="$(up_grep "$dir" pyproject.toml '^\[tool\.black\]')"; then
+    if root="$(find_project "$dir" black)"; then
       command -v black >/dev/null && run "$root" black -q "$file"
     fi
     ;;

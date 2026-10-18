@@ -58,6 +58,25 @@ edit "$p/pkg/m.py"; expect "python without ruff config" -
 printf '[project]\nname="x"\n[tool.ruff]\nline-length=100\n' > "$p/pyproject.toml"
 edit "$p/pkg/m.py"; expect "ruff with [tool.ruff]" "^ruff format -q $p/pkg/m.py$"
 
+# A nearer project that declares and installs a formatter beats an outer
+# directory holding another declaration of the same formatter (here without
+# the binary): all declarations at one level are checked before the parent.
+p="$TMP/nest-pint"; mkdir -p "$p/inner/app" && echo '{}' > "$p/pint.json"
+echo '{"require-dev":{"laravel/pint":"^1"}}' > "$p/inner/composer.json"
+stub "$p/inner/vendor/bin/pint"; echo '<?php' > "$p/inner/app/A.php"
+edit "$p/inner/app/A.php"; expect "inner composer pint beats outer pint.json" "^pint -q $p/inner/app/A.php$"
+
+p="$TMP/nest-prettier"; mkdir -p "$p/inner/src" && echo '{}' > "$p/.prettierrc"
+echo '{"prettier":{"semi":false}}' > "$p/inner/package.json"
+stub "$p/inner/node_modules/.bin/prettier"; echo 'x' > "$p/inner/src/a.ts"
+edit "$p/inner/src/a.ts"; expect "inner package.json prettier beats outer .prettierrc" "^prettier --write --log-level warn $p/inner/src/a.ts$"
+
+p="$TMP/nest-ruff"; mkdir -p "$p/inner/pkg" "$TMP/pwdbin" && echo 'line-length = 80' > "$p/ruff.toml"
+printf '#!/usr/bin/env bash\necho "ruff $PWD" >> "%s"\n' "$TMP/log" > "$TMP/pwdbin/ruff"; chmod +x "$TMP/pwdbin/ruff"
+printf '[tool.ruff]\nline-length=100\n' > "$p/inner/pyproject.toml"; echo 'x=1' > "$p/inner/pkg/m.py"
+: > "$TMP/log"; jq -n --arg f "$p/inner/pkg/m.py" '{tool_name:"Edit", tool_input:{file_path:$f}}' | PATH="$TMP/pwdbin:/usr/bin:/bin" "$HOOK"
+expect "inner pyproject ruff beats outer ruff.toml" "^ruff $p/inner$"
+
 # Rust: rustfmt with the crate's edition.
 p="$TMP/rs"; mkdir -p "$p/src" && stub "$TMP/bin/rustfmt" && echo 'fn main(){}' > "$p/src/main.rs"
 printf '[package]\nname="x"\nedition = "2024"\n' > "$p/Cargo.toml"
