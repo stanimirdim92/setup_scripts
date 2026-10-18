@@ -208,6 +208,8 @@ Add your note under each bullet as `> Note: ...`.
    `CLAUDE.md` / `AGENTS.md` / `.ai/rules` line untrue.
 
    > Note: what should we do?
+   > Decision: C + A (script for renamed/deleted files and scripts, code-reviewer rule for meaning).
+   > Done: ADR 0098, `stale-instructions.py`.
 
 5. **Report starts with a count** (layer 1): `/review` summary line
    "N BLOCKER · N REQUIRED · N ADVISORY", or "Nothing to fix."

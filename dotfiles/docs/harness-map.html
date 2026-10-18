@@ -177,9 +177,9 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 </head>
 <body>
 <div class="layout">
-<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>7</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>45</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>21</span></a><a href="#ci">Self-tests<span>28</span></a><a href="#decisions">Decisions<span>97</span></a></nav>
+<nav class="index" aria-label="Sections"><div class="label">Harness map</div><a href="#pipeline">Pipeline<span>7</span></a><a href="#personas">Personas<span>7</span></a><a href="#guards">Guards<span>8</span></a><a href="#conventions">Conventions<span>45</span></a><a href="#session">Session setup<span>8</span></a><a href="#skills">Skills<span>19</span></a><a href="#references">References<span>21</span></a><a href="#ci">Self-tests<span>29</span></a><a href="#decisions">Decisions<span>98</span></a></nav>
 <main>
-<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>7</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>45</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>21</b>references</span><span class="count"><b>28</b>self-tests</span><span class="count"><b>97</b>decisions</span></div></header>
+<header class="top"><div class="kicker">stanimirdim92/setup_scripts · dotfiles</div><h1>Harness Map</h1><p>How a ticket moves through the Claude Code harness, who does the work at each step, and which rules the host enforces. Generated from the harness files; CI fails when it is out of date.</p><div class="counts"><span class="count"><b>7</b>pipeline</span><span class="count"><b>7</b>personas</span><span class="count"><b>8</b>guards</span><span class="count"><b>45</b>conventions</span><span class="count"><b>8</b>session setup</span><span class="count"><b>19</b>skills</span><span class="count"><b>21</b>references</span><span class="count"><b>29</b>self-tests</span><span class="count"><b>98</b>decisions</span></div></header>
 <section id="pipeline"><div class="sec-head"><h2>Pipeline</h2><p class="summary">Commands run in this order. Personas never start other personas. The orange rows are decisions only you make.</p></div><div class="legend"><span><i class="diamond"></i>you decide</span><span><span class="persona-name write">blue</span> can change files</span><span><span class="persona-name">teal</span> read-only</span><span><span class="badge cond">dashed</span> only when needed</span></div>
 <div class="tabs" role="tablist" aria-label="Pipeline views">
 <button type="button" role="tab" id="tab-list" aria-controls="view-list" aria-selected="false" tabindex="-1" data-view="list"><span>1</span>Stage list</button>
@@ -338,12 +338,13 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">templates/spec.md</td><td>Spec Template</td></tr>
 <tr><td class="cmdcell">templates/task.md</td><td>Task Template</td></tr>
 </tbody></table></div></section>
-<section id="ci"><div class="sec-head"><h2>Self-tests</h2><p class="summary">28 CI steps on every push to main and every pull request. Runs that spend model tokens stay manual.</p></div><div class="panel tablewrap"><table><thead><tr><th>Step</th><th>Command</th></tr></thead><tbody>
+<section id="ci"><div class="sec-head"><h2>Self-tests</h2><p class="summary">29 CI steps on every push to main and every pull request. Runs that spend model tokens stay manual.</p></div><div class="panel tablewrap"><table><thead><tr><th>Step</th><th>Command</th></tr></thead><tbody>
 <tr><td><b>Preflight — required tools</b></td><td class="cmdcell">for tool in bash git jq python3; do<br>command -v &quot;$tool&quot; &gt;/dev/null || { echo &quot;missing: $tool&quot;; exit 1; }<br>done<br>jq --version &amp;&amp; python3 --version &amp;&amp; git --version</td></tr>
 <tr><td><b>Hooks — deny, ask, and allow cases</b><span class="sub">Enforcement: the three PreToolUse hooks, deny/ask/allow, including the alias, typo, global-option and quoted-target bypasses (adr/0049).</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-hooks.sh</td></tr>
 <tr><td><b>Hooks — commit trailers</b><span class="sub">Enforcement: the SubagentStop handoff gate — complete, partial, claim-only, second attempt, unknown agent, unreadable transcript. Writers&#x27; commits carry a Refs: trailer (adr/0081).</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-commit-trailers.sh</td></tr>
 <tr><td><b>Current-base check</b><span class="sub">/ship&#x27;s current-base check: merge the base into a scratch worktree and re-run the checks (adr/0095).</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-base-check.sh</td></tr>
 <tr><td><b>Always-a-person paths</b><span class="sub">Paths that always need a person, read from the base branch&#x27;s REVIEW.md (adr/0096).</span></td><td class="cmdcell">python3 dotfiles/tools/tests/test-always-person.py</td></tr>
+<tr><td><b>Stale instructions</b><span class="sub">Instruction lines a change makes untrue: renamed or deleted files and removed scripts (adr/0098).</span></td><td class="cmdcell">python3 dotfiles/tools/tests/test-stale-instructions.py</td></tr>
 <tr><td><b>Hooks — handoff report gate</b></td><td class="cmdcell">bash dotfiles/tools/tests/test-handoff-hook.sh</td></tr>
 <tr><td><b>Hooks — worktree base guards</b><span class="sub">Enforcement: the two worktree-base guards (adr/0057). Real git fixtures -- bare origin, main checkout, linked worktree, feature branch -- because both hooks decide from git state.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-worktree-hooks.sh</td></tr>
 <tr><td><b>Hooks — isolated test runner</b><span class="sub">Enforcement: the isolated test-runner gate, evidence-gated on the project shipping bin/worktree-test.sh and more than one live worktree.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-isolated-test-runner.sh</td></tr>
@@ -368,7 +369,8 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td><b>Batch spec runner</b><span class="sub">The batch spec runner&#x27;s decisions, with <code>claude</code> stubbed.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-batch-spec.sh</td></tr>
 <tr><td><b>Run metrics</b><span class="sub">Measurement: the transcript metrics&#x27; large-result section.</span></td><td class="cmdcell">bash dotfiles/tools/tests/test-run-metrics.sh</td></tr>
 </tbody></table></div></section>
-<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">97 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<section id="decisions"><div class="sec-head"><h2>Decisions</h2><p class="summary">98 architecture decisions; the ten most recent below. Full index: <code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr><th>ADR</th><th>Decision</th></tr></thead><tbody>
+<tr><td class="cmdcell">0098</td><td>Reviews catch instruction lines a change makes untrue</td></tr>
 <tr><td class="cmdcell">0097</td><td>Bug fixes carry a root-cause trace</td></tr>
 <tr><td class="cmdcell">0096</td><td>Paths that always need a person</td></tr>
 <tr><td class="cmdcell">0095</td><td>/ship checks the candidate on the current base</td></tr>
@@ -378,7 +380,6 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 <tr><td class="cmdcell">0091</td><td>A project REVIEW.md guides every reviewer</td></tr>
 <tr><td class="cmdcell">0090</td><td>Pre-existing findings do not block</td></tr>
 <tr><td class="cmdcell">0089</td><td>Review converges in three rounds</td></tr>
-<tr><td class="cmdcell">0088</td><td>A ticket ledger check after planning</td></tr>
 </tbody></table></div></section>
 <footer>Generated by dotfiles/tools/checks/harness-map.py from the repository sources. Do not edit by hand.</footer></main></div>
 <script>

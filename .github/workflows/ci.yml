@@ -58,6 +58,10 @@ jobs:
       # (adr/0096).
       - name: Always-a-person paths
         run: python3 dotfiles/tools/tests/test-always-person.py
+      # Instruction lines a change makes untrue: renamed or deleted files and
+      # removed scripts (adr/0098).
+      - name: Stale instructions
+        run: python3 dotfiles/tools/tests/test-stale-instructions.py
 
       - name: Hooks — handoff report gate
         run: bash dotfiles/tools/tests/test-handoff-hook.sh

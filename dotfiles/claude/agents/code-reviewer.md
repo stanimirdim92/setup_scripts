@@ -105,6 +105,16 @@ an oversized file. Prefer the remedy that removes moving pieces over one that
 spreads the same complexity around. (Full list: the skill's "Structural
 Remedies".)
 
+## Instructions the change makes untrue
+
+Agents follow `CLAUDE.md`, `AGENTS.md`, `REVIEW.md`, `.ai/rules` and the
+README literally. When the diff changes how something is done — where
+validation lives, which command runs the tests, a config key, a naming or
+layering convention — read the instruction lines that describe it. A line the
+change makes untrue is a REQUIRED finding: the file and line, what it says,
+and what is true now (ADR 0098). Renamed and deleted files and scripts are
+found by `stale-instructions.py`; you cover changes in meaning.
+
 ## Bug fixes — validate the root cause
 
 When the packet holds a Root-Cause Trace (a bugfix plan, ADR 0097), check it

@@ -198,6 +198,19 @@ evidence:
 
 Keep the two-concurrent limit. In a later round, verify only new BLOCKERs.
 
+### Stale instructions
+
+Check that the change leaves no instruction line pointing at a file or script
+it deleted or renamed (ADR 0098):
+
+```bash
+python3 "$HOME/.claude/skills/code-review-and-quality/scripts/stale-instructions.py" --base <candidate base>
+```
+
+Report each hit as a REQUIRED finding with the id `STALE-#` and its
+`file:line`. Exit 2 means the check did not run: record **Stale
+instructions: Not verified**.
+
 ### Ledger
 
 Check that the ticket's records still agree
@@ -220,6 +233,8 @@ Report:
 - required-reviewer list and trigger decisions;
 - whether the project has a `REVIEW.md`, and which ones were used;
 - the "Always a person" result: no list, no match, or the matched files;
+- the stale-instructions result: **Stale instructions: none found**, the
+  `STALE-#` findings, or **Not verified**;
 - the weakened-test result, and how each listed change was resolved;
 - the ledger result: **Ledger: clean**, the `LEDGER-#` findings, or
   **Ledger: Not verified**;
