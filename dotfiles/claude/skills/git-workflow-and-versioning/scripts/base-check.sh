@@ -49,13 +49,14 @@ fi
 behind="$(git rev-list --count "$head_sha..$base_sha")"
 echo "Base: moved ($BASE ${base_sha:0:10} has $behind commit(s) the candidate ${head_sha:0:10} lacks)."
 
-scratch="$(git rev-parse --git-common-dir)/base-check/${head_sha:0:10}-${base_sha:0:10}"
-scratch="$(cd "$(dirname "$scratch")" 2>/dev/null && pwd || dirname "$scratch")/$(basename "$scratch")"
-mkdir -p "$(dirname "$scratch")"
-git worktree remove --force "$scratch" >/dev/null 2>&1
-git worktree add -q --detach "$scratch" "$head_sha" || { echo "base-check: cannot create the scratch worktree" >&2; exit 2; }
-cleanup() { [ "$KEEP" = 1 ] || git -C "$top" worktree remove --force "$scratch" >/dev/null 2>&1; }
+# One scratch path per invocation: concurrent checks of the same candidate must
+# never share, or remove, each other's checkout.
+parent="$(git rev-parse --git-common-dir)/base-check"
+mkdir -p "$parent" && parent="$(cd "$parent" && pwd)"
+scratch="$(mktemp -d "$parent/${head_sha:0:10}-${base_sha:0:10}.XXXXXX")" || { echo "base-check: cannot create the scratch directory" >&2; exit 2; }
+cleanup() { [ "$KEEP" = 1 ] || { git -C "$top" worktree remove --force "$scratch" >/dev/null 2>&1; rmdir "$scratch" 2>/dev/null; }; }
 trap cleanup EXIT
+git worktree add -q --detach "$scratch" "$head_sha" || { echo "base-check: cannot create the scratch worktree" >&2; exit 2; }
 
 if ! git -C "$scratch" -c user.email=base-check@local -c user.name=base-check \
      merge -q --no-edit --no-ff "$base_sha" >/dev/null 2>&1; then
