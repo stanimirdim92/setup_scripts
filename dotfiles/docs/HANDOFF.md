@@ -52,7 +52,7 @@ Replace this file at the next handoff; git keeps the old ones.
 - A project `REVIEW.md` guides every reviewer; template in
   `references/templates/review.md` (ADR 0091).
 - Every BLOCKER gets an independent check (ADR 0092).
-- `tools/evals/review-eval/` and `tools/run/review-noise.py` (ADR 0093).
+- `tools/evals/review-eval/` and `claude/skills/code-review-and-quality/scripts/review-noise.py` (ADR 0093, moved in 0105).
 
 ## Measured results
 

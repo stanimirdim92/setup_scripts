@@ -291,6 +291,8 @@ Their intro: "Most of the pieces to do this with your team exist today."
     for the owner to accept.
 
    > Note: what?
+   > Done: ADR 0105. Each finding gets a class; after three tickets share one,
+   > `/ship` proposes a lint rule, a REVIEW.md or CLAUDE.md line, with the text.
 
 11. **Rescore on reviewer change** — a change to a reviewer persona, to
     `/review`, or to a reviewer's model must come with a review-eval run

@@ -271,6 +271,13 @@ read the review (`../references/component-response-contracts.md` §Review SARIF)
 out="$(git rev-parse --git-common-dir)/review/<TICKET>-$(git rev-parse --short HEAD).sarif"
 ```
 
+Give every finding a `class` (§Review SARIF). List the names already in use
+first, and reuse one when it fits:
+
+```bash
+python3 "$HOME/.claude/skills/code-review-and-quality/scripts/review-noise.py" --classes
+```
+
 It sits outside the working tree and is never committed. Give its path in the
 report. The markdown report stays the gate artifact; the SARIF file is a copy
 of its findings for tools.

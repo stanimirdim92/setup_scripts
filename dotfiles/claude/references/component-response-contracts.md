@@ -450,7 +450,7 @@ reviewer; the disposition decides `level` (§Dispositions):
       "baselineState": "new",
       "properties": {"disposition": "BLOCKER", "confidence": "high",
                      "requirement": "REQ-003", "resolution": "open",
-                     "verification": "CONFIRMED"}
+                     "verification": "CONFIRMED", "class": "missing-tenant-scope"}
     }]
   }]
 }
@@ -459,6 +459,9 @@ reviewer; the disposition decides `level` (§Dispositions):
 `baselineState` is `unchanged` for a pre-existing finding and `new` otherwise.
 `verification` is the BLOCKER check's verdict (CONFIRMED, REFUTED or UNSURE);
 other findings omit it.
+`class` is a short kebab-case name for the kind of defect, the same name for
+the same kind on every ticket. Reuse a name from `review-noise.py --classes`
+when one fits; coin a new one only when none does (ADR 0105).
 `uri` is relative to the repository root. A finding without a line keeps the
 `artifactLocation` and drops `region`; one without a file drops `locations`.
 `properties` keeps what SARIF has no field for, so nothing in the markdown
@@ -480,6 +483,9 @@ report is lost.
 
 ### Pre-existing findings (follow-ups)
 - [id] [disposition] — tracked in [ticket or observation-log row]
+
+### Fix at the source
+- [class] — [N] tickets; [lint rule | REVIEW.md line | CLAUDE.md line | Do not report]: "[proposed text]" (or: none)
 
 ### Requirement evidence
 - REQ-001: [implementing change] / [verification evidence]

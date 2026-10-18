@@ -103,6 +103,27 @@ the author declined are `declined`. `review-noise.py` counts these to show
 which reviewers raise findings that end as fixes and which raise noise
 (ADR 0093).
 
+Then check whether this ticket's findings repeat a class from earlier tickets
+(ADR 0105):
+
+```bash
+python3 "$HOME/.claude/skills/code-review-and-quality/scripts/review-noise.py" --repeats
+```
+
+For each listed class that this ticket also raised, propose one change under
+"Fix at the source", with the exact text. Choose the first that fits:
+
+1. a rule in the project's own linter or static analyser, when it can catch
+   the class (name the rule and the config file);
+2. a REVIEW.md "Always check" line, when it is a project convention a
+   reviewer must check;
+3. a CLAUDE.md line, when it is how code gets written in this project;
+4. a REVIEW.md "Do not report" line, when the class is mostly refuted.
+
+The owner accepts or declines it. Never edit REVIEW.md, CLAUDE.md or the lint
+config from `/ship`; an accepted change is its own ticket or commit. A
+proposal never blocks GO.
+
 A production fix returns to `/build`, then the new candidate goes through
 `/review` again; REVIEW will decide whether `/test` is required.
 
@@ -178,6 +199,9 @@ Return:
 
 ### Pre-existing findings (follow-ups)
 - [id] [disposition] — tracked in [ticket or observation-log row]
+
+### Fix at the source
+- [class] — [N] tickets; [lint rule | REVIEW.md line | CLAUDE.md line | Do not report]: "[proposed text]" (or: none)
 
 ### Requirement evidence
 - REQ-001: [implementing change] / [verification evidence]

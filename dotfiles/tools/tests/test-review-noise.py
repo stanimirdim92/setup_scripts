@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Fixture tests for dotfiles/tools/run/review-noise.py: endings per reviewer,
-noise as refuted over closed findings, verification verdicts, review rounds."""
+"""Fixture tests for review-noise.py: endings per reviewer, noise as refuted over
+closed findings, verification verdicts, review rounds, repeated classes."""
 import importlib.util
 import io
 import json
@@ -9,18 +9,18 @@ import unittest
 from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / 'run' / 'review-noise.py'
+SCRIPT = (Path(__file__).resolve().parents[2] / 'claude' / 'skills' / 'code-review-and-quality'
+          / 'scripts' / 'review-noise.py')
 spec = importlib.util.spec_from_file_location('rn', SCRIPT)
 rn = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(rn)
 
-
 def sarif(*runs):
     return json.dumps({'version': '2.1.0', 'runs': [
         {'tool': {'driver': {'name': name}},
-         'results': [{'ruleId': f'X-{i}', 'properties': props} for i, props in enumerate(results)]}
+         'results': [{'ruleId': f'X-{i}', 'message': {'text': props.pop('text', '')}, 'properties': props}
+                     for i, props in enumerate(results)]}
         for name, results in runs]})
-
 
 class ReviewNoise(unittest.TestCase):
     def setUp(self):
@@ -59,5 +59,44 @@ class ReviewNoise(unittest.TestCase):
             self.assertEqual(rn.main(['--dir', empty]), 1)
 
 
+class RepeatedClasses(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        scope = {'class': 'missing-tenant-scope', 'resolution': 'fixed', 'text': 'query skips integration scope'}
+        noise = {'class': 'Magic-Number', 'resolution': 'refuted'}
+        for i, sha in enumerate(('a1b2c3d', 'b2c3d4e', 'c3d4e5f')):
+            (self.dir / f'LD-{i}-{sha}.sarif').write_text(sarif(('code-reviewer', [dict(scope), dict(noise)])))
+        # Five findings of one class on one ticket are one fix round, not a pattern.
+        (self.dir / 'LD-9-d4e5f60.sarif').write_text(sarif(
+            ('code-reviewer', [{'class': 'n-plus-one', 'resolution': 'fixed'} for _ in range(5)])))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_classes_across_tickets_get_an_action(self):
+        found = {r['class']: r for r in rn.repeats(rn.tally(sorted(self.dir.glob('*.sarif'))))}
+        self.assertEqual(set(found), {'missing-tenant-scope', 'magic-number'})
+        self.assertEqual(found['missing-tenant-scope']['action'], 'fix')
+        self.assertEqual(found['missing-tenant-scope']['tickets'], ['LD-0', 'LD-1', 'LD-2'])
+        self.assertEqual(found['missing-tenant-scope']['example'], 'query skips integration scope')
+        self.assertEqual(found['magic-number']['action'], 'silence')
+
+    def test_open_findings_are_watched_and_threshold_is_adjustable(self):
+        t = rn.tally(sorted(self.dir.glob('*.sarif')))
+        self.assertEqual(rn.repeats(t, min_tickets=4), [])
+        t['classes']['open-one'] = {'A': [('open', '')], 'B': [('open', '')], 'C': [('open', '')]}
+        self.assertEqual([r['action'] for r in rn.repeats(t) if r['class'] == 'open-one'], ['watch'])
+
+    def test_cli_classes_and_repeats(self):
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(rn.main(['--dir', str(self.dir), '--classes']), 0)
+        self.assertIn('n-plus-one  (1 ticket(s))', out.getvalue())
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(rn.main(['--dir', str(self.dir), '--repeats']), 0)
+        self.assertIn('missing-tenant-scope  — 3 tickets', out.getvalue())
+        self.assertIn('lint rule', out.getvalue())
+        self.assertNotIn('n-plus-one', out.getvalue())
+
 if __name__ == '__main__':
-    unittest.main(verbosity=1)
+    unittest.main()
