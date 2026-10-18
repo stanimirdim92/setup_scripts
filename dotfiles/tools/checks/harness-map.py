@@ -193,6 +193,8 @@ ol.stages .leaves{display:block;font-family:var(--mono);font-size:13.5px;color:v
 
 /* tables */
 .tablewrap{overflow-x:auto;min-width:0}
+.tablewrap.scroll{max-height:560px;overflow-y:auto}
+.tablewrap.scroll th{position:sticky;top:0;z-index:1}
 table{border-collapse:collapse;width:100%;font-size:16px}
 th,td{text-align:left;vertical-align:top;padding:12px 16px;border-bottom:1px solid var(--line)}
 tr:last-child td{border-bottom:0}
@@ -934,10 +936,11 @@ def render():
 
     # Decisions
     out.append(f'<section id="decisions"><div class="sec-head"><h2>Decisions</h2>'
-               f'<p class="summary">{len(adr_rows)} architecture decisions; the ten most recent below. Full index: '
-               '<code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap"><table><thead><tr>'
+               f'<p class="summary">{len(adr_rows)} architecture decisions; the twenty most recent below. Full index: '
+               '<code>dotfiles/docs/adr/README.md</code>.</p></div><div class="panel tablewrap scroll" tabindex="0" '
+               'aria-label="Recent decisions"><table><thead><tr>'
                '<th>ADR</th><th>Decision</th></tr></thead><tbody>')
-    for num, title, path in adr_rows[-10:][::-1]:
+    for num, title, path in adr_rows[-20:][::-1]:
         out.append(f'<tr><td class="cmdcell">{e(num)}</td><td>{e(title)}</td></tr>')
     out.append('</tbody></table></div></section>')
 
