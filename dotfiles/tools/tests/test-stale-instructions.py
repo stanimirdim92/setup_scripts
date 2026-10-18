@@ -74,6 +74,32 @@ class StaleInstructions(unittest.TestCase):
         self.commit()
         self.assertEqual(self.run_script(), (0, []))
 
+    def move(self, old, new):
+        (self.repo / new).parent.mkdir(parents=True, exist_ok=True)
+        self.git('mv', old, new)
+
+    def test_updated_path_after_a_move_to_another_directory_is_clean(self):
+        self.move('bin/worktree-test.sh', 'scripts/worktree-test.sh')
+        self.write('CLAUDE.md', CLAUDE.replace('bin/worktree-test.sh', 'scripts/worktree-test.sh'))
+        self.write('.ai/rules/tests.md', 'Never run Pest directly; use `scripts/worktree-test.sh`.\n')
+        self.commit()
+        self.assertEqual(self.run_script(), (0, []))
+
+    def test_updated_path_that_ends_with_the_old_path_is_clean(self):
+        self.move('bin/worktree-test.sh', 'app/bin/worktree-test.sh')
+        self.write('CLAUDE.md', CLAUDE.replace('`bin/worktree-test.sh`', '`app/bin/worktree-test.sh`'))
+        self.write('.ai/rules/tests.md', 'Never run Pest directly.\n')
+        self.commit()
+        self.assertEqual(self.run_script(), (0, []))
+
+    def test_old_directory_path_after_a_move_is_still_stale(self):
+        self.move('bin/worktree-test.sh', 'scripts/worktree-test.sh')
+        self.write('CLAUDE.md', CLAUDE.replace('bin/worktree-test.sh', './bin/worktree-test.sh'))
+        self.commit()
+        rc, hits = self.run_script()
+        self.assertEqual(rc, 1)
+        self.assertIn(('CLAUDE.md', 2), [(h['file'], h['line']) for h in hits])
+
     def test_removed_package_script(self):
         self.write('package.json', json.dumps({'scripts': {'build': 'vite build'}})); self.commit()
         rc, hits = self.run_script()

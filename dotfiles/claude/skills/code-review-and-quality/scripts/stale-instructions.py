@@ -7,7 +7,9 @@ literally. A change that renames `bin/worktree-test.sh` leaves "run
 instruction. This finds the mechanical cases, project-agnostic:
 
 - a file the change deletes or renames, still named in an instruction file
-  (the full path anywhere, or the file name inside backticks);
+  (the full path anywhere, or the file name inside backticks). A mention that
+  is a path to a file the candidate still has, such as the rename destination,
+  is the new reference and is not flagged;
 - a package.json or composer.json script the change removes, still run in an
   instruction file (`yarn <name>`, `npm run <name>`, `pnpm <name>`,
   `composer <name>`).
@@ -25,6 +27,7 @@ Exit: 0 nothing stale · 1 at least one stale line · 2 usage or git error.
 import argparse
 import fnmatch
 import json
+import posixpath
 import re
 import subprocess
 import sys
@@ -89,8 +92,28 @@ def needles(old, new):
     return found
 
 
+def enclosing_token(line, start, end):
+    """The whitespace/quote/bracket-delimited word around line[start:end], without trailing punctuation."""
+    stop = ' \t`\'"<>()[]'
+    while start > 0 and line[start - 1] not in stop:
+        start -= 1
+    while end < len(line) and line[end] not in stop:
+        end += 1
+    return line[start:end].rstrip('.,:;').strip('`')
+
+
+def is_live_path(token, doc, tracked):
+    """A path with a directory that names a file the candidate still has, from the
+    repository root or from the instruction file's own directory."""
+    if '/' not in token:
+        return False
+    here = posixpath.dirname(doc)
+    return posixpath.normpath(token) in tracked or posixpath.normpath(posixpath.join(here, token)) in tracked
+
+
 def scan(base):
     files = {p: (git('show', f'HEAD:{p}')[1]) for p in instruction_files()}
+    tracked = set(git('ls-files')[1].splitlines())
     hits = []
     for old, new in moved(base):
         if old in files:
@@ -98,7 +121,11 @@ def scan(base):
         for rx, label in needles(old, new):
             for path, text in files.items():
                 for n, line in enumerate(text.splitlines(), 1):
-                    if rx.search(line):
+                    # A full path is judged before the bare file name: a path that still
+                    # resolves (the rename destination, a longer path ending in the old
+                    # one) is the valid new reference, not a stale one.
+                    if any(not is_live_path(enclosing_token(line, m.start(), m.end()), path, tracked)
+                           for m in rx.finditer(line)):
                         what = f'renamed to `{new}`' if new else 'deleted'
                         hits.append({'file': path, 'line': n, 'mentions': label,
                                      'reason': f'`{old}` is {what} by this change', 'text': line.strip()[:120]})
