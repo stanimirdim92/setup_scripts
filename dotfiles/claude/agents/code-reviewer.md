@@ -175,6 +175,8 @@ your label as the finding's disposition, unchanged.
 ```markdown
 ## Review Summary
 
+**Findings:** N BLOCKER · N REQUIRED · N ADVISORY — or **Nothing to fix.**
+
 **Verdict:** APPROVE | REQUEST CHANGES
 
 **Overview:** [1-2 sentences: the change and overall assessment]

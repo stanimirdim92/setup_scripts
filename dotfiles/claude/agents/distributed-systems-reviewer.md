@@ -80,6 +80,8 @@ either correctness or failure.
 ```markdown
 ## Distributed Systems Review
 
+**Findings:** N BLOCKER · N REQUIRED · N ADVISORY — or **Nothing to fix.**
+
 **Scope:** [which of the checks above the change touches, and why the others do not apply]
 
 ### BLOCKER

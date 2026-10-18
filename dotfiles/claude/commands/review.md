@@ -224,8 +224,10 @@ Report each FAIL as a REQUIRED finding with the id `LEDGER-#`. Report each
 warning as an ADVISORY finding. Exit 2 means the spec was not found: record
 **Ledger: Not verified**.
 
-Report:
+Report, starting with one count line before anything else (ADR 0099):
 
+- `**Findings: N BLOCKER · N REQUIRED · N ADVISORY**`, adding `· N pre-existing`
+  when there are any; or `**Nothing to fix.**` when every count is zero;
 - the review round, and for a later round the commit it was reviewed from;
 - candidate branch/diff scope;
 - BUILD candidate and any accepted post-BUILD test-only commits;

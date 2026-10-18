@@ -215,6 +215,7 @@ Add your note under each bullet as `> Note: ...`.
    "N BLOCKER · N REQUIRED · N ADVISORY", or "Nothing to fix."
 
    > Note: yes.
+   > Done: ADR 0099.
 
 6. **Security pass on every candidate** (layer 3): a light always-on check,
    `security-auditor` still by trigger.

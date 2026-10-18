@@ -89,6 +89,8 @@ Give every finding a stable id (`BLIND-1`, `BLIND-2`, ...).
 ```markdown
 ## Blind Review
 
+**Findings:** N BLOCKER · N REQUIRED · N ADVISORY · N intent-dependent — or **Nothing to fix.**
+
 **What this change appears to do:** [2-4 sentences, read from the diff alone.
 This is your reading, not a restatement of anyone's goal — the caller compares
 it against the actual intent, and a mismatch here is itself a finding.]

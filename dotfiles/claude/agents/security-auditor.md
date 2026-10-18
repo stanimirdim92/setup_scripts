@@ -73,6 +73,9 @@ by investigation rather than by changing code that may already be correct.
 
 ## Report
 
+Start with one count line: `**Findings:** N BLOCKER · N REQUIRED · N ADVISORY`,
+or `**Nothing to fix.**` when there are none.
+
 Give each finding a stable id (`SEC-1`, ...), severity, confidence, file:line,
 attack path or failure mode, impact, and specific remediation. Include positive
 observations only when they are concrete and useful.
