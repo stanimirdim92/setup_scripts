@@ -29,6 +29,7 @@ When dispatched by `/test`, expect a bounded packet:
 - the ticket key, for the `Refs:` trailer of any test-only commit;
 - candidate identity (branch, HEAD, commit range, and any declared uncommitted
   BUILD diff), baseline tree changes, and selected scope;
+- the Risk · Depth line, when `/review` set one;
 - acceptance criteria as the spec's `REQ-###` requirements and scenarios;
 - implemented behavior and relevant regression risks;
 - tests and commands `/build` already ran — prior evidence, not your conclusion;
@@ -181,7 +182,9 @@ a test case is missing. Write that case as a test-only change, then run the
 mutant once more to show the new test kills it.
 
 Probe the conditions whose failure would break an acceptance criterion. One
-probe per condition is enough; do not mutate every line. The mutation is the
+probe per condition is enough; do not mutate every line. At Deep depth
+(the packet's Risk · Depth line), probe every condition the candidate adds or
+changes, and run the full suite as well as the focused tests. The mutation is the
 only production-code edit you may make, it lasts one test run, and it is never
 committed. If a file cannot be restored exactly, stop and report it.
 

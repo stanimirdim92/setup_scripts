@@ -36,7 +36,8 @@ STAGES = {
     'build': ['commands/build.md', 'references/target-selection.md',
               'references/templates/plan.md', 'references/templates/task.md'],
     'review': ['commands/review.md', 'references/target-selection.md',
-               'references/reviewer-triggers.md', 'references/verification-triggers.md'],
+               'references/reviewer-triggers.md', 'references/verification-triggers.md',
+               'references/risk-tiers.md'],
 }
 WORKSTREAMS = ('ws-label', 'ws-report')
 REVIEWERS = ('code-reviewer', 'blind-reviewer', 'security-auditor', 'distributed-systems-reviewer')

@@ -113,6 +113,7 @@ that explanation here, just the index.
 | [0103](0103-reviewers-answer-every-review-md-rule.md) | Reviewers answer every REVIEW.md rule | Accepted |
 | [0104](0104-test-runs-every-production-change.md) | `/test` runs every production change, and runs it for real | Accepted |
 | [0105](0105-repeated-findings-fixed-at-the-source.md) | Repeated findings are fixed at the source | Accepted |
+| [0106](0106-risk-tiers-and-review-depth.md) | Risk tiers set review depth | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

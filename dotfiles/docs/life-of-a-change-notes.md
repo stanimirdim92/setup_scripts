@@ -311,3 +311,6 @@ Gap 2 grows: written risk tiers (low / medium / high, set by the change),
 review depth matched to the tier, a "Risk" line in the `/ship` report, and
 the paths that always need a person (auth, billing, CI and release workflows,
 installers, migrations).
+
+> Done: ADR 0106, `references/risk-tiers.md`. `/review` records Risk and
+> Depth; `/ship` puts the Risk line first and says what to read.

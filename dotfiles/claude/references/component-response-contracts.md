@@ -422,7 +422,8 @@ adds a caller of the old defect, copies it, or depends on it makes it new, and
 then it is not pre-existing (ADR 0090).
 
 Report includes: candidate branch/diff scope, BUILD candidate and any accepted
-post-BUILD test-only commits, **Independent verification: NOT REQUIRED \|
+post-BUILD test-only commits, the **Risk · Depth** line (`risk-tiers.md`),
+**Independent verification: NOT REQUIRED \|
 PASS**, required-reviewer list and trigger decisions, each reviewer's result,
 every finding with disposition and its `REQ-###` where applicable, and one
 requirement-evidence line per spec `REQ-###` (implementation + verification, or
@@ -471,6 +472,8 @@ report is lost.
 
 ```markdown
 ## Ship Decision: GO | NO-GO | SHIP BLOCKED
+
+**Risk: [Low | Medium | High] — [reason] · Depth: [Quick | Standard | Deep]** — before merging, read [the summary | the diff | every changed file, with a second person].
 
 ### Read these yourself
 - [file] — matches `[glob]` in REVIEW.md "Always a person" (or: none)

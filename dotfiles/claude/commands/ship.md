@@ -43,6 +43,15 @@ Exit 2 is **SHIP BLOCKED** too. Warnings go into the report.
 Do not independently re-run the trigger matrix or substitute new inline testing
 for a missing gate.
 
+### Risk
+
+Carry `/review`'s **Risk · Depth** line forward (ADR 0106) and put it at the
+top of the report. Say what the owner should read before merging, from the
+depth's row in `../references/risk-tiers.md`: the summary, the diff, or every
+changed file and a second person. A missing Risk line is **SHIP BLOCKED**.
+At Deep, a missing full-suite run or mutation probe in the VERIFY PASS is
+**SHIP BLOCKED** too.
+
 ### Paths that always need a person
 
 Carry `/review`'s "Always a person" result forward (ADR 0096). When it lists
@@ -187,6 +196,8 @@ Return:
 
 ```markdown
 ## Ship Decision: GO | NO-GO | SHIP BLOCKED
+
+**Risk: [Low | Medium | High] — [reason] · Depth: [Quick | Standard | Deep]** — before merging, read [the summary | the diff | every changed file, with a second person].
 
 ### Read these yourself
 - [file] — matches `[glob]` in REVIEW.md "Always a person" (or: none)

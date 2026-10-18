@@ -102,6 +102,13 @@ run every specialist (`../references/reviewer-triggers.md`) and require
 `/test` (`../references/verification-triggers.md`). Exit 2 is **Always a
 person: Not verified**; report it.
 
+Set the risk tier and depth from `../references/risk-tiers.md` (ADR 0106),
+including any `## Review depth` floor in the base branch's `REVIEW.md`.
+Record **Risk: <Low | Medium | High> — <the line that matched> · Depth:
+<Quick | Standard | Deep>** and apply that depth's column to dispatch, the
+independent check, the ADVISORY cap and the `/test` packet. Do not lower the
+tier for a small diff or a trusted author.
+
 Dispatch `code-reviewer` with:
 
 - the integrated diff;
@@ -195,7 +202,8 @@ followed: <rule>" as a REQUIRED finding with the id `RULE-#`.
 ### Verify each BLOCKER
 
 Before reporting, give every BLOCKER one independent check that tries to refute
-it (ADR 0092). Dispatch a fresh reviewer that did not raise it: `code-reviewer`
+it (ADR 0092). At Deep, REQUIRED findings get the same check
+(`../references/risk-tiers.md`). Dispatch a fresh reviewer that did not raise it: `code-reviewer`
 for a `BLIND-#` finding, `blind-reviewer` for a `CODE-#` finding, and a fresh
 instance of the same specialist for a `SEC-#` or `DIST-#` finding. The packet
 holds the diff and that one finding (id, `file:line`, claim, failure scenario),
@@ -245,6 +253,7 @@ Report, starting with one count line before anything else (ADR 0099):
 - candidate branch/diff scope;
 - BUILD candidate and any accepted post-BUILD test-only commits;
 - **Independent verification: NOT REQUIRED | PASS**;
+- **Risk: <tier> — <reason> · Depth: <depth>** (ADR 0106);
 - required-reviewer list and trigger decisions;
 - whether the project has a `REVIEW.md`, and which ones were used;
 - the "Always a person" result: no list, no match, or the matched files;

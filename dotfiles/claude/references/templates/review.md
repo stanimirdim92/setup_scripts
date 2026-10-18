@@ -38,6 +38,14 @@ reviewer and /test, and /ship lists the files under "Read these yourself"
 - `.github/workflows/**`
 - `database/migrations/**`
 
+## Review depth
+
+<!-- Optional. The lowest depth any change here gets: Quick, Standard or Deep.
+The change's own risk tier can raise it, never lower it (ADR 0106). Delete
+this section to let the tier decide. -->
+
+Standard
+
 ## Always check
 
 <!-- What a reviewer must look at on every change in this area, and the

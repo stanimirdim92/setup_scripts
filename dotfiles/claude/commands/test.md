@@ -58,6 +58,7 @@ BLOCKED** rather than guessing.
 Send `test-engineer` a bounded packet containing:
 
 - candidate identity, baseline tree changes, and selected scope;
+- `/review`'s Risk · Depth line when there is one (`../references/risk-tiers.md`);
 - acceptance criteria;
 - implemented behavior;
 - relevant regression risks;
