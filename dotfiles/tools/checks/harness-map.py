@@ -308,16 +308,25 @@ SKINS = [
      'radial-gradient(1.5px 1.5px at 76% 77%,#fff7 50%,transparent 51%)',
      'body{background-image:var(--stars);background-size:420px 420px}'
      'h1{color:var(--brand)}'),
-    ('facility', 'Facility',
-     '--bg:#ECE8E0;--surface:#F7F5F0;--sunk:#E0DBD0;--ink:#1F1A14;--ink-2:#4E463B;--ink-3:#736A5D;--line:#D2CBBE;'
-     '--line-2:#B5AC9C;--brand:#B05200;--brand-bg:#F7E0C8;--gate:#7A5B00;--gate-bg:#FBEBA8;--write:#1F6E8A;'
-     '--write-bg:#D3E8F0;--read:#3E7A25;--read-bg:#DDEDD2;--ok:#3E7A25;--glow:transparent;--scan:transparent',
-     '--bg:#110F0C;--surface:#191612;--sunk:#221E18;--ink:#EDE6DA;--ink-2:#B3A894;--ink-3:#857A68;--line:#2C2620;'
-     '--line-2:#3E362C;--brand:#FFA22E;--brand-bg:#3A2309;--gate:#F4C534;--gate-bg:#352B08;--write:#5CCBEA;'
-     '--write-bg:#0E2A33;--read:#9BD86F;--read-bg:#1C2C12;--ok:#9BD86F;--glow:rgba(255,162,46,.45);'
-     '--scan:rgba(255,162,46,.035)',
-     'body{background-image:repeating-linear-gradient(0deg,var(--scan) 0 1px,transparent 1px 3px)}'
-     'h1{color:var(--brand)}nav.index a span{color:var(--brand)}'
+    # After the Half-Life games. Dark: the HL2 suit HUD, yellow-amber readouts on
+    # see-through black boxes over cold City 17 concrete; HEV orange marks the human
+    # decisions, Combine blue the writers, lab green the readers. Light: Black Mesa
+    # lab tile. The internal key stays "facility" so saved choices keep working.
+    ('facility', 'Half-Life',
+     '--bg:#EAEBE6;--surface:#F6F6F2;--sunk:#DEDFD8;--ink:#1B1D1C;--ink-2:#474A46;--ink-3:#6C6F69;--line:#CFD1C9;'
+     '--line-2:#B1B4AA;--brand:#8A6400;--brand-bg:#F6E8B8;--gate:#B04F00;--gate-bg:#FBE0C6;--write:#1D6688;'
+     '--write-bg:#D2E6F0;--read:#3E7A25;--read-bg:#DDEDD2;--ok:#3E7A25;--glow:transparent;--hud:rgba(0,0,0,.05)',
+     '--bg:#0E1112;--surface:#151A1C;--sunk:#1C2225;--ink:#E6E3D8;--ink-2:#A9A796;--ink-3:#7D7B6C;--line:#262D30;'
+     '--line-2:#353E42;--brand:#FFDC00;--brand-bg:#2E2900;--gate:#FF8C1A;--gate-bg:#3A1F06;--write:#4FC8F0;'
+     '--write-bg:#0C2933;--read:#9BD86F;--read-bg:#1C2C12;--ok:#9BD86F;--glow:rgba(255,220,0,.35);'
+     '--hud:rgba(0,0,0,.42)',
+     'h1{color:var(--brand)}'
+     '.count{background:var(--hud);border:0;border-radius:10px;padding:8px 16px;text-transform:uppercase;'
+     'letter-spacing:.08em;font-size:12.5px;color:color-mix(in srgb,var(--brand) 70%,transparent)}'
+     '.count b{font-family:"Chakra Petch",var(--display);font-size:26px;line-height:1;color:var(--brand);margin-right:8px;'
+     'vertical-align:-3px}'
+     '.panel{border:0;border-radius:10px;box-shadow:0 0 0 1px var(--line)}'
+     'nav.index a span{color:var(--brand)}'
      'ol.stages > li.gate{background:repeating-linear-gradient(135deg,var(--gate-bg) 0 14px,transparent 14px 18px),'
      'var(--gate-bg)}'),
     # A blacklight is dark by nature, so light and dark are the same: UV-black violet
