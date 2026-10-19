@@ -59,6 +59,10 @@ pl = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(pl)
 
 DONE, STOPPED, NOT_CHECKOUT, WAITING = 0, 1, 2, 3
+# A headless session may use a tool only when it is allowed up front. Claude Code
+# names a claude.ai connector mcp__claude_ai_<Name>__…, a configured server mcp__<Name>__….
+SLACK_TOOLS = ('mcp__claude_ai_Slack__slack_send_message', 'mcp__claude_ai_Slack__slack_read_thread',
+               'mcp__Slack__slack_send_message', 'mcp__Slack__slack_read_thread')
 CHECK_PLAN = HERE.parents[1] / 'claude/skills/planning-and-task-breakdown/scripts/check-plan.py'
 
 
@@ -242,7 +246,11 @@ class Run:
                 raise RuntimeError(f'git commit failed for "{message}"')
 
     def stop(self, why):
-        self.out.post(f'*{self.ticket}* stopped: {why}\nLog: {self.dir}')
+        print(f'ticket: {self.ticket} stopped: {why}')
+        try:
+            self.out.post(f'*{self.ticket}* stopped: {why}\nLog: {self.dir}')
+        except RuntimeError as err:
+            print(f'ticket: could not post the stop: {err}')
         return STOPPED
 
     def go(self):
@@ -270,6 +278,7 @@ class Run:
                 return result
 
         if not self.state.get('pipeline_done'):
+            print(f'  spec and plan are approved; pipeline.py runs /build, /test and /review')
             rc = self.pipeline(t, self.budget)
             if rc != 0:
                 return self.stop(f'pipeline.py exited {rc}; the review files and messages are in the log')
@@ -396,13 +405,30 @@ def main(argv=None):
     if rc or not branch or branch in pl.PROTECTED:
         print(f'ticket: run it in the ticket checkout (branch is {branch or "detached"})')
         return NOT_CHECKOUT
+    dirty = pl.git('status', '--porcelain')[1]
+    if dirty:
+        print('ticket: the checkout has uncommitted changes. Commit or stash them first:')
+        print('\n'.join('  ' + line for line in dirty.splitlines()[:20]))
+        return NOT_CHECKOUT
     common = pl.git('rev-parse', '--path-format=absolute', '--git-common-dir')[1]
     log = Path(common) / 'handoff' / f'{args.ticket}-ticket.log'
     log.parent.mkdir(parents=True, exist_ok=True)
 
-    def claude(prompt):
+    def claude(prompt, tools=()):
         started = time.monotonic()
-        error, text, cost = pl.claude(binary, prompt, args.budget, args.permission_mode, log)
+        if tools:
+            # pipeline.py's helper takes no tool list; run the same call with --allowedTools.
+            cmd = [binary, '-p', '--permission-mode', args.permission_mode, '--max-budget-usd', '1',
+                   '--output-format', 'json', '--allowedTools', *tools]
+            out = subprocess.run(cmd, input=prompt, capture_output=True, text=True)
+            with open(log, 'a') as fh:
+                fh.write(f'$ {prompt.splitlines()[0]}\n{out.stdout}\n{out.stderr}\n')
+            data = first_json(out.stdout) if out.stdout else None
+            data = data if isinstance(data, dict) else {}
+            error = None if out.returncode == 0 and not data.get('is_error') else (out.stderr.strip() or 'failed')[:200]
+            text, cost = str(data.get('result', out.stdout)), data.get('total_cost_usd') or 0
+        else:
+            error, text, cost = pl.claude(binary, prompt, args.budget, args.permission_mode, log)
         took = int(time.monotonic() - started)
         print(f'    {took // 60}m{took % 60:02d}s, ${cost:.2f}: ' + (f'ERROR {error}' if error else first_line(text)))
         return error, text
@@ -413,7 +439,7 @@ def main(argv=None):
 
     channel, owner = os.environ.get('HARNESS_SLACK_CHANNEL'), os.environ.get('HARNESS_SLACK_OWNER')
     if channel and owner:
-        out = Slack(claude, channel, owner, os.environ.get('HARNESS_SLACK_MENTION', ''))
+        out = Slack(lambda prompt: claude(prompt, SLACK_TOOLS), channel, owner, os.environ.get('HARNESS_SLACK_MENTION', ''))
     else:
         out = Terminal(log.with_suffix('.md'), args.reply)
     print(f'ticket: {args.ticket} in {os.getcwd()}')

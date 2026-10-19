@@ -208,6 +208,13 @@ class Ticket(unittest.TestCase):
         self.assertEqual(self.run_once(), tk.STOPPED)
         self.assertIn('check-plan failed', self.out.posts[-1][1])
 
+    def test_dirty_checkout_is_refused_before_anything_runs(self):
+        Path('stray.txt').write_text('x')
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(tk.main([f'https://x.atlassian.net/browse/{T}']), tk.NOT_CHECKOUT)
+        self.assertIn('stray.txt', out.getvalue())
+        self.assertEqual(self.prompts, [])
+
     def test_pipeline_failure_stops_before_ship(self):
         self.pipeline_rc = 1
         self.run_once()
