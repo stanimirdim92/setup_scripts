@@ -122,7 +122,7 @@ class Ticket(unittest.TestCase):
             return None, '**GO** — rollback: revert the merge'
         return None, 'done'
 
-    def pipeline(self, ticket, budget):
+    def pipeline(self, ticket, budget, step=None):
         self.prompts.append('pipeline.py')
         common = subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True, text=True).stdout
         (Path(common.strip()) / 'handoff' / f'{T}-3-REVIEW.md').write_text('**Findings: 0 BLOCKER · 0 REQUIRED**\n')
@@ -294,6 +294,23 @@ class Ticket(unittest.TestCase):
         os.chdir(self.repo)
         self.assertEqual(tk.ticket_checkout(T), path)             # reused
 
+    def test_chatty_out_reports_each_stage_in_one_thread(self):
+        self.out.chatty = True
+        self.run_once()
+        top = [p for p in self.out.posts if p[2] is None]
+        self.assertTrue(top[0][1].startswith(f':arrow_forward: *{T} · Run*'))
+        replies = [p[1] for p in self.out.posts if p[2] == top[0][0]]
+        self.assertTrue(replies[0].startswith(f':white_check_mark: */jira-ticket {T}* · 0m'))
+        self.assertIn('\ndone', replies[0])
+        self.assertTrue(top[-1][1].startswith(':question:'))         # the ask stays top-level
+
+    def test_pipeline_step_posts_the_stage_file(self):
+        self.out.chatty = True
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        (r.dir / f'{T}-1-BUILD.md').write_text('BUILD COMPLETE: LD\n\nT001 done\n')
+        r.pipeline_step(f'/build {T}', '1.20')
+        self.assertIn(f':hammer_and_wrench: */build {T}* · $1.20\nBUILD COMPLETE: LD\nT001 done', self.out.posts[-1][1])
+
     def test_pipeline_stop_reason_is_posted(self):
         self.pipeline_rc = 1
         self.run_once()
@@ -318,6 +335,13 @@ class Ticket(unittest.TestCase):
 
 
 class Parsing(unittest.TestCase):
+    def test_set_header_adds_a_missing_line(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / 's.md'
+            p.write_text('# Spec\n\nStatus: Approved\nTicket: AB-11\n')
+            tk.set_header(p, {'Status': 'Draft', 'Approved by': '—', 'Approved at': '—'})
+            self.assertEqual(p.read_text(), '# Spec\n\nStatus: Draft\nApproved by: —\nApproved at: —\nTicket: AB-11\n')
+
     def test_reply(self):
         self.assertEqual(tk.parse_reply('1A 2b, approve AB-11', 'AB-11'), ({1: 'A', 2: 'B'}, True, False))
         self.assertEqual(tk.parse_reply('AB11', 'AB-11'), ({}, True, False))
@@ -347,6 +371,8 @@ class Parsing(unittest.TestCase):
         slack = tk.Slack(lambda p: (sent.append(p), (None, '{"ts": "1.5"}'))[1], 'C1', 'o@x.io', 'U123')
         self.assertEqual(slack.post('AB-11 waits'), '1.5')
         self.assertIn('---\n<@U123> AB-11 waits', sent[0])
+        slack.post('progress', thread='1.5')
+        self.assertIn('---\nprogress', sent[1])                    # thread replies do not notify
 
     def test_ticket_key_from_url(self):
         self.assertEqual(tk.ticket_key('https://smartico1.atlassian.net/browse/LD-503'), 'LD-503')
