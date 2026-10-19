@@ -245,7 +245,7 @@ class Run:
         self.state_file.write_text(json.dumps(self.state, indent=2) + '\n')
 
     def stage(self, prompt):
-        print(f'  {datetime.datetime.now():%H:%M} {prompt.splitlines()[0]}')
+        print(f'  {datetime.datetime.now():%H:%M} {prompt.splitlines()[0][:110]}')
         error, text = self.claude(prompt)
         saved = self.dir / f'{self.ticket}-ticket-{len(self.state.setdefault("log", [])) + 1}.md'
         saved.write_text(text + '\n')
@@ -402,7 +402,7 @@ def ticket_key(arg):
 def first_line(text):
     for raw in text.splitlines():
         line = raw.strip().strip('*#> ').strip()
-        if line:
+        if line and not line.startswith('```'):
             return line[:110]
     return '(empty)'
 
@@ -445,7 +445,8 @@ def main(argv=None):
         error, text, cost = pl.claude(binary, prompt, budget, args.permission_mode, log,
                                       tools if tools else allowed)
         took = int(time.monotonic() - started)
-        print(f'    {took // 60}m{took % 60:02d}s, ${cost:.2f}: ' + (f'ERROR {error}' if error else first_line(text)))
+        print(f'    {"slack " if tools else ""}{took // 60}m{took % 60:02d}s, ${cost:.2f}: '
+              + (f'ERROR {error}' if error else first_line(text)))
         return error, text
 
     def pipeline(ticket, budget):
