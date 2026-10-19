@@ -25,7 +25,7 @@ Usage (from the ticket's worktree):
     pipeline.py LD-1 --budget 15 --yes
 
 Exit: 0 the review is clean, ready for /ship · 1 declined or stopped · 2 not a
-ticket checkout (not git, main/master/detached, or uncommitted changes).
+ticket checkout (not git, master or detached, or uncommitted changes). main is allowed.
 """
 import argparse
 import json
@@ -36,7 +36,7 @@ import sys
 from pathlib import Path
 
 ROUND_CAP = 3
-PROTECTED = ('master')
+PROTECTED = ('master',)            # this repository works in main directly
 SUPPLIED = 'Supplied verbatim by pipeline.py from the previous session (target-selection.md §Gate handoffs):'
 
 

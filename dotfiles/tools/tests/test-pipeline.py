@@ -173,16 +173,23 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn('no review file', out)
 
-    def test_refuses_main_and_a_dirty_tree(self):
+    def test_refuses_master_and_a_dirty_tree(self):
         (self.wt / 'stray.txt').write_text('x')
         rc, out = self.run_pipeline()
         self.assertEqual(rc, 2)
         self.assertIn('uncommitted changes', out)
         os.chdir(self.repo)
+        subprocess.run(['git', 'checkout', '-q', '-b', 'master'], check=True)
         rc, out = self.run_pipeline()
         self.assertEqual(rc, 2)
-        self.assertIn('main', out)
+        self.assertIn('master', out)
         self.assertEqual(self.stages(), [])
+
+    def test_runs_on_main(self):
+        os.chdir(self.repo)                    # this repository works in main directly
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(self.stages(), ['/build AB-1', '/test AB-1', '/review AB-1'])
 
     def test_dry_run_starts_nothing(self):
         rc, out = self.run_pipeline('--dry-run')
