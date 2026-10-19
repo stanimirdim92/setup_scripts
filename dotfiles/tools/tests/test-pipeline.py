@@ -140,6 +140,21 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(len(self.stages()), 9)
         self.assertIn('round cap', out)
 
+    def test_owner_inbox_note_and_stop(self):
+        inbox = Path(self.prompts) / 'inbox.json'
+        inbox.write_text('{"after_step": 99, "stop": false, "notes": ["use Select"]}')
+        os.environ['HARNESS_INBOX'] = str(inbox)
+        try:
+            rc, out = self.run_pipeline()
+            self.assertIn('TICKET NOTE', self.prompt(2))
+            self.assertIn('use Select', self.prompt(2))
+            inbox.write_text('{"after_step": 99, "stop": true, "notes": []}')
+            rc, out = self.run_pipeline()
+            self.assertEqual(rc, 1)
+            self.assertIn('stopped by the owner', out)
+        finally:
+            del os.environ['HARNESS_INBOX']
+
     def test_build_blocked_stops(self):
         os.environ['STUB_BUILD'] = 'blocked'
         rc, out = self.run_pipeline()

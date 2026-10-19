@@ -7,6 +7,7 @@ are reported, only the owner's reply naming the ticket approves the spec, a
 clean plan goes on by itself, anything else stops, and nothing is pushed."""
 import importlib.util
 import io
+import json
 import os
 import re
 import subprocess
@@ -57,7 +58,7 @@ Handoff: Awaiting plan approval
 
 class FakeOut:
     def __init__(self):
-        self.posts, self.thread = [], {}
+        self.posts, self.thread, self.raw = [], {}, {}
 
     def post(self, text, thread=None):
         ts = f'{len(self.posts) + 1}.0'
@@ -66,6 +67,13 @@ class FakeOut:
 
     def replies(self, ts):
         return self.thread.get(ts, [])
+
+    def owner_replies(self, ts):
+        return self.raw.get(ts, [])
+
+    def say(self, ts, text):
+        """The owner writes in a thread, word for word."""
+        self.raw.setdefault(ts, []).append({'author': 'Owner <o@x.io>', 'text': text, 'ts': f'n{len(self.posts)}-{text}'})
 
     def reply(self, text):
         """The owner answers the newest top-level message."""
@@ -311,6 +319,39 @@ class Ticket(unittest.TestCase):
         r.pipeline_step(f'/build {T}', '1.20')
         self.assertIn(f':hammer_and_wrench: */build {T}* · $1.20\nBUILD COMPLETE: LD\nT001 done', self.out.posts[-1][1])
 
+    def test_ticket_stop_and_note_in_the_run_thread(self):
+        self.out.chatty = True
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        r.progress('started')
+        self.out.say(r.thread, 'TICKET NOTE: use the Select component')
+        with redirect_stdout(io.StringIO()):
+            r.stage('/note-check AB-11')
+        self.assertIn('TICKET NOTE read', self.out.posts[-2][1])
+        self.out.say(r.thread, 'PO says hi')                                # conversation: ignored
+        self.assertEqual(r.check_inbox(), (False, ''))
+        self.out.say(r.thread, 'ticket stop')
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(r.stage('/note-check AB-11'), ('stopped by the owner (TICKET STOP)', ''))
+
+    def test_pipeline_step_hands_the_owner_word_to_pipeline(self):
+        self.out.chatty = True
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        r.progress('started')
+        self.out.say(r.thread, 'TICKET STOP')
+        r.pipeline_step(f'/build {T}', '1.00')
+        self.assertEqual(json.loads((r.dir / f'{T}-inbox.json').read_text()),
+                         {'after_step': 1, 'stop': True, 'notes': []})
+
+    def test_until_plan_pauses_before_build(self):
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5, 'plan').go(), tk.WAITING)
+        self.assertNotIn('pipeline.py', self.prompts)
+        self.assertEqual(self.header(f'docs/tasks/{T}-plan.md', 'Status'), 'Approved')
+        self.assertIn('Paused after /plan', self.out.posts[-1][1])
+        self.assertEqual(self.run_once(), tk.DONE)                           # without --until it goes on
+
     def test_pipeline_stop_reason_is_posted(self):
         self.pipeline_rc = 1
         self.run_once()
@@ -341,6 +382,11 @@ class Parsing(unittest.TestCase):
             p.write_text('# Spec\n\nStatus: Approved\nTicket: AB-11\n')
             tk.set_header(p, {'Status': 'Draft', 'Approved by': '—', 'Approved at': '—'})
             self.assertEqual(p.read_text(), '# Spec\n\nStatus: Draft\nApproved by: —\nApproved at: —\nTicket: AB-11\n')
+
+    def test_conflict_only_from_a_heading_or_the_handoff(self):
+        self.assertFalse(tk.has_conflict('# Plan\nStatus: Draft\n\nResolves the earlier REQ-004 SPEC CONFLICT (DEC-008).\n'))
+        self.assertTrue(tk.has_conflict('# Plan\n\n## SPEC CONFLICT\nREQ-1\n'))
+        self.assertTrue(tk.has_conflict('# Plan\nHandoff: Blocked — SPEC CONFLICT (REQ-004)\n'))
 
     def test_reply(self):
         self.assertEqual(tk.parse_reply('1A 2b, approve AB-11', 'AB-11'), ({1: 'A', 2: 'B'}, True, False))

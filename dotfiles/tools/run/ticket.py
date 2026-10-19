@@ -202,15 +202,19 @@ class Slack:
         return str(data['ts'])
 
     def replies(self, ts):
+        """The owner's replies that start with TICKET ANSWERS:, that part only."""
+        return [{**r, 'text': answers_part(r['text'])} for r in self.owner_replies(ts)
+                if answers_part(r['text']) is not None]
+
+    def owner_replies(self, ts):
         error, out = self.run(f'Read the replies in the Slack thread {ts} of channel {self.channel} with your Slack '
                               'tool. Print only JSON: a list of {"author": "<name and email>", "text": "<reply, verbatim>", '
                               '"ts": "<reply ts>"}, oldest first, without the parent message.')
         data = first_json(out) if not error else None
         if not isinstance(data, list):
             raise RuntimeError(f'Slack read failed: {error or out[:200]}')
-        return [{**r, 'text': answers_part(str(r.get('text', '')))} for r in data
-                if isinstance(r, dict) and self.owner in str(r.get('author', '')).lower()
-                and answers_part(str(r.get('text', ''))) is not None]
+        return [{**r, 'text': str(r.get('text', ''))} for r in data
+                if isinstance(r, dict) and self.owner in str(r.get('author', '')).lower()]
 
 
 class Terminal:
@@ -269,8 +273,9 @@ def ask_text(ticket, spec_text):
 
 
 class Run:
-    def __init__(self, ticket, out, claude, pipeline, budget):
+    def __init__(self, ticket, out, claude, pipeline, budget, until=None):
         self.ticket, self.out, self.claude, self.pipeline, self.budget = ticket, out, claude, pipeline, budget
+        self.until = until
         rc, common = pl.git('rev-parse', '--path-format=absolute', '--git-common-dir')
         self.dir = Path(common) / 'handoff'
         self.dir.mkdir(parents=True, exist_ok=True)
@@ -295,7 +300,31 @@ class Run:
         except RuntimeError as err:
             print(f'ticket: could not post progress: {err}')
 
+    def check_inbox(self):
+        """The owner's new TICKET STOP / TICKET NOTE: replies in the run thread: (stop, notes)."""
+        if not getattr(self.out, 'chatty', False) or not getattr(self, 'thread', None):
+            return False, ''
+        try:
+            new = [r for r in self.out.owner_replies(self.thread) if r.get('ts') not in self.state.get('inbox_seen', [])]
+        except RuntimeError as err:
+            print(f'ticket: could not read the run thread: {err}')
+            return False, ''
+        self.state.setdefault('inbox_seen', []).extend(r.get('ts') for r in new)
+        self.save()
+        stop = any(re.search(r'\bTICKET STOP\b', r['text'], re.I) for r in new)
+        notes = '\n'.join(m.group(1).strip() for r in new for m in [re.search(r'TICKET NOTE:\s*(.+)', r['text'], re.I | re.S)] if m)
+        if stop:
+            self.progress(':octagonal_sign: TICKET STOP read: nothing new starts.')
+        elif notes:
+            self.progress(f':memo: TICKET NOTE read; it goes to the next stage:\n{notes}')
+        return stop, notes
+
     def stage(self, prompt):
+        stop, notes = self.check_inbox()
+        if stop:
+            return 'stopped by the owner (TICKET STOP)', ''
+        if notes:
+            prompt += f'\n\nOwner notes from Slack (TICKET NOTE). Follow them unless they conflict with the approved spec:\n{notes}'
         print(f'  {datetime.datetime.now():%H:%M} {prompt.splitlines()[0][:110]}')
         started = time.monotonic()
         error, text = self.claude(prompt)
@@ -319,6 +348,12 @@ class Run:
             rc, _ = pl.git('commit', '-q', '-m', f'{message}\n\nRefs: {self.ticket}')
             if rc:
                 raise RuntimeError(f'git commit failed for "{message}"')
+
+    def stop_at(self, where):
+        print(f'ticket: {self.ticket} stops after /{where} (--until {where})')
+        self.out.post(f':double_vertical_bar: *{self.ticket} · Paused after /{where}* (--until {where}). '
+                      f'Run ticket.py {self.ticket} again to go on.')
+        return WAITING
 
     def stop(self, why, file=''):
         print(f'ticket: {self.ticket} stopped: {why}')
@@ -361,6 +396,9 @@ class Run:
 
         if not self.state.get('pipeline_done'):
             print(f'  spec and plan are approved; pipeline.py runs /build, /test and /review')
+            if self.until == 'plan':
+                return self.stop_at('plan')
+            (self.dir / f'{t}-inbox.json').unlink(missing_ok=True)
             rc = self.pipeline(t, self.budget, self.pipeline_step)
             if rc != 0:
                 stopped = self.dir / f'{t}-pipeline-stop.json'
@@ -442,7 +480,17 @@ class Run:
         return WAITING
 
     def pipeline_step(self, prompt, cost):
-        """pipeline.py finished a stage: post what its message file says."""
+        """pipeline.py finished a stage: post what its message file says, then hand it the owner's word."""
+        self.pipeline_steps = getattr(self, 'pipeline_steps', 0) + 1
+        stop, notes = False, ''
+        try:
+            self.pipeline_progress(prompt, cost)
+            stop, notes = self.check_inbox()
+        finally:                                        # pipeline.py waits for this file before its next stage
+            (self.dir / f'{self.ticket}-inbox.json').write_text(json.dumps(
+                {'after_step': self.pipeline_steps, 'stop': stop, 'notes': [notes] if notes else []}))
+
+    def pipeline_progress(self, prompt, cost):
         files = sorted(self.dir.glob(f'{self.ticket}-*-*.md'), key=lambda p: p.stat().st_mtime)
         files = [p for p in files if re.fullmatch(rf'{re.escape(self.ticket)}-\d+-[A-Z]+\.md', p.name)]
         icon = {'BUILD': ':hammer_and_wrench:', 'VERIFY': ':test_tube:', 'REVIEW': ':mag:'}
@@ -478,7 +526,7 @@ class Run:
 
     def make_plan(self):
         t = self.ticket
-        if (self.plan.exists() and 'SPEC CONFLICT' in self.plan.read_text() and not self.plan_stale()
+        if (self.plan.exists() and has_conflict(self.plan.read_text()) and not self.plan_stale()
                 and self.state.get('conflicts', 0) < 2):             # this spec already has a conflict: no new /plan
             return self.back_to_spec(conflict_text(self.plan.read_text()))
         error, text = self.stage(f'/plan {t}')
@@ -487,9 +535,9 @@ class Run:
         if not self.plan.exists():
             return self.stop(f'/plan wrote no {self.plan}')
         plan = self.plan.read_text()
-        if 'SPEC CONFLICT' in plan and self.state.get('conflicts', 0) < 2:
+        if has_conflict(plan) and self.state.get('conflicts', 0) < 2:
             return self.back_to_spec(conflict_text(plan))
-        if 'SPEC CONFLICT' in plan or open_questions(plan):
+        if has_conflict(plan) or open_questions(plan):
             self.commit(f'{t}: plan draft')
             return self.stop(f'the plan raised a SPEC CONFLICT or an open question; read {self.plan}', self.last_file)
         check = subprocess.run([sys.executable, str(CHECK_PLAN), str(self.plan), '--todo', str(self.todo),
@@ -520,10 +568,22 @@ def digest(text, lines=6, chars=700):
     return out[:chars] + (' …' if len(out) > chars else '')
 
 
+CONFLICT = re.compile(r'#+\s*SPEC CONFLICT\b')
+
+
+def has_conflict(plan):
+    """An open conflict is a SPEC CONFLICT heading or a blocked handoff, not the words in prose
+    ("resolves the earlier SPEC CONFLICT")."""
+    return any(CONFLICT.match(l) for l in plan.splitlines()) or \
+        bool(re.search(r'SPEC CONFLICT', header(plan, 'Handoff') or ''))
+
+
 def conflict_text(plan):
     """The plan's SPEC CONFLICT section: from its line to the next heading of the same or a higher level."""
     lines = plan.splitlines()
-    start = next(i for i, l in enumerate(lines) if 'SPEC CONFLICT' in l)
+    start = next((i for i, l in enumerate(lines) if CONFLICT.match(l)), None)
+    if start is None:
+        return header(plan, 'Handoff') or 'SPEC CONFLICT (see the plan)'
     level = len(lines[start]) - len(lines[start].lstrip('#')) or 7
     end = next((i for i in range(start + 1, len(lines))
                 if lines[i].startswith('#') and len(lines[i]) - len(lines[i].lstrip('#')) <= level), len(lines))
@@ -568,6 +628,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('ticket', help='the Jira key (LD-503) or the ticket URL')
     parser.add_argument('--reply', help='your answer when Slack is not configured, e.g. "1A 2B LD-1"')
+    parser.add_argument('--until', choices=('plan',), help='stop after this stage (approved plan, no /build)')
     parser.add_argument('--budget', type=float, default=10, help='--max-budget-usd per stage (default 10)')
     parser.add_argument('--permission-mode', default='',
                         help='claude -p permission mode; empty (the default) uses your settings.json')
@@ -619,7 +680,9 @@ def main(argv=None):
         """pipeline.py, its output passed through; each finished stage line goes to step(prompt, cost)."""
         proc = subprocess.Popen([sys.executable, '-u', str(HERE / 'pipeline.py'), ticket, '--yes', '--budget',
                                  str(budget), '--permission-mode', args.permission_mode],
-                                stdout=subprocess.PIPE, text=True)
+                                stdout=subprocess.PIPE, text=True,
+                                env={**os.environ, **({'HARNESS_INBOX': str(log.parent / f'{ticket}-inbox.json')}
+                                                      if step else {})})
         for line in proc.stdout:
             print(line, end='', flush=True)
             m = re.match(r'  (/\w+ \S+.*?)\s+\$(\d+\.\d\d)$', line.rstrip('\n'))
@@ -636,7 +699,7 @@ def main(argv=None):
     print(f'  messages: {log.parent}/{args.ticket}-ticket-<n>.md · log: {log}')
     print(f'  questions and results: ' + (f'Slack channel {channel}' if channel and owner else f'this terminal and {log.with_suffix(".md")}'))
     try:
-        result = Run(args.ticket, out, claude, pipeline, args.budget).go()
+        result = Run(args.ticket, out, claude, pipeline, args.budget, args.until).go()
     except RuntimeError as err:
         print(f'ticket: {err}')
         return STOPPED

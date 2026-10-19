@@ -33,6 +33,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROUND_CAP = 3
@@ -135,8 +136,28 @@ def main(argv=None):
     stop_file.unlink(missing_ok=True)
     total, step, last = 0.0, 0, ''
 
+    def inbox(done):
+        """ticket.py's word after stage `done`: (stop, notes). It writes HARNESS_INBOX once it has read Slack."""
+        path = os.environ.get('HARNESS_INBOX')
+        deadline = time.monotonic() + 180
+        while path and time.monotonic() < deadline:
+            try:
+                data = json.loads(Path(path).read_text())
+            except (OSError, ValueError):
+                data = {}
+            if data.get('after_step', -1) >= done:
+                return bool(data.get('stop')), '\n'.join(data.get('notes', []))
+            time.sleep(1)
+        return False, ''
+
     def stage(prompt, name, *given):
         nonlocal total, step, last
+        if step:
+            stop_now, notes = inbox(step)
+            if stop_now:
+                return 'stopped by the owner (TICKET STOP)', ''
+            if notes:
+                prompt += f'\n\nOwner notes from Slack (TICKET NOTE). Follow them unless they conflict with the approved spec:\n{notes}'
         step += 1
         for label, text in given:
             prompt += f'\n\n{label} — {SUPPLIED}\n\n{text}'
