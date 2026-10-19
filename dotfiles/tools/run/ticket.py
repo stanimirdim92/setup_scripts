@@ -134,13 +134,18 @@ def header(text, key):
 
 
 def set_header(path, values):
-    text = path.read_text()
+    """Set header lines; a missing one goes after the previous key's line, or after Status:."""
+    text, anchor = path.read_text(), 'Status'
     for key, value in values.items():
         pattern = rf'^{re.escape(key)}:.*$'
         if re.search(pattern, text, re.M):
             text = re.sub(pattern, f'{key}: {value}', text, count=1, flags=re.M)
         else:
-            raise SystemExit(f'ticket: {path} has no "{key}:" line')
+            m = re.search(rf'^{re.escape(anchor)}:.*$', text, re.M) or re.search(r'^#.*$', text, re.M)
+            if not m:
+                raise SystemExit(f'ticket: {path} has no "{key}:" line and no header to put it under')
+            text = text[:m.end()] + f'\n{key}: {value}' + text[m.end():]
+        anchor = key
     path.write_text(text)
 
 
@@ -179,12 +184,13 @@ def first_json(text):
 
 class Slack:
     """Posts and reads one channel through `claude -p` and the Slack connector."""
+    chatty = True                                       # each stage reports in the run's thread
 
     def __init__(self, run, channel, owner, mention=''):
         self.run, self.channel, self.owner, self.mention = run, channel, owner.lower(), mention
 
     def post(self, text, thread=None):
-        if self.mention:
+        if self.mention and not thread:                 # only top-level messages notify you
             text = f'<@{self.mention}> {text}'
         where = f'as a reply in the thread whose ts is {thread} ' if thread else ''
         error, out = self.run(f'Post this exact message to the Slack channel {self.channel} {where}with your Slack '
@@ -277,9 +283,26 @@ class Run:
     def save(self):
         self.state_file.write_text(json.dumps(self.state, indent=2) + '\n')
 
+    def progress(self, text):
+        """A reply in this run's thread. Questions, stops and the /ship result stay top-level."""
+        if not getattr(self.out, 'chatty', False):
+            return
+        try:
+            if not getattr(self, 'thread', None):
+                self.thread = self.out.post(f':arrow_forward: *{self.ticket} · Run* · `{os.getcwd()}`\n'
+                                            'Each stage reports in this thread.')
+            self.out.post(text, thread=self.thread)
+        except RuntimeError as err:
+            print(f'ticket: could not post progress: {err}')
+
     def stage(self, prompt):
         print(f'  {datetime.datetime.now():%H:%M} {prompt.splitlines()[0][:110]}')
+        started = time.monotonic()
         error, text = self.claude(prompt)
+        took, cost = int(time.monotonic() - started), getattr(self.claude, 'cost', None)
+        self.progress(f'{":x:" if error else ":white_check_mark:"} *{prompt.splitlines()[0][:80]}* · '
+                      f'{took // 60}m{took % 60:02d}s' + (f' · ${cost:.2f}' if cost is not None else '')
+                      + (f' · {error}' if error else '') + f'\n{digest(text)}')
         saved = self.dir / f'{self.ticket}-ticket-{len(self.state.setdefault("log", [])) + 1}.md'
         saved.write_text(text + '\n')
         self.last_file = saved.name
@@ -338,7 +361,7 @@ class Run:
 
         if not self.state.get('pipeline_done'):
             print(f'  spec and plan are approved; pipeline.py runs /build, /test and /review')
-            rc = self.pipeline(t, self.budget)
+            rc = self.pipeline(t, self.budget, self.pipeline_step)
             if rc != 0:
                 stopped = self.dir / f'{t}-pipeline-stop.json'
                 info = json.loads(stopped.read_text()) if stopped.exists() else {}
@@ -418,6 +441,14 @@ class Run:
         self.save()
         return WAITING
 
+    def pipeline_step(self, prompt, cost):
+        """pipeline.py finished a stage: post what its message file says."""
+        files = sorted(self.dir.glob(f'{self.ticket}-*-*.md'), key=lambda p: p.stat().st_mtime)
+        files = [p for p in files if re.fullmatch(rf'{re.escape(self.ticket)}-\d+-[A-Z]+\.md', p.name)]
+        icon = {'BUILD': ':hammer_and_wrench:', 'VERIFY': ':test_tube:', 'REVIEW': ':mag:'}
+        kind = files[-1].name.rsplit('-', 1)[1][:-3] if files else ''
+        self.progress(f'{icon.get(kind, ":gear:")} *{prompt}* · ${cost}\n' + (digest(files[-1].read_text()) if files else ''))
+
     def plan_stale(self):
         """The spec changed after the plan's last commit, so the plan answers an older spec."""
         spec, plan = (pl.git('log', '-1', '--format=%H', '--', str(p))[1] for p in (self.spec, self.plan))
@@ -480,6 +511,13 @@ def ticket_key(arg):
     """The Jira key from "LD-503" or a ticket URL such as https://x.atlassian.net/browse/LD-503."""
     m = re.search(r'(?<![A-Za-z0-9])([A-Z][A-Z0-9]+-\d+)(?![0-9])', arg)
     return m.group(1) if m else None
+
+
+def digest(text, lines=6, chars=700):
+    """The first lines of a stage's answer, for a Slack progress reply."""
+    kept = [l.rstrip() for l in text.splitlines() if l.strip() and not l.strip().startswith('```')][:lines]
+    out = '\n'.join(kept)
+    return out[:chars] + (' …' if len(out) > chars else '')
 
 
 def conflict_text(plan):
@@ -546,11 +584,6 @@ def main(argv=None):
     if rc or not branch or branch in pl.PROTECTED:
         print(f'ticket: run it in the ticket checkout (branch is {branch or "detached"})')
         return NOT_CHECKOUT
-    dirty = pl.git('status', '--porcelain')[1]
-    if dirty:
-        print('ticket: the checkout has uncommitted changes. Commit or stash them first:')
-        print('\n'.join('  ' + line for line in dirty.splitlines()[:20]))
-        return NOT_CHECKOUT
     try:
         moved = ticket_checkout(args.ticket)
     except RuntimeError as err:
@@ -558,10 +591,16 @@ def main(argv=None):
         return NOT_CHECKOUT
     if moved:
         print(f'ticket: the default branch is not for ticket work; using the worktree {moved}')
+    dirty = pl.git('status', '--porcelain')[1]          # the checkout the ticket runs in
+    if dirty:
+        print(f'ticket: {os.getcwd()} has uncommitted changes. Commit or stash them first:')
+        print('\n'.join('  ' + line for line in dirty.splitlines()[:20]))
+        return NOT_CHECKOUT
     common = pl.git('rev-parse', '--path-format=absolute', '--git-common-dir')[1]
     log = Path(common) / 'handoff' / f'{args.ticket}-ticket.log'
     log.parent.mkdir(parents=True, exist_ok=True)
 
+    slack_model = os.environ.get('HARNESS_SLACK_MODEL', 'haiku')     # posting and reading needs no big model
     allowed = tuple(t.strip() for t in os.environ.get('HARNESS_ALLOWED_TOOLS', '').split(',') if t.strip()) \
         or READ_TOOLS
 
@@ -569,15 +608,24 @@ def main(argv=None):
         started = time.monotonic()
         budget = 1 if tools else args.budget                  # a Slack post or read is small
         error, text, cost = pl.claude(binary, prompt, budget, args.permission_mode, log,
-                                      tools if tools else allowed)
+                                      tools if tools else allowed, slack_model if tools else None)
+        claude.cost = cost
         took = int(time.monotonic() - started)
         print(f'    {"slack " if tools else ""}{took // 60}m{took % 60:02d}s, ${cost:.2f}: '
               + (f'ERROR {error}' if error else first_line(text)))
         return error, text
 
-    def pipeline(ticket, budget):
-        return subprocess.run([sys.executable, str(HERE / 'pipeline.py'), ticket, '--yes', '--budget', str(budget),
-                               '--permission-mode', args.permission_mode]).returncode
+    def pipeline(ticket, budget, step=None):
+        """pipeline.py, its output passed through; each finished stage line goes to step(prompt, cost)."""
+        proc = subprocess.Popen([sys.executable, '-u', str(HERE / 'pipeline.py'), ticket, '--yes', '--budget',
+                                 str(budget), '--permission-mode', args.permission_mode],
+                                stdout=subprocess.PIPE, text=True)
+        for line in proc.stdout:
+            print(line, end='', flush=True)
+            m = re.match(r'  (/\w+ \S+.*?)\s+\$(\d+\.\d\d)$', line.rstrip('\n'))
+            if m and step:
+                step(m.group(1), m.group(2))
+        return proc.wait()
 
     channel, owner = os.environ.get('HARNESS_SLACK_CHANNEL'), os.environ.get('HARNESS_SLACK_OWNER')
     if channel and owner:

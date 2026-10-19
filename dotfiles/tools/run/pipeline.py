@@ -45,11 +45,11 @@ def git(*args):
     return out.returncode, out.stdout.strip()
 
 
-def claude(binary, prompt, budget, mode, log, tools=()):
+def claude(binary, prompt, budget, mode, log, tools=(), model=None):
     """(error, result text, cost). error is None only for exit 0 and a successful JSON result.
     An empty mode leaves the permission mode to the user's settings; tools are allowed up front."""
     cmd = [binary, '-p', *(['--permission-mode', mode] if mode else []), '--max-budget-usd', str(budget),
-           '--output-format', 'json', *(['--allowedTools', *tools] if tools else [])]
+           '--output-format', 'json', *(['--allowedTools', *tools] if tools else []), *(['--model', model] if model else [])]
     out = subprocess.run(cmd, input=prompt, capture_output=True, text=True)
     with open(log, 'a') as fh:
         fh.write(f'$ {prompt.splitlines()[0]}\n{out.stdout}\n{out.stderr}\n')
