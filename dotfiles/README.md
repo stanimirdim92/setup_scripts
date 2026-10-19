@@ -42,15 +42,6 @@ Worktrees remain after exit; use the project's cleanup procedure and
 `/.codex/worktrees/` through `.git/info/exclude`, without editing project files.
 See [ADR 0061](docs/adr/0061-codex-cli-ticket-worktree-launcher.md).
 
-`dotfiles/tools/run/batch-spec.sh` runs `/spec` for many tickets at once, one worktree per
-job, reading `dotfiles/tools/run/spec-batch.txt` (local and gitignored; `spec-batch.example.txt` shows the format). Tickets that share files go on one line so
-they get one spec rather than four competing ones. It stops at the spec gate:
-every job ends with a Draft spec, uncommitted, awaiting a human. `--dry-run`
-prints the plan, `--parallel N` widens it, `--budget` caps each job. Where the
-project declares `.worktreeinclude`, the matching ignored files are copied into
-each worktree — `git worktree add` is not `claude --worktree` and does not do
-that itself.
-
 `dotfiles/tools/run/run-metrics.sh` reports measured run metrics from a Claude Code
 transcript — tool-call batching, token totals, main-session vs subagent split,
 main-session tool results over a line threshold (whole files read inline), and

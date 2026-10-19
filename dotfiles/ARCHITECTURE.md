@@ -122,11 +122,6 @@ repository with no prior specs, no branches and no stale worktrees.
   it changed nothing rather than prove it printed a warning. Covers decline,
   non-terminal stdin, dry run, `--yes`, whole-directory backup, and the
   silent no-op re-run.
-- `dotfiles/tools/tests/test-batch-spec.sh` covers `batch-spec.sh` with `claude` stubbed --
-  manifest parsing, the already-specced skip, decline, non-terminal stdin, dry
-  run, per-job failure, `.worktreeinclude` copying, and that each job runs
-  *inside* its worktree. That last one caught the real bug: the branch was
-  created and the spec written to the main checkout.
 - `dotfiles/tools/tests/test-hooks.sh` exercises the Claude command hooks with fixtures;
   `dotfiles/tools/tests/test-handoff-hook.sh` does the same for the `SubagentStop` handoff gate.
 - `dotfiles/tools/tests/test-isolated-test-runner.sh` covers the gate that denies a bare

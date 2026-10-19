@@ -571,16 +571,6 @@ batching, token usage, main/subagent split, oversized inline results. **Exit 1**
 on a missing dependency (`jq`), bad argument, or unreadable transcript; **0**
 otherwise, including `--list`/`--help`.
 
-### `batch-spec.sh`
-
-`batch-spec.sh [-m FILE] [-p N] [-b USD] [-o DIR] [-n|--dry-run] [-y|--yes]`.
-Runs `/spec` for many tickets, one worktree per job, stopping every job at the
-Draft-spec gate (spec writes no migrations, binds no shared state — the
-`/build` concurrency conditions don't apply to it). Per job it appends
-`<slug>|<ok|FAILED|NO SPEC>|<path or log>` to a results file, then prints a
-summary table. **Exit 1** if any job produced no spec (or on a setup failure);
-**0** otherwise, including a dry run.
-
 ### `codex-worktree`
 
 `codex-worktree [--dry-run] [--no-setup] TICKET [-- CODEX_ARGS...]`. Creates or

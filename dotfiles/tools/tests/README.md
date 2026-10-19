@@ -18,7 +18,7 @@ push.
 | `test-isolated-test-runner.sh` | The rule that a project's tests run in isolation |
 | `validate-frontmatter-test.py`, `validate-artifact-paths-test.py`, `check-references-test.py`, `check-writing-test.py` | The checks in `../checks/` |
 | `test-link-dotfiles.sh`, `test-fetch-figma-skill.sh` | The scripts in `../setup/` |
-| `test-batch-spec.sh`, `test-run-metrics.sh` | The scripts in `../run/` |
+| `test-run-metrics.sh` | `../run/run-metrics.sh` |
 | `test-install-skills.py`, `test-codex-harness.py`, `test-codex-worktree.py` | The Codex side: skill install, roles and hook adapters, and the worktree launcher |
 | `test-weakened-tests.py` | The guard `/review` runs for deleted or weakened tests (the script lives in the code-review skill) |
 | `test-check-spec.py`, `test-check-plan.py` | The checks `/spec` and `/plan` run on their own output (the scripts live in those skills) |

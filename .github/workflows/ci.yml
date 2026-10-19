@@ -189,10 +189,6 @@ jobs:
       - name: Figma skill fetch
         run: bash dotfiles/tools/tests/test-fetch-figma-skill.sh
 
-      # The batch spec runner's decisions, with `claude` stubbed.
-      - name: Batch spec runner
-        run: bash dotfiles/tools/tests/test-batch-spec.sh
-
       # Person-time per ticket: decisions, approvals, review rounds (adr/0112).
       - name: Ticket stats
         run: python3 dotfiles/tools/tests/test-ticket-stats.py
