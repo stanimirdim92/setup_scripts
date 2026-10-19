@@ -9,7 +9,7 @@ and gates. Personas never dispatch other personas.
 |---|---|---|
 | `repo-recon` | read-only repository survey | `/spec` and `/plan`, before specifying or planning |
 | `executor` | implementation | `/build`, one resumable instance per workstream |
-| `test-engineer` | independent verification | `/test` when risk/request warrants it |
+| `test-engineer` | independent verification | `/test` on every production change |
 | `code-reviewer` | general code review against the goal and criteria | every `/review` |
 | `blind-reviewer` | review of the diff alone, with no goal or criteria | every `/review` |
 | `security-auditor` | security trust-boundary review | every `/review` round (ADR 0102) |
@@ -24,11 +24,14 @@ the caller to run.
 ## Pipeline
 
 ```text
-intake -> /spec -> /plan -> /build -> /review -> /ship
-(Jira)      |       |                 \
-            |       |                  -> /test -> /review
-            |       |                     when required
+intake -> /spec -> /plan -> /build -> /test -> /review -> /ship
+(Jira)      |       |
             +-------+-> repo-recon (when needed; reused within a conversation)
+
+Goes back:
+  /plan, /build, /test, /ship -> /spec   the spec does not settle a behavior
+  /build -> /plan                         a plan defect
+  /test, /review, /ship -> /build         a fix; /review stops after 3 rounds
 
 /explain: after /build or /review, outside the gates
 ```

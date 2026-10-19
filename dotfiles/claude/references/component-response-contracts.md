@@ -360,8 +360,9 @@ instead, but the response shape each role produces is identical either way.
 ## 5. Command stage-gate contracts
 
 Six commands in `../../claude/commands/` own the pipeline
-(`docs/agents.md`): `/spec -> /plan -> /build -> /review -> /ship`, with `/test`
-as an optional branch before `/review`. Jira intake (`jira-ticket` skill) comes
+(`docs/agents.md`): `/spec -> /plan -> /build -> /test -> /review -> /ship`.
+`/test` runs on every production change; only the exempt kinds in
+`verification-triggers.md` skip it (ADR 0104). Jira intake (`jira-ticket` skill) comes
 before `/spec`; `/explain` sits outside the gates. Each ends in exactly one named terminal
 state and, except `/ship`, writes an artifact to a fixed path.
 

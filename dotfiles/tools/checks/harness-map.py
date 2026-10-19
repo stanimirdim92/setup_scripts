@@ -38,11 +38,27 @@ OUT = ROOT / 'dotfiles/docs/harness-map.html'
 # The gate order is design, not data: no file states it as a list. Everything
 # else on a stage card is read from the command file. Intake is a skill, not
 # a command, so its card is read from the skill file instead.
-PIPELINE = ['intake', 'spec', 'plan', 'build', 'review', 'test', 'ship']
+PIPELINE = ['intake', 'spec', 'plan', 'build', 'test', 'review', 'ship']
 HUMAN_GATE_AFTER = {'spec': 'approve spec', 'plan': 'approve plan', 'ship': 'push / merge'}
 # Every stage runs on every ticket. /test runs on every production change and
 # skips only the exempt kinds in verification-triggers.md (ADR 0104).
 STAGE_NOTE = {'test': 'skipped only for docs, test-only, formatting and generated changes'}
+# Where a stage sends the ticket back: (from, to, label, file, text). The text
+# must still appear in that file (whitespace-normalized), or the page fails to
+# build, so a route that is removed cannot stay on the map.
+LOOPS = [
+    ('plan', 'spec', 'SPEC CONFLICT', 'commands/plan.md', 'SPEC CONFLICT'),
+    ('build', 'spec', 'SPEC CONFLICT', 'commands/build.md', 'route it to the human toward `/spec`'),
+    ('build', 'plan', 'plan defect', 'commands/build.md', 'routes toward `/plan`'),
+    ('test', 'build', 'VERIFY FAIL: fix the code', 'commands/test.md', 'a production fix returns to `/build`'),
+    ('test', 'spec', 'the spec does not settle it', 'commands/test.md', 'spec does not settle routes to `/spec`'),
+    ('review', 'build', 'BLOCKER / REQUIRED: fix, 3 rounds max', 'commands/review.md',
+     'Round 4 means three rounds did not converge'),
+    ('ship', 'build', 'NO-GO: fix, then /test and /review', 'commands/ship.md', 'A production fix returns to `/build`'),
+    ('ship', 'spec', 'withdraw a requirement', 'commands/ship.md',
+     'withdrawn from the spec through `/spec` with re-approval'),
+]
+ROUND_CAP_NOTE = 'After three review rounds /review stops, and you rethink the approach (ADR 0089).'
 # What each stage leaves behind. Artifact paths are the ones
 # validate-artifact-paths.py guards; the gate words are the commands' own.
 STAGE_OUTPUT = {
@@ -176,7 +192,7 @@ ol.stages > li.gate{display:flex;gap:10px;align-items:center;padding:8px 20px;ba
 /* option 3: flowchart (inline SVG, styled from here) */
 figure.flow{margin:0;display:flex;flex-direction:column}
 .flow-scroll{overflow-x:auto;padding:12px}
-.flow-scroll svg{display:block;width:100%;min-width:560px;max-width:700px;height:auto}
+.flow-scroll svg{display:block;width:100%;min-width:760px;max-width:1000px;height:auto}
 figure.flow figcaption{font-size:15px;color:var(--ink-2);padding:12px 20px 16px;border-top:1px solid var(--line)}
 .f-cmd{font-family:var(--mono);font-size:19px;font-weight:700;fill:var(--brand)}
 .f-desc{font-family:var(--sans);font-size:15.5px;fill:var(--ink)}
@@ -187,8 +203,13 @@ figure.flow figcaption{font-size:15px;color:var(--ink-2);padding:12px 20px 16px;
 .f-note{font-family:var(--sans);font-size:13px;font-style:italic;fill:var(--ink-3)}
 .f-edge{stroke:var(--ink-2);stroke-width:1.6}
 .f-edge-label{font-family:var(--sans);font-size:13.5px;fill:var(--ink-3)}
+.f-back{stroke:var(--ink-3);stroke-width:1.4;fill:none}
 .f-gate{font-family:var(--sans);font-size:15.5px;font-weight:700;fill:var(--gate)}
 ol.stages .leaves{display:block;font-family:var(--mono);font-size:13.5px;color:var(--ink-3);margin-top:4px}
+ol.stages .leaves.back{font-family:var(--sans);font-size:14.5px;color:var(--ink-2)}
+.loops{padding:4px 20px 14px;font-size:15px;color:var(--ink-2)}
+.loops ul{margin:6px 0;padding-left:20px}
+.loops .cmdcell{font-family:var(--mono);font-size:14px;margin-right:6px}
 
 /* tables */
 .tablewrap{overflow-x:auto;min-width:0}
@@ -468,6 +489,13 @@ PIPELINE_VIEWS = ('list', 'strip', 'flow')
 DEFAULT_VIEW = 'flow'
 
 
+def sends_back(name):
+    routes = [f'{stage_name(to)} ({label})' for frm, to, label, _, _ in LOOPS if frm == name]
+    if not routes:
+        return ''
+    return f'<span class="leaves back">Sends back: {e(" · ".join(routes))}</span>'
+
+
 def pipeline_list(cmds, writers):
     rows = []
     for name in PIPELINE:
@@ -478,7 +506,7 @@ def pipeline_list(cmds, writers):
         who = ''.join(persona_label(p, writers) for p in c['personas']) or '<span class="note">the session itself</span>'
         rows.append(f'<li><span class="cmd">{e(stage_name(name))}</span>'
                     f'<span class="does">{e(c["description"])}{badge}'
-                    f'<span class="leaves">Leaves {e(STAGE_OUTPUT.get(name, ""))}</span></span>'
+                    f'<span class="leaves">Leaves {e(STAGE_OUTPUT.get(name, ""))}</span>{sends_back(name)}</span>'
                     f'<span class="who">{who}</span></li>')
         if name in HUMAN_GATE_AFTER:
             rows.append(f'<li class="gate"><i class="diamond"></i>You decide: {e(HUMAN_GATE_AFTER[name])}</li>')
@@ -498,7 +526,10 @@ def pipeline_strip(cmds, writers):
     rows = ''.join(f'<tr><td class="cmdcell">{e(stage_name(n))}</td><td><div class="who">'
                    + (''.join(persona_label(p, writers) for p in cmds[n]['personas']) or '<span class="note">—</span>')
                    + '</div></td></tr>' for n in PIPELINE if n in cmds)
+    loops = ''.join(f'<li><span class="cmdcell">{e(stage_name(frm))} → {e(stage_name(to))}</span> {e(label)}</li>'
+                    for frm, to, label, _, _ in LOOPS)
     return (f'<div class="panel"><div class="strip">{"".join(parts)}</div>'
+            f'<div class="loops"><b>Goes back</b><ul>{loops}</ul><p class="note">{e(ROUND_CAP_NOTE)}</p></div>'
             '<div class="tablewrap"><table><thead><tr><th>Stage</th><th>Personas</th></tr></thead>'
             f'<tbody>{rows}</tbody></table></div></div>')
 
@@ -518,10 +549,13 @@ def wrap(text, width):
 def pipeline_flow(cmds, writers):
     """The pipeline as an inline SVG flowchart: one box per stage, top to bottom,
     with what it does, who does it and what it leaves behind. Every arrow names
-    what passes along it; orange diamonds are the human decisions. Themed
+    what passes along it; orange diamonds are the human decisions. The grey
+    arrows on the right are LOOPS, the routes back to an earlier stage. Themed
     through the page's CSS variables."""
     X, W = 24, 560
-    PAD, LINE, SVGW = 20, 21, 608
+    PAD, LINE = 20, 21
+    LABEL_W, LANE = 272, 18                   # room for a loop label, gap between loop lanes
+    SVGW = X + W + LABEL_W + LANE * len(LOOPS) + 24
     out, y = [], 16
 
     def box(name, x, w, y):
@@ -573,11 +607,13 @@ def pipeline_flow(cmds, writers):
 
     cx = X + W / 2
     edge_label = {'intake': 'intake summary', 'spec': 'draft spec', 'plan': 'draft plan', 'build': 'candidate commits',
-                  'review': 'findings and evidence', 'test': 'VERIFY PASS', 'ship': 'GO and rollback plan'}
+                  'test': 'VERIFY PASS', 'review': 'clean review and evidence', 'ship': 'GO and rollback plan'}
     after_gate = {'spec': 'approved spec', 'plan': 'approved plan', 'ship': None}
     main = [n for n in PIPELINE if n in cmds]
+    boxes = {}
     for i, name in enumerate(main):
         h = box(name, X, W, y)
+        boxes[name] = (y, h)
         y += h
         nxt = main[i + 1] if i + 1 < len(main) else None
         if name in HUMAN_GATE_AFTER:
@@ -594,15 +630,35 @@ def pipeline_flow(cmds, writers):
             gap = 46
             arrow(cx, y, y + gap, edge_label.get(name))
             y += gap
+
+    # Loops: out of the top of the source box's right edge, up a lane, into the
+    # bottom of the target box's right edge. Lanes are grouped by target, the
+    # nearest target innermost, so few lines cross.
+    right = X + W
+    loops = [l for l in LOOPS if l[0] in boxes and l[1] in boxes]
+    loops.sort(key=lambda l: (-main.index(l[1]), main.index(l[0])))
+    outgoing, incoming = {}, {}
+    for lane, (frm, to, label, _, _) in enumerate(loops):
+        k_out = outgoing.setdefault(frm, 0)
+        outgoing[frm] += 1
+        k_in = incoming.setdefault(to, 0)
+        incoming[to] += 1
+        sy = boxes[frm][0] + 24 + k_out * 26
+        ty = boxes[to][0] + boxes[to][1] - 14 - k_in * 16
+        lx = right + LABEL_W + lane * LANE
+        out.append(f'<path d="M{right},{sy} H{lx} V{ty} H{right + 2}" class="f-back" marker-end="url(#f-arw)"/>')
+        out.append(f'<text x="{right + 10}" y="{sy - 6}" class="f-edge-label">{e(label)}</text>')
     height = y + 16
     svg = (f'<svg viewBox="0 0 {SVGW} {height}" role="img" aria-label="The pipeline from Jira intake to /ship: each '
-           'stage, who runs it and what it leaves behind, with the three human decisions.">'
+           'stage, who runs it and what it leaves behind, the three human decisions, and the routes back to an '
+           'earlier stage.">'
            '<defs><marker id="f-arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" '
            'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker></defs>'
            + ''.join(out) + '</svg>')
     return ('<figure class="panel flow">' + '<div class="flow-scroll">' + svg + '</div>'
             '<figcaption>Every arrow names what it carries. Nothing reaches the next stage past an orange diamond '
-            'until you decide. /test runs on every production change, and /ship needs its VERIFY PASS.'
+            'until you decide. /test runs on every production change, and /review needs its VERIFY PASS. '
+            'The grey arrows on the right go back to an earlier stage. ' + e(ROUND_CAP_NOTE) +
             '</figcaption></figure>')
 
 
@@ -688,6 +744,16 @@ def id_table():
     return rows
 
 
+def loops():
+    """LOOPS, each checked against the command that defines the route."""
+    flat = lambda t: ' '.join(t.split())
+    missing = [f'{src}: {needle!r}' for _, _, _, src, needle in LOOPS
+               if flat(needle) not in flat(read((CLAUDE / src).resolve()))]
+    missing += [f'unknown stage in LOOPS: {a} -> {b}' for a, b, *_ in LOOPS if a not in PIPELINE or b not in PIPELINE]
+    if missing:
+        raise SystemExit('harness-map: routes back no longer found in their source:\n  ' + '\n  '.join(missing))
+
+
 def conventions():
     """CONVENTIONS, each checked against the file that defines it."""
     missing = [f'{src}: {needle!r}' for _, _, _, _, src, needle in CONVENTIONS
@@ -722,6 +788,7 @@ def render():
 
     ids = id_table()
     conv = conventions()
+    loops()
     sections = [('pipeline', 'Pipeline', len([n for n in PIPELINE if n in cmds])),
                 ('personas', 'Personas', len(persona_rows)), ('guards', 'Guards', len(hook_rows)),
                 ('conventions', 'Conventions', len(ids) + len(conv)),
@@ -749,7 +816,8 @@ def render():
 
     # Pipeline
     out.append('<section id="pipeline"><div class="sec-head"><h2>Pipeline</h2>'
-               '<p class="summary">Commands run in this order. Personas never start other personas. '
+               '<p class="summary">Commands run in this order, and a stage can send the ticket back. '
+               'Personas never start other personas. '
                'The orange rows are decisions only you make.</p></div>'
                '<div class="legend"><span><i class="diamond"></i>you decide</span>'
                '<span><span class="persona-name write">blue</span> can change files</span>'

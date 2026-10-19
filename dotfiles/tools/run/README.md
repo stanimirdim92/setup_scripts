@@ -1,7 +1,7 @@
 # run — tools you use during ticket work
 
 These help while you work on tickets. They are optional: the pipeline
-(intake → `/spec` → `/plan` → `/build` → `/review` → `/ship`) works without them.
+(intake → `/spec` → `/plan` → `/build` → `/test` → `/review` → `/ship`) works without them.
 
 | File | What it does | Run |
 | --- | --- | --- |
