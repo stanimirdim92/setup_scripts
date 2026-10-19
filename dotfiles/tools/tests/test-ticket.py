@@ -228,6 +228,12 @@ class Parsing(unittest.TestCase):
                                          ' {"author": "Other <z@x.io>", "text": "2B", "ts": "2"}]'), 'C1', 'o@x.io')
         self.assertEqual([r['text'] for r in slack.replies('9.9')], ['1A'])
 
+    def test_mention(self):
+        sent = []
+        slack = tk.Slack(lambda p: (sent.append(p), (None, '{"ts": "1.5"}'))[1], 'C1', 'o@x.io', 'U123')
+        self.assertEqual(slack.post('AB-11 waits'), '1.5')
+        self.assertIn('---\n<@U123> AB-11 waits', sent[0])
+
     def test_no_push(self):
         self.assertNotIn("'push'", SCRIPT.read_text())
 

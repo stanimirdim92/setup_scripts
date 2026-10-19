@@ -26,6 +26,8 @@ token. Set the channel and the person whose replies count:
 
     export HARNESS_SLACK_CHANNEL=C0123456789
     export HARNESS_SLACK_OWNER=you@example.com     # matched against the reply's author
+    export HARNESS_SLACK_MENTION=U0123456789       # optional: your Slack user id, so every
+                                                   # message @-mentions you and notifies you
 
 Without them, questions and results go to the terminal and to
 `<git-common-dir>/handoff/<TICKET>-ticket.md`, and you answer with
@@ -142,10 +144,12 @@ def first_json(text):
 class Slack:
     """Posts and reads one channel through `claude -p` and the Slack connector."""
 
-    def __init__(self, run, channel, owner):
-        self.run, self.channel, self.owner = run, channel, owner.lower()
+    def __init__(self, run, channel, owner, mention=''):
+        self.run, self.channel, self.owner, self.mention = run, channel, owner.lower(), mention
 
     def post(self, text, thread=None):
+        if self.mention:
+            text = f'<@{self.mention}> {text}'
         where = f'as a reply in the thread whose ts is {thread} ' if thread else ''
         error, out = self.run(f'Post this exact message to the Slack channel {self.channel} {where}with your Slack '
                               'tool. Change nothing in it. Then print only JSON: {"ts": "<the new message ts>"}.\n\n'
@@ -384,7 +388,7 @@ def main(argv=None):
 
     channel, owner = os.environ.get('HARNESS_SLACK_CHANNEL'), os.environ.get('HARNESS_SLACK_OWNER')
     if channel and owner:
-        out = Slack(claude, channel, owner)
+        out = Slack(claude, channel, owner, os.environ.get('HARNESS_SLACK_MENTION', ''))
     else:
         out = Terminal(log.with_suffix('.md'), args.reply)
     try:

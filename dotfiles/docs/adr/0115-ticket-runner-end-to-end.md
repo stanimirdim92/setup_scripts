@@ -20,6 +20,9 @@ four points for the owner, who answered them on 2026-10-19:
   each open question with a recommended option and a risk tier from
   `risk-tiers.md`. Low and Medium questions become a `DEC-###` with
   "Decided by: default". High questions stay `OPEN QUESTION` blocks.
+- The recommended option is the one the repository already follows. Without
+  a precedent, it is the option that keeps behavior and data and can be
+  undone, then the smaller change.
 - It posts one message per ticket: the High questions, numbered, and the
   defaults it took. The owner replies in the thread, for example `1A AB11`.
   Numbers with a letter answer questions. The ticket id, with or without the
@@ -37,7 +40,8 @@ four points for the owner, who answered them on 2026-10-19:
   NO-GO or SHIP BLOCKED line is posted. The run never pushes.
 - Slack goes through `claude -p` and the owner's Slack connector, so the
   runner keeps no token. The channel and the owner live in environment
-  variables, not in this public repository.
+  variables, not in this public repository. `HARNESS_SLACK_MENTION` adds an
+  @-mention of the owner, so each message notifies them on every device.
 
 **Rejected — answer every question with its default.** A High-risk default
 can lose data or open a security hole, and nobody would have read it.

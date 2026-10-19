@@ -93,6 +93,10 @@ works without the conversation transcript.
   the option you recommend `(recommended)`. Add a line `Risk: High`,
   `Risk: Medium` or `Risk: Low` for the area the choice changes, from
   `../references/risk-tiers.md`. When unsure, take the higher tier.
+- Recommend in this order. First, the option the repository already follows
+  (`../references/repository-precedent.md`). Next, the option that keeps
+  existing behavior and data and can be undone. Last, the smaller change.
+  Name the reason after `(recommended)`.
 - Low or Medium: decide it with the recommended option. Record a `DEC-###`
   under Material Decisions with the alternative that lost and the line
   `Decided by: default (unattended, ADR 0115)`. Remove the block.
