@@ -106,6 +106,9 @@ works without the conversation transcript.
   `DEC-###` with `Decided by: owner, <date>, <source>`. That answer is the
   explicit approval a project rule asks for. Ask again only when a fact the
   answer rests on has changed, and name that fact.
+- An earlier or archived spec for the ticket also carries fixes, such as a
+  scenario corrected after a `/plan` SPEC CONFLICT. Keep them; do not bring
+  back the wording they replaced.
 - A question only the owner can answer, such as domain history, is an
   `OPEN QUESTION` too, with its risk.
 - Do not ask in the chat, and never set Approved.
