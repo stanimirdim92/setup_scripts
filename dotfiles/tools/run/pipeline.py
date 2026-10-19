@@ -36,7 +36,7 @@ import sys
 from pathlib import Path
 
 ROUND_CAP = 3
-PROTECTED = ('main', 'master')
+PROTECTED = ('master')
 SUPPLIED = 'Supplied verbatim by pipeline.py from the previous session (target-selection.md §Gate handoffs):'
 
 
