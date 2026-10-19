@@ -101,6 +101,11 @@ works without the conversation transcript.
   under Material Decisions with the alternative that lost and the line
   `Decided by: default (unattended, ADR 0115)`. Remove the block.
 - High: keep the block. The owner answers it.
+- The owner already answered it for this ticket, in an earlier or archived
+  spec (`Decided by: owner`, or an Approved spec): reuse that answer as a
+  `DEC-###` with `Decided by: owner, <date>, <source>`. That answer is the
+  explicit approval a project rule asks for. Ask again only when a fact the
+  answer rests on has changed, and name that fact.
 - A question only the owner can answer, such as domain history, is an
   `OPEN QUESTION` too, with its risk.
 - Do not ask in the chat, and never set Approved.

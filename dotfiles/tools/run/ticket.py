@@ -72,7 +72,7 @@ _ATLASSIAN_READ = ('getAccessibleAtlassianResources', 'atlassianUserInfo', 'getJ
                    'getConfluenceCommentChildren', 'getConfluencePageDescendants', 'getPagesInConfluenceSpace',
                    'getConfluenceSpaces', 'search', 'fetch', 'discover', 'executeRead', 'getTeamworkGraphContext',
                    'getTeamworkGraphObject', 'getGraphContext', 'getGraphObject')
-_FIGMA_READ = ('get_metadata', 'get_screenshot', 'get_design_context', 'get_variable_defs', 'get_code_connect_map')
+_FIGMA_READ = ('create_session', 'whoami', 'get_figjam', 'get_metadata', 'get_screenshot', 'get_design_context', 'get_variable_defs', 'get_code_connect_map')
 READ_TOOLS = tuple(f'mcp__{server}__{tool}'
                    for server in ('jira', 'atlassian', 'claude_ai_Atlassian', 'claude_ai_Atlassian_MCP',
                                   'claude_ai_Atlassian_Rovo')
@@ -97,17 +97,17 @@ def open_questions(text):
             continue
         if cur is None:
             continue
-        m = re.match(r'[-*]\s*Option\s+([A-Z])\s*[:—-]\s*(.+)', s)
+        m = re.match(r'[-*]\s*Option\s+([A-Z]\d?)\b\s*[:—-]?\s*(.+)', s)
         if m:
             cur['options'][m.group(1)] = m.group(2).strip()
-            if re.search(r'\(recommended\)', m.group(2), re.I):
+            if re.search(r'\(recommended\b', m.group(2), re.I):
                 cur['recommended'] = m.group(1)
             continue
-        m = re.match(r'Risk:\s*(High|Medium|Low)', s, re.I)
+        m = re.match(r'(?:[-*]\s*)?Risk:\s*(High|Medium|Low)', s, re.I)
         if m:
             cur['risk'] = m.group(1).capitalize()
             continue
-        if s.startswith('→') or not s:
+        if s.startswith(('→', '#')):              # blank lines may sit inside a block
             cur = None
     return out
 
@@ -144,8 +144,9 @@ def set_header(path, values):
 # ---- the reply ------------------------------------------------------------------------------
 
 def parse_reply(text, ticket):
-    """(answers {n: letter}, approved, defaults) from a reply like "1A 2b, approve AB-11" or "AB11"."""
-    answers = {int(n): letter.upper() for n, letter in re.findall(r'(?<![\w-])(\d+)\s*([A-Za-z])\b', text)}
+    """(answers {n: option}, approved, defaults) from a reply like "1A 2b1, approve AB-11" or "AB11"."""
+    answers = {int(n): letter.upper()
+               for n, letter in re.findall(r'(?<![\w-])Q?(\d+)\s*=?\s*([A-Za-z]\d?)(?![\w-])', text, re.I)}
     key = re.sub(r'[^A-Z0-9]', '', ticket.upper())
     ids = {re.sub(r'[^A-Z0-9]', '', t.upper()) for t in re.findall(r'\b[A-Za-z]+-?\d+\b', text)}
     return answers, key in ids, bool(re.search(r'\bdefaults?\b', text, re.I))

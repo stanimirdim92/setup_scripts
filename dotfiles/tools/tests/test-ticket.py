@@ -227,6 +227,8 @@ class Ticket(unittest.TestCase):
         self.assertIn('mcp__jira__getJiraIssue', tk.READ_TOOLS)
         self.assertIn('mcp__claude_ai_Atlassian_MCP__getAccessibleAtlassianResources', tk.READ_TOOLS)
         for name in tk.READ_TOOLS:
+            if name.endswith('__create_session'):     # Figma: opens a read session, writes nothing
+                continue
             self.assertNotRegex(name, r'(?i)create|edit|update|transition|add|delete|write|destructive', name)
 
     def test_pipeline_failure_stops_before_ship(self):
@@ -243,6 +245,14 @@ class Parsing(unittest.TestCase):
         self.assertEqual(tk.parse_reply('AB11', 'AB-11'), ({}, True, False))
         self.assertEqual(tk.parse_reply('1A AB-110', 'AB-11')[1], False)
         self.assertEqual(tk.parse_reply('defaults', 'AB-11'), ({}, False, True))
+        self.assertEqual(tk.parse_reply('1B1 Q2=b, AB-11', 'AB-11'), ({1: 'B1', 2: 'B'}, True, False))
+
+    def test_options_with_reason_and_digit(self):
+        qs = tk.open_questions('OPEN QUESTION: Q1 — detected\n\n'
+                               '- Option B1 (recommended — owner chose it): live profile.\n'
+                               '- Option A: a URL.\n- Risk: High\n')
+        self.assertEqual(qs[0]['options'], {'B1': '(recommended — owner chose it): live profile.', 'A': 'a URL.'})
+        self.assertEqual((qs[0]['recommended'], qs[0]['risk']), ('B1', 'High'))
 
     def test_owner_filter(self):
         slack = tk.Slack(lambda p: (None, '[{"author": "Owner <o@x.io>", "text": "1A", "ts": "1"},'
