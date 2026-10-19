@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Development server. PORT and HOST are optional; ACME_DB picks the database.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+exec php -S "${HOST:-127.0.0.1}:${PORT:-8000}" -t public public/index.php

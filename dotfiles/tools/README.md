@@ -56,3 +56,9 @@ grep -E '^\s+(run: )?(bash|python3) dotfiles' .github/workflows/ci.yml \
 | `workflow/` | The pipeline end to end in a throwaway project | Real model runs |
 
 Each folder's README has the commands. Their own logic tests (`test_*.py`) run in CI.
+
+One more eval lives outside this folder, because it is public and self-contained:
+
+| Folder | Measures | Costs |
+| --- | --- | --- |
+| `evals/add-business/` (repository root) | The whole pipeline on one full-stack ticket in a sandbox, scored by hidden tests | One full pipeline run; its grader self-test runs in CI |

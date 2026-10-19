@@ -1,0 +1,13 @@
+#!/usr/bin/env php
+<?php
+// Resets the database at ACME_DB (default var/app.sqlite) to the schema and seed rows.
+declare(strict_types=1);
+
+require __DIR__ . '/../src/bootstrap.php';
+
+$app = Acme\App::fromEnv();
+$pdo = $app->pdo();
+$pdo->exec((string) file_get_contents(__DIR__ . '/../database/schema.sql'));
+$pdo->exec((string) file_get_contents(__DIR__ . '/../database/seed.sql'));
+
+echo 'Migrated ' . $app->dbPath() . PHP_EOL;

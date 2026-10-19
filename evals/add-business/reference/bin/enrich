@@ -1,0 +1,11 @@
+#!/usr/bin/env php
+<?php
+// Runs every open enrichment request: each pending business becomes available.
+// Production runs this from cron. The enrichment logic itself lives elsewhere.
+declare(strict_types=1);
+
+require __DIR__ . '/../src/bootstrap.php';
+
+$count = Acme\App::fromEnv()->businesses()->completeOpenEnrichments();
+
+echo "Enriched {$count} business(es)" . PHP_EOL;
