@@ -201,6 +201,10 @@ jobs:
       - name: Pipeline runner
         run: python3 dotfiles/tools/tests/test-pipeline.py
 
+      # The ticket runner: High-risk questions wait, the owner's reply approves, a clean plan goes on (adr/0115).
+      - name: Ticket runner
+        run: python3 dotfiles/tools/tests/test-ticket.py
+
       # The sessions dashboard: the copied resume command and the HTTP guard.
       - name: Agent sessions dashboard
         run: python3 dotfiles/tools/tests/test-agent-sessions-mcp.py

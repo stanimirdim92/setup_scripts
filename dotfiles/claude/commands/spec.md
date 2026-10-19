@@ -83,3 +83,24 @@ recommend `/clear` before `/plan`: `/plan` reads the committed spec, and a fresh
 context stops every planning request from re-reading this stage's conversation
 (ADR 0084). Preserve the durable handoff described by the skill so `/plan`
 works without the conversation transcript.
+
+## Unattended (ADR 0115)
+
+`/spec <TICKET> unattended` runs with nobody in the conversation.
+`tools/run/ticket.py` starts it and carries the questions to the owner.
+
+- Write each choice that needs an `OPEN QUESTION` in the skill's format. Mark
+  the option you recommend `(recommended)`. Add a line `Risk: High`,
+  `Risk: Medium` or `Risk: Low` for the area the choice changes, from
+  `../references/risk-tiers.md`. When unsure, take the higher tier.
+- Low or Medium: decide it with the recommended option. Record a `DEC-###`
+  under Material Decisions with the alternative that lost and the line
+  `Decided by: default (unattended, ADR 0115)`. Remove the block.
+- High: keep the block. The owner answers it.
+- A question only the owner can answer, such as domain history, is an
+  `OPEN QUESTION` too, with its risk.
+- Do not ask in the chat, and never set Approved.
+
+A later `/spec <TICKET> decisions: …` from `ticket.py` records each answer as
+a `DEC-###` decided by the owner. `ticket.py` sets Approved only when the
+owner's own reply names the ticket. That reply is the explicit human approval.

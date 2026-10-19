@@ -11,7 +11,7 @@ Replace this file at the next handoff; git keeps the old ones.
   state". It fails since `ad35c20`, an owner commit that put machine state
   (`/home/` paths, `[desktop]`, `[plugins]`, `[mcp_servers.node_repl]`, …) into
   `codex/config.toml`. Open item 1.
-- ADRs end at 0112. 0109 is Proposed; the rest are Accepted.
+- ADRs end at 0115, all Accepted; 0115 accepts 0109 with changes.
 
 ## What changed in this period
 
@@ -79,10 +79,12 @@ Replace this file at the next handoff; git keeps the old ones.
   findings (0107).
 - `/build <TICKET> review fixes`, and `tools/run/batch-fix.py` to run it
   overnight (0108).
-- Proposed: unattended pipeline with one batched morning reply (0109).
+- Unattended pipeline (0109): built as `ticket.py`, one Slack thread per ticket (0115).
 - A reviewer change needs a `Review-eval:` trailer, checked in CI (0111).
 - `ticket-stats.py` counts person stops per ticket at `/ship` (0112), and
   active minutes, tokens and list-price cost from the transcripts (0113).
+- `tools/run/ticket.py` takes a ticket to `/ship`; only High-risk questions
+  wait for the owner, on Slack (0115).
 
 ## Measured results
 
@@ -122,8 +124,8 @@ Replace this file at the next handoff; git keeps the old ones.
    baseline. Four commits changed `/review` or code-reviewer before the
    rescore rule (ADR 0111) and were never scored: `2150cc4`, `459d86e`,
    `87a3a51`, `f57413b`. Score them with the first baseline.
-8. **ADR 0109 decisions:** plan auto-approval, "defaults" on High risk,
-   where the morning message lands, draft PR or not.
+8. **ADR 0109 decisions:** made on 2026-10-19 and built (ADR 0115). Still to
+   do: try `ticket.py` on a real ticket with Slack set up.
 9. **Leadbuster CI:** to be set up with the owner in another session.
 7. **Proposed, not built:** a measurement script (`eval-ticket.sh`) that
    runs plan coverage, spec-eval and run-metrics in one go; and dropping

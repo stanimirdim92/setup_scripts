@@ -58,7 +58,10 @@ naming a requirement the spec lacks, a dependency on an undefined id, or a
 packet missing Status, Requirements, Acceptance criteria or Verification. Report their locations,
 plan status, remaining blockers, and handoff state.
 
-Only explicit human approval permits Approved and Ready for /build. After
+Only explicit human approval permits Approved and Ready for /build. One
+exception: `tools/run/ticket.py` approves a plan for a spec the owner approved
+when `check-plan.py` passes and the plan has no `SPEC CONFLICT` and no
+`OPEN QUESTION` (ADR 0115). Any other plan waits for a person. After
 approval, stop and recommend `/clear` before `/build`, which resumes from the
 plan and task packets (ADR 0084). `/plan` authorizes planning only; it does not implement or invoke
 `/build`, `/test`, `/review`, or `/ship`.
