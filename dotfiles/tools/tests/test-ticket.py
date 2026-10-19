@@ -240,6 +240,28 @@ class Ticket(unittest.TestCase):
         self.assertEqual(self.run_once(), tk.STOPPED)
         self.assertNotIn(f'/ship {T}', self.prompts)
 
+    def test_spec_changed_after_plan_plans_again(self):
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.DONE)
+        self.assertFalse(tk.Run(T, self.out, self.claude, self.pipeline, 5).plan_stale())
+        spec = Path(f'docs/specs/{T}-SPEC.md')
+        spec.write_text(spec.read_text() + '\nOne more scenario.\n')
+        subprocess.run(['git', 'commit', '-qam', 'spec edit'], check=True)
+        with redirect_stdout(io.StringIO()):
+            self.assertTrue(tk.Run(T, self.out, self.claude, self.pipeline, 5).plan_stale())
+
+    def test_default_branch_moves_into_ticket_worktree(self):
+        subprocess.run(['git', 'checkout', '-q', 'main'], check=True)
+        path = tk.ticket_checkout(T)
+        self.assertEqual(path, self.repo / '.claude' / 'worktrees' / T)
+        self.assertEqual(Path(os.getcwd()).resolve(), path.resolve())
+        self.assertEqual(subprocess.run(['git', 'branch', '--show-current'], capture_output=True, text=True)
+                         .stdout.strip(), f'worktree-{T}')
+        self.assertEqual(tk.ticket_checkout(T), None)             # already in it
+        os.chdir(self.repo)
+        self.assertEqual(tk.ticket_checkout(T), path)             # reused
+
     def test_pipeline_stop_reason_is_posted(self):
         self.pipeline_rc = 1
         self.run_once()

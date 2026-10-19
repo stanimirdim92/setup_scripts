@@ -330,7 +330,7 @@ class Run:
             if result is not None:
                 return result
 
-        if not self.plan.exists() or header(self.plan.read_text(), 'Status') != 'Approved':
+        if not self.plan.exists() or header(self.plan.read_text(), 'Status') != 'Approved' or self.plan_stale():
             result = self.make_plan()
             if result is not None:
                 return result
@@ -417,6 +417,14 @@ class Run:
         self.save()
         return WAITING
 
+    def plan_stale(self):
+        """The spec changed after the plan's last commit, so the plan answers an older spec."""
+        spec, plan = (pl.git('log', '-1', '--format=%H', '--', str(p))[1] for p in (self.spec, self.plan))
+        stale = not plan or (spec and pl.git('merge-base', '--is-ancestor', spec, plan)[0] != 0)
+        if stale:
+            print(f'  the plan predates the current spec; /plan runs again')
+        return stale
+
     def make_plan(self):
         t = self.ticket
         error, text = self.stage(f'/plan {t}')
@@ -447,6 +455,32 @@ def ticket_key(arg):
     """The Jira key from "LD-503" or a ticket URL such as https://x.atlassian.net/browse/LD-503."""
     m = re.search(r'(?<![A-Za-z0-9])([A-Z][A-Z0-9]+-\d+)(?![0-9])', arg)
     return m.group(1) if m else None
+
+
+def default_branch():
+    for remote in pl.git('remote')[1].split():
+        rc, ref = pl.git('symbolic-ref', '--short', '-q', f'refs/remotes/{remote}/HEAD')
+        if not rc and ref:
+            return ref.split('/', 1)[1]
+    return 'main' if not pl.git('rev-parse', '-q', '--verify', 'refs/heads/main')[0] else 'master'
+
+
+def ticket_checkout(ticket):
+    """On the main checkout's default branch, move into the ticket worktree .claude/worktrees/<ticket>
+    on branch worktree-<ticket>, as `claude --worktree <ticket>` makes it (AGENTS.md §Worktrees), creating
+    it from HEAD when missing. /build refuses the default branch. Returns the worktree path, or None."""
+    git_dir, common = (pl.git('rev-parse', '--path-format=absolute', flag)[1] for flag in ('--git-dir', '--git-common-dir'))
+    if git_dir != common or pl.git('symbolic-ref', '--short', '-q', 'HEAD')[1] != default_branch():
+        return None
+    path = Path(pl.git('rev-parse', '--show-toplevel')[1]) / '.claude' / 'worktrees' / ticket
+    if not path.exists():
+        branch = f'worktree-{ticket}'
+        exists = not pl.git('rev-parse', '-q', '--verify', f'refs/heads/{branch}')[0]
+        rc, out = pl.git('worktree', 'add', str(path), *([branch] if exists else ['-b', branch]))
+        if rc:
+            raise RuntimeError(f'git worktree add {path} failed: {out}')
+    os.chdir(path)
+    return path
 
 
 def first_line(text):
@@ -482,6 +516,13 @@ def main(argv=None):
         print('ticket: the checkout has uncommitted changes. Commit or stash them first:')
         print('\n'.join('  ' + line for line in dirty.splitlines()[:20]))
         return NOT_CHECKOUT
+    try:
+        moved = ticket_checkout(args.ticket)
+    except RuntimeError as err:
+        print(f'ticket: {err}')
+        return NOT_CHECKOUT
+    if moved:
+        print(f'ticket: the default branch is not for ticket work; using the worktree {moved}')
     common = pl.git('rev-parse', '--path-format=absolute', '--git-common-dir')[1]
     log = Path(common) / 'handoff' / f'{args.ticket}-ticket.log'
     log.parent.mkdir(parents=True, exist_ok=True)
