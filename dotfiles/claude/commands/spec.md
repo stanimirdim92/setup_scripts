@@ -67,8 +67,18 @@ Fix every FAIL before presenting the spec. A FAIL means a form a later stage
 reads mechanically is missing: a `Source:` line, a scenario's THEN, an RFC 2119
 keyword. Read each warning and fix the ones that are slips. Report the result.
 
-Report the spec's path, status, and remaining blockers. `/spec` ends
-here; it does not invoke `/plan` or implementation. After approval and commit,
+Report the spec's path, status, and remaining blockers. When `OPEN QUESTION`
+blocks remain, number them Q1, Q2, … in spec order and end the report with one
+line the user can fill in and send back:
+`/spec <TICKET> decisions: Q1=…, Q2=…`. A rerun with that line revises the
+same spec in place with those decisions; it does not repeat recon.
+
+When the user approves in this conversation, set Approved and its metadata,
+rerun the shape check, and commit the spec file alone in the same turn. Approval
+is the user's; the commit only stops an approved spec from staying
+uncommitted, which blocks `/plan`.
+
+`/spec` ends here; it does not invoke `/plan` or implementation. After approval and commit,
 recommend `/clear` before `/plan`: `/plan` reads the committed spec, and a fresh
 context stops every planning request from re-reading this stage's conversation
 (ADR 0084). Preserve the durable handoff described by the skill so `/plan`

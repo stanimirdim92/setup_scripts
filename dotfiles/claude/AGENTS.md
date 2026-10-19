@@ -114,6 +114,11 @@ into a third thing that matches neither.
 Surface uncertainty, skipped steps, and unverified claims explicitly. Never let "I couldn't check this" read as "this works".
 - *Catches: silent gaps the reader assumes were covered.*
 
+Do not post a bug's root cause to Jira or any other tracker until a failing
+test reproduces it and the fix makes that test pass. Before that, post it only
+as a hypothesis, and only when the user asks.
+- *Catches: an untested theory that the data later disproves.*
+
 ## 8. Modules Communicate Through Contracts
 
 **Never reach across a module boundary. Consume the published interface.**
