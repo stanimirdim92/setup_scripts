@@ -61,6 +61,23 @@ _spec.loader.exec_module(pl)
 DONE, STOPPED, NOT_CHECKOUT, WAITING = 0, 1, 2, 3
 # A headless session may use a tool only when it is allowed up front. Claude Code
 # names a claude.ai connector mcp__claude_ai_<Name>__…, a configured server mcp__<Name>__….
+# What intake and /spec may read without a prompt: Jira, Confluence and Figma, read
+# tools only, under the names a configured server ("jira", "atlassian", "figma") and
+# a claude.ai connector use. Nothing here writes to Jira. HARNESS_ALLOWED_TOOLS
+# (comma-separated) replaces the list.
+_ATLASSIAN_READ = ('getAccessibleAtlassianResources', 'atlassianUserInfo', 'getJiraIssue', 'searchJiraIssuesUsingJql',
+                   'getJiraIssueRemoteIssueLinks', 'getVisibleJiraProjects', 'getJiraProjectIssueTypesMetadata',
+                   'lookupJiraAccountId', 'getConfluencePage', 'getConfluenceContent', 'searchConfluence',
+                   'searchConfluenceUsingCql', 'getConfluencePageFooterComments', 'getConfluencePageInlineComments',
+                   'getConfluenceCommentChildren', 'getConfluencePageDescendants', 'getPagesInConfluenceSpace',
+                   'getConfluenceSpaces', 'search', 'fetch', 'discover', 'executeRead', 'getTeamworkGraphContext',
+                   'getTeamworkGraphObject', 'getGraphContext', 'getGraphObject')
+_FIGMA_READ = ('get_metadata', 'get_screenshot', 'get_design_context', 'get_variable_defs', 'get_code_connect_map')
+READ_TOOLS = tuple(f'mcp__{server}__{tool}'
+                   for server in ('jira', 'atlassian', 'claude_ai_Atlassian', 'claude_ai_Atlassian_MCP',
+                                  'claude_ai_Atlassian_Rovo')
+                   for tool in _ATLASSIAN_READ) + tuple(
+    f'mcp__{server}__{tool}' for server in ('figma', 'claude_ai_Figma') for tool in _FIGMA_READ)
 SLACK_TOOLS = ('mcp__claude_ai_Slack__slack_send_message', 'mcp__claude_ai_Slack__slack_read_thread',
                'mcp__Slack__slack_send_message', 'mcp__Slack__slack_read_thread')
 CHECK_PLAN = HERE.parents[1] / 'claude/skills/planning-and-task-breakdown/scripts/check-plan.py'
@@ -259,10 +276,13 @@ class Run:
             print(f'ticket: {t} already reached /ship: {self.state["ship"]}')
             return DONE
         if not self.spec.exists():
+            intake = Path(f'docs/specs/{t}-intake.md')
             for prompt in (f'/jira-ticket {t}', f'/spec {t} unattended'):
                 error, text = self.stage(prompt)
                 if error:
                     return self.stop(f'{prompt} {error}')
+                if prompt.startswith('/jira-ticket') and not intake.exists():
+                    return self.stop(f'intake wrote no {intake}: {first_line(text)}')
             if not self.spec.exists():
                 return self.stop(f'/spec wrote no {self.spec}')
             self.commit(f'{t}: draft spec (unattended)')
@@ -391,7 +411,8 @@ def main(argv=None):
     parser.add_argument('ticket', help='the Jira key (LD-503) or the ticket URL')
     parser.add_argument('--reply', help='your answer when Slack is not configured, e.g. "1A 2B LD-1"')
     parser.add_argument('--budget', type=float, default=10, help='--max-budget-usd per stage (default 10)')
-    parser.add_argument('--permission-mode', default='acceptEdits')
+    parser.add_argument('--permission-mode', default='',
+                        help='claude -p permission mode; empty (the default) uses your settings.json')
     args = parser.parse_args(argv)
     binary = os.environ.get('CLAUDE_BIN', 'claude')
     key = ticket_key(args.ticket)
@@ -414,21 +435,14 @@ def main(argv=None):
     log = Path(common) / 'handoff' / f'{args.ticket}-ticket.log'
     log.parent.mkdir(parents=True, exist_ok=True)
 
-    def claude(prompt, tools=()):
+    allowed = tuple(t.strip() for t in os.environ.get('HARNESS_ALLOWED_TOOLS', '').split(',') if t.strip()) \
+        or READ_TOOLS
+
+    def claude(prompt, tools=None):
         started = time.monotonic()
-        if tools:
-            # pipeline.py's helper takes no tool list; run the same call with --allowedTools.
-            cmd = [binary, '-p', '--permission-mode', args.permission_mode, '--max-budget-usd', '1',
-                   '--output-format', 'json', '--allowedTools', *tools]
-            out = subprocess.run(cmd, input=prompt, capture_output=True, text=True)
-            with open(log, 'a') as fh:
-                fh.write(f'$ {prompt.splitlines()[0]}\n{out.stdout}\n{out.stderr}\n')
-            data = first_json(out.stdout) if out.stdout else None
-            data = data if isinstance(data, dict) else {}
-            error = None if out.returncode == 0 and not data.get('is_error') else (out.stderr.strip() or 'failed')[:200]
-            text, cost = str(data.get('result', out.stdout)), data.get('total_cost_usd') or 0
-        else:
-            error, text, cost = pl.claude(binary, prompt, args.budget, args.permission_mode, log)
+        budget = 1 if tools else args.budget                  # a Slack post or read is small
+        error, text, cost = pl.claude(binary, prompt, budget, args.permission_mode, log,
+                                      tools if tools else allowed)
         took = int(time.monotonic() - started)
         print(f'    {took // 60}m{took % 60:02d}s, ${cost:.2f}: ' + (f'ERROR {error}' if error else first_line(text)))
         return error, text

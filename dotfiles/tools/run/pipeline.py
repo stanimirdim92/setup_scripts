@@ -45,9 +45,11 @@ def git(*args):
     return out.returncode, out.stdout.strip()
 
 
-def claude(binary, prompt, budget, mode, log):
-    """(error, result text, cost). error is None only for exit 0 and a successful JSON result."""
-    cmd = [binary, '-p', '--permission-mode', mode, '--max-budget-usd', str(budget), '--output-format', 'json']
+def claude(binary, prompt, budget, mode, log, tools=()):
+    """(error, result text, cost). error is None only for exit 0 and a successful JSON result.
+    An empty mode leaves the permission mode to the user's settings; tools are allowed up front."""
+    cmd = [binary, '-p', *(['--permission-mode', mode] if mode else []), '--max-budget-usd', str(budget),
+           '--output-format', 'json', *(['--allowedTools', *tools] if tools else [])]
     out = subprocess.run(cmd, input=prompt, capture_output=True, text=True)
     with open(log, 'a') as fh:
         fh.write(f'$ {prompt.splitlines()[0]}\n{out.stdout}\n{out.stderr}\n')
@@ -99,7 +101,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('ticket')
     parser.add_argument('--budget', type=float, default=10, help='--max-budget-usd per stage (default 10)')
-    parser.add_argument('--permission-mode', default='acceptEdits')
+    parser.add_argument('--permission-mode', default='acceptEdits',
+                        help='claude -p permission mode; empty uses your settings.json (default acceptEdits)')
     parser.add_argument('-n', '--dry-run', action='store_true')
     parser.add_argument('-y', '--yes', action='store_true')
     args = parser.parse_args(argv)

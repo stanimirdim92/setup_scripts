@@ -215,6 +215,20 @@ class Ticket(unittest.TestCase):
         self.assertIn('stray.txt', out.getvalue())
         self.assertEqual(self.prompts, [])
 
+    def test_intake_that_writes_nothing_stops_before_spec(self):
+        real = self.claude
+        self.claude = lambda prompt: (self.prompts.append(prompt.split()[0]), (None, "I couldn't fetch the ticket."))[1] \
+            if prompt.startswith('/jira-ticket') else real(prompt)
+        self.assertEqual(self.run_once(), tk.STOPPED)
+        self.assertEqual(self.prompts, ['/jira-ticket'])
+        self.assertIn("couldn't fetch", self.out.posts[-1][1])
+
+    def test_read_tools_never_write(self):
+        self.assertIn('mcp__jira__getJiraIssue', tk.READ_TOOLS)
+        self.assertIn('mcp__claude_ai_Atlassian_MCP__getAccessibleAtlassianResources', tk.READ_TOOLS)
+        for name in tk.READ_TOOLS:
+            self.assertNotRegex(name, r'(?i)create|edit|update|transition|add|delete|write|destructive', name)
+
     def test_pipeline_failure_stops_before_ship(self):
         self.pipeline_rc = 1
         self.run_once()
