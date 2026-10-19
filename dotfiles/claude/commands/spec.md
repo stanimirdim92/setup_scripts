@@ -22,6 +22,12 @@ drafting. Do not reconstruct intake from memory or an agent summary. If Jira is
 unavailable and the user has not supplied the complete intake, report the
 specific blocker and request that intake.
 
+An intake design reference marked partially read or unread is finished here,
+before drafting. Open each pinned Figma node with the available Figma tools:
+`get_metadata` and `get_screenshot` are enough, and no code is generated. A
+node that still cannot be read stays an Assumption under the skill's
+design-backed rule.
+
 ## Repository evidence
 
 Follow `../references/repository-precedent.md` §1 for reuse, bounded checks,
