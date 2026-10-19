@@ -264,6 +264,10 @@ footer{font-size:14px;color:var(--ink-3);border-top:1px solid var(--line);paddin
 # few effects of its own; the default look above is "Studio". The viewer picks one
 # in the index; the choice stays in that browser only (localStorage).
 _DARK = 'color-scheme:dark'
+_BLACKLIGHT = ('--bg:#0A0414;--surface:#120A22;--sunk:#1A0F30;--ink:#F3EBFF;--ink-2:#BCA9DE;--ink-3:#8D79B3;'
+               '--line:#2C1A4C;--line-2:#43296F;--brand:#FF4FD8;--brand-bg:#3A0B33;--gate:#F4FF3A;--gate-bg:#2E2F07;'
+               '--write:#FF8A3D;--write-bg:#3A1A0A;--read:#3DF5FF;--read-bg:#0A2E35;--ok:#7CFF4F;'
+               '--glow:rgba(255,79,216,.55)')
 SKINS = [
     ('studio', 'Studio', None, None, ''),
     ('scifi', 'Sci-fi',
@@ -316,6 +320,17 @@ SKINS = [
      'h1{color:var(--brand)}nav.index a span{color:var(--brand)}'
      'ol.stages > li.gate{background:repeating-linear-gradient(135deg,var(--gate-bg) 0 14px,transparent 14px 18px),'
      'var(--gate-bg)}'),
+    # A blacklight is dark by nature, so light and dark are the same: UV-black violet
+    # with fluorescent inks. Highlighter yellow marks the human decisions.
+    ('blacklight', 'Blacklight', _BLACKLIGHT + ';color-scheme:dark', _BLACKLIGHT,
+     'body{background-image:radial-gradient(1200px 700px at 80% -10%,rgba(176,64,255,.22),transparent 60%),'
+     'radial-gradient(900px 600px at -10% 110%,rgba(255,61,216,.14),transparent 60%);background-attachment:fixed}'
+     'h1{color:var(--brand)}'
+     '.panel{box-shadow:0 0 0 1px var(--line),0 0 26px -10px var(--glow)}'
+     '.persona-name.write,.f-write{text-shadow:0 0 8px var(--write)}'
+     '.persona-name:not(.write),.f-read{text-shadow:0 0 8px var(--read)}'
+     '.f-gate{text-shadow:0 0 8px var(--gate)}'
+     'nav.index a span{color:var(--brand)}'),
 ]
 # Effects every non-default skin shares: the console type and a glow on the accent.
 SKIN_COMMON = ('h1,h2{font-family:"Chakra Petch",var(--display);font-stretch:normal;letter-spacing:.03em;'
