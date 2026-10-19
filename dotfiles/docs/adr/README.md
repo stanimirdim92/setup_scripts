@@ -121,6 +121,7 @@ that explanation here, just the index.
 | [0111](0111-reviewer-changes-are-rescored.md) | Reviewer changes are rescored | Accepted |
 | [0112](0112-person-time-per-ticket.md) | Person-time and shipped bugs are counted per ticket | Accepted |
 | [0113](0113-active-time-and-cost-per-ticket.md) | Active time and cost are counted per ticket | Accepted |
+| [0114](0114-pipeline-runner-supplies-gate-handoffs.md) | The pipeline runner supplies gate handoffs | Accepted |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

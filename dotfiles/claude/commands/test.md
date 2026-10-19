@@ -21,7 +21,7 @@ Resolve the target per `../references/target-selection.md`, and announce it ("Us
 Read the selected spec/plan and authoritative task packets from disk or the
 plan's designated tracker. Require BUILD's complete message from one of the
 valid sources in `../references/target-selection.md` §Gate handoffs. A fresh
-session is valid when the user manually supplies that message. Check every
+session is valid when the user or `pipeline.py` supplies that message. Check every
 identity claim against git and available run evidence, not just its completion
 label.
 

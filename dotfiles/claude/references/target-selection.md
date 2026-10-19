@@ -25,8 +25,11 @@ the user can't see.
 `/test`, `/review`, and `/ship` accept a predecessor completion message only
 when either:
 
-- the complete message appears in the current conversation; or
-- in a new conversation, the user manually supplies the complete message.
+- the complete message appears in the current conversation;
+- in a new conversation, the user manually supplies the complete message; or
+- `tools/run/pipeline.py`, started by the user, supplies the complete message
+  verbatim in this session's prompt, from the previous stage's result
+  (dotfiles/docs/adr/0114).
 
 Do not substitute a saved report, memory, agent summary, or a model's claim that
 the earlier stage completed. Reconcile the supplied message against git before
