@@ -69,7 +69,8 @@ class FakeOut:
     def reply(self, text):
         """The owner answers the newest top-level message."""
         ts = [p[0] for p in self.posts if p[2] is None][-1]
-        self.thread.setdefault(ts, []).append({'author': 'Owner <o@x.io>', 'text': text, 'ts': f'r{len(self.posts)}'})
+        self.thread.setdefault(ts, []).append({'author': 'Owner <o@x.io>', 'text': tk.answers_part('TICKET ANSWERS: ' + text),
+                                               'ts': f'r{len(self.posts)}'})
 
 
 class Ticket(unittest.TestCase):
@@ -140,8 +141,9 @@ class Ticket(unittest.TestCase):
         self.assertEqual(self.run_once(), tk.WAITING)
         self.assertEqual(self.prompts, [f'/jira-ticket {T}', f'/spec {T} unattended'])
         ask = self.out.posts[-1][1]
-        self.assertIn('1. Soft-deleted advertisers in the export [High]', ask)
-        self.assertIn('A) never (recommended)', ask)
+        self.assertIn(':red_circle: *1. Soft-deleted advertisers in the export*  _High_', ask)
+        self.assertIn('*A* :star:  never (recommended)', ask)
+        self.assertIn('`TICKET ANSWERS: 1A ok`', ask)
         self.assertIn('DEC-001 — Retries before failed', ask)       # the default taken is reported
         self.assertTrue(self.clean())                                # the draft is committed
 
@@ -176,7 +178,7 @@ class Ticket(unittest.TestCase):
         self.run_once()
         self.out.reply('1B')
         self.assertEqual(self.run_once(), tk.WAITING)
-        self.assertIn(f'Nothing open. Reply "{T}" to approve', self.out.posts[-1][1])
+        self.assertIn(':clipboard: *AB-11 · Spec ready to approve*', self.out.posts[-1][1])
         self.out.reply(T)
         self.assertEqual(self.run_once(), tk.DONE)
 
@@ -246,6 +248,9 @@ class Parsing(unittest.TestCase):
         self.assertEqual(tk.parse_reply('1A AB-110', 'AB-11')[1], False)
         self.assertEqual(tk.parse_reply('defaults', 'AB-11'), ({}, False, True))
         self.assertEqual(tk.parse_reply('1B1 Q2=b, AB-11', 'AB-11'), ({1: 'B1', 2: 'B'}, True, False))
+        for word in ('go', 'OK', 'approved', '1A approve'):
+            self.assertTrue(tk.parse_reply(word, 'AB-11')[1], word)
+        self.assertFalse(tk.parse_reply('1A good', 'AB-11')[1])
 
     def test_options_with_reason_and_digit(self):
         qs = tk.open_questions('OPEN QUESTION: Q1 — detected\n\n'
@@ -255,9 +260,11 @@ class Parsing(unittest.TestCase):
         self.assertEqual((qs[0]['recommended'], qs[0]['risk']), ('B1', 'High'))
 
     def test_owner_filter(self):
-        slack = tk.Slack(lambda p: (None, '[{"author": "Owner <o@x.io>", "text": "1A", "ts": "1"},'
-                                         ' {"author": "Other <z@x.io>", "text": "2B", "ts": "2"}]'), 'C1', 'o@x.io')
-        self.assertEqual([r['text'] for r in slack.replies('9.9')], ['1A'])
+        slack = tk.Slack(lambda p: (None, '[{"author": "Owner <o@x.io>", "text": "*TICKET ANSWERS:* 1A", "ts": "1"},'
+                                         ' {"author": "Owner <o@x.io>", "text": "PO, is 1A ok? go", "ts": "2"},'
+                                         ' {"author": "Other <z@x.io>", "text": "TICKET ANSWERS: 2B", "ts": "3"}]'),
+                         'C1', 'o@x.io')
+        self.assertEqual([r['text'].strip() for r in slack.replies('9.9')], ['1A'])
 
     def test_mention(self):
         sent = []

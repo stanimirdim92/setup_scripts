@@ -24,9 +24,11 @@ four points for the owner, who answered them on 2026-10-19:
   a precedent, it is the option that keeps behavior and data and can be
   undone, then the smaller change.
 - It posts one message per ticket: the High questions, numbered, and the
-  defaults it took. The owner replies in the thread, for example `1A AB11`.
-  Numbers with a letter answer questions. The ticket id, with or without the
-  dash, approves the spec.
+  defaults it took. The owner replies in the thread, for example
+  `TICKET ANSWERS: 1A ok`. Only replies that start with `TICKET ANSWERS:`
+  are read, so the owner can discuss with the PO in the same thread. Numbers
+  with a letter answer questions. `ok`, `go`, `approved` or the ticket id,
+  with or without the dash, approves the spec.
 - Only replies whose author matches `HARNESS_SLACK_OWNER` count. The runner
   sets Approved only when that reply names the ticket and nothing is open.
   The reply is the explicit human approval `spec-quality-gates.md` §2 asks

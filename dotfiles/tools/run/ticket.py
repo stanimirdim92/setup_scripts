@@ -10,8 +10,11 @@ then stops; run it again (by hand or on a schedule) after you answer:
                                          questions stay open.
     ask on Slack                         one message per ticket: the open
                                          questions and the defaults taken.
-    your reply in its thread             "1A 2B" answers; the ticket id
-                                         ("AB-11" or "AB11") approves the spec.
+    your reply in its thread             starts with "TICKET ANSWERS:" (other
+                                         replies are talk, say with the PO);
+                                         "1A 2B" answers; the ticket id ("AB-11"
+                                         or "AB11"), "approved", "go" or "ok"
+                                         approves the spec.
     /plan <TICKET>                       a clean plan (check-plan passes, no
                                          SPEC CONFLICT) is approved by the
                                          runner and goes on; any other plan is
@@ -143,13 +146,23 @@ def set_header(path, values):
 
 # ---- the reply ------------------------------------------------------------------------------
 
+ANSWERS = re.compile(r'\*?TICKET ANSWERS:\*?', re.I)
+
+
+def answers_part(text):
+    """The text after "TICKET ANSWERS:", or None: any other reply in the thread is conversation."""
+    m = ANSWERS.search(text)
+    return text[m.end():] if m else None
+
+
 def parse_reply(text, ticket):
-    """(answers {n: option}, approved, defaults) from a reply like "1A 2b1, approve AB-11" or "AB11"."""
+    """(answers {n: option}, approved, defaults) from a reply like "1A 2b1, approve AB-11", "AB11" or "go"."""
     answers = {int(n): letter.upper()
                for n, letter in re.findall(r'(?<![\w-])Q?(\d+)\s*=?\s*([A-Za-z]\d?)(?![\w-])', text, re.I)}
     key = re.sub(r'[^A-Z0-9]', '', ticket.upper())
     ids = {re.sub(r'[^A-Z0-9]', '', t.upper()) for t in re.findall(r'\b[A-Za-z]+-?\d+\b', text)}
-    return answers, key in ids, bool(re.search(r'\bdefaults?\b', text, re.I))
+    approved = key in ids or bool(re.search(r'\b(approved?|go|ok|okay)\b', text, re.I))
+    return answers, approved, bool(re.search(r'\bdefaults?\b', text, re.I))
 
 
 # ---- where messages go ----------------------------------------------------------------------
@@ -184,12 +197,14 @@ class Slack:
 
     def replies(self, ts):
         error, out = self.run(f'Read the replies in the Slack thread {ts} of channel {self.channel} with your Slack '
-                              'tool. Print only JSON: a list of {"author": "<name and email>", "text": "<reply>", '
+                              'tool. Print only JSON: a list of {"author": "<name and email>", "text": "<reply, verbatim>", '
                               '"ts": "<reply ts>"}, oldest first, without the parent message.')
         data = first_json(out) if not error else None
         if not isinstance(data, list):
             raise RuntimeError(f'Slack read failed: {error or out[:200]}')
-        return [r for r in data if isinstance(r, dict) and self.owner in str(r.get('author', '')).lower()]
+        return [{**r, 'text': answers_part(str(r.get('text', '')))} for r in data
+                if isinstance(r, dict) and self.owner in str(r.get('author', '')).lower()
+                and answers_part(str(r.get('text', ''))) is not None]
 
 
 class Terminal:
@@ -212,20 +227,38 @@ class Terminal:
 
 # ---- the run --------------------------------------------------------------------------------
 
+RISK_ICON = {'High': ':red_circle:', 'Medium': ':large_orange_circle:', 'Low': ':large_green_circle:'}
+RULE = '───────────────'
+
+
+def option_line(key, text):
+    """'(recommended — why): what' → bold key, what, star and the why in italics."""
+    m = re.match(r'\(([^)]*)\)\s*:?\s*(.*)', text, re.S)
+    note, what = (m.group(1), m.group(2)) if m else ('', text)
+    star = ' :star:' if re.search(r'\(recommended', text, re.I) else ''
+    return f'      • *{key}*{star}  {what}' + (f'\n         _{note}_' if note else '')
+
+
 def ask_text(ticket, spec_text):
     qs = open_questions(spec_text)
-    lines = [f'*{ticket}* · {header(spec_text, "Status") or "Draft"} spec · `docs/specs/{ticket}-SPEC.md`']
+    title = f'Spec needs {len(qs)} answer{"s" * (len(qs) != 1)}' if qs else 'Spec ready to approve'
+    lines = [f'{":question:" if qs else ":clipboard:"} *{ticket} · {title}*',
+             f'`docs/specs/{ticket}-SPEC.md` · {header(spec_text, "Status") or "Draft"}', RULE]
     for q in qs:
-        opts = '  '.join(f'{k}) {v}' for k, v in q['options'].items())
-        lines.append(f'{q["n"]}. {q["title"]} [{q["risk"] or "risk not stated"}]  {opts}')
+        title = re.sub(r'^Q\d+\s*[—:-]\s*', '', q['title'])
+        lines.append(f'{RISK_ICON.get(q["risk"], ":white_circle:")} *{q["n"]}. {title}*  '
+                     f'_{q["risk"] or "risk not stated"}_')
+        lines += [option_line(k, v) for k, v in q['options'].items()]
     taken = defaults_taken(spec_text)
     if taken:
-        lines.append('Decided by default (Low/Medium risk; reply to change one):')
-        lines += [f'• {t}' for t in taken]
-    if qs:
-        lines.append(f'Reply in this thread: "1A 2B", and "{ticket}" to approve once nothing is open.')
-    else:
-        lines.append(f'Nothing open. Reply "{ticket}" to approve the spec.')
+        lines.append(':gear: *Decided by default*  _Low/Medium risk · to change one, edit the spec before you approve_')
+        lines += [f'      • {t}' for t in taken]
+    lines.append(RULE)
+    example = 'TICKET ANSWERS: ' + ' '.join(f'{q["n"]}{q["recommended"] or "A"}' for q in qs) + (' ok' if qs else 'ok')
+    lines.append(f':speech_balloon: Reply in this thread:  `{example}`')
+    lines.append('_Only replies that start with TICKET ANSWERS: are read; the rest is conversation. '
+                 + ('`ok`, `go` or the ticket id approves once nothing is open._' if qs else
+                    '`ok`, `go` or the ticket id approves._'))
     return '\n'.join(lines)
 
 
@@ -266,7 +299,7 @@ class Run:
     def stop(self, why):
         print(f'ticket: {self.ticket} stopped: {why}')
         try:
-            self.out.post(f'*{self.ticket}* stopped: {why}\nLog: {self.dir}')
+            self.out.post(f':octagonal_sign: *{self.ticket} · Stopped*\n> {why}\nLog: `{self.dir}`')
         except RuntimeError as err:
             print(f'ticket: could not post the stop: {err}')
         return STOPPED
@@ -312,7 +345,8 @@ class Run:
         if error:
             return self.stop(f'/ship {error}')
         result = pl.line(text, '(?:GO|NO-GO|SHIP BLOCKED)') or 'no GO / NO-GO line'
-        self.out.post(f'*{t}* /ship: {result}\nNothing is pushed. Read the report: {self.dir}')
+        icon = ':rocket:' if result.startswith('GO') else ':no_entry:' if result.startswith('NO-GO') else ':construction:'
+        self.out.post(f'{icon} *{t} · /ship: {result}*\n:lock: Nothing is pushed; you push. Report: `{self.dir}`')
         self.state['ship'] = result
         self.save()
         return DONE
@@ -342,7 +376,8 @@ class Run:
                     answers[n] = q['recommended']
         bad = [f'{n}{a}' for n, a in answers.items() if n not in qs or a not in qs[n]['options']]
         if bad:
-            self.out.post(f'Not a question and option here: {" ".join(bad)}. Nothing changed.', thread=ask['ts'])
+            self.out.post(f':warning: Not a question and option here: {" ".join(bad)}. Nothing changed.',
+                          thread=ask['ts'])
             return WAITING
         if answers:
             given = ', '.join(f'Q{n}=Option {a}: {qs[n]["options"][a]}' for n, a in sorted(answers.items()))
@@ -357,11 +392,12 @@ class Run:
             set_header(self.spec, {'Status': 'Approved', 'Approved by': f'{self.out_owner()} (reply in thread '
                                    f'{ask["ts"]})', 'Approved at': datetime.date.today().isoformat()})
             self.commit(f'{t}: spec approved by the owner')
-            self.out.post(f'*{t}* spec approved. Planning next.', thread=ask['ts'])
+            self.out.post(f':white_check_mark: *{t} · Spec approved.* Planning, then build, test, review and ship.',
+                          thread=ask['ts'])
             return None
         if approved:
             still = ', '.join('Q%d' % q['n'] for q in left)
-            self.out.post(f'Still open: {still}. Answer them, then approve.', thread=ask['ts'])
+            self.out.post(f':hourglass_flowing_sand: Still open: {still}. Answer them, then approve.', thread=ask['ts'])
         self.state['ask'] = {'ts': self.out.post(ask_text(t, text)), 'spec': hashlib.sha1(text.encode()).hexdigest(),
                              'seen': []}
         self.save()
