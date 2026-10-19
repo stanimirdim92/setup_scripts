@@ -120,6 +120,10 @@ try {
     $migrate();
     [$server, $base] = start_server($dest, $env);
     [$failServer, $failBase] = start_server($dest, $env + ['ACME_PLACES_FAIL' => '1']);
+    // A second fixture, only for the normalization and rule-order checks. The ticket
+    // names ACME_PLACES_FIXTURE as a test hook; the seed's fixture stays untouched.
+    $rulesFixture = dirname(__DIR__) . '/fixtures/rules.json';
+    [$rulesServer, $rulesBase] = start_server($dest, array_merge($env, ['ACME_PLACES_FIXTURE' => $rulesFixture]));
 } catch (Throwable $e) {
     fwrite(STDERR, 'setup failed: ' . $e->getMessage() . "\n");
     file_put_contents($out, json_encode(['_setup' => ['pass' => false, 'detail' => $e->getMessage()]]));
@@ -335,10 +339,90 @@ $check('API-16', static function () use ($created): void {
     }
 });
 
-proc_terminate($server);
-proc_terminate($failServer);
-proc_close($server);
-proc_close($failServer);
+// Normalization and rule order, against the rules fixture.
+$rulesCreate = static fn (string $placeId): array => http('POST', $rulesBase . '/api/businesses', ['place_id' => $placeId]);
+$rulesNew = static function (string $placeId) use ($rulesCreate): int {
+    [$status, $body] = $rulesCreate($placeId);
+    ok($status === 201, "POST {$placeId}: expected 201, got {$status} " . show($body));
+    return $body['business']['id'];
+};
+$rulesDuplicate = static function (string $placeId, int $id, string $rule, string $why) use ($rulesCreate, $db): void {
+    $before = count_rows($db, 'businesses');
+    [$status, $body] = $rulesCreate($placeId);
+    ok($status === 409 && ($body['error'] ?? null) === 'duplicate', "{$why}: {$placeId} expected 409 duplicate, got {$status} " . show($body));
+    ok(($body['existing']['id'] ?? null) === $id, "{$why}: existing.id expected {$id}, got " . show($body['existing'] ?? null));
+    ok(($body['existing']['rule'] ?? null) === $rule, "{$why}: rule expected {$rule}, got " . show($body['existing']['rule'] ?? null));
+    ok(count_rows($db, 'businesses') === $before, "{$why}: a duplicate was created");
+};
+
+$check('API-17', static function () use ($rulesNew, $rulesDuplicate): void {
+    $rulesDuplicate('plc_R02', $rulesNew('plc_R01'), 'domain', 'shop.harborlights.co.uk vs http://WWW.HarborLights.CO.UK/contact (co.uk keeps three labels; case; www.)');
+    $rulesDuplicate('plc_R04', $rulesNew('plc_R03'), 'domain', 'brightsmile-dental.com/team (no scheme) vs https://www.brightsmile-dental.com');
+    $rulesDuplicate('plc_R06', $rulesNew('plc_R05'), 'domain', 'blog.acmeco.com vs www.acmeco.com (last two labels)');
+});
+
+$check('API-18', static function () use ($rulesNew): void {
+    $rulesNew('plc_R07');
+    $rulesNew('plc_R08'); // store.koala.com.au and store.wombat.com.au: different roots
+    $rulesNew('plc_R09');
+    $rulesNew('plc_R10'); // maps.parks.gov.uk and maps.rivers.gov.uk: different roots
+});
+
+$check('API-19', static function () use ($rulesNew, $rulesDuplicate): void {
+    $id = $rulesNew('plc_R11');
+    $rulesDuplicate('plc_R12', $id, 'name_zip', '"O\'Brien\'s Pub & Grill" vs "  o brien s   PUB grill " in the same ZIP');
+    $rulesNew('plc_R13'); // the same name in another ZIP
+});
+
+$check('API-20', static function () use ($rulesNew, $rulesDuplicate): void {
+    $rulesDuplicate('plc_R15', $rulesNew('plc_R14'), 'phone', '"+1 (415) 555-0199" vs "415.555.0199"');
+    $rulesDuplicate('plc_R19', $rulesNew('plc_R18'), 'phone', '"+44 20 7946 0958" vs "020 7946 0958" (last 10 digits)');
+    $rulesNew('plc_R16');
+    $rulesNew('plc_R17'); // "555-0177" twice: fewer than 10 digits never match
+});
+
+$check('API-21', static function () use ($rulesNew, $rulesDuplicate): void {
+    $id = $rulesNew('plc_R20');
+    $rulesDuplicate('plc_R20', $id, 'place_id', 'the same place again matches every rule');
+    $rulesDuplicate('plc_R21', $id, 'cid', 'same CID, domain, name and ZIP, and phone');
+    $rulesDuplicate('plc_R22', $id, 'domain', 'same domain, name and ZIP, and phone');
+    $rulesDuplicate('plc_R23', $id, 'name_zip', 'same name and ZIP, and phone');
+    $rulesDuplicate('plc_R24', $id, 'phone', 'same phone only');
+});
+
+$check('API-22', static function () use ($search, $ids, $fixture): void {
+    $order = array_column(json_decode((string) file_get_contents($fixture), true), 'place_id');
+    [, $body] = $search('bakery');
+    $got = $ids($body);
+    $expected = array_values(array_intersect($order, $got));
+    ok($got === $expected, 'results keep the places client order: expected ' . show($expected) . ', got ' . show($got));
+    [$status, $body] = $search('  su  ');
+    ok($status === 200 && in_array('plc_F201', $ids($body), true), 'q="  su  " is trimmed to 2 characters: ' . $status . ' ' . show($body));
+    [, $body] = $search('sunrise,oakland');
+    ok($ids($body) === ['plc_F202'], 'q="sunrise,oakland" splits on the comma: ' . show($ids($body)));
+});
+
+$check('API-23', static function () use ($created): void {
+    $notes = str_repeat('n', 1000);
+    $body = $created('plc_F203', ['notes' => $notes]);
+    ok(($body['business']['notes'] ?? null) === $notes, 'notes of exactly 1000 characters are kept, got ' . strlen((string) ($body['business']['notes'] ?? '')) . ' characters');
+});
+
+$check('API-24', static function () use ($created, $dest, $env, $listIds): void {
+    $a = $created('plc_F201')['business']['id'];
+    $b = $created('plc_F203')['business']['id'];
+    [$code, $output] = run_in($dest, [PHP_BINARY, 'bin/enrich'], $env);
+    ok($code === 0 && str_contains($output, 'Enriched 2 business(es)'), 'two open requests: ' . trim($output));
+    $listed = $listIds();
+    ok(in_array($a, $listed, true) && in_array($b, $listed, true), 'both businesses listed after enrich: ' . show($listed));
+    [$code, $output] = run_in($dest, [PHP_BINARY, 'bin/enrich'], $env);
+    ok($code === 0 && str_contains($output, 'Enriched 0 business(es)'), 'second run: ' . trim($output));
+});
+
+foreach ([$server, $failServer, $rulesServer] as $proc) {
+    proc_terminate($proc);
+    proc_close($proc);
+}
 
 file_put_contents($out, json_encode($results, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 exit(0);

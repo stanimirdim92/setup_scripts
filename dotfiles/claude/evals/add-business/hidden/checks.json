@@ -30,6 +30,14 @@
     { "id": "API-14", "kind": "feature", "criterion": "AC7", "title": "php bin/enrich makes the business available in the list and the API" },
     { "id": "API-15", "kind": "feature", "criterion": "AC7", "title": "No email: the outbox stays empty through create and enrich" },
     { "id": "API-16", "kind": "feature", "criterion": "AC3", "title": "The server takes place data from the places client, not the request" },
+    { "id": "API-17", "kind": "feature", "criterion": "AC5", "title": "Root domain: three labels under co.uk, lower case, no www., no scheme, any subdomain" },
+    { "id": "API-18", "kind": "feature", "criterion": "AC5", "title": "Root domain never over-matches: com.au and gov.uk roots stay apart" },
+    { "id": "API-19", "kind": "feature", "criterion": "AC5", "title": "Name and ZIP: punctuation, case and spaces normalized; another ZIP never matches" },
+    { "id": "API-20", "kind": "feature", "criterion": "AC5", "title": "Phone: formats and country codes compare on the last 10 digits; short numbers never match" },
+    { "id": "API-21", "kind": "feature", "criterion": "AC5", "title": "The first matching rule is reported: place_id, cid, domain, name_zip, phone" },
+    { "id": "API-22", "kind": "feature", "criterion": "AC2", "title": "Results keep the places client order; the query is trimmed and split on commas" },
+    { "id": "API-23", "kind": "feature", "criterion": "AC4", "title": "Notes of exactly 1000 characters are accepted and kept" },
+    { "id": "API-24", "kind": "feature", "criterion": "AC7", "title": "php bin/enrich enriches every open request once" },
 
     { "id": "UI-01", "kind": "feature", "criterion": "AC1", "title": "The modal opens in the empty state" },
     { "id": "UI-02", "kind": "feature", "criterion": "IR", "title": "Search waits for 2 characters" },
@@ -49,6 +57,10 @@
     { "id": "UI-16", "kind": "feature", "criterion": "IR", "title": "Cancel resets the wizard" },
     { "id": "UI-17", "kind": "feature", "criterion": "IR", "title": "Done resets the wizard" },
     { "id": "UI-18", "kind": "feature", "criterion": "AC6", "title": "The modal fits a 375 px viewport without horizontal scroll" },
-    { "id": "UI-19", "kind": "feature", "criterion": "AC7", "title": "The business shows in the list only after enrichment" }
+    { "id": "UI-19", "kind": "feature", "criterion": "AC7", "title": "The business shows in the list only after enrichment" },
+    { "id": "UI-20", "kind": "feature", "criterion": "IR", "title": "Back returns to the Search step" },
+    { "id": "UI-21", "kind": "feature", "criterion": "AC6", "title": "Every suggestion chip moves the focus to the search field" },
+    { "id": "UI-22", "kind": "feature", "criterion": "IR", "title": "A double click on Submit sends one create request" },
+    { "id": "UI-23", "kind": "feature", "criterion": "AC6", "title": "No results, errors and the duplicate notice fit a 375 px viewport" }
   ]
 }

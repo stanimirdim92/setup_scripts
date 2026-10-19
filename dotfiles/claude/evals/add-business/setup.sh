@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Creates a fresh sandbox project for the ADD-1 eval.
 #
-#   evals/add-business/setup.sh DEST
+#   dotfiles/claude/evals/add-business/setup.sh DEST
 #
 # Copies seed/ to DEST, writes the ticket as docs/specs/ADD-1-intake.md (the
 # intake /spec accepts), and makes one initial commit. DEST must be outside this

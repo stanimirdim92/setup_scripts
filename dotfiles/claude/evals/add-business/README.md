@@ -31,7 +31,7 @@ You need:
 - Chromium for Playwright:
 
 ```bash
-cd evals/add-business/hidden
+cd dotfiles/claude/evals/add-business/hidden
 npm ci
 npx playwright install chromium
 ```
@@ -41,7 +41,7 @@ npx playwright install chromium
 1. Create the sandbox outside this repository:
 
    ```bash
-   evals/add-business/setup.sh /tmp/add-business-run
+   dotfiles/claude/evals/add-business/setup.sh /tmp/add-business-run
    ```
 
 2. Run the pipeline in the sandbox. Start a session there and give the
@@ -59,7 +59,7 @@ npx playwright install chromium
 3. Score the result:
 
    ```bash
-   evals/add-business/grade.sh /tmp/add-business-run > result.json
+   dotfiles/claude/evals/add-business/grade.sh /tmp/add-business-run > result.json
    ```
 
 `grade.sh` exits 0 only when every check passes. It exits 1 when a check
@@ -73,8 +73,8 @@ The grader must pass the reference and fail the untouched seed. CI runs this
 in the "Add-business eval grader" step. To run it by hand:
 
 ```bash
-evals/add-business/grade.sh evals/add-business/reference   # 37/37, exit 0
-evals/add-business/grade.sh evals/add-business/seed        # baseline 2/2, feature 0/35, exit 1
+dotfiles/claude/evals/add-business/grade.sh dotfiles/claude/evals/add-business/reference   # 49/49, exit 0
+dotfiles/claude/evals/add-business/grade.sh dotfiles/claude/evals/add-business/seed        # baseline 2/2, feature 0/47, exit 1
 ```
 
 Each run takes about 10 to 25 seconds after the one-time setup.
@@ -84,6 +84,17 @@ Each run takes about 10 to 25 seconds after the one-time setup.
 - Every acceptance criterion in the ticket, with at least one API or UI check.
 - Each duplicate rule (place ID, CID, root domain, name and ZIP, phone), and
   null values that must never match.
+- How each rule normalizes: three labels under `co.uk`, case, `www.` and a
+  URL without a scheme; `com.au` and `gov.uk` roots that must stay apart;
+  punctuation and spaces in names; phone formats, country codes and short
+  numbers. These use a second places fixture, `hidden/fixtures/rules.json`,
+  through the `ACME_PLACES_FIXTURE` test hook, so the seed data stays fixed.
+- The reported rule is the first that matches, in the ticket's order.
+- Results keep the places client's order; the query is trimmed and split on
+  commas. Notes of exactly 1000 characters are accepted.
+- Back, every suggestion chip, and a double click on Submit (one request).
+- The no-results, error and duplicate states at 375 px, as well as the main
+  path.
 - The 2-character minimum, multi-token search, selection clearing, and
   Continue disabled until a selection.
 - Search error with Retry, and a submit failure that keeps the notes. The UI

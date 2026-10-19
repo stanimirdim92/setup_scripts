@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Scores a project against the hidden ADD-1 checks.
 #
-#   evals/add-business/grade.sh DEST
+#   dotfiles/claude/evals/add-business/grade.sh DEST
 #
 # Prints one JSON object (per-check and per-criterion pass/fail, and totals).
 # Exit 0: every check passed. Exit 1: some check failed. Exit 2: the grader could

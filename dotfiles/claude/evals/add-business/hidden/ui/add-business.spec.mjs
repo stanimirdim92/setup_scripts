@@ -11,6 +11,16 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // Hidden step panels may still hold the same text; look at visible matches only.
 const seen = (dialog, text) => dialog.getByText(text).filter({ visible: true }).first();
 
+/** At a 375 px viewport the dialog stays inside the screen and the page does not scroll sideways. */
+async function fits(page, dialog, label) {
+  const box = await dialog.boundingBox();
+  expect(box, `${label}: dialog has a box`).not.toBeNull();
+  expect(box.x, `${label}: left edge`).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width, `${label}: right edge`).toBeLessThanOrEqual(375.5);
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(scrollWidth, `${label}: page scroll width`).toBeLessThanOrEqual(375);
+}
+
 test('UI-01 the modal opens in the empty state', async ({ page, server }) => {
   const dialog = await openModal(page, server);
   await expect(dialog).toHaveAttribute('aria-modal', 'true');
@@ -256,26 +266,54 @@ test.describe('phone width', () => {
   test.use({ viewport: { width: 375, height: 740 } });
 
   test('UI-18 the modal fits a 375 px viewport', async ({ page, server }) => {
-    const fits = async (dialog, label) => {
-      const box = await dialog.boundingBox();
-      expect(box, `${label}: dialog has a box`).not.toBeNull();
-      expect(box.x, `${label}: left edge`).toBeGreaterThanOrEqual(0);
-      expect(box.x + box.width, `${label}: right edge`).toBeLessThanOrEqual(375.5);
-      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-      expect(scrollWidth, `${label}: page scroll width`).toBeLessThanOrEqual(375);
-    };
     const dialog = await openModal(page, server);
-    await fits(dialog, 'empty');
+    await fits(page, dialog, 'empty');
     await search(dialog, 'bakery');
     await expect(options(dialog)).toHaveCount(3);
-    await fits(dialog, 'results');
+    await fits(page, dialog, 'results');
     await choose(dialog, 'Bayview');
     await continueButton(dialog).click();
     await expect(submitButton(dialog)).toBeVisible();
-    await fits(dialog, 'confirm');
+    await fits(page, dialog, 'confirm');
     await submitButton(dialog).click();
     await expect(dialog.getByText('Request received')).toBeVisible();
-    await fits(dialog, 'success');
+    await fits(page, dialog, 'success');
+  });
+
+  test('UI-23 no results, errors and the duplicate notice fit a 375 px viewport', async ({ page, server }) => {
+    let searches = 0;
+    await page.route(SEARCH_API, async (route) => {
+      if (new URL(route.request().url()).searchParams.get('q') === 'tidewater' && ++searches === 1) {
+        await route.fulfill({ status: 502, contentType: 'application/json', body: '{"error":"places_unavailable"}' });
+        return;
+      }
+      await route.continue();
+    });
+    await page.route('**/api/businesses', async (route) => {
+      if (isCreate(route.request())) {
+        await route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"server_error"}' });
+        return;
+      }
+      await route.continue();
+    });
+    const dialog = await openModal(page, server);
+    await search(dialog, 'zzzz');
+    await expect(dialog.getByText('No match yet')).toBeVisible();
+    await fits(page, dialog, 'no results');
+    await search(dialog, 'tidewater');
+    await expect(dialog.getByRole('alert').filter({ hasText: 'Search is unavailable right now.' })).toBeVisible();
+    await fits(page, dialog, 'search error');
+    await dialog.getByRole('button', { name: 'Retry' }).click();
+    await choose(dialog, 'Tidewater Books');
+    await continueButton(dialog).click();
+    await submitButton(dialog).click();
+    await expect(dialog.getByRole('alert').filter({ hasText: 'We could not submit this business. Please try again.' })).toBeVisible();
+    await fits(page, dialog, 'submit failure');
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    const again = await reopen(page);
+    await toConfirm(again, 'bluefin', 'Bluefin Sushi Express');
+    await expect(again.getByRole('alert').filter({ hasText: 'This business is already in Acme Leads.' })).toBeVisible();
+    await fits(page, again, 'duplicate');
   });
 });
 
@@ -293,4 +331,44 @@ test('UI-19 the business shows in the list only after enrichment', async ({ page
   await page.reload();
   await expect(page.getByRole('table')).toContainText('Tidewater Books');
   expect(server.outboxCount(), 'emails in the outbox').toBe(0);
+});
+
+test('UI-20 Back returns to the Search step', async ({ page, server }) => {
+  const dialog = await openModal(page, server);
+  await toConfirm(dialog, 'tidewater', 'Tidewater Books');
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click();
+  await expect(currentStep(dialog)).toContainText('Search');
+  await expect(field(dialog)).toBeVisible();
+  await expect(submitButton(dialog)).toBeHidden();
+});
+
+test('UI-21 every suggestion chip moves the focus to the search field', async ({ page, server }) => {
+  const dialog = await openModal(page, server);
+  await search(dialog, 'zzzz');
+  await expect(dialog.getByText('No match yet')).toBeVisible();
+  for (const chip of ['Add city', 'Add ZIP', 'Check spelling']) {
+    const button = dialog.getByRole('button', { name: chip });
+    await button.focus();
+    await expect(field(dialog), `before ${chip}`).not.toBeFocused();
+    await button.click();
+    await expect(field(dialog), chip).toBeFocused();
+  }
+});
+
+test('UI-22 a double click on Submit sends one create request', async ({ page, server }) => {
+  let creates = 0;
+  await page.route('**/api/businesses', async (route) => {
+    if (isCreate(route.request())) {
+      creates += 1;
+      await sleep(800);
+    }
+    await route.continue().catch(() => {});
+  });
+  const dialog = await openModal(page, server);
+  await toConfirm(dialog, 'tidewater', 'Tidewater Books');
+  await submitButton(dialog).dblclick();
+  await expect(dialog.getByText('Request received')).toBeVisible();
+  await sleep(500);
+  expect(creates, 'create requests').toBe(1);
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
 });
