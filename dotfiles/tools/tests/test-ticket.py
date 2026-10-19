@@ -352,6 +352,24 @@ class Ticket(unittest.TestCase):
         self.assertIn('Paused after /plan', self.out.posts[-1][1])
         self.assertEqual(self.run_once(), tk.DONE)                           # without --until it goes on
 
+    def test_new_worktree_gets_worktreeinclude_files(self):
+        subprocess.run(['git', 'checkout', '-q', 'main'], check=True)
+        Path('.gitignore').write_text('.env\nvendor/\nsecret.txt\n')
+        Path('.worktreeinclude').write_text('.env\nvendor\nnot-ignored.txt\n')
+        Path('not-ignored.txt').write_text('x')
+        subprocess.run(['git', 'add', '.gitignore', '.worktreeinclude'], check=True)
+        subprocess.run(['git', 'commit', '-qm', 'ignore'], check=True)
+        Path('.env').write_text('APP_KEY=1\n')
+        Path('vendor/pkg').mkdir(parents=True)
+        Path('vendor/pkg/a.php').write_text('<?php\n')
+        Path('secret.txt').write_text('no')
+        with redirect_stdout(io.StringIO()):
+            path = tk.ticket_checkout(T)
+        self.assertEqual((path / '.env').read_text(), 'APP_KEY=1\n')
+        self.assertTrue((path / 'vendor/pkg/a.php').exists())
+        self.assertFalse((path / 'secret.txt').exists())             # ignored, but not in .worktreeinclude
+        self.assertFalse((path / 'not-ignored.txt').exists())        # listed, but not ignored
+
     def test_pipeline_stop_reason_is_posted(self):
         self.pipeline_rc = 1
         self.run_once()

@@ -598,6 +598,26 @@ def default_branch():
     return 'main' if not pl.git('rev-parse', '-q', '--verify', 'refs/heads/main')[0] else 'master'
 
 
+def copy_worktree_include(main, path):
+    """Copy what .worktreeinclude names and git ignores (.env, vendor, node_modules …) from the main
+    checkout into a new worktree, as Claude Code does for `claude --worktree`. Plain git does not."""
+    include = main / '.worktreeinclude'
+    if not include.exists():
+        return []
+    rc, listed = pl.git('-C', str(main), 'ls-files', '--others', '--ignored', '--directory', '--no-empty-directory',
+                        f'--exclude-from={include}')
+    copied = []
+    for entry in listed.splitlines():
+        rel = entry.rstrip('/')
+        if not rel or pl.git('-C', str(main), 'check-ignore', '-q', rel)[0]:    # matched but not gitignored
+            continue
+        target = path / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if subprocess.run(['cp', '-a', str(main / rel), str(target.parent) + '/']).returncode == 0:
+            copied.append(rel)
+    return copied
+
+
 def ticket_checkout(ticket):
     """On the main checkout's default branch, move into the ticket worktree .claude/worktrees/<ticket>
     on branch worktree-<ticket>, as `claude --worktree <ticket>` makes it (AGENTS.md §Worktrees), creating
@@ -612,6 +632,9 @@ def ticket_checkout(ticket):
         rc, out = pl.git('worktree', 'add', str(path), *([branch] if exists else ['-b', branch]))
         if rc:
             raise RuntimeError(f'git worktree add {path} failed: {out}')
+        copied = copy_worktree_include(Path(pl.git('rev-parse', '--show-toplevel')[1]), path)
+        if copied:
+            print(f'ticket: copied from .worktreeinclude: {", ".join(copied)}')
     os.chdir(path)
     return path
 
