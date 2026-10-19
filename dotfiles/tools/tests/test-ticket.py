@@ -333,6 +333,13 @@ class Ticket(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             self.assertEqual(r.stage('/note-check AB-11'), ('stopped by the owner (TICKET STOP)', ''))
 
+    def test_note_in_the_question_thread_counts(self):
+        self.out.chatty = True
+        self.run_once()
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        self.out.say(r.state['ask']['ts'], 'TICKET NOTE: send min and max')
+        self.assertEqual(r.check_inbox(), (False, 'send min and max'))
+
     def test_pipeline_step_hands_the_owner_word_to_pipeline(self):
         self.out.chatty = True
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
@@ -429,6 +436,12 @@ class Parsing(unittest.TestCase):
                                          ' {"author": "Other <z@x.io>", "text": "TICKET ANSWERS: 2B", "ts": "3"}]'),
                          'C1', 'o@x.io')
         self.assertEqual([r['text'].strip() for r in slack.replies('9.9')], ['1A'])
+
+    def test_owner_by_slack_id_when_no_email(self):
+        slack = tk.Slack(lambda p: (None, '[{"author": "Stanimir (U123)", "text": "TICKET NOTE: x", "ts": "1"},'
+                                         ' {"author": "Other (U999)", "text": "TICKET STOP", "ts": "2"}]'),
+                         'C1', 'o@x.io', 'U123')
+        self.assertEqual([r['ts'] for r in slack.owner_replies('9.9')], ['1'])
 
     def test_mention(self):
         sent = []

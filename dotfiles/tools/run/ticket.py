@@ -208,13 +208,18 @@ class Slack:
 
     def owner_replies(self, ts):
         error, out = self.run(f'Read the replies in the Slack thread {ts} of channel {self.channel} with your Slack '
-                              'tool. Print only JSON: a list of {"author": "<name and email>", "text": "<reply, verbatim>", '
+                              'tool. Print only JSON: a list of {"author": "<name, email and Slack user id>", "text": "<reply, verbatim>", '
                               '"ts": "<reply ts>"}, oldest first, without the parent message.')
         data = first_json(out) if not error else None
         if not isinstance(data, list):
             raise RuntimeError(f'Slack read failed: {error or out[:200]}')
         return [{**r, 'text': str(r.get('text', ''))} for r in data
-                if isinstance(r, dict) and self.owner in str(r.get('author', '')).lower()]
+                if isinstance(r, dict) and self.is_owner(str(r.get('author', '')))]
+
+    def is_owner(self, author):
+        """The reply's author is the owner: by email, or by Slack user id when the reader gave no email."""
+        author = author.lower()
+        return self.owner in author or bool(self.mention and self.mention.lower() in author)
 
 
 class Terminal:
@@ -301,14 +306,18 @@ class Run:
             print(f'ticket: could not post progress: {err}')
 
     def check_inbox(self):
-        """The owner's new TICKET STOP / TICKET NOTE: replies in the run thread: (stop, notes)."""
-        if not getattr(self.out, 'chatty', False) or not getattr(self, 'thread', None):
+        """The owner's new TICKET STOP / TICKET NOTE: replies in the run thread, the question thread or the
+        latest conflict thread: (stop, notes)."""
+        if not getattr(self.out, 'chatty', False):
             return False, ''
-        try:
-            new = [r for r in self.out.owner_replies(self.thread) if r.get('ts') not in self.state.get('inbox_seen', [])]
-        except RuntimeError as err:
-            print(f'ticket: could not read the run thread: {err}')
-            return False, ''
+        threads = [getattr(self, 'thread', None), (self.state.get('ask') or {}).get('ts'),
+                   *self.state.get('inbox_threads', [])[-1:]]
+        new = []
+        for ts in dict.fromkeys(t for t in threads if t):
+            try:
+                new += [r for r in self.out.owner_replies(ts) if r.get('ts') not in self.state.get('inbox_seen', [])]
+            except RuntimeError as err:
+                print(f'ticket: could not read thread {ts}: {err}')
         self.state.setdefault('inbox_seen', []).extend(r.get('ts') for r in new)
         self.save()
         stop = any(re.search(r'\bTICKET STOP\b', r['text'], re.I) for r in new)
@@ -513,6 +522,13 @@ class Run:
         self.state.pop('ask', None)                     # a fresh ask for the revised spec
         self.save()
         self.commit(f'{t}: plan stopped at a spec conflict')
+        try:
+            back = self.out.post(f':leftwards_arrow_with_hook: *{t} · Back to spec.* /plan found a conflict:\n```\n'
+                                 f'{conflict[:1500]}\n```\n/spec revises the spec now; you approve it again after.')
+            self.state.setdefault('inbox_threads', []).append(back)
+            self.save()
+        except RuntimeError as err:
+            print(f'ticket: could not post the conflict: {err}')
         error, _ = self.stage(f'/spec {t} unattended\nThe plan stopped at this SPEC CONFLICT. Revise the spec to '
                               f'resolve it, under the unattended rules; keep the decisions the owner made unless the '
                               f'conflict is about them.\n\n{conflict}')
@@ -520,8 +536,6 @@ class Run:
             return self.stop(f'/spec after the plan conflict {error}')
         set_header(self.spec, {'Status': 'Draft', 'Approved by': '—', 'Approved at': '—'})
         self.commit(f'{t}: spec revised for the plan conflict')
-        self.out.post(f':leftwards_arrow_with_hook: *{t} · Back to spec.* /plan found a conflict:\n```\n'
-                      f'{conflict[:1500]}\n```\nThe spec is revised and needs your approval again.')
         return self.settle_spec()
 
     def make_plan(self):
