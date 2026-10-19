@@ -447,6 +447,9 @@ class Run:
 
     def make_plan(self):
         t = self.ticket
+        if (self.plan.exists() and 'SPEC CONFLICT' in self.plan.read_text() and not self.plan_stale()
+                and self.state.get('conflicts', 0) < 2):             # this spec already has a conflict: no new /plan
+            return self.back_to_spec(conflict_text(self.plan.read_text()))
         error, text = self.stage(f'/plan {t}')
         if error:
             return self.stop(f'/plan {error}')

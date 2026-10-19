@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -210,6 +211,19 @@ class Ticket(unittest.TestCase):
         self.plan_text = PLAN                                        # the revised spec plans cleanly
         self.out.reply(f'1A {T}')
         self.assertEqual(self.run_once(), tk.DONE)
+
+    def test_committed_plan_conflict_skips_plan(self):
+        self.plan_text = PLAN + '\n## SPEC CONFLICT\nREQ-001 cannot be met\n'
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        with unittest.mock.patch.object(tk.Run, 'back_to_spec', return_value=tk.STOPPED):
+            self.run_once()                                          # /plan writes the conflict
+            Path(f'docs/tasks/{T}-plan.md').write_text(self.plan_text)
+            subprocess.run(['git', 'add', '-A'], check=True)
+            subprocess.run(['git', 'commit', '-qm', 'plan with a conflict'], check=True)
+            plans = self.prompts.count(f'/plan {T}')
+            self.run_once()
+        self.assertEqual(self.prompts.count(f'/plan {T}'), plans)   # reused, not planned again
 
     def test_repeated_plan_conflict_stops(self):
         self.plan_text = PLAN + '\n## SPEC CONFLICT\nREQ-001 cannot be met\n'
