@@ -426,6 +426,25 @@ class Run:
             print(f'  the plan predates the current spec; /plan runs again')
         return stale
 
+    def back_to_spec(self, conflict):
+        """plan → spec (component-response-contracts §5): /spec resolves the conflict unattended, the spec goes
+        back to Draft, and the owner answers and approves again. Twice at most; then it stops."""
+        t = self.ticket
+        self.state['conflicts'] = self.state.get('conflicts', 0) + 1
+        self.state.pop('ask', None)                     # a fresh ask for the revised spec
+        self.save()
+        self.commit(f'{t}: plan stopped at a spec conflict')
+        error, _ = self.stage(f'/spec {t} unattended\nThe plan stopped at this SPEC CONFLICT. Revise the spec to '
+                              f'resolve it, under the unattended rules; keep the decisions the owner made unless the '
+                              f'conflict is about them.\n\n{conflict}')
+        if error:
+            return self.stop(f'/spec after the plan conflict {error}')
+        set_header(self.spec, {'Status': 'Draft', 'Approved by': '—', 'Approved at': '—'})
+        self.commit(f'{t}: spec revised for the plan conflict')
+        self.out.post(f':leftwards_arrow_with_hook: *{t} · Back to spec.* /plan found a conflict:\n```\n'
+                      f'{conflict[:1500]}\n```\nThe spec is revised and needs your approval again.')
+        return self.settle_spec()
+
     def make_plan(self):
         t = self.ticket
         error, text = self.stage(f'/plan {t}')
@@ -434,6 +453,8 @@ class Run:
         if not self.plan.exists():
             return self.stop(f'/plan wrote no {self.plan}')
         plan = self.plan.read_text()
+        if 'SPEC CONFLICT' in plan and self.state.get('conflicts', 0) < 2:
+            return self.back_to_spec(conflict_text(plan))
         if 'SPEC CONFLICT' in plan or open_questions(plan):
             self.commit(f'{t}: plan draft')
             return self.stop(f'the plan raised a SPEC CONFLICT or an open question; read {self.plan}', self.last_file)
@@ -456,6 +477,16 @@ def ticket_key(arg):
     """The Jira key from "LD-503" or a ticket URL such as https://x.atlassian.net/browse/LD-503."""
     m = re.search(r'(?<![A-Za-z0-9])([A-Z][A-Z0-9]+-\d+)(?![0-9])', arg)
     return m.group(1) if m else None
+
+
+def conflict_text(plan):
+    """The plan's SPEC CONFLICT section: from its line to the next heading of the same or a higher level."""
+    lines = plan.splitlines()
+    start = next(i for i, l in enumerate(lines) if 'SPEC CONFLICT' in l)
+    level = len(lines[start]) - len(lines[start].lstrip('#')) or 7
+    end = next((i for i in range(start + 1, len(lines))
+                if lines[i].startswith('#') and len(lines[i]) - len(lines[i].lstrip('#')) <= level), len(lines))
+    return '\n'.join(lines[start:end]).strip()[:4000]
 
 
 def default_branch():

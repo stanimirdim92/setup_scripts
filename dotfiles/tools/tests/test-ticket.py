@@ -196,11 +196,29 @@ class Ticket(unittest.TestCase):
         self.assertEqual(self.header(f'docs/specs/{T}-SPEC.md', 'Status'), 'Draft')
 
     def test_plan_with_a_conflict_stops_unapproved(self):
-        self.plan_text = PLAN + '\n## SPEC CONFLICT\nREQ-001 cannot be met\n'
+        self.plan_text = PLAN + '\n## SPEC CONFLICT\nREQ-001 cannot be met\n## Tasks\n'
         self.run_once()
         self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.WAITING)               # back to /spec, then the owner
+        self.assertEqual(sum('unattended' in p for p in self.prompts), 2)
+        self.assertEqual(self.header(f'docs/specs/{T}-SPEC.md', 'Status'), 'Draft')
+        self.assertIn('Back to spec', ''.join(p[1] for p in self.out.posts))
+        self.assertIn('REQ-001 cannot be met', ''.join(p[1] for p in self.out.posts))
+        self.assertNotIn('## Tasks', ''.join(p[1] for p in self.out.posts))
+        self.assertNotIn('pipeline.py', self.prompts)
+        self.assertTrue(self.clean())
+        self.plan_text = PLAN                                        # the revised spec plans cleanly
+        self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.DONE)
+
+    def test_repeated_plan_conflict_stops(self):
+        self.plan_text = PLAN + '\n## SPEC CONFLICT\nREQ-001 cannot be met\n'
+        self.run_once()
+        for _ in range(2):
+            self.out.reply(f'1A {T}')
+            self.assertEqual(self.run_once(), tk.WAITING)
+        self.out.reply(f'1A {T}')
         self.assertEqual(self.run_once(), tk.STOPPED)
-        self.assertEqual(self.header(f'docs/tasks/{T}-plan.md', 'Status'), 'Draft')
         self.assertNotIn('pipeline.py', self.prompts)
 
     def test_failing_check_plan_stops(self):
