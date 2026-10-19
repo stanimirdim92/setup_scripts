@@ -240,6 +240,28 @@ class Ticket(unittest.TestCase):
         self.assertEqual(self.run_once(), tk.STOPPED)
         self.assertNotIn(f'/ship {T}', self.prompts)
 
+    def test_pipeline_stop_reason_is_posted(self):
+        self.pipeline_rc = 1
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
+                                      text=True).stdout.strip()) / 'handoff'
+        handoff.mkdir(exist_ok=True)
+        (handoff / f'{T}-1-BUILD.md').write_text('BUILD BLOCKED: T002 needs a migration\n\nmore\n')
+        (handoff / f'{T}-pipeline-stop.json').write_text(
+            '{"why": "BUILD BLOCKED: T002 needs a migration", "stage_file": "%s-1-BUILD.md"}' % T)
+        self.assertEqual(self.run_once(), tk.STOPPED)
+        post = self.out.posts[-1][1]
+        self.assertIn('*Why:* pipeline.py: BUILD BLOCKED: T002 needs a migration', post)
+        self.assertIn(f'*{T}-1-BUILD.md:*\n```\nBUILD BLOCKED: T002 needs a migration\nmore\n```', post)
+
+    def test_question_in_reply_is_answered(self):
+        self.run_once()
+        self.out.reply('why is DEC-001 a default?')
+        self.assertEqual(self.run_once(), tk.WAITING)
+        self.assertTrue(any(p.startswith(f'The owner of {T} asks') for p in self.prompts))
+        self.assertIn(':speech_balloon: *Answer*\ndone', [p[1] for p in self.out.posts if p[2]])
+
 
 class Parsing(unittest.TestCase):
     def test_reply(self):

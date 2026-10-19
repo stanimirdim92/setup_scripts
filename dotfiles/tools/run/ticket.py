@@ -188,7 +188,7 @@ class Slack:
             text = f'<@{self.mention}> {text}'
         where = f'as a reply in the thread whose ts is {thread} ' if thread else ''
         error, out = self.run(f'Post this exact message to the Slack channel {self.channel} {where}with your Slack '
-                              'tool. Change nothing in it. Then print only JSON: {"ts": "<the new message ts>"}.\n\n'
+                              'tool. Change nothing in it and keep every line break. Then print only JSON: {"ts": "<the new message ts>"}.\n\n'
                               f'---\n{text}')
         data = first_json(out) if not error else None
         if not isinstance(data, dict) or not data.get('ts'):
@@ -296,10 +296,14 @@ class Run:
             if rc:
                 raise RuntimeError(f'git commit failed for "{message}"')
 
-    def stop(self, why):
+    def stop(self, why, file=''):
         print(f'ticket: {self.ticket} stopped: {why}')
+        text = f':octagonal_sign: *{self.ticket} · Stopped*\n*Why:* {why}'
+        if file and (self.dir / file).exists():
+            body = '\n'.join(l for l in (self.dir / file).read_text().splitlines() if l.strip())
+            text += f'\n*{file}:*\n```\n{body[:1800]}{" …" if len(body) > 1800 else ""}\n```'
         try:
-            self.out.post(f':octagonal_sign: *{self.ticket} · Stopped*\n> {why}\nLog: `{self.dir}`')
+            self.out.post(f'{text}\nLog: `{self.dir}`')
         except RuntimeError as err:
             print(f'ticket: could not post the stop: {err}')
         return STOPPED
@@ -335,7 +339,9 @@ class Run:
             print(f'  spec and plan are approved; pipeline.py runs /build, /test and /review')
             rc = self.pipeline(t, self.budget)
             if rc != 0:
-                return self.stop(f'pipeline.py exited {rc}; the review files and messages are in the log')
+                stopped = self.dir / f'{t}-pipeline-stop.json'
+                info = json.loads(stopped.read_text()) if stopped.exists() else {}
+                return self.stop(f'pipeline.py: {info.get("why") or f"exited {rc}"}', info.get('stage_file', ''))
             self.state['pipeline_done'] = True
             self.save()
 
@@ -364,6 +370,14 @@ class Run:
             return WAITING
         ask['seen'] += [r.get('ts') for r in new]
         self.save()
+        for r in new:                                   # a question to the runner gets an answer in the thread
+            if '?' in str(r.get('text', '')):
+                error, answer = self.claude(
+                    f'The owner of {t} asks about its spec. Answer from docs/specs/{t}-SPEC.md and '
+                    f'docs/specs/{t}-intake.md, in at most 6 short lines for Slack. Read only; change no '
+                    f'file.\n\nQuestion: {r["text"].strip()}')
+                self.out.post(f':speech_balloon: *Answer*\n{answer.strip() if not error else "could not answer: " + error}',
+                              thread=ask['ts'])
         answers, approved, defaults = {}, False, False
         for r in new:
             a, ok, d = parse_reply(str(r.get('text', '')), t)

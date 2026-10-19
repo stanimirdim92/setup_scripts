@@ -131,20 +131,24 @@ def main(argv=None):
     out_dir = Path(common) / 'handoff'
     out_dir.mkdir(parents=True, exist_ok=True)
     log = out_dir / f'{ticket}-pipeline.log'
-    total, step = 0.0, 0
+    stop_file = out_dir / f'{ticket}-pipeline-stop.json'      # why it stopped, for ticket.py to post
+    stop_file.unlink(missing_ok=True)
+    total, step, last = 0.0, 0, ''
 
     def stage(prompt, name, *given):
-        nonlocal total, step
+        nonlocal total, step, last
         step += 1
         for label, text in given:
             prompt += f'\n\n{label} — {SUPPLIED}\n\n{text}'
         error, text, cost = claude(binary, prompt, args.budget, args.permission_mode, log)
         total += cost
-        (out_dir / f'{ticket}-{step}-{name}.md').write_text(text.rstrip('\n') + '\n')
+        last = f'{ticket}-{step}-{name}.md'
+        (out_dir / last).write_text(text.rstrip('\n') + '\n')
         print(f'  {prompt.splitlines()[0]:<32} ${cost:.2f}')
         return error, text
 
     def stop(why):
+        stop_file.write_text(json.dumps({'why': why, 'stage_file': last}) + '\n')
         print(f'\npipeline: stopped — {why}\n  messages and log: {out_dir}\n  measured total: ${total:.2f}')
         return 1
 
