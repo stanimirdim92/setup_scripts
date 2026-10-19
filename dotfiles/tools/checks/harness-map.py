@@ -40,7 +40,9 @@ OUT = ROOT / 'dotfiles/docs/harness-map.html'
 # a command, so its card is read from the skill file instead.
 PIPELINE = ['intake', 'spec', 'plan', 'build', 'review', 'test', 'ship']
 HUMAN_GATE_AFTER = {'spec': 'approve spec', 'plan': 'approve plan', 'ship': 'push / merge'}
-CONDITIONAL = {'test': 'only when /review requires it'}
+# Every stage runs on every ticket. /test runs on every production change and
+# skips only the exempt kinds in verification-triggers.md (ADR 0104).
+STAGE_NOTE = {'test': 'skipped only for docs, test-only, formatting and generated changes'}
 # What each stage leaves behind. Artifact paths are the ones
 # validate-artifact-paths.py guards; the gate words are the commands' own.
 STAGE_OUTPUT = {
@@ -145,7 +147,6 @@ section{display:flex;flex-direction:column;gap:16px;scroll-margin-top:24px;min-w
 .badge.read{color:var(--read);background:var(--read-bg)}
 .badge.plain{color:var(--ink-2);border-color:var(--line-2)}
 .badge.gate{color:var(--gate);background:var(--gate-bg)}
-.badge.cond{color:var(--ink-3);border:1px dashed var(--line-2)}
 .persona-name{font-family:var(--mono);font-size:15px;white-space:nowrap;color:var(--read)}
 .persona-name.write{color:var(--write)}
 .who{display:flex;flex-wrap:wrap;gap:4px 12px}
@@ -163,21 +164,19 @@ ol.stages > li{display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,3
 ol.stages > li:first-child{border-top:0}
 ol.stages .cmd{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--brand)}
 ol.stages .does{color:var(--ink-2);font-size:16px}
-ol.stages > li.cond{background:repeating-linear-gradient(135deg,transparent 0 10px,var(--sunk) 10px 11px)}
 ol.stages > li.gate{display:flex;gap:10px;align-items:center;padding:8px 20px;background:var(--gate-bg);color:var(--gate);font-weight:600;font-size:16px}
 .diamond{width:10px;height:10px;transform:rotate(45deg);background:var(--gate);display:inline-block;flex:none}
 
 /* option 2: strip */
 .strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:18px 20px}
 .strip .box{font-family:var(--mono);font-weight:700;font-size:16px;padding:8px 14px;border:1.5px solid var(--brand);border-radius:6px;background:var(--brand-bg);color:var(--brand)}
-.strip .box.cond{border-style:dashed;color:var(--ink-2)}
 .strip .sep{color:var(--ink-3)}
 .strip .diamond{margin-inline:2px}
 
 /* option 3: flowchart (inline SVG, styled from here) */
 figure.flow{margin:0;display:flex;flex-direction:column}
 .flow-scroll{overflow-x:auto;padding:12px}
-.flow-scroll svg{display:block;width:100%;min-width:760px;max-width:980px;height:auto}
+.flow-scroll svg{display:block;width:100%;min-width:560px;max-width:700px;height:auto}
 figure.flow figcaption{font-size:15px;color:var(--ink-2);padding:12px 20px 16px;border-top:1px solid var(--line)}
 .f-cmd{font-family:var(--mono);font-size:19px;font-weight:700;fill:var(--brand)}
 .f-desc{font-family:var(--sans);font-size:15.5px;fill:var(--ink)}
@@ -475,11 +474,9 @@ def pipeline_list(cmds, writers):
         if name not in cmds:
             continue
         c = cmds[name]
-        cond = name in CONDITIONAL
-        badge = f' <span class="badge cond">{e(CONDITIONAL[name])}</span>' if cond else ''
+        badge = f' <span class="badge plain">{e(STAGE_NOTE[name])}</span>' if name in STAGE_NOTE else ''
         who = ''.join(persona_label(p, writers) for p in c['personas']) or '<span class="note">the session itself</span>'
-        cls = ' class="cond"' if cond else ''
-        rows.append(f'<li{cls}><span class="cmd">{e(stage_name(name))}</span>'
+        rows.append(f'<li><span class="cmd">{e(stage_name(name))}</span>'
                     f'<span class="does">{e(c["description"])}{badge}'
                     f'<span class="leaves">Leaves {e(STAGE_OUTPUT.get(name, ""))}</span></span>'
                     f'<span class="who">{who}</span></li>')
@@ -495,7 +492,7 @@ def pipeline_strip(cmds, writers):
             continue
         if parts:
             parts.append('<span class="sep">→</span>')
-        parts.append(f'<span class="box{" cond" if name in CONDITIONAL else ""}">{e(stage_name(name))}</span>')
+        parts.append(f'<span class="box">{e(stage_name(name))}</span>')
         if name in HUMAN_GATE_AFTER:
             parts.append(f'<i class="diamond" title="{e(HUMAN_GATE_AFTER[name])}"></i>')
     rows = ''.join(f'<tr><td class="cmdcell">{e(stage_name(n))}</td><td><div class="who">'
@@ -521,13 +518,13 @@ def wrap(text, width):
 def pipeline_flow(cmds, writers):
     """The pipeline as an inline SVG flowchart: one box per stage, top to bottom,
     with what it does, who does it and what it leaves behind. Every arrow names
-    what passes along it; orange diamonds are the human decisions; /test is a
-    dashed detour on the right. Themed through the page's CSS variables."""
-    X, W, TX, TW = 24, 560, 640, 340          # main column, detour column
-    PAD, LINE, SVGW = 20, 21, 1004
+    what passes along it; orange diamonds are the human decisions. Themed
+    through the page's CSS variables."""
+    X, W = 24, 560
+    PAD, LINE, SVGW = 20, 21, 608
     out, y = [], 16
 
-    def box(name, x, w, y, dashed=False):
+    def box(name, x, w, y):
         c = cmds[name]
         chars = (w - 2 * PAD) // 7.6
         desc = wrap(c['description'], int(chars))
@@ -541,11 +538,8 @@ def pipeline_flow(cmds, writers):
         if cur:
             who_lines.append(cur)
         h = PAD + 24 + len(desc) * LINE + 8 + max(1, len(who_lines)) * LINE + LINE + PAD - 6
-        fill = 'var(--sunk)' if dashed else 'var(--surface)'
-        dash = ' stroke-dasharray="7 5"' if dashed else ''
-        stroke = 'var(--ink-3)' if dashed else 'var(--brand)'
-        out.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="6" fill="{fill}" stroke="{stroke}" '
-                   f'stroke-width="1.5"{dash}/>')
+        out.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="6" fill="var(--surface)" '
+                   'stroke="var(--brand)" stroke-width="1.5"/>')
         ty = y + PAD + 16
         out.append(f'<text x="{x + PAD}" y="{ty}" class="f-cmd">{e(stage_name(name))}</text>')
         ty += 8
@@ -572,21 +566,18 @@ def pipeline_flow(cmds, writers):
                    f'{e(STAGE_OUTPUT.get(name, ""))}</text>')
         return h
 
-    def arrow(x, y1, y2, label=None, dashed=False):
-        dash = ' stroke-dasharray="6 5"' if dashed else ''
-        out.append(f'<line x1="{x}" y1="{y1}" x2="{x}" y2="{y2 - 2}" class="f-edge"{dash} marker-end="url(#f-arw)"/>')
+    def arrow(x, y1, y2, label=None):
+        out.append(f'<line x1="{x}" y1="{y1}" x2="{x}" y2="{y2 - 2}" class="f-edge" marker-end="url(#f-arw)"/>')
         if label:
             out.append(f'<text x="{x + 12}" y="{(y1 + y2) / 2 + 5}" class="f-edge-label">{e(label)}</text>')
 
     cx = X + W / 2
     edge_label = {'intake': 'intake summary', 'spec': 'draft spec', 'plan': 'draft plan', 'build': 'candidate commits',
-                  'ship': 'GO and rollback plan'}
+                  'review': 'findings and evidence', 'test': 'VERIFY PASS', 'ship': 'GO and rollback plan'}
     after_gate = {'spec': 'approved spec', 'plan': 'approved plan', 'ship': None}
-    main = [n for n in PIPELINE if n in cmds and n not in CONDITIONAL]
-    boxes = {}
+    main = [n for n in PIPELINE if n in cmds]
     for i, name in enumerate(main):
         h = box(name, X, W, y)
-        boxes[name] = (y, h)
         y += h
         nxt = main[i + 1] if i + 1 < len(main) else None
         if name in HUMAN_GATE_AFTER:
@@ -601,35 +592,17 @@ def pipeline_flow(cmds, writers):
                 y += 34
         elif nxt:
             gap = 46
-            if name == 'review' and 'test' in cmds and 'test' in CONDITIONAL:
-                ty0 = boxes['review'][0] + boxes['review'][1] + 30
-                th = box('test', TX, TW, ty0, dashed=True)
-                boxes['test'] = (ty0, th)
-                gap = max(gap, ty0 + th + 40 - y)
-                ry = boxes['review'][0] + boxes['review'][1] - 30
-                out.append(f'<path d="M{X + W},{ry} H{TX + TW / 2} V{ty0 - 2}" fill="none" class="f-edge" '
-                           f'stroke-dasharray="6 5" marker-end="url(#f-arw)"/>')
-                out.append(f'<text x="{X + W + 12}" y="{ry - 8}" class="f-edge-label">if /review requires it</text>')
-                boxes['_test_join'] = ty0 + th
-            arrow(cx, y, y + gap, 'findings and evidence' if name == 'review' else edge_label.get(name))
+            arrow(cx, y, y + gap, edge_label.get(name))
             y += gap
-    if '_test_join' in boxes and 'ship' in boxes:
-        sy, sh = boxes['ship']
-        jy = sy + 34
-        out.append(f'<path d="M{TX + TW / 2},{boxes["_test_join"]} V{jy} H{X + W + 2}" fill="none" class="f-edge" '
-                   f'stroke-dasharray="6 5" marker-end="url(#f-arw)"/>')
-        out.append(f'<text x="{TX + TW / 2 + 12}" y="{(boxes["_test_join"] + jy) / 2 + 5}" '
-                   f'class="f-edge-label">VERIFY PASS</text>')
     height = y + 16
     svg = (f'<svg viewBox="0 0 {SVGW} {height}" role="img" aria-label="The pipeline from Jira intake to /ship: each '
-           'stage, who runs it and what it leaves behind, with the three human decisions and the conditional '
-           '/test detour.">'
+           'stage, who runs it and what it leaves behind, with the three human decisions.">'
            '<defs><marker id="f-arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" '
            'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-2)"/></marker></defs>'
            + ''.join(out) + '</svg>')
     return ('<figure class="panel flow">' + '<div class="flow-scroll">' + svg + '</div>'
             '<figcaption>Every arrow names what it carries. Nothing reaches the next stage past an orange diamond '
-            'until you decide; /test runs only when /review requires it, and /ship then needs its VERIFY PASS.'
+            'until you decide. /test runs on every production change, and /ship needs its VERIFY PASS.'
             '</figcaption></figure>')
 
 
@@ -780,8 +753,7 @@ def render():
                'The orange rows are decisions only you make.</p></div>'
                '<div class="legend"><span><i class="diamond"></i>you decide</span>'
                '<span><span class="persona-name write">blue</span> can change files</span>'
-               '<span><span class="persona-name">teal</span> read-only</span>'
-               '<span><span class="badge cond">dashed</span> only when needed</span></div>')
+               '<span><span class="persona-name">teal</span> read-only</span></div>')
     views = {'list': ('1', 'Stage list', pipeline_list),
              'strip': ('2', 'Strip', pipeline_strip),
              'flow': ('3', 'Flowchart', pipeline_flow)}
