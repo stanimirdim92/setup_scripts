@@ -204,3 +204,17 @@ jobs:
       # Measurement: the transcript metrics' large-result section.
       - name: Run metrics
         run: bash dotfiles/tools/tests/test-run-metrics.sh
+
+      # The add-business pipeline eval grades itself: the reference solution
+      # passes every check, the untouched seed fails every feature check.
+      # Needs php with pdo_sqlite and node (preinstalled on ubuntu-latest).
+      # Running the pipeline on the ticket spends tokens and stays manual
+      # (evals/add-business/README.md).
+      - name: Add-business eval grader
+        run: |
+          cmp evals/add-business/seed/fixtures/places.json evals/add-business/hidden/fixtures/places.json
+          (cd evals/add-business/hidden && npm ci --no-audit --no-fund && npx playwright install --with-deps chromium)
+          evals/add-business/grade.sh evals/add-business/reference > "$RUNNER_TEMP/reference.json"
+          jq -e '.pass' "$RUNNER_TEMP/reference.json"
+          if evals/add-business/grade.sh evals/add-business/seed > "$RUNNER_TEMP/seed.json"; then exit 1; fi
+          jq -e '.baseline.passed == .baseline.total and .feature.passed == 0' "$RUNNER_TEMP/seed.json"
