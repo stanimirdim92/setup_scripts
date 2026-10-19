@@ -234,6 +234,12 @@ class Parsing(unittest.TestCase):
         self.assertEqual(slack.post('AB-11 waits'), '1.5')
         self.assertIn('---\n<@U123> AB-11 waits', sent[0])
 
+    def test_ticket_key_from_url(self):
+        self.assertEqual(tk.ticket_key('https://smartico1.atlassian.net/browse/LD-503'), 'LD-503')
+        self.assertEqual(tk.ticket_key('LD-503'), 'LD-503')
+        self.assertEqual(tk.ticket_key('https://x.atlassian.net/browse/AB2-7?focusedCommentId=1'), 'AB2-7')
+        self.assertIsNone(tk.ticket_key('https://example.com/nothing'))
+
     def test_no_push(self):
         self.assertNotIn("'push'", SCRIPT.read_text())
 

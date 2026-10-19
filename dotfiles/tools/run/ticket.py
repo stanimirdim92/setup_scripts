@@ -50,6 +50,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -222,9 +223,11 @@ class Run:
         self.state_file.write_text(json.dumps(self.state, indent=2) + '\n')
 
     def stage(self, prompt):
-        print(f'  {prompt.splitlines()[0]}')
+        print(f'  {datetime.datetime.now():%H:%M} {prompt.splitlines()[0]}')
         error, text = self.claude(prompt)
-        (self.dir / f'{self.ticket}-ticket-{len(self.state.setdefault("log", [])) + 1}.md').write_text(text + '\n')
+        saved = self.dir / f'{self.ticket}-ticket-{len(self.state.setdefault("log", [])) + 1}.md'
+        saved.write_text(text + '\n')
+        print(f'    saved: {saved}')
         self.state['log'].append(prompt.splitlines()[0])
         self.save()
         return error, text
@@ -360,14 +363,33 @@ class Run:
         return os.environ.get('HARNESS_SLACK_OWNER') or 'the owner'
 
 
+def ticket_key(arg):
+    """The Jira key from "LD-503" or a ticket URL such as https://x.atlassian.net/browse/LD-503."""
+    m = re.search(r'(?<![A-Za-z0-9])([A-Z][A-Z0-9]+-\d+)(?![0-9])', arg)
+    return m.group(1) if m else None
+
+
+def first_line(text):
+    for raw in text.splitlines():
+        line = raw.strip().strip('*#> ').strip()
+        if line:
+            return line[:110]
+    return '(empty)'
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('ticket')
+    parser.add_argument('ticket', help='the Jira key (LD-503) or the ticket URL')
     parser.add_argument('--reply', help='your answer when Slack is not configured, e.g. "1A 2B LD-1"')
     parser.add_argument('--budget', type=float, default=10, help='--max-budget-usd per stage (default 10)')
     parser.add_argument('--permission-mode', default='acceptEdits')
     args = parser.parse_args(argv)
     binary = os.environ.get('CLAUDE_BIN', 'claude')
+    key = ticket_key(args.ticket)
+    if not key:
+        print(f'ticket: no Jira key in "{args.ticket}"; give LD-503 or the ticket URL')
+        return NOT_CHECKOUT
+    args.ticket = key
 
     rc, _ = pl.git('rev-parse', '--git-dir')
     branch = pl.git('symbolic-ref', '--short', '-q', 'HEAD')[1]
@@ -379,7 +401,10 @@ def main(argv=None):
     log.parent.mkdir(parents=True, exist_ok=True)
 
     def claude(prompt):
-        error, text, _ = pl.claude(binary, prompt, args.budget, args.permission_mode, log)
+        started = time.monotonic()
+        error, text, cost = pl.claude(binary, prompt, args.budget, args.permission_mode, log)
+        took = int(time.monotonic() - started)
+        print(f'    {took // 60}m{took % 60:02d}s, ${cost:.2f}: ' + (f'ERROR {error}' if error else first_line(text)))
         return error, text
 
     def pipeline(ticket, budget):
@@ -391,6 +416,9 @@ def main(argv=None):
         out = Slack(claude, channel, owner, os.environ.get('HARNESS_SLACK_MENTION', ''))
     else:
         out = Terminal(log.with_suffix('.md'), args.reply)
+    print(f'ticket: {args.ticket} in {os.getcwd()}')
+    print(f'  messages: {log.parent}/{args.ticket}-ticket-<n>.md · log: {log}')
+    print(f'  questions and results: ' + (f'Slack channel {channel}' if channel and owner else f'this terminal and {log.with_suffix(".md")}'))
     try:
         result = Run(args.ticket, out, claude, pipeline, args.budget).go()
     except RuntimeError as err:
