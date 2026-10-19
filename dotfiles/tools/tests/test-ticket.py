@@ -102,6 +102,7 @@ class Ticket(unittest.TestCase):
         tk.CHECK_PLAN = check
         os.environ.pop('CHECK_PLAN_RC', None)
         self.out, self.prompts, self.pipeline_rc, self.plan_text = FakeOut(), [], 0, PLAN
+        self.conflict_fix_by_default = False
 
     def tearDown(self):
         tk.CHECK_PLAN = self.saved[0]
@@ -115,6 +116,10 @@ class Ticket(unittest.TestCase):
         if first == '/jira-ticket':
             spec.parent.mkdir(parents=True, exist_ok=True)
             Path(f'docs/specs/{T}-intake.md').write_text('intake\n')
+        elif first == '/spec' and 'SPEC CONFLICT' in prompt and self.conflict_fix_by_default:
+            text = spec.read_text().replace('Source: ticket', 'Source: ticket; min and max (DEC-009, default)')
+            spec.write_text(text.replace('Status: Approved', 'Status: Draft'))
+            self.plan_text = PLAN
         elif first == '/spec' and 'unattended' in prompt:
             spec.write_text(DRAFT)
         elif first == '/spec' and 'decisions:' in prompt:
@@ -232,6 +237,18 @@ class Ticket(unittest.TestCase):
             plans = self.prompts.count(f'/plan {T}')
             self.run_once()
         self.assertEqual(self.prompts.count(f'/plan {T}'), plans)   # reused, not planned again
+
+    def test_conflict_fixed_by_default_keeps_the_approval(self):
+        self.conflict_fix_by_default = True
+        self.plan_text = PLAN + '\n## SPEC CONFLICT\nREQ-001 needs min and max\n'
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.DONE)                   # no second approval
+        self.assertEqual(self.header(f'docs/specs/{T}-SPEC.md', 'Status'), 'Approved')
+        self.assertIn('reply in thread', self.header(f'docs/specs/{T}-SPEC.md', 'Approved by'))
+        self.assertIn('DEC-009', Path(f'docs/specs/{T}-SPEC.md').read_text())
+        self.assertEqual(self.prompts.count(f'/plan {T}'), 2)
+        self.assertTrue(self.clean())
 
     def test_repeated_plan_conflict_stops(self):
         self.plan_text = PLAN + '\n## SPEC CONFLICT\nREQ-001 cannot be met\n'

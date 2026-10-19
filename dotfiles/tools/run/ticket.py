@@ -518,8 +518,10 @@ class Run:
         return stale
 
     def back_to_spec(self, conflict):
-        """plan → spec (component-response-contracts §5): /spec resolves the conflict unattended, the spec goes
-        back to Draft, and the owner answers and approves again. Twice at most; then it stops."""
+        """plan → spec (component-response-contracts §5): /spec resolves the conflict unattended. A fix it
+        decided by default (Low/Medium) keeps the owner's approval and planning goes on (None); a High one
+        stays an OPEN QUESTION, the spec goes back to Draft and the owner answers and approves again
+        (ADR 0115). Twice at most; then it stops."""
         t = self.ticket
         self.state['conflicts'] = self.state.get('conflicts', 0) + 1
         self.state.pop('ask', None)                     # a fresh ask for the revised spec
@@ -532,11 +534,21 @@ class Run:
             self.save()
         except RuntimeError as err:
             print(f'ticket: could not post the conflict: {err}')
+        before = self.spec.read_text()
+        approved = {k: header(before, k) for k in ('Status', 'Approved by', 'Approved at')}
         error, _ = self.stage(f'/spec {t} unattended\nThe plan stopped at this SPEC CONFLICT. Revise the spec to '
                               f'resolve it, under the unattended rules; keep the decisions the owner made unless the '
-                              f'conflict is about them.\n\n{conflict}')
+                              f'conflict is about them. A fix that changes behavior or is High risk stays an OPEN '
+                              f'QUESTION.\n\n{conflict}')
         if error:
             return self.stop(f'/spec after the plan conflict {error}')
+        if approved['Status'] == 'Approved' and not open_questions(self.spec.read_text()):
+            set_header(self.spec, {'Status': 'Approved', 'Approved by': approved['Approved by'],
+                                   'Approved at': approved['Approved at']})
+            self.commit(f'{t}: spec fixed for the plan conflict by default; approval kept (ADR 0115)')
+            self.progress(':white_check_mark: The conflict was fixed by default (Low/Medium risk); your approval '
+                          'stands. Planning again.')
+            return None
         set_header(self.spec, {'Status': 'Draft', 'Approved by': '—', 'Approved at': '—'})
         self.commit(f'{t}: spec revised for the plan conflict')
         return self.settle_spec()
@@ -545,7 +557,9 @@ class Run:
         t = self.ticket
         if (self.plan.exists() and has_conflict(self.plan.read_text()) and not self.plan_stale()
                 and self.state.get('conflicts', 0) < 2):             # this spec already has a conflict: no new /plan
-            return self.back_to_spec(conflict_text(self.plan.read_text()))
+            result = self.back_to_spec(conflict_text(self.plan.read_text()))
+            if result is not None:
+                return result
         error, text = self.stage(f'/plan {t}')
         if error:
             return self.stop(f'/plan {error}')
@@ -553,7 +567,8 @@ class Run:
             return self.stop(f'/plan wrote no {self.plan}')
         plan = self.plan.read_text()
         if has_conflict(plan) and self.state.get('conflicts', 0) < 2:
-            return self.back_to_spec(conflict_text(plan))
+            result = self.back_to_spec(conflict_text(plan))
+            return self.make_plan() if result is None else result
         if has_conflict(plan) or open_questions(plan):
             self.commit(f'{t}: plan draft')
             return self.stop(f'the plan raised a SPEC CONFLICT or an open question; read {self.plan}', self.last_file)

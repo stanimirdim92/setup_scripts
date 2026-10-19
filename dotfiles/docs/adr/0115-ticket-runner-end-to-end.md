@@ -34,9 +34,14 @@ four points for the owner, who answered them on 2026-10-19:
   The reply is the explicit human approval `spec-quality-gates.md` §2 asks
   for, and the spec records the thread.
 - `/plan` runs next. The runner approves the plan when `check-plan.py` passes
-  and the plan has no `SPEC CONFLICT` and no `OPEN QUESTION`. Any other plan
-  is posted and the run stops. This amends `/plan`'s human-approval rule for
-  this one case.
+  and the plan has no `SPEC CONFLICT` and no `OPEN QUESTION`. This amends
+  `/plan`'s human-approval rule for this one case.
+- A `SPEC CONFLICT` goes back to `/spec <TICKET> unattended` with the
+  conflict section. When `/spec` fixes it by default (Low or Medium risk, no
+  `OPEN QUESTION` left), the owner's approval stands, the owner gets a note in
+  the run thread and `/plan` runs again. A High-risk fix or a behavior change
+  stays an `OPEN QUESTION`: the spec returns to Draft and the owner answers
+  and approves again. After two conflicts the run stops.
 - `pipeline.py` runs `/build`, `/test` and `/review` with fix rounds
   (ADR 0114). Then `/ship` runs with the last review message, and its GO,
   NO-GO or SHIP BLOCKED line is posted. The run never pushes.
