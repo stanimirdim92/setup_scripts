@@ -282,6 +282,7 @@ class Run:
         error, text = self.claude(prompt)
         saved = self.dir / f'{self.ticket}-ticket-{len(self.state.setdefault("log", [])) + 1}.md'
         saved.write_text(text + '\n')
+        self.last_file = saved.name
         print(f'    saved: {saved}')
         self.state['log'].append(prompt.splitlines()[0])
         self.save()
@@ -435,7 +436,7 @@ class Run:
         plan = self.plan.read_text()
         if 'SPEC CONFLICT' in plan or open_questions(plan):
             self.commit(f'{t}: plan draft')
-            return self.stop('the plan raised a SPEC CONFLICT or an open question; read the plan')
+            return self.stop(f'the plan raised a SPEC CONFLICT or an open question; read {self.plan}', self.last_file)
         check = subprocess.run([sys.executable, str(CHECK_PLAN), str(self.plan), '--todo', str(self.todo),
                                 '--spec', str(self.spec)], capture_output=True, text=True)
         if check.returncode:
