@@ -2,7 +2,7 @@
 """Take one ticket from Jira to /ship, stopping for a person only where the risk needs one (ADR 0115).
 
 Run it in the ticket's checkout. Each run moves the ticket as far as it can,
-then stops; run it again (by hand or on a schedule) after you answer:
+then waits for your Slack answer (--wait hours) or stops; run it again to go on:
 
     intake + /spec <TICKET> unattended   Draft spec. Questions on Low and Medium
                                          risk take the recommended option as a
@@ -61,7 +61,7 @@ _spec = importlib.util.spec_from_file_location('pipeline', HERE / 'pipeline.py')
 pl = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(pl)
 
-DONE, STOPPED, NOT_CHECKOUT, WAITING = 0, 1, 2, 3
+DONE, STOPPED, NOT_CHECKOUT, WAITING, PAUSED = 0, 1, 2, 3, 4
 # A headless session may use a tool only when it is allowed up front. Claude Code
 # names a claude.ai connector mcp__claude_ai_<Name>__…, a configured server mcp__<Name>__….
 # What intake and /spec may read without a prompt: Jira, Confluence and Figma, read
@@ -289,6 +289,7 @@ class Run:
         self.spec = Path(f'docs/specs/{ticket}-SPEC.md')
         self.plan = Path(f'docs/tasks/{ticket}-plan.md')
         self.todo = Path(f'docs/tasks/{ticket}-todo.md')
+        self.thread = self.state.get('thread')          # one progress thread per ticket, across runs
 
     def save(self):
         self.state_file.write_text(json.dumps(self.state, indent=2) + '\n')
@@ -298,9 +299,11 @@ class Run:
         if not getattr(self.out, 'chatty', False):
             return
         try:
-            if not getattr(self, 'thread', None):
-                self.thread = self.out.post(f':arrow_forward: *{self.ticket} · Run* · `{os.getcwd()}`\n'
-                                            'Each stage reports in this thread.')
+            if not self.thread:
+                self.thread = self.state['thread'] = self.out.post(
+                    f':arrow_forward: *{self.ticket} · Run* · `{os.getcwd()}`\nEach stage reports in this thread. '
+                    'Write `TICKET STOP` or `TICKET NOTE: …` here between stages.')
+                self.save()
             self.out.post(text, thread=self.thread)
         except RuntimeError as err:
             print(f'ticket: could not post progress: {err}')
@@ -310,7 +313,7 @@ class Run:
         latest conflict thread: (stop, notes)."""
         if not getattr(self.out, 'chatty', False):
             return False, ''
-        threads = [getattr(self, 'thread', None), (self.state.get('ask') or {}).get('ts'),
+        threads = [self.thread, (self.state.get('ask') or {}).get('ts'),
                    *self.state.get('inbox_threads', [])[-1:]]
         new = []
         for ts in dict.fromkeys(t for t in threads if t):
@@ -362,7 +365,7 @@ class Run:
         print(f'ticket: {self.ticket} stops after /{where} (--until {where})')
         self.out.post(f':double_vertical_bar: *{self.ticket} · Paused after /{where}* (--until {where}). '
                       f'Run ticket.py {self.ticket} again to go on.')
-        return WAITING
+        return PAUSED
 
     def stop(self, why, file=''):
         print(f'ticket: {self.ticket} stopped: {why}')
@@ -665,6 +668,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('ticket', help='the Jira key (LD-503) or the ticket URL')
     parser.add_argument('--reply', help='your answer when Slack is not configured, e.g. "1A 2B LD-1"')
+    parser.add_argument('--wait', type=float, default=8,
+                        help='with Slack: keep checking for your answer this many hours instead of exiting (0: exit)')
+    parser.add_argument('--poll', type=int, default=90, help='seconds between Slack checks while waiting (default 90)')
     parser.add_argument('--until', choices=('plan',), help='stop after this stage (approved plan, no /build)')
     parser.add_argument('--budget', type=float, default=10, help='--max-budget-usd per stage (default 10)')
     parser.add_argument('--permission-mode', default='',
@@ -735,13 +741,25 @@ def main(argv=None):
     print(f'ticket: {args.ticket} in {os.getcwd()}')
     print(f'  messages: {log.parent}/{args.ticket}-ticket-<n>.md · log: {log}')
     print(f'  questions and results: ' + (f'Slack channel {channel}' if channel and owner else f'this terminal and {log.with_suffix(".md")}'))
-    try:
-        result = Run(args.ticket, out, claude, pipeline, args.budget, args.until).go()
-    except RuntimeError as err:
-        print(f'ticket: {err}')
-        return STOPPED
-    print({DONE: 'ticket: reached /ship.', STOPPED: 'ticket: stopped.', WAITING: 'ticket: waiting for your answer.'}
-          .get(result, ''))
+    waits = isinstance(out, Slack) and args.wait > 0
+    deadline = time.monotonic() + args.wait * 3600
+    while True:
+        try:
+            result = Run(args.ticket, out, claude, pipeline, args.budget, args.until).go()
+        except RuntimeError as err:
+            print(f'ticket: {err}')
+            return STOPPED
+        if result != WAITING or not waits or time.monotonic() > deadline:
+            break
+        print(f'ticket: waiting for your answer in Slack; checking every {args.poll}s (Ctrl+C to leave; '
+              f'run it again later to go on)')
+        try:
+            time.sleep(args.poll)
+        except KeyboardInterrupt:
+            print()
+            break
+    print({DONE: 'ticket: reached /ship.', STOPPED: 'ticket: stopped.', WAITING: 'ticket: waiting for your answer.',
+           PAUSED: f'ticket: paused after /{args.until}; run it again without --until to go on.'}.get(result, ''))
     return result
 
 

@@ -353,7 +353,7 @@ class Ticket(unittest.TestCase):
         self.run_once()
         self.out.reply(f'1A {T}')
         with redirect_stdout(io.StringIO()):
-            self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5, 'plan').go(), tk.WAITING)
+            self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5, 'plan').go(), tk.PAUSED)
         self.assertNotIn('pipeline.py', self.prompts)
         self.assertEqual(self.header(f'docs/tasks/{T}-plan.md', 'Status'), 'Approved')
         self.assertIn('Paused after /plan', self.out.posts[-1][1])
