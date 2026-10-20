@@ -549,8 +549,11 @@ class Run:
         return error, text
 
     def commit(self, message):
-        paths = [str(p) for p in (Path(f'docs/specs/{self.ticket}-intake.md'), self.spec, self.plan, self.todo)
-                 if p.exists()]
+        """Commit the ticket's documents: everything under docs/specs and docs/tasks that carries its key
+        (intake, spec, plan, todo, open items …), so a stage that edits one leaves the tree clean."""
+        paths = [str(p) for d in ('docs/specs', 'docs/tasks') for p in sorted(Path(d).glob(f'{self.ticket}-*'))]
+        if not paths:
+            return
         pl.git('add', '--', *paths)
         if pl.git('diff', '--cached', '--quiet')[0]:
             rc, _ = pl.git('commit', '-q', '-m', f'{message}\n\nRefs: {self.ticket}')
@@ -623,11 +626,15 @@ class Run:
                 return self.stop(f'stopped by the owner ({stop})')
             (self.dir / f'{t}-inbox.json').write_text(json.dumps({'after_step': 0, 'stop': False,
                                                                    'notes': [notes] if notes else []}))
+            started = time.time()
             rc = self.pipeline(t, self.budget, self.pipeline_step)
             if rc != 0:
                 stopped = self.dir / f'{t}-pipeline-stop.json'
-                info = json.loads(stopped.read_text()) if stopped.exists() else {}
-                conflict, report = self.last_build_conflict()
+                fresh = stopped.exists() and stopped.stat().st_mtime >= started    # this run's, not an earlier one's
+                info = json.loads(stopped.read_text()) if fresh else {}
+                if not fresh:                                      # it died before a stage: say what it printed
+                    info = {'why': f'exited {rc}: {getattr(self.pipeline, "last", "") or "no output"}'}
+                conflict, report = self.last_build_conflict() if fresh else ('', '')
                 if conflict and self.state.get('conflicts', 0) < 2:   # /build routed a blocker to /spec
                     self.state['conflict_seen'] = report
                     self.save()
@@ -1227,6 +1234,8 @@ def drive(args, log):
                                                       if step else {})})
         for line in proc.stdout:
             print(line, end='', flush=True)
+            if line.strip():
+                pipeline.last = line.strip()                    # its last word, for a stop without a stop file
             m = re.match(r'  (/\w+ \S+.*?)\s+\$(\d+\.\d\d)(?: · stage (\d+))?$', line.rstrip('\n'))
             if m and step:
                 step(m.group(1), m.group(2), m.group(3))

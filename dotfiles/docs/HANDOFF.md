@@ -230,7 +230,11 @@ Ctrl+C ends the watcher and leaves the children running: each child is
 started with `start_new_session=True` and writes its own `.out` file;
 `relay()` tails that file. `pipeline.py` keeps the last stop file across a
 start (a clean run removes it), so an earlier `/build` conflict survives a
-killed run; `last_build_conflict()` ignores a report older than the
+killed run; after a pipeline exit, `go()` trusts the stop file only when
+it is newer than the launch, else it reports the pipeline's last printed
+line (LD-503: a stale "BUILD BLOCKED" was shown for a dirty-tree refusal);
+`Run.commit()` adds every `docs/specs/<T>-*` and `docs/tasks/<T>-*` file,
+because `/spec` also edits `<T>-open.md`; `last_build_conflict()` ignores a report older than the
 spec's last commit. The owner chose
 two at once and "label off = stop".
 

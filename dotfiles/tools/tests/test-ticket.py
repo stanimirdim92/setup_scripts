@@ -641,16 +641,63 @@ I did not dispatch any executor. Your Slack note ("use 200 status code") settles
         self.assertIn('Add the :eyes: reaction to the message whose ts is 17.5 in the Slack channel C1', sent[0])
         self.assertIn('mcp__Slack__slack_add_reaction', tk.SLACK_TOOLS)
 
-    def test_pipeline_stop_reason_is_posted(self):
-        self.pipeline_rc = 1
+    def test_commit_takes_every_ticket_document(self):
+        real = self.claude
+
+        def claude(prompt):
+            out = real(prompt)
+            if prompt.startswith('/spec'):
+                Path('docs/tasks').mkdir(exist_ok=True)
+                Path(f'docs/tasks/{T}-open.md').write_text('- open item from /spec\n')   # a file the stage adds
+            return out
+
+        self.claude = claude
+        self.run_once()
+        self.assertTrue(self.clean())
+        self.assertIn(f'docs/tasks/{T}-open.md', subprocess.run(['git', 'show', '--name-only', '--format=', 'HEAD'],
+                                                                capture_output=True, text=True).stdout)
+
+    def test_pipeline_dying_before_a_stage_does_not_show_an_old_stop(self):
         self.run_once()
         self.out.reply(f'1A {T}')
         handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
                                       text=True).stdout.strip()) / 'handoff'
         handoff.mkdir(exist_ok=True)
-        (handoff / f'{T}-1-BUILD.md').write_text('BUILD BLOCKED: T002 needs a migration\n\nmore\n')
-        (handoff / f'{T}-pipeline-stop.json').write_text(
-            '{"why": "BUILD BLOCKED: T002 needs a migration", "stage_file": "%s-1-BUILD.md"}' % T)
+        (handoff / f'{T}-1-BUILD.md').write_text(self.BUILD_BLOCKED)
+        (handoff / f'{T}-pipeline-stop.json').write_text(json.dumps({'why': 'BUILD BLOCKED — AB-11', 'stage_file': f'{T}-1-BUILD.md'}))
+        old = __import__('time').time() - 60
+        os.utime(handoff / f'{T}-pipeline-stop.json', (old, old))
+        os.utime(handoff / f'{T}-1-BUILD.md', (old, old))
+        self.tmp_state = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        self.tmp_state.state['conflict_seen'] = f'{T}-1-BUILD.md'                        # handled earlier
+        self.tmp_state.save()
+
+        def pipeline(ticket, budget, step=None):
+            self.prompts.append('pipeline.py')
+            pipeline.last = 'pipeline: uncommitted changes in the checkout'
+            return 2
+
+        self.pipeline = pipeline
+        self.assertEqual(self.run_once(), tk.STOPPED)
+        post = self.out.posts[-1][1]
+        self.assertIn('*Why:* pipeline.py: exited 2: pipeline: uncommitted changes in the checkout', post)
+        self.assertNotIn('BUILD BLOCKED', post)
+
+    def test_pipeline_stop_reason_is_posted(self):
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
+                                      text=True).stdout.strip()) / 'handoff'
+        handoff.mkdir(exist_ok=True)
+
+        def pipeline(ticket, budget, step=None):                 # pipeline.py writes both as it stops
+            self.prompts.append('pipeline.py')
+            (handoff / f'{T}-1-BUILD.md').write_text('BUILD BLOCKED: T002 needs a migration\n\nmore\n')
+            (handoff / f'{T}-pipeline-stop.json').write_text(
+                '{"why": "BUILD BLOCKED: T002 needs a migration", "stage_file": "%s-1-BUILD.md"}' % T)
+            return 1
+
+        self.pipeline = pipeline
         self.assertEqual(self.run_once(), tk.STOPPED)
         post = self.out.posts[-1][1]
         self.assertIn('*Why:* pipeline.py: BUILD BLOCKED: T002 needs a migration', post)
