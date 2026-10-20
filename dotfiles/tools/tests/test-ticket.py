@@ -67,11 +67,20 @@ class FakeOut:
         self.notified = getattr(self, 'notified', []) + ([ts] if notify else [])
         return ts
 
-    def replies(self, ts):
-        return self.thread.get(ts, [])
+    def replies(self, ts, after=None):
+        self.asked_after = getattr(self, 'asked_after', []) + [after]
+        return [r for r in self.thread.get(ts, []) if not after or self.newer(r['ts'], after)]
 
-    def owner_replies(self, ts):
-        return self.raw.get(ts, [])
+    def owner_replies(self, ts, after=None):
+        self.asked_after = getattr(self, 'asked_after', []) + [after]
+        return [r for r in self.raw.get(ts, []) if not after or self.newer(r['ts'], after)]
+
+    @staticmethod
+    def newer(ts, after):
+        try:
+            return float(ts) > float(after)
+        except ValueError:
+            return True                                         # the tests' made-up ids
 
     def say(self, ts, text):
         """The owner writes in a thread, word for word."""
@@ -478,6 +487,21 @@ class Ticket(unittest.TestCase):
         self.assertIn('Reply here with a TICKET NOTE', stop[1])
         self.out.say(r.thread, 'TICKET NOTE: use 200')
         self.assertEqual(r.check_inbox(), (False, 'use 200'))
+
+    def test_long_threads_are_read_from_the_last_reply_on(self):
+        self.out.chatty = True
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        r.progress('started')
+        self.out.raw.setdefault(r.thread, []).append({'author': 'Owner <o@x.io>', 'text': 'TICKET NOTE: one', 'ts': '100.1'})
+        self.assertEqual(r.check_inbox(), (False, 'one'))
+        self.out.raw[r.thread].append({'author': 'Owner <o@x.io>', 'text': 'TICKET NOTE: two', 'ts': '100.2'})
+        self.assertEqual(r.check_inbox(), (False, 'two'))
+        self.assertEqual(self.out.asked_after[-1], '100.1')                     # asked only for what came after
+        self.assertEqual(r.state['inbox_after'][r.thread], '100.2')
+        sent = []
+        slack = tk.Slack(lambda p: (sent.append(p), (None, '[]'))[1], 'C1', 'o@x.io')
+        slack.owner_replies('9.9', '100.2')
+        self.assertIn('only those newer than ts 100.2', sent[0])
 
     def test_note_in_the_question_thread_counts(self):
         self.out.chatty = True

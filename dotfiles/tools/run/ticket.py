@@ -286,15 +286,19 @@ class Slack:
         if not isinstance(data, dict) or not data.get('ok'):
             print(f'ticket: could not react to {ts}: {error or out[:120]}')
 
-    def replies(self, ts):
+    def replies(self, ts, after=None):
         """The owner's replies that start with TICKET ANSWERS:, that part only."""
-        return [{**r, 'text': answers_part(r['text'])} for r in self.owner_replies(ts)
+        return [{**r, 'text': answers_part(r['text'])} for r in self.owner_replies(ts, after)
                 if answers_part(r['text']) is not None]
 
-    def owner_replies(self, ts):
+    def owner_replies(self, ts, after=None):
+        """The owner's replies in a thread, newer than `after` (a reply ts) when given: a long thread is read
+        to the end that way, and the answer stays short."""
         error, out = self.run(f'Read the replies in the Slack thread {ts} of channel {self.channel} with your Slack '
-                              'tool. Print only JSON: a list of {"author": "<name, email and Slack user id>", "text": "<reply, verbatim>", '
-                              '"ts": "<reply ts>"}, oldest first, without the parent message.')
+                              'tool' + (f', only those newer than ts {after} (use the tool\'s oldest/cursor option if it '
+                                        f'has one, else read every page and keep only those)' if after else '')
+                              + '. Print only JSON: a list of {"author": "<name, email and Slack user id>", "text": "<reply, verbatim>", '
+                              '"ts": "<reply ts>"}, oldest first, without the parent message; [] when there are none.')
         data = first_json(out) if not error else None
         if not isinstance(data, list):
             raise RuntimeError(f'Slack read failed: {error or out[:200]}')
@@ -495,13 +499,16 @@ class Run:
         if getattr(self.out, 'chatty', False):
             threads = [self.thread, (self.state.get('ask') or {}).get('ts'),
                        *self.state.get('inbox_threads', [])[-1:]]
-            new = []
+            new, after = [], self.state.setdefault('inbox_after', {})
             for ts in dict.fromkeys(t for t in threads if t):
                 try:
-                    new += [r for r in self.out.owner_replies(ts)
-                            if r.get('ts') not in self.state.get('inbox_seen', []) and not self.mine(r)]
+                    got = self.out.owner_replies(ts, after.get(ts))
                 except RuntimeError as err:
                     print(f'ticket: could not read thread {ts}: {err}')
+                    continue
+                new += [r for r in got if r.get('ts') not in self.state.get('inbox_seen', []) and not self.mine(r)]
+                if latest(after.get(ts), *(r.get('ts') for r in got)):
+                    after[ts] = latest(after.get(ts), *(r.get('ts') for r in got))
             self.state.setdefault('inbox_seen', []).extend(r.get('ts') for r in new)
             for r in new:                                   # 👀 on each STOP / NOTE read, where it was written
                 if re.search(r'\bTICKET (?:STOP|NOTE)\b', r['text'], re.I) and hasattr(self.out, 'react'):
@@ -683,7 +690,8 @@ class Run:
             self.state['ask'] = self.ask(text)
             self.save()
             return WAITING
-        new = [r for r in self.out.replies(ask['ts']) if r.get('ts') not in ask['seen'] and not self.mine(r)]
+        after = latest(*ask['seen'])
+        new = [r for r in self.out.replies(ask['ts'], after) if r.get('ts') not in ask['seen'] and not self.mine(r)]
         if not new:
             return WAITING
         ask['seen'] += [r.get('ts') for r in new]
@@ -897,6 +905,12 @@ def ticket_key(arg):
     """The Jira key from "LD-503" or a ticket URL such as https://x.atlassian.net/browse/LD-503."""
     m = re.search(r'(?<![A-Za-z0-9])([A-Z][A-Z0-9]+-\d+)(?![0-9])', arg)
     return m.group(1) if m else None
+
+
+def latest(*stamps):
+    """The newest Slack ts among `stamps` (numeric strings; anything else is ignored), or None."""
+    numeric = [str(t) for t in stamps if t is not None and re.fullmatch(r'\d+(?:\.\d+)?', str(t))]
+    return max(numeric, key=float) if numeric else None
 
 
 def plain(text):
