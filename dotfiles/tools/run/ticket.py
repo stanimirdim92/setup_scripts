@@ -571,7 +571,7 @@ class Run:
         return PAUSED
 
     def stop(self, why, file=''):
-        print(f'ticket: {self.ticket} stopped: {why}')
+        print(f'ticket: {self.ticket} stopped: {why}' + (f'\n  read: {self.dir / file}' if file else ''))
         text = f':octagonal_sign: *{self.ticket} · Stopped*\n*Why:* {why}'
         if file and (self.dir / file).exists():
             body = '\n'.join(l for l in (self.dir / file).read_text().splitlines() if l.strip())
