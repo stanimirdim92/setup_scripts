@@ -19,6 +19,13 @@ count line with the review file for HEAD. A CLI error, BLOCKED, FAIL or any
 other result stops it. It stops before /ship: GO stays yours. It never pushes.
 Every message is saved to `<git-common-dir>/handoff/<TICKET>-<n>-<STAGE>.md`.
 
+A stage that fails for a passing reason (rate limit, a dropped connection, a
+crash, or no event for HARNESS_STALL_MIN minutes, default 60) is retried up to
+HARNESS_RETRIES times (default 5), 10 s · 2ⁿ apart up to 5 min, resuming the
+same session when it has one. An auth or budget error stops at once. Each
+finished stage is noted in `<TICKET>-pipeline.json`; started again on the same
+HEAD, the run goes on from the next stage instead of building again.
+
 Usage (from the ticket's worktree):
     pipeline.py LD-1 --dry-run
     pipeline.py LD-1 --yes
@@ -31,14 +38,25 @@ import argparse
 import json
 import os
 import re
+import selectors
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
 ROUND_CAP = 3
 PROTECTED = ('master',)            # this repository works in main directly
 SUPPLIED = 'Supplied verbatim by pipeline.py from the previous session (target-selection.md §Gate handoffs):'
+BACKOFF = (10, 300)                # seconds: first wait, longest wait (Symphony's numbers)
+# What a retry can get past: the API or the network, not the task. An auth or billing problem, or a
+# budget or turn cap, stops at once.
+TRANSIENT = re.compile(r'rate.?limit|overloaded|too many requests|\b(?:429|5\d\d)\b|ECONN|ETIMEDOUT|ENOTFOUND|'
+                       r'EAI_AGAIN|EPIPE|socket hang up|fetch failed|network|timed? ?out|connection (?:reset|closed|'
+                       r'refused|error)|internal server error|service unavailable', re.I)
+FATAL = re.compile(r'not logged in|please (?:log|sign) ?in|authentication|unauthori[sz]ed|invalid api key|'
+                   r'\b(?:401|403)\b|credit balance|billing|max_budget|max_turns', re.I)
+sleep = time.sleep                 # tests replace it
 
 
 def git(*args):
@@ -48,25 +66,94 @@ def git(*args):
 
 def claude(binary, prompt, budget, mode, log, tools=(), model=None):
     """(error, result text, cost). error is None only for exit 0 and a successful JSON result.
-    An empty mode leaves the permission mode to the user's settings; tools are allowed up front."""
-    cmd = [binary, '-p', *(['--permission-mode', mode] if mode else []), '--max-budget-usd', str(budget),
-           '--output-format', 'json', *(['--allowedTools', *tools] if tools else []), *(['--model', model] if model else [])]
-    out = subprocess.run(cmd, input=prompt, capture_output=True, text=True)
+    An empty mode leaves the permission mode to the user's settings; tools are allowed up front.
+    A transient failure is retried with backoff, resuming the session when the first attempt opened one;
+    the cost adds up over the attempts."""
+    retries = int(os.environ.get('HARNESS_RETRIES', '5'))
+    stall = float(os.environ.get('HARNESS_STALL_MIN', '60')) * 60
+    base = [binary, '-p', '--verbose', *(['--permission-mode', mode] if mode else []), '--max-budget-usd', str(budget),
+            '--output-format', 'stream-json', *(['--allowedTools', *tools] if tools else []),
+            *(['--model', model] if model else [])]
+    cost, session, attempt, send = 0.0, None, 0, prompt
+    while True:
+        attempt += 1
+        cmd = base + (['--resume', session] if session else [])
+        error, text, data, why = attempt_once(cmd, send, stall, log, prompt.splitlines()[0])
+        cost += data.get('total_cost_usd') or 0
+        session = data.get('session_id') or session
+        if not error or not is_transient(why) or attempt >= retries:
+            return error, text, cost
+        wait = min(BACKOFF[0] * 2 ** (attempt - 1), BACKOFF[1])
+        print(f'    retry {attempt + 1}/{retries} in {wait}s: {error}' + (' (resuming the session)' if session else ''))
+        with open(log, 'a') as fh:
+            fh.write(f'retry {attempt + 1}/{retries} in {wait}s: {error}\n')
+        sleep(wait)
+        send = (f'Your previous turn on this task was cut off ({error}). Carry on from where you stopped; do not '
+                f'start over. Finish the task and end with the report it asks for.') if session else prompt
+
+
+def attempt_once(cmd, prompt, stall, log, title):
+    """One `claude -p` run: (error, text, result data, why). It reads the event stream so a stage with no
+    event for `stall` seconds is killed; `why` holds what a retry decision needs (stderr, the result, a stall)."""
+    with tempfile.TemporaryFile(mode='w+') as err:
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=err, text=True)
+        proc.stdin.write(prompt)
+        proc.stdin.close()
+        sel = selectors.DefaultSelector()
+        sel.register(proc.stdout, selectors.EVENT_READ)
+        result, session, last, stalled, events = {}, None, time.monotonic(), False, 0
+        while True:
+            if sel.select(timeout=1):
+                line = proc.stdout.readline()
+                if not line:
+                    break
+                events, last = events + 1, time.monotonic()
+                data = parse_event(line)
+                session = data.get('session_id') or session
+                if data.get('type') == 'result' or ('type' not in data and 'result' in data):
+                    result = data
+            elif stall > 0 and time.monotonic() - last > stall:
+                proc.kill()
+                stalled = True
+                break
+        rc = proc.wait()
+        proc.stdout.close()
+        err.seek(0)
+        stderr = err.read()
+    if session and 'session_id' not in result:
+        result['session_id'] = session
     with open(log, 'a') as fh:
-        fh.write(f'$ {prompt.splitlines()[0]}\n{out.stdout}\n{out.stderr}\n')
-    try:
-        data = json.loads(out.stdout)
-    except ValueError:
-        data = None
-    if not isinstance(data, dict) or not isinstance(data.get('result'), str):
-        data, error = {}, 'printed no JSON result'
-    elif data.get('is_error') or data.get('subtype', 'success') != 'success':
-        error = f'reported an error ({data.get("subtype") or "is_error"})'
+        fh.write(f'$ {title}\n{json.dumps(result) if result else ""}\n{stderr}\n'
+                 + (f'stalled: no event for {stall:.0f}s; killed\n' if stalled else ''))
+    if not isinstance(result.get('result'), str):
+        error, text = 'printed no JSON result', ''
+    elif result.get('is_error') or result.get('subtype', 'success') != 'success':
+        error, text = f'reported an error ({result.get("subtype") or "is_error"})', result['result']
     else:
-        error = None
-    if out.returncode:
-        error = f'exited {out.returncode}'
-    return error, data.get('result', out.stdout), data.get('total_cost_usd') or 0
+        error, text = None, result['result']
+    if stalled:
+        error = f'no event for {stall / 60:g} min'
+    elif rc:
+        error = f'exited {rc}'
+    why = {'stalled': stalled, 'rc': rc, 'blob': f'{error or ""}\n{stderr}\n{text if error else ""}'}
+    return error, text, result, why
+
+
+def parse_event(line):
+    try:
+        data = json.loads(line)
+    except ValueError:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def is_transient(why):
+    """A stall, a crash or an API/network message is worth a retry; auth, billing and caps are not."""
+    if why['stalled']:
+        return True
+    if FATAL.search(why['blob']):
+        return False
+    return bool(why['rc']) or bool(TRANSIENT.search(why['blob']))
 
 
 def line(text, pattern):
@@ -134,12 +221,23 @@ def main(argv=None):
     log = out_dir / f'{ticket}-pipeline.log'
     stop_file = out_dir / f'{ticket}-pipeline-stop.json'      # why it stopped, for ticket.py to post
     stop_file.unlink(missing_ok=True)
+    state_file = out_dir / f'{ticket}-pipeline.json'          # the finished stages, to go on after a crash
     total, step, last = 0.0, 0, ''
+    state = resume_state(state_file)
+    if state:
+        total, step = state['total'], state['step']
+        print(f'pipeline: going on after {state["done"]} (stage {step}) on this HEAD; ${total:.2f} spent before')
+        step = max(step, *saved_steps(out_dir, ticket))   # a failed stage's message keeps its number
+
+    def note(done, **kept):
+        """Stage `done` passed its check on this HEAD; a run started again here goes on after it."""
+        state_file.write_text(json.dumps({'head': git('rev-parse', 'HEAD')[1], 'done': done, 'step': step,
+                                          'total': total, **kept}) + '\n')
 
     def inbox(done):
         """ticket.py's word after stage `done`: (stop, notes). It writes HARNESS_INBOX once it has read Slack."""
         path = os.environ.get('HARNESS_INBOX')
-        deadline = time.monotonic() + 180
+        deadline = time.monotonic() + 300
         while path and time.monotonic() < deadline:
             try:
                 data = json.loads(Path(path).read_text())
@@ -165,7 +263,7 @@ def main(argv=None):
         total += cost
         last = f'{ticket}-{step}-{name}.md'
         (out_dir / last).write_text(text.rstrip('\n') + '\n')
-        print(f'  {prompt.splitlines()[0]:<32} ${cost:.2f}')
+        print(f'  {prompt.splitlines()[0]:<32} ${cost:.2f} · stage {step}')
         return error, text
 
     def stop(why):
@@ -173,20 +271,27 @@ def main(argv=None):
         print(f'\npipeline: stopped — {why}\n  messages and log: {out_dir}\n  measured total: ${total:.2f}')
         return 1
 
-    build_prompt, review = f'/build {ticket}', []
+    build_prompt = state.get('build_prompt', f'/build {ticket}')
+    review = [('REVIEW result', state['review'])] if state.get('review') else []
+    build, verify, done = state.get('build', ''), state.get('verify', ''), state.get('done', '')
     while True:
-        error, build = stage(build_prompt, 'BUILD', *review)
-        if error:
-            return stop(f'/build {error}')
-        if line(build, 'BUILD BLOCKED') or not line(build, 'BUILD COMPLETE'):
-            return stop(line(build, 'BUILD BLOCKED') or '/build gave no BUILD COMPLETE line')
+        if done not in ('BUILD', 'VERIFY'):
+            error, build = stage(build_prompt, 'BUILD', *review)
+            if error:
+                return stop(f'/build {error}')
+            if line(build, 'BUILD BLOCKED') or not line(build, 'BUILD COMPLETE'):
+                return stop(line(build, 'BUILD BLOCKED') or '/build gave no BUILD COMPLETE line')
+            note('BUILD', build=build)
 
-        error, verify = stage(f'/test {ticket}', 'VERIFY', ('BUILD COMPLETE', build))
-        if error:
-            return stop(f'/test {error}')
-        result = line(verify, 'VERIFY (?:PASS|FAIL|BLOCKED)')
-        if not result or not result.startswith('VERIFY PASS'):
-            return stop(result or '/test gave no VERIFY line')
+        if done != 'VERIFY':
+            error, verify = stage(f'/test {ticket}', 'VERIFY', ('BUILD COMPLETE', build))
+            if error:
+                return stop(f'/test {error}')
+            result = line(verify, 'VERIFY (?:PASS|FAIL|BLOCKED)')
+            if not result or not result.startswith('VERIFY PASS'):
+                return stop(result or '/test gave no VERIFY line')
+            note('VERIFY', build=build, verify=verify)
+        done = ''
 
         error, text = stage(f'/review {ticket}', 'REVIEW', ('BUILD COMPLETE', build), ('VERIFY PASS', verify))
         if error:
@@ -201,12 +306,29 @@ def main(argv=None):
         if not any(head.startswith(p.name[len(ticket) + 1:-len('.sarif')]) for p in files):
             return stop(f'/review wrote no review file for {head[:7]}')
         if sum(counts) == 0:
+            state_file.unlink(missing_ok=True)
             print(f'\npipeline: {ticket} review is clean; ready for /ship. Paste {out_dir}/{ticket}-{step}-REVIEW.md '
                   f'into /ship in a new session.\n  measured total: ${total:.2f}')
             return 0
         if len(files) >= ROUND_CAP:
             return stop(f'round cap: {len(files)} reviews and findings remain; the approach needs you (ADR 0089)')
         build_prompt, review = f'/build {ticket} review fixes', [('REVIEW result', text)]
+        note('REVIEW', build_prompt=build_prompt, review=text)
+
+
+def saved_steps(out_dir, ticket):
+    """The numbers of the stage messages saved for the ticket, and 0."""
+    return [0] + [int(m.group(1)) for p in out_dir.glob(f'{ticket}-*-*.md')
+                  for m in [re.fullmatch(rf'{re.escape(ticket)}-(\d+)-[A-Z]+\.md', p.name)] if m]
+
+
+def resume_state(path):
+    """The finished stages of an earlier run on this HEAD, or {} (another HEAD means the work moved on)."""
+    try:
+        state = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return {}
+    return state if isinstance(state, dict) and state.get('head') == git('rev-parse', 'HEAD')[1] else {}
 
 
 if __name__ == '__main__':

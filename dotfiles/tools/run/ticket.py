@@ -41,8 +41,20 @@ Usage (from the ticket's checkout):
     ticket.py LD-1 --reply "1A 2B LD-1"
     ticket.py LD-1 --budget 15
 
+One run per ticket: `<git-common-dir>/handoff/<TICKET>-ticket.lock` names the
+process; a second start is refused while it lives, and takes over when it is
+gone. A run picks up where the last one stopped: the state file, the spec and
+plan status, and pipeline.py's finished stages on the same HEAD. A stage that
+hits a rate limit, a dropped connection or a stall is retried by pipeline.py's
+`claude` (HARNESS_RETRIES, HARNESS_STALL_MIN).
+
+Between stages the runner also reads the ticket's Jira status: Done, or a
+status named in HARNESS_JIRA_STOP (default "Blocked, On Hold, Paused,
+Cancelled"), stops the run before the next stage, like TICKET STOP.
+HARNESS_JIRA_STOP=0 turns the check off.
+
 Exit: 0 the ticket reached a /ship result · 1 stopped on a problem · 2 not a
-ticket checkout · 3 waiting for your answer.
+ticket checkout · 3 waiting for your answer · 5 another run holds the ticket.
 """
 import argparse
 import datetime
@@ -51,6 +63,7 @@ import importlib.util
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -61,7 +74,8 @@ _spec = importlib.util.spec_from_file_location('pipeline', HERE / 'pipeline.py')
 pl = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(pl)
 
-DONE, STOPPED, NOT_CHECKOUT, WAITING, PAUSED = 0, 1, 2, 3, 4
+DONE, STOPPED, NOT_CHECKOUT, WAITING, PAUSED, BUSY = 0, 1, 2, 3, 4, 5
+JIRA_STOP = 'Blocked, On Hold, Paused, Cancelled, Canceled'
 # A headless session may use a tool only when it is allowed up front. Claude Code
 # names a claude.ai connector mcp__claude_ai_<Name>__…, a configured server mcp__<Name>__….
 # What intake and /spec may read without a prompt: Jira, Confluence and Figma, read
@@ -278,9 +292,9 @@ def ask_text(ticket, spec_text):
 
 
 class Run:
-    def __init__(self, ticket, out, claude, pipeline, budget, until=None):
+    def __init__(self, ticket, out, claude, pipeline, budget, until=None, jira=None):
         self.ticket, self.out, self.claude, self.pipeline, self.budget = ticket, out, claude, pipeline, budget
-        self.until = until
+        self.until, self.jira = until, jira                 # jira() reads the ticket's status, or None
         rc, common = pl.git('rev-parse', '--path-format=absolute', '--git-common-dir')
         self.dir = Path(common) / 'handoff'
         self.dir.mkdir(parents=True, exist_ok=True)
@@ -309,32 +323,52 @@ class Run:
             print(f'ticket: could not post progress: {err}')
 
     def check_inbox(self):
-        """The owner's new TICKET STOP / TICKET NOTE: replies in the run thread, the question thread or the
-        latest conflict thread: (stop, notes)."""
-        if not getattr(self.out, 'chatty', False):
-            return False, ''
-        threads = [self.thread, (self.state.get('ask') or {}).get('ts'),
-                   *self.state.get('inbox_threads', [])[-1:]]
-        new = []
-        for ts in dict.fromkeys(t for t in threads if t):
-            try:
-                new += [r for r in self.out.owner_replies(ts) if r.get('ts') not in self.state.get('inbox_seen', [])]
-            except RuntimeError as err:
-                print(f'ticket: could not read thread {ts}: {err}')
-        self.state.setdefault('inbox_seen', []).extend(r.get('ts') for r in new)
-        self.save()
-        stop = any(re.search(r'\bTICKET STOP\b', r['text'], re.I) for r in new)
-        notes = '\n'.join(m.group(1).strip() for r in new for m in [re.search(r'TICKET NOTE:\s*(.+)', r['text'], re.I | re.S)] if m)
-        if stop:
-            self.progress(':octagonal_sign: TICKET STOP read: nothing new starts.')
-        elif notes:
-            self.progress(f':memo: TICKET NOTE read; it goes to the next stage:\n{notes}')
+        """The owner's word before the next stage: (stop, notes). TICKET STOP / TICKET NOTE: replies in the
+        run thread, the question thread or the latest conflict thread; and the ticket's Jira status, when
+        a stopping one means the same as TICKET STOP."""
+        stop, notes = False, ''
+        if getattr(self.out, 'chatty', False):
+            threads = [self.thread, (self.state.get('ask') or {}).get('ts'),
+                       *self.state.get('inbox_threads', [])[-1:]]
+            new = []
+            for ts in dict.fromkeys(t for t in threads if t):
+                try:
+                    new += [r for r in self.out.owner_replies(ts) if r.get('ts') not in self.state.get('inbox_seen', [])]
+                except RuntimeError as err:
+                    print(f'ticket: could not read thread {ts}: {err}')
+            self.state.setdefault('inbox_seen', []).extend(r.get('ts') for r in new)
+            self.save()
+            stop = 'TICKET STOP' if any(re.search(r'\bTICKET STOP\b', r['text'], re.I) for r in new) else False
+            notes = '\n'.join(m.group(1).strip() for r in new for m in [re.search(r'TICKET NOTE:\s*(.+)', r['text'], re.I | re.S)] if m)
+            if stop:
+                self.progress(':octagonal_sign: TICKET STOP read: nothing new starts.')
+            elif notes:
+                self.progress(f':memo: TICKET NOTE read; it goes to the next stage:\n{notes}')
+        status = self.jira_stop()
+        if status:
+            self.progress(f':octagonal_sign: Jira status is *{status}*: nothing new starts. Move the ticket back '
+                          'and run ticket.py again to go on.')
+            stop = stop or f'Jira status {status}'
         return stop, notes
+
+    def jira_stop(self):
+        """The ticket's Jira status when it says to stop (Done, or one named in HARNESS_JIRA_STOP), else ''."""
+        stopping = os.environ.get('HARNESS_JIRA_STOP', JIRA_STOP)
+        if not self.jira or stopping.strip() in ('0', ''):
+            return ''
+        try:
+            status = self.jira() or {}
+        except RuntimeError as err:
+            print(f'ticket: could not read the Jira status: {err}')
+            return ''
+        name, category = str(status.get('status', '')).strip(), str(status.get('category', '')).strip()
+        names = {s.strip().lower() for s in stopping.split(',') if s.strip()}
+        return name if category.lower() == 'done' or name.lower() in names else ''
 
     def stage(self, prompt):
         stop, notes = self.check_inbox()
         if stop:
-            return 'stopped by the owner (TICKET STOP)', ''
+            return f'stopped by the owner ({stop})', ''
         if notes:
             prompt += f'\n\nOwner notes from Slack (TICKET NOTE). Follow them unless they conflict with the approved spec:\n{notes}'
         print(f'  {datetime.datetime.now():%H:%M} {prompt.splitlines()[0][:110]}')
@@ -491,16 +525,17 @@ class Run:
         self.save()
         return WAITING
 
-    def pipeline_step(self, prompt, cost):
-        """pipeline.py finished a stage: post what its message file says, then hand it the owner's word."""
-        self.pipeline_steps = getattr(self, 'pipeline_steps', 0) + 1
+    def pipeline_step(self, prompt, cost, step=None):
+        """pipeline.py finished a stage: post what its message file says, then hand it the owner's word.
+        `step` is pipeline.py's own count, which runs on from an earlier run it picked up."""
+        self.pipeline_steps = int(step) if step else getattr(self, 'pipeline_steps', 0) + 1
         stop, notes = False, ''
         try:
             self.pipeline_progress(prompt, cost)
             stop, notes = self.check_inbox()
         finally:                                        # pipeline.py waits for this file before its next stage
             (self.dir / f'{self.ticket}-inbox.json').write_text(json.dumps(
-                {'after_step': self.pipeline_steps, 'stop': stop, 'notes': [notes] if notes else []}))
+                {'after_step': self.pipeline_steps, 'stop': bool(stop), 'notes': [notes] if notes else []}))
 
     def pipeline_progress(self, prompt, cost):
         files = sorted(self.dir.glob(f'{self.ticket}-*-*.md'), key=lambda p: p.stat().st_mtime)
@@ -679,6 +714,41 @@ def first_line(text):
     return '(empty)'
 
 
+def alive(pid):
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def claim(path):
+    """Take the ticket's lock for this process. Returns the live holder's record instead when another run
+    on this host has it; a dead holder's lock is taken over."""
+    try:
+        held = json.loads(path.read_text())
+    except (OSError, ValueError):
+        held = {}
+    pid = held.get('pid')
+    if pid and held.get('host') == socket.gethostname():
+        if alive(pid):
+            return held
+        print(f'ticket: taking over the run of pid {pid} (started {held.get("started")}), which is gone')
+    path.write_text(json.dumps({'pid': os.getpid(), 'host': socket.gethostname(), 'cwd': os.getcwd(),
+                                'started': datetime.datetime.now().isoformat(timespec='seconds')}) + '\n')
+    return None
+
+
+def release(path):
+    try:
+        if json.loads(path.read_text()).get('pid') == os.getpid():
+            path.unlink()
+    except (OSError, ValueError):
+        pass
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('ticket', help='the Jira key (LD-503) or the ticket URL')
@@ -691,7 +761,6 @@ def main(argv=None):
     parser.add_argument('--permission-mode', default='',
                         help='claude -p permission mode; empty (the default) uses your settings.json')
     args = parser.parse_args(argv)
-    binary = os.environ.get('CLAUDE_BIN', 'claude')
     key = ticket_key(args.ticket)
     if not key:
         print(f'ticket: no Jira key in "{args.ticket}"; give LD-503 or the ticket URL')
@@ -710,14 +779,29 @@ def main(argv=None):
         return NOT_CHECKOUT
     if moved:
         print(f'ticket: the default branch is not for ticket work; using the worktree {moved}')
+    common = pl.git('rev-parse', '--path-format=absolute', '--git-common-dir')[1]
+    log = Path(common) / 'handoff' / f'{args.ticket}-ticket.log'
+    log.parent.mkdir(parents=True, exist_ok=True)
+    lock = log.with_suffix('.lock')
+    holder = claim(lock)                                # one run per ticket; a dirty tree is often its /build
+    if holder:
+        print(f'ticket: {args.ticket} is running already: pid {holder["pid"]} since {holder.get("started")} '
+              f'in {holder.get("cwd")}')
+        return BUSY
+    try:
+        return drive(args, log)
+    finally:
+        release(lock)
+
+
+def drive(args, log):
+    """The run itself, under the ticket's lock."""
+    binary, key = os.environ.get('CLAUDE_BIN', 'claude'), args.ticket
     dirty = pl.git('status', '--porcelain')[1]          # the checkout the ticket runs in
     if dirty:
         print(f'ticket: {os.getcwd()} has uncommitted changes. Commit or stash them first:')
         print('\n'.join('  ' + line for line in dirty.splitlines()[:20]))
         return NOT_CHECKOUT
-    common = pl.git('rev-parse', '--path-format=absolute', '--git-common-dir')[1]
-    log = Path(common) / 'handoff' / f'{args.ticket}-ticket.log'
-    log.parent.mkdir(parents=True, exist_ok=True)
 
     slack_model = os.environ.get('HARNESS_SLACK_MODEL', 'haiku')     # posting and reading needs no big model
     allowed = tuple(t.strip() for t in os.environ.get('HARNESS_ALLOWED_TOOLS', '').split(',') if t.strip()) \
@@ -743,10 +827,20 @@ def main(argv=None):
                                                       if step else {})})
         for line in proc.stdout:
             print(line, end='', flush=True)
-            m = re.match(r'  (/\w+ \S+.*?)\s+\$(\d+\.\d\d)$', line.rstrip('\n'))
+            m = re.match(r'  (/\w+ \S+.*?)\s+\$(\d+\.\d\d)(?: · stage (\d+))?$', line.rstrip('\n'))
             if m and step:
-                step(m.group(1), m.group(2))
+                step(m.group(1), m.group(2), m.group(3))
         return proc.wait()
+
+    def jira():
+        """The ticket's Jira status, read with the read-only tools on the small model: {status, category}."""
+        error, out = claude(f'Read the Jira issue {key} with your Jira tool (getJiraIssue; find the cloudId with '
+                            'getAccessibleAtlassianResources if it asks for one). Print only JSON: {"status": "<status '
+                            'name>", "category": "<its status category: To Do, In Progress or Done>"}.', allowed)
+        data = first_json(out) if not error else None
+        if not isinstance(data, dict):
+            raise RuntimeError(error or out[:200])
+        return data
 
     channel, owner = os.environ.get('HARNESS_SLACK_CHANNEL'), os.environ.get('HARNESS_SLACK_OWNER')
     if channel and owner:
@@ -760,7 +854,7 @@ def main(argv=None):
     deadline = time.monotonic() + args.wait * 3600
     while True:
         try:
-            result = Run(args.ticket, out, claude, pipeline, args.budget, args.until).go()
+            result = Run(args.ticket, out, claude, pipeline, args.budget, args.until, jira).go()
         except RuntimeError as err:
             print(f'ticket: {err}')
             return STOPPED

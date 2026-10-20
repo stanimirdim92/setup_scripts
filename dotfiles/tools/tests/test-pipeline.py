@@ -29,10 +29,20 @@ OPEN = '**Findings: 0 BLOCKER · 1 REQUIRED · 0 ADVISORY**\n- CODE-1'
 STUB = '''#!/usr/bin/env bash
 prompt="$(cat)"
 first="${prompt%%$'\\n'*}"
+case "$first" in "Your previous turn"*) first="$(tail -1 "$STUB_CALLS")" ;; esac     # a resumed stage
 n=$(( $(wc -l < "$STUB_CALLS") + 1 ))
 echo "$first" >> "$STUB_CALLS"
+echo "$*" >> "$STUB_PROMPTS/args.txt"
 printf '%s' "$prompt" > "$STUB_PROMPTS/$n.txt"
 reply() { python3 -c 'import json,sys; print(json.dumps({"result": sys.argv[1], "total_cost_usd": 1}))' "$1"; }
+if [ -n "$STUB_FLAKY" ] && [ "$n" = 1 ]; then          # the first call fails for a passing reason
+  echo '{"type":"system","subtype":"init","session_id":"s1"}'
+  case "$STUB_FLAKY" in
+    stall) exec sleep 30 ;;
+    auth)  echo 'Not logged in. Please run /login' >&2; exit 1 ;;
+    *)     echo 'API Error: 429 rate limit reached' >&2; exit 1 ;;
+  esac
+fi
 case "$first" in
   "/build "*) echo "$n" >> work.txt; git add work.txt; git -c user.email=t@t -c user.name=t commit -qm "build $n"
               case "${STUB_BUILD:-complete}" in
@@ -211,6 +221,85 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(self.stages(), [])
         self.assertIn('Worst case $90', out)
+
+    def args(self, n):
+        return (self.prompts / 'args.txt').read_text().splitlines()[n - 1]
+
+    def waits(self):
+        """pipeline's backoff sleeps, recorded instead of slept."""
+        waited = []
+        pl.sleep = waited.append
+        self.addCleanup(setattr, pl, 'sleep', __import__('time').sleep)
+        return waited
+
+    def test_transient_failure_is_retried_resuming_the_session(self):
+        os.environ['STUB_FLAKY'] = 'rate-limit'
+        waited = self.waits()
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(self.stages(), ['/build AB-1', '/build AB-1', '/test AB-1', '/review AB-1'])
+        self.assertIn('--resume s1', self.args(2))
+        self.assertNotIn('--resume', self.args(1))
+        self.assertTrue(self.prompt(2).startswith('Your previous turn on this task was cut off (exited 1)'))
+        self.assertEqual(waited, [10])
+        self.assertIn('retry 2/5 in 10s: exited 1 (resuming the session)', out)
+        self.assertIn('--verbose', self.args(1))                   # stream-json needs it
+
+    def test_stalled_stage_is_killed_and_retried(self):
+        os.environ.update(STUB_FLAKY='stall', HARNESS_STALL_MIN='0.01')
+        waited = self.waits()
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(self.stages()[:2], ['/build AB-1', '/build AB-1'])
+        self.assertIn('--resume s1', self.args(2))
+        self.assertIn('retry 2/5 in 10s: no event for 0.01 min', out)
+        self.assertEqual(waited, [10])
+
+    def test_auth_error_is_not_retried(self):
+        os.environ['STUB_FLAKY'] = 'auth'
+        waited = self.waits()
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 1)
+        self.assertEqual(self.stages(), ['/build AB-1'])
+        self.assertEqual(waited, [])
+        self.assertIn('/build exited 1', out)
+
+    def test_retries_stop_at_the_cap(self):
+        os.environ.update(STUB_FLAKY='rate-limit', HARNESS_RETRIES='1')
+        self.waits()
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 1)
+        self.assertEqual(self.stages(), ['/build AB-1'])
+
+    def test_backoff_doubles_up_to_the_cap(self):
+        self.assertEqual([min(pl.BACKOFF[0] * 2 ** (a - 1), pl.BACKOFF[1]) for a in range(1, 7)],
+                         [10, 20, 40, 80, 160, 300])
+
+    def test_started_again_on_the_same_head_goes_on_after_the_finished_stages(self):
+        os.environ['STUB_VERIFY'] = 'fail'
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 1)
+        del os.environ['STUB_VERIFY']
+        rc, out = self.run_pipeline()                                 # same HEAD: no second /build
+        self.assertEqual(rc, 0, out)
+        self.assertIn('going on after BUILD (stage 1)', out)
+        self.assertEqual(self.stages(), ['/build AB-1', '/test AB-1', '/test AB-1', '/review AB-1'])
+        self.assertIn(BUILD, self.prompt(3))                          # the kept BUILD message is handed on
+        self.assertIn('· stage 3', out)
+        self.assertEqual(sorted(p.name for p in self.handoff.glob('AB-1-*-*.md')),
+                         ['AB-1-1-BUILD.md', 'AB-1-2-VERIFY.md', 'AB-1-3-VERIFY.md', 'AB-1-4-REVIEW.md'])
+        self.assertFalse((self.handoff / 'AB-1-pipeline.json').exists())   # a clean run leaves no state
+
+    def test_another_head_starts_a_fresh_round(self):
+        os.environ['STUB_VERIFY'] = 'fail'
+        self.run_pipeline()
+        del os.environ['STUB_VERIFY']
+        subprocess.run(['git', '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty',
+                        '-m', 'owner fix'], check=True)
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 0, out)
+        self.assertNotIn('going on after', out)
+        self.assertEqual(self.stages(), ['/build AB-1', '/test AB-1', '/build AB-1', '/test AB-1', '/review AB-1'])
 
 
 if __name__ == '__main__':

@@ -63,3 +63,26 @@ answer them at different times. A batch can come later if threads pile up.
 **Cost.** One `claude -p` call per Slack read or post, on top of the stages.
 A default the owner would have answered differently costs a spec revision
 later; the message lists every default taken so the owner can catch it.
+
+**Amended 2026-10-20 — the run survives what is not the task's fault.** The
+owner asked for the run to need fewer restarts. Taken from Symphony
+(openai/symphony, SPEC.md) and the headless `claude -p` practice:
+
+- A stage that fails for a passing reason (rate limit, dropped connection,
+  crash, or no event from the agent for 60 minutes, `HARNESS_STALL_MIN`) is
+  retried up to 5 times (`HARNESS_RETRIES`), 10 s · 2ⁿ apart up to 5 minutes,
+  resuming the same session by its id so the work so far is kept. An auth,
+  billing, budget or turn-cap error stops at once. The owner set the stall
+  at 60 minutes, not Symphony's 5: a long test run makes no events.
+- One run per ticket. `<TICKET>-ticket.lock` names the process; a second
+  start is refused while it lives and takes over when it is gone. A run goes
+  on from where the last one stopped: `pipeline.py` notes each finished stage
+  and, started again on the same HEAD, goes on from the next one.
+- The Jira status is a stop switch, as moving an issue out of an active state
+  is in Symphony: Done, or a status named in `HARNESS_JIRA_STOP`, stops the
+  run before its next stage, like `TICKET STOP`. The runner reads Jira with
+  the read-only tools on the small model; it still writes nothing to Jira.
+
+Rejected — restore a live session across a runner crash. Symphony does not
+either; the retry covers the common case (the API, the network) and the lock
+takeover covers the rest.

@@ -409,6 +409,71 @@ class Ticket(unittest.TestCase):
         self.assertIn('*Why:* pipeline.py: BUILD BLOCKED: T002 needs a migration', post)
         self.assertIn(f'*{T}-1-BUILD.md:*\n```\nBUILD BLOCKED: T002 needs a migration\nmore\n```', post)
 
+    def test_second_run_is_refused_while_the_first_lives(self):
+        handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
+                                      text=True).stdout.strip()) / 'handoff'
+        handoff.mkdir(exist_ok=True)
+        lock = handoff / f'{T}-ticket.lock'
+        lock.write_text(json.dumps({'pid': os.getpid(), 'host': tk.socket.gethostname(), 'started': 'now', 'cwd': '/w'}))
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(tk.main([T]), tk.BUSY)
+        self.assertIn(f'{T} is running already: pid {os.getpid()} since now in /w', out.getvalue())
+        self.assertEqual(self.prompts, [])
+        self.assertTrue(lock.exists())                                # not ours to remove
+
+    def test_a_dead_holder_is_taken_over_and_the_lock_released_after(self):
+        handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
+                                      text=True).stdout.strip()) / 'handoff'
+        handoff.mkdir(exist_ok=True)
+        lock = handoff / f'{T}-ticket.lock'
+        gone = subprocess.Popen(['true'])
+        gone.wait()
+        lock.write_text(json.dumps({'pid': gone.pid, 'host': tk.socket.gethostname(), 'started': 'earlier'}))
+        Path('stray.txt').write_text('x')                             # so the run ends right after the lock
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(tk.main([T]), tk.NOT_CHECKOUT)
+        self.assertIn(f'taking over the run of pid {gone.pid}', out.getvalue())
+        self.assertFalse(lock.exists())
+
+    def test_jira_status_stops_before_the_next_stage(self):
+        status = {'status': 'In Progress', 'category': 'In Progress'}
+        r = lambda: tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=lambda: status)
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(r().go(), tk.WAITING)                    # an active status changes nothing
+        self.out.reply(f'1A {T}')
+        status = {'status': 'Done', 'category': 'Done'}
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(r().go(), tk.STOPPED)
+        self.assertIn('stopped by the owner (Jira status Done)', self.out.posts[-1][1])
+        self.assertNotIn(f'/plan {T}', self.prompts)
+        status = {'status': 'Blocked', 'category': 'To Do'}          # named in HARNESS_JIRA_STOP
+        self.assertEqual(r().jira_stop(), 'Blocked')
+        status = {'status': 'Waiting for PO', 'category': 'To Do'}
+        self.assertEqual(r().jira_stop(), '')
+        os.environ['HARNESS_JIRA_STOP'] = 'Waiting for PO'
+        try:
+            self.assertEqual(r().jira_stop(), 'Waiting for PO')
+            os.environ['HARNESS_JIRA_STOP'] = '0'
+            status = {'status': 'Done', 'category': 'Done'}
+            self.assertEqual(r().jira_stop(), '')                    # the check is off
+        finally:
+            del os.environ['HARNESS_JIRA_STOP']
+
+    def test_unreadable_jira_status_does_not_stop(self):
+        def broken():
+            raise RuntimeError('no tool')
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=broken)
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(r.check_inbox(), (False, ''))
+        self.assertIn('could not read the Jira status: no tool', out.getvalue())
+
+    def test_pipeline_step_takes_pipeline_own_count(self):
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        r.pipeline_step(f'/test {T}', '1.00', '3')                    # pipeline.py went on after a crash
+        self.assertEqual(json.loads((r.dir / f'{T}-inbox.json').read_text())['after_step'], 3)
+        r.pipeline_step(f'/review {T}', '1.00')
+        self.assertEqual(json.loads((r.dir / f'{T}-inbox.json').read_text())['after_step'], 4)
+
     def test_question_in_reply_is_answered(self):
         self.run_once()
         self.out.reply('why is DEC-001 a default?')
