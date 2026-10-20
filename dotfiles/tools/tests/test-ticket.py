@@ -169,6 +169,10 @@ class Ticket(unittest.TestCase):
             Path('docs/tasks').mkdir(exist_ok=True)
             Path(f'docs/tasks/{T}-plan.md').write_text(self.plan_text)
             Path(f'docs/tasks/{T}-todo.md').write_text('- T001\n')
+            if 'SPEC CONFLICT' in self.plan_text:                 # the report: the conflict, and the HANDOFF line
+                section = self.plan_text.split('## SPEC CONFLICT', 1)[1].split('\n## ', 1)[0].strip()
+                return None, f'Planning stopped.\n## SPEC CONFLICT\n{section}\nHANDOFF: result=BLOCKED route=/spec ids=REQ-001 decide=0'
+            return None, 'Plan written.\nHANDOFF: result=COMPLETE route=none ids=- decide=0'
         elif first == '/ship':
             return None, '**GO** — rollback: revert the merge'
         return None, 'done'
@@ -323,14 +327,14 @@ class Ticket(unittest.TestCase):
 
     def test_different_conflicts_in_a_row_each_go_to_spec_the_same_one_stops(self):
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
-        a = 'Decision needed (routes to `/spec`). REQ-008: the EXPLAIN criterion fails as written.'
-        b = 'Spec conflict on REQ-001 (goes to `/spec`): 422 vs 200.'
-        self.assertTrue(r.may_resolve(a))
-        r.state.setdefault('conflict_digests', []).append(tk.conflict_digest(a))
-        self.assertTrue(r.may_resolve(b))                                        # another one: progress
-        self.assertFalse(r.may_resolve('REQ-008 again, worded differently, same EXPLAIN criterion'))   # the same ids
-        r.state['conflict_digests'] += [tk.conflict_digest(f'something about TD-00{i}') for i in range(4)]
-        self.assertFalse(r.may_resolve(b))                                       # the sixth stops
+        a, b = 'the EXPLAIN criterion fails as written', '422 vs 200'
+        self.assertTrue(r.may_resolve(a, ['REQ-008']))
+        r.state.setdefault('conflict_digests', []).append(tk.conflict_digest(a, ['REQ-008']))
+        self.assertTrue(r.may_resolve(b, ['REQ-001']))                           # another one: progress
+        self.assertFalse(r.may_resolve('worded differently', ['REQ-008']))       # the same ids
+        self.assertFalse(r.may_resolve('REQ-008 named in the text only'))        # ids from the text when none given
+        r.state['conflict_digests'] += [tk.conflict_digest('x', [f'TD-00{i}']) for i in range(4)]
+        self.assertFalse(r.may_resolve(b, ['REQ-001']))                          # the sixth stops
 
     def test_repeated_plan_conflict_stops(self):
         """The same conflict coming back means the fix did not take: the owner looks, not /spec again."""
@@ -548,38 +552,6 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
 | T001 | Blocked. |
 """
 
-    def test_build_conflict_takes_the_spec_routed_blocker_with_its_lines(self):
-        conflict = tk.build_conflict(self.BUILD_BLOCKED)
-        self.assertTrue(conflict.startswith('1. **Spec conflict on REQ-001 (goes to `/spec`).**'))
-        self.assertIn('My recommendation:', conflict)
-        self.assertIn('The alternative is to return 422', conflict)
-        self.assertNotIn('Schema snapshot drift', conflict)
-        self.assertEqual(tk.build_conflict('# BUILD BLOCKED\n\nT002 needs a migration. Route: human decision.\n'), '')
-        self.assertEqual(tk.build_conflict('resolves the earlier SPEC CONFLICT; see /spec history'), '')   # no blocker
-
-    BUILD_BLOCKED_WORDED = """## BUILD BLOCKED: AB-11
-I did not dispatch any executor. Your Slack note ("use 200 status code") settles the open 422 conflict. It still contradicts the approved spec, so `/build` cannot act on it yet.
-**Why it stopped**
-- The spec at `docs/specs/AB-11-SPEC.md:128` (REQ-001) says an invalid value MUST get HTTP 422.
-- `ValidationFailedOverride` returns HTTP 200 with an `errors` body for non-Inertia requests. Your note picks that behaviour.
-- Changing what the API returns is a behaviour change to the spec. `/build` does not edit the spec.
-**Task state at HEAD**
-
-| Task | Status | Note |
-|---|---|---|
-| T001 | Pending | Blocked by the 422 vs 200 conflict |
-**Commits:** none.
-"""
-
-    def test_build_conflict_any_blocked_report_that_names_spec(self):
-        report = ('# BUILD BLOCKED — AB-11\n\n## Blockers\n\n1. **T003, the EXPLAIN criterion (REQ-008).** MySQL reads the '
-                  'index. Decide one of these, then the route is `/plan` or `/spec`:\n   - accept the plan MySQL uses;\n'
-                  '   - change the criterion.\n2. **CP-001 fails.** 186 failed outside LD-503.\n\n## What ran\n\n| a | b |\n')
-        conflict = tk.build_conflict(report)
-        self.assertIn('EXPLAIN criterion (REQ-008)', conflict)
-        self.assertIn('CP-001 fails', conflict)                               # /spec sees the whole picture
-        self.assertNotIn('| a | b |', conflict)
-
     def test_own_posts_are_not_read_as_the_owner(self):
         self.out.chatty = True
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
@@ -589,15 +561,6 @@ I did not dispatch any executor. Your Slack note ("use 200 status code") settles
             self.out.raw.setdefault(thread or ts, []).append({'author': 'Owner <o@x.io>', 'text': text, 'ts': ts})
         self.out.raw.setdefault(r.thread, []).append({'author': 'Owner <o@x.io>', 'text': 'TICKET NOTE: real', 'ts': 'n1'})
         self.assertEqual(r.check_inbox(), (False, 'real'))
-
-    def test_build_conflict_reads_the_meaning_not_the_phrase(self):
-        conflict = tk.build_conflict(self.BUILD_BLOCKED_WORDED)
-        self.assertIn('contradicts the approved spec', conflict)
-        self.assertIn('Changing what the API returns is a behaviour change to the spec', conflict)
-        self.assertNotIn('| T001 |', conflict)                                  # the table stays out
-        self.assertEqual(tk.build_conflict('## BUILD BLOCKED: AB-11\nThe schema snapshot does not match the local DB. '
-                                           'Refresh it on main or on this branch?\n'), '')
-        self.assertEqual(tk.build_conflict('**BUILD COMPLETE**\nthe spec conflict from before is resolved'), '')
 
     def test_build_conflict_goes_back_to_spec_then_plans_and_builds_again(self):
         self.conflict_fix_by_default = True
@@ -610,7 +573,8 @@ I did not dispatch any executor. Your Slack note ("use 200 status code") settles
             self.prompts.append('pipeline.py')
             if blocked.pop() if blocked else False:
                 (handoff / f'{T}-1-BUILD.md').write_text(self.BUILD_BLOCKED)
-                (handoff / f'{T}-pipeline-stop.json').write_text(json.dumps({'why': 'BUILD BLOCKED — AB-11', 'stage_file': f'{T}-1-BUILD.md'}))
+                (handoff / f'{T}-pipeline-stop.json').write_text(json.dumps({'why': 'BUILD BLOCKED — AB-11', 'stage_file': f'{T}-1-BUILD.md',
+                    'handoff': {'result': 'BLOCKED', 'route': '/spec', 'ids': ['REQ-001'], 'decide': 2}}))
                 return 1
             (handoff / f'{T}-3-REVIEW.md').write_text('**Findings: 0 BLOCKER · 0 REQUIRED**\n')
             return 0
@@ -639,21 +603,54 @@ I did not dispatch any executor. Your Slack note ("use 200 status code") settles
         with redirect_stdout(io.StringIO()):
             tk.Run(T, self.out, self.claude, self.pipeline, 5, 'plan').go()        # approved plan, no build
         (handoff / f'{T}-1-BUILD.md').write_text(self.BUILD_BLOCKED)                  # left by a run that stopped
-        (handoff / f'{T}-pipeline-stop.json').write_text(json.dumps({'why': 'BUILD BLOCKED — AB-11', 'stage_file': f'{T}-1-BUILD.md'}))
+        (handoff / f'{T}-pipeline-stop.json').write_text(json.dumps({'why': 'BUILD BLOCKED — AB-11', 'stage_file': f'{T}-1-BUILD.md',
+            'handoff': {'result': 'BLOCKED', 'route': '/spec', 'ids': ['REQ-001'], 'decide': 2}}))
         self.prompts.clear()
         self.assertEqual(self.run_once(), tk.DONE)
         self.assertEqual(self.prompts, [f'/spec {T} unattended', f'/plan {T}', 'pipeline.py', f'/ship {T}'])
-        self.prompts.clear()                                                          # the same conflict is not re-read
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
-        self.assertFalse(r.may_resolve(tk.build_conflict(self.BUILD_BLOCKED)))
-        # a new conflict in a report with the same file name is read (stage numbers restart on a new HEAD)
-        (handoff / f'{T}-1-BUILD.md').write_text(self.BUILD_BLOCKED.replace('REQ-001', 'REQ-008').replace('422', 'EXPLAIN'))
-        self.assertTrue(r.may_resolve(r.last_build_conflict()[0]))
-        # a report older than the spec's last commit is old news
-        self.assertTrue(r.last_build_conflict()[0])
-        old = __import__('time').time() - 3600
-        os.utime(handoff / f'{T}-1-BUILD.md', (old, old))
-        self.assertEqual(r.last_build_conflict(), ('', ''))
+        self.assertFalse(r.may_resolve('', ['REQ-001']))                              # taken once: not again
+        self.assertTrue(r.may_resolve('', ['REQ-008']))                               # a new one in the same file name would be
+        now = __import__('time').time()
+        os.utime(handoff / f'{T}-1-BUILD.md', (now - 3600, now - 3600))
+        self.assertEqual(r.last_stop(), {})                                           # the spec moved after that report
+        os.utime(handoff / f'{T}-1-BUILD.md', (now + 60, now + 60))
+        self.assertEqual(r.last_stop().get('handoff', {}).get('route'), '/spec')      # a report after the spec counts
+
+    def test_a_decision_routed_to_the_owner_stops_and_retries_nothing(self):
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
+                                      text=True).stdout.strip()) / 'handoff'
+        handoff.mkdir(exist_ok=True)
+
+        def pipeline(ticket, budget, step=None):
+            self.prompts.append('pipeline.py')
+            (handoff / f'{T}-1-BUILD.md').write_text('# BUILD BLOCKED\nThe test database cannot run the suite. Refresh it on main (1) or on this branch (2)?\n'
+                                                     'HANDOFF: result=BLOCKED route=owner ids=- decide=2\n')
+            (handoff / f'{T}-pipeline-stop.json').write_text(json.dumps({'why': 'BUILD BLOCKED', 'stage_file': f'{T}-1-BUILD.md',
+                'handoff': {'result': 'BLOCKED', 'route': 'owner', 'ids': [], 'decide': 2}}))
+            return 1
+
+        self.pipeline = pipeline
+        self.assertEqual(self.run_once(), tk.STOPPED)
+        self.assertEqual(self.prompts.count('pipeline.py'), 1)
+        self.assertNotIn(f'/spec {T} unattended', self.prompts[2:])
+        self.assertIn('/build: a decision is yours (2 options in the report)', self.out.posts[-1][1])
+        self.assertEqual(self.run_once(), tk.STOPPED)                                 # a new run: the same stop, no retry
+        self.assertEqual(self.prompts.count('pipeline.py'), 2)
+
+    def test_plan_without_a_handoff_line_stops(self):
+        real = self.claude
+        self.claude = lambda prompt: (real(prompt), (None, 'I wrote the plan.'))[1] if prompt.startswith('/plan') else real(prompt)
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.STOPPED)
+        self.assertIn('/plan gave no HANDOFF line', self.out.posts[-1][1])
+        self.assertNotIn('pipeline.py', self.prompts)
+
+    def test_prose_detectors_are_gone(self):
+        self.assertNotRegex(SCRIPT.read_text(), r'SPEC_SIGNALS|build_conflict|routed|has_conflict|conflict_text')
 
     def test_owner_word_reaches_the_first_pipeline_stage(self):
         self.out.chatty = True
@@ -1063,11 +1060,6 @@ class Parsing(unittest.TestCase):
             p.write_text('# Spec\n\nStatus: Approved\nTicket: AB-11\n')
             tk.set_header(p, {'Status': 'Draft', 'Approved by': '—', 'Approved at': '—'})
             self.assertEqual(p.read_text(), '# Spec\n\nStatus: Draft\nApproved by: —\nApproved at: —\nTicket: AB-11\n')
-
-    def test_conflict_only_from_a_heading_or_the_handoff(self):
-        self.assertFalse(tk.has_conflict('# Plan\nStatus: Draft\n\nResolves the earlier REQ-004 SPEC CONFLICT (DEC-008).\n'))
-        self.assertTrue(tk.has_conflict('# Plan\n\n## SPEC CONFLICT\nREQ-1\n'))
-        self.assertTrue(tk.has_conflict('# Plan\nHandoff: Blocked — SPEC CONFLICT (REQ-004)\n'))
 
     def test_answers_part_takes_the_singular_too(self):
         self.assertEqual(tk.answers_part('TICKET ANSWER: Use 200'), ' Use 200')

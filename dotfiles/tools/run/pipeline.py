@@ -14,9 +14,11 @@ against git. When the review leaves BLOCKER or REQUIRED findings, the runner
 starts `/build <TICKET> review fixes`, then /test and /review again, until the
 review is clean or three review rounds exist (ADR 0089).
 
-It moves on only on a clear result: BUILD COMPLETE, VERIFY PASS, and a review
-count line with the review file for HEAD. A CLI error, BLOCKED, FAIL or any
-other result stops it. It stops before /ship: GO stays yours. It never pushes.
+It moves on only on a clear result: each stage's HANDOFF line
+(references/stage-handoff.md) agreeing with its result line, and the review
+file for HEAD. A VERIFY FAIL routed to /build starts a fix round (at most
+two), then /test again. A CLI error, a missing or disagreeing HANDOFF line,
+BLOCKED, or a route elsewhere stops it; the parsed line is in the stop file. It stops before /ship: GO stays yours. It never pushes.
 Every message is saved to `<git-common-dir>/handoff/<TICKET>-<n>-<STAGE>.md`.
 
 A stage that fails for a passing reason (rate limit, a dropped connection, a
@@ -45,7 +47,8 @@ import tempfile
 import time
 from pathlib import Path
 
-ROUND_CAP = 3
+ROUND_CAP = 3                      # reviews per ticket (ADR 0089)
+VERIFY_CAP = 2                     # /build fix rounds a VERIFY FAIL may start before a person looks
 PROTECTED = ('master',)            # this repository works in main directly
 SUPPLIED = 'Supplied verbatim by pipeline.py from the previous session (target-selection.md §Gate handoffs):'
 # A -p session ends with the main agent's final message, and a background agent dies with it (LD-503: /test
@@ -204,6 +207,23 @@ def handoff(text):
     return out
 
 
+OK_RESULTS = ('COMPLETE', 'PASS', 'CLEAN')
+
+
+def verdict(text, stage_name, said_ok):
+    """The stage's HANDOFF line as a dict, or the reason it cannot be used: missing, a bad value, or a
+    verdict that disagrees with the result line the command wrote above it (HR-1 REQ-002)."""
+    try:
+        h = handoff(text)
+    except ValueError as err:
+        return None, str(err)
+    if h is None:
+        return None, f'{stage_name} gave no HANDOFF line'
+    if (h['result'] in OK_RESULTS) != bool(said_ok):
+        return None, f'{stage_name}: HANDOFF disagrees with the result line (result={h["result"]})'
+    return h, None
+
+
 def line(text, pattern):
     m = re.search(rf'^\W*({pattern}[^\n]*)', text, re.M)
     return m.group(1).replace('**', '').strip() if m else None
@@ -328,38 +348,55 @@ def main(argv=None):
     build_prompt = state.get('build_prompt', f'/build {ticket}')
     review = [('REVIEW result', state['review'])] if state.get('review') else []
     build, verify, done = state.get('build', ''), state.get('verify', ''), state.get('done', '')
+    verify_rounds = state.get('verify_rounds', 0)
     while True:
         if done not in ('BUILD', 'VERIFY'):
             error, build = stage(build_prompt, 'BUILD', *review)
             if error:
                 return stop(f'/build {error}')
-            if line(build, 'BUILD BLOCKED') or not line(build, 'BUILD COMPLETE'):
-                return stop(line(build, 'BUILD BLOCKED') or '/build gave no BUILD COMPLETE line')
+            h, problem = verdict(build, '/build', line(build, 'BUILD COMPLETE') and not line(build, 'BUILD BLOCKED'))
+            if problem:
+                return stop(problem)
+            if h['result'] == 'BLOCKED':                     # its route is in the stop file for ticket.py
+                return stop(line(build, 'BUILD BLOCKED') or f'BUILD BLOCKED → {h["route"]}')
             note('BUILD', build=build)
 
         if done != 'VERIFY':
             error, verify = stage(f'/test {ticket}', 'VERIFY', ('BUILD COMPLETE', build))
             if error:
                 return stop(f'/test {error}')
-            result = line(verify, 'VERIFY (?:PASS|FAIL|BLOCKED)')
-            if not result or not result.startswith('VERIFY PASS'):
-                return stop(result or '/test gave no VERIFY line')
+            said = line(verify, 'VERIFY (?:PASS|FAIL|BLOCKED)') or ''
+            h, problem = verdict(verify, '/test', said.startswith('VERIFY PASS'))
+            if problem:
+                return stop(problem)
+            if h['result'] == 'FAIL' and h['route'] == '/build':  # a production defect: fix, then test again
+                verify_rounds += 1
+                if verify_rounds > VERIFY_CAP:
+                    return stop(f'verify round cap: {VERIFY_CAP} fix rounds and /test still fails; a person looks')
+                build_prompt, review, done = f'/build {ticket} verify fixes', [('VERIFY result', verify)], ''
+                note('REVIEW', build_prompt=build_prompt, review=verify, verify_rounds=verify_rounds)
+                continue
+            if h['result'] != 'PASS':
+                return stop(said or f'VERIFY {h["result"]} → {h["route"]}')
             note('VERIFY', build=build, verify=verify)
         done = ''
 
         error, text = stage(f'/review {ticket}', 'REVIEW', ('BUILD COMPLETE', build), ('VERIFY PASS', verify))
         if error:
             return stop(f'/review {error}')
-        if line(text, 'REVIEW BLOCKED'):
-            return stop(line(text, 'REVIEW BLOCKED'))
         counts = review_counts(text)
+        h, problem = verdict(text, '/review', counts is not None and sum(counts) == 0 and not line(text, 'REVIEW BLOCKED'))
+        if problem:
+            return stop(problem)
+        if h['result'] == 'BLOCKED':
+            return stop(line(text, 'REVIEW BLOCKED') or f'REVIEW BLOCKED → {h["route"]}')
         if counts is None:
             return stop('/review gave no count line')
         head = git('rev-parse', 'HEAD')[1]
         files = review_files(common, ticket)
         if not any(head.startswith(p.name[len(ticket) + 1:-len('.sarif')]) for p in files):
             return stop(f'/review wrote no review file for {head[:7]}')
-        if sum(counts) == 0:
+        if h['result'] == 'CLEAN':
             state_file.unlink(missing_ok=True)
             stop_file.unlink(missing_ok=True)
             print(f'\npipeline: {ticket} review is clean; ready for /ship. Paste {out_dir}/{ticket}-{step}-REVIEW.md '
@@ -368,7 +405,7 @@ def main(argv=None):
         if len(files) >= ROUND_CAP:
             return stop(f'round cap: {len(files)} reviews and findings remain; the approach needs you (ADR 0089)')
         build_prompt, review = f'/build {ticket} review fixes', [('REVIEW result', text)]
-        note('REVIEW', build_prompt=build_prompt, review=text)
+        note('REVIEW', build_prompt=build_prompt, review=text, verify_rounds=verify_rounds)
 
 
 def saved_steps(out_dir, ticket):

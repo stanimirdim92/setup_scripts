@@ -639,11 +639,11 @@ class Run:
             print(f'  spec and plan are approved; pipeline.py runs /build, /test and /review')
             if self.until == 'plan':
                 return self.stop_at('plan')
-            conflict, report = self.last_build_conflict()
-            if conflict and self.may_resolve(conflict):            # an earlier run's /build sent this to /spec
-                result = self.back_to_spec(conflict, '/build')     # (one it already took is in conflict_digests)
-                return self.go() if result is None else result
-            stop, notes = self.check_inbox()                     # the owner's word before the first stage
+            info, h = self.last_stop(), (self.last_stop().get('handoff') or {})
+            report = (self.dir / (info.get('stage_file') or '')).read_text() if info.get('stage_file') else ''
+            if h.get('route') == '/plan' or (h.get('route') == '/spec' and self.may_resolve(report, h['ids'])):
+                return self.route(info)                      # an earlier run's stage sent it there; a conflict
+            stop, notes = self.check_inbox()                 # already taken is old news, and the pipeline runs
             if stop:
                 return self.stop(f'stopped by the owner ({stop})')
             (self.dir / f'{t}-inbox.json').write_text(json.dumps({'after_step': 0, 'stop': False,
@@ -656,11 +656,7 @@ class Run:
                 info = json.loads(stopped.read_text()) if fresh else {}
                 if not fresh:                                      # it died before a stage: say what it printed
                     info = {'why': f'exited {rc}: {getattr(self.pipeline, "last", "") or "no output"}'}
-                conflict, report = self.last_build_conflict() if fresh else ('', '')
-                if conflict and self.may_resolve(conflict):            # /build routed a blocker to /spec
-                    result = self.back_to_spec(conflict, '/build')
-                    return self.go() if result is None else result    # the spec moved: plan again, build again
-                return self.stop(f'pipeline.py: {info.get("why") or f"exited {rc}"}', info.get('stage_file', ''))
+                return self.route(info)
             self.state['pipeline_done'] = True
             self.save()
 
@@ -770,27 +766,49 @@ class Run:
             seen = []
         return {'ts': where, 'spec': hashlib.sha1(spec_text.encode()).hexdigest(), 'seen': seen}
 
-    def may_resolve(self, conflict):
+    def may_resolve(self, conflict, ids=()):
         """A conflict goes to /spec unless the same one came back (the fix did not take) or this is the
         sixth for the ticket: then it stops and the owner looks. Different conflicts in a row are progress."""
         seen = self.state.get('conflict_digests', [])
-        return conflict_digest(conflict) not in seen and len(seen) < 5
+        return conflict_digest(conflict, ids) not in seen and len(seen) < 5
 
-    def last_build_conflict(self):
-        """(conflict text, report file name) from the last pipeline stop when its BUILD report routed a
-        blocker to /spec, else ('', '')."""
+    def last_stop(self):
+        """The last pipeline stop (why, stage file, the parsed HANDOFF line), or {} when there is none or the
+        spec moved after that report: then it is old news."""
         stopped = self.dir / f'{self.ticket}-pipeline-stop.json'
         try:
             info = json.loads(stopped.read_text())
         except (OSError, ValueError):
-            return '', ''
-        report = self.dir / str(info.get('stage_file', ''))
-        if not report.name.endswith('BUILD.md') or not report.is_file():
-            return '', ''
+            return {}
+        report = self.dir / str(info.get('stage_file') or '')
+        if not report.is_file():
+            return {}
         spec_at = pl.git('log', '-1', '--format=%ct', '--', str(self.spec))[1]
-        if spec_at and int(spec_at) > report.stat().st_mtime:      # the spec moved since: the report is old news
-            return '', ''
-        return build_conflict(report.read_text()), report.name
+        if spec_at and int(spec_at) > report.stat().st_mtime:
+            return {}
+        return info
+
+    def route(self, info):
+        """The one step after a stopped pipeline stage, from its HANDOFF line alone (HR-1 REQ-002): /spec takes
+        the conflict path, /plan plans again, owner stops and waits, anything else stops with pipeline.py's
+        reason. Returns an exit code, or None when the run goes on."""
+        h, file, why = info.get('handoff') or {}, info.get('stage_file') or '', info.get('why') or 'stopped'
+        stage = {'BUILD': '/build', 'VERIFY': '/test', 'REVIEW': '/review'}.get(file.rsplit('-', 1)[-1][:-3], 'pipeline.py')
+        if not h:
+            return self.stop(f'pipeline.py: {why}', file)
+        report = (self.dir / file).read_text() if (self.dir / file).is_file() else ''
+        if h['route'] == '/spec':
+            if not self.may_resolve(report, h['ids']):
+                return self.stop(f'{stage}: the same conflict came back ({", ".join(h["ids"]) or "no ids"}); it needs you', file)
+            result = self.back_to_spec(report[:4000], stage, h['ids'])
+            return self.go() if result is None else result
+        if h['route'] == '/plan':
+            result = self.make_plan()
+            return self.go() if result is None else result
+        if h['route'] == 'owner':
+            options = f' ({h["decide"]} option{"s" * (h["decide"] != 1)} in the report)' if h['decide'] else ''
+            return self.stop(f'{stage}: a decision is yours{options} · {why}', file)
+        return self.stop(f'pipeline.py: {why} → {h["route"]}', file)
 
     def pipeline_step(self, prompt, cost, step=None):
         """pipeline.py finished a stage: post what its message file says, then hand it the owner's word.
@@ -820,14 +838,14 @@ class Run:
             print(f'  the plan predates the current spec; /plan runs again')
         return stale
 
-    def back_to_spec(self, conflict, stage='/plan'):
+    def back_to_spec(self, conflict, stage='/plan', ids=()):
         """plan or build → spec (component-response-contracts §5): /spec resolves the conflict unattended. A fix
         it decided by default (Low/Medium) keeps the owner's approval and the run goes on (None); a High one
         stays an OPEN QUESTION, the spec goes back to Draft and the owner answers and approves again
         (ADR 0115). The same conflict twice, or a sixth one, stops instead (may_resolve)."""
         t = self.ticket
         self.state['conflicts'] = self.state.get('conflicts', 0) + 1
-        self.state.setdefault('conflict_digests', []).append(conflict_digest(conflict))
+        self.state.setdefault('conflict_digests', []).append(conflict_digest(conflict, ids))
         self.state.pop('ask', None)                     # a fresh ask for the revised spec
         self.save()
         self.commit(f'{t}: plan stopped at a spec conflict')
@@ -858,24 +876,38 @@ class Run:
         return self.settle_spec()
 
     def make_plan(self):
+        """/plan, read from its HANDOFF line: a conflict goes to /spec and planning repeats; a plan that waits for
+        a person stops; a clean one passes check-plan and is approved (ADR 0115)."""
         t = self.ticket
-        if (self.plan.exists() and has_conflict(self.plan.read_text()) and not self.plan_stale()
-                and self.may_resolve(conflict_text(self.plan.read_text()))):   # this spec already has a conflict
-            result = self.back_to_spec(conflict_text(self.plan.read_text()))
-            if result is not None:
-                return result
+        last = self.state.get('plan_handoff') or {}
+        if last.get('route') == '/spec' and self.plan.exists() and not self.plan_stale():   # the committed plan carries it
+            report = (self.dir / last.get('report', '')).read_text() if (self.dir / last.get('report', '')).is_file() else ''
+            if self.may_resolve(report, last.get('ids', [])):
+                result = self.back_to_spec(report[:4000], '/plan', last.get('ids', []))
+                if result is not None:
+                    return result
         error, text = self.stage(f'/plan {t}')
         if error:
             return self.stop(f'/plan {error}')
         if not self.plan.exists():
             return self.stop(f'/plan wrote no {self.plan}')
-        plan = self.plan.read_text()
-        if has_conflict(plan) and self.may_resolve(conflict_text(plan)):
-            result = self.back_to_spec(conflict_text(plan))
+        try:
+            h = pl.handoff(text)
+        except ValueError as err:
+            return self.stop(f'/plan: {err}', self.last_file)
+        if h is None:
+            return self.stop('/plan gave no HANDOFF line', self.last_file)
+        self.state['plan_handoff'] = {**h, 'report': self.last_file}
+        self.save()
+        if h['result'] == 'BLOCKED' and h['route'] == '/spec':
+            if not self.may_resolve(text, h['ids']):
+                self.commit(f'{t}: plan draft')
+                return self.stop(f'/plan: the same conflict came back ({", ".join(h["ids"]) or "no ids"}); it needs you', self.last_file)
+            result = self.back_to_spec(text[:4000], '/plan', h['ids'])
             return self.make_plan() if result is None else result
-        if has_conflict(plan) or open_questions(plan):
+        if h['result'] != 'COMPLETE':
             self.commit(f'{t}: plan draft')
-            return self.stop(f'the plan raised a SPEC CONFLICT or an open question; read {self.plan}', self.last_file)
+            return self.stop(f'/plan waits for a person → {h["route"]}; read {self.plan}', self.last_file)
         check = subprocess.run([sys.executable, str(CHECK_PLAN), str(self.plan), '--todo', str(self.todo),
                                 '--spec', str(self.spec)], capture_output=True, text=True)
         if check.returncode:
@@ -928,63 +960,12 @@ def digest(text, lines=6, chars=700):
     return out[:chars] + (' …' if len(out) > chars else '')
 
 
-CONFLICT = re.compile(r'#+\s*SPEC CONFLICT\b')
-
-
-def has_conflict(plan):
-    """An open conflict is a SPEC CONFLICT heading or a blocked handoff, not the words in prose
-    ("resolves the earlier SPEC CONFLICT")."""
-    return any(CONFLICT.match(l) for l in plan.splitlines()) or \
-        bool(re.search(r'SPEC CONFLICT', header(plan, 'Handoff') or ''))
-
-
-SPEC_SIGNALS = re.compile(r'spec conflict|contradicts? the (?:approved )?spec|(?:change|edit|revise|amend)s? (?:to )?the spec|'
-                          r'spec (?:must|needs to|has to) (?:be )?chang|/spec\b', re.I)
-
-
-def build_conflict(report):
-    """What a BUILD BLOCKED report sends to /spec, or ''. Preferably the top-level items that route a blocker
-    to `/spec` (build.md §3), with their indented lines; otherwise, when the report says the spec itself
-    is in the way (it contradicts the code, it must change), its text up to the task table. A blocker that
-    is not about the spec (a decision, an environment) returns ''."""
-    if not re.search(r'BUILD BLOCKED', report):
-        return ''
-    blocks, cur = [], []
-    for line in report.splitlines():
-        new = re.match(r'^(?:\d+\.|[-*])\s', line) or line.startswith('#') or not line.strip()
-        if new and cur:
-            blocks.append('\n'.join(cur))
-            cur = []
-        if line.strip() and not line.startswith('#'):
-            cur.append(line)
-    blocks.append('\n'.join(cur))
-    routed = re.compile(r'(?:goes to|routes? (?:to|toward)|route:|→)\s*`?/spec\b', re.I)
-    hits = [b for b in blocks if routed.search(b) and re.search(r'spec conflict', b, re.I)]
-    if hits:
-        return '\n'.join(hits).strip()[:4000]
-    if not SPEC_SIGNALS.search(report):
-        return ''
-    head = re.split(r'\n(?=\|)|\n#+\s*(?:Task state|Status per task|Checkpoints|Commits|Verification)', report, maxsplit=1)[0]
-    return head.strip()[:4000]
-
-
-def conflict_digest(conflict):
-    """The same conflict in other words is still the same: the REQ/DEC/TD ids it names, else its first lines."""
-    ids = sorted(set(re.findall(r'\b(?:REQ|DEC|TD|CP|T)-\d{3}\b', conflict)))
-    key = ' '.join(ids) if ids else ' '.join(conflict.split())[:300]
+def conflict_digest(conflict, ids=()):
+    """The same conflict in other words is still the same: the ids its HANDOFF line names, else the REQ/DEC/TD
+    ids in its text, else its first lines."""
+    found = sorted(set(ids) or set(re.findall(r'\b(?:REQ|DEC|TD|CP|T)-\d{3}\b', conflict)))
+    key = ' '.join(found) if found else ' '.join(conflict.split())[:300]
     return hashlib.sha1(key.encode()).hexdigest()[:12]
-
-
-def conflict_text(plan):
-    """The plan's SPEC CONFLICT section: from its line to the next heading of the same or a higher level."""
-    lines = plan.splitlines()
-    start = next((i for i, l in enumerate(lines) if CONFLICT.match(l)), None)
-    if start is None:
-        return header(plan, 'Handoff') or 'SPEC CONFLICT (see the plan)'
-    level = len(lines[start]) - len(lines[start].lstrip('#')) or 7
-    end = next((i for i in range(start + 1, len(lines))
-                if lines[i].startswith('#') and len(lines[i]) - len(lines[i].lstrip('#')) <= level), len(lines))
-    return '\n'.join(lines[start:end]).strip()[:4000]
 
 
 def default_branch():

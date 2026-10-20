@@ -22,10 +22,10 @@ spec = importlib.util.spec_from_file_location('pipeline', SCRIPT)
 pl = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pl)
 
-BUILD = '**BUILD COMPLETE**\nHEAD: h\n- task done'
-VERIFY = '**VERIFY PASS**\n- REQ-001: ran it'
-CLEAN = '**Findings: 0 BLOCKER · 0 REQUIRED · 1 ADVISORY**\nmore'
-OPEN = '**Findings: 0 BLOCKER · 1 REQUIRED · 0 ADVISORY**\n- CODE-1'
+BUILD = '**BUILD COMPLETE**\nHEAD: h\n- task done\nHANDOFF: result=COMPLETE route=none ids=- decide=0'
+VERIFY = '**VERIFY PASS**\n- REQ-001: ran it\nHANDOFF: result=PASS route=none ids=- decide=0'
+CLEAN = '**Findings: 0 BLOCKER · 0 REQUIRED · 1 ADVISORY**\nmore\nHANDOFF: result=CLEAN route=none ids=- decide=0'
+OPEN = '**Findings: 0 BLOCKER · 1 REQUIRED · 0 ADVISORY**\n- CODE-1\nHANDOFF: result=FINDINGS route=/build ids=CODE-1 decide=0'
 
 STUB = '''#!/usr/bin/env bash
 prompt="$(cat)"
@@ -54,11 +54,22 @@ case "$first" in
                 blocked) reply '**BUILD BLOCKED** — needs a decision
 HANDOFF: result=BLOCKED route=owner ids=- decide=1' ;;
                 error)   echo '{"is_error":true,"subtype":"error_max_budget_usd","result":"**BUILD COMPLETE**","total_cost_usd":1}' ;;
+                nofooter) reply '**BUILD COMPLETE**
+done, no handoff line' ;;
+                disagree) reply '**BUILD COMPLETE**
+HANDOFF: result=BLOCKED route=/spec ids=REQ-001 decide=0' ;;
+                tospec)  reply '**BUILD BLOCKED** — REQ-001 contradicts the code
+HANDOFF: result=BLOCKED route=/spec ids=REQ-001 decide=2' ;;
                 *)       reply "$STUB_BUILD_TEXT" ;;
               esac ;;
-  "/test "*) case "${STUB_VERIFY:-pass}" in
+  "/test "*) kind="${STUB_VERIFY:-pass}"
+             if [ -n "$STUB_VERIFIES" ]; then round=$(( $(grep -c '^/test' "$STUB_CALLS") )); kind=$(echo $STUB_VERIFIES | cut -d' ' -f"$round"); fi
+             case "$kind" in
                fail) reply '**VERIFY FAIL**
-- REQ-001 broken' ;;
+- REQ-001 broken
+HANDOFF: result=FAIL route=/build ids=REQ-001 decide=0' ;;
+               blocked) reply '**VERIFY BLOCKED** — no browser
+HANDOFF: result=BLOCKED route=owner ids=- decide=1' ;;
                *)    reply "$STUB_VERIFY_TEXT" ;;
              esac ;;
   "/review "*) round=$(( $(grep -c '^/review' "$STUB_CALLS") ))
@@ -66,7 +77,8 @@ HANDOFF: result=BLOCKED route=owner ids=- decide=1' ;;
                dir="$(git rev-parse --git-common-dir)/review"; mkdir -p "$dir"
                [ "$kind" = nosarif ] || echo '{"version":"2.1.0","runs":[]}' > "$dir/AB-1-$(git rev-parse --short HEAD).sarif"
                case "$kind" in
-                 blocked)  reply '**REVIEW BLOCKED** — VERIFY PASS missing' ;;
+                 blocked)  reply '**REVIEW BLOCKED** — VERIFY PASS missing
+HANDOFF: result=BLOCKED route=owner ids=- decide=0' ;;
                  required) reply "$STUB_OPEN_TEXT" ;;
                  *)        reply "$STUB_CLEAN_TEXT" ;;
                esac ;;
@@ -191,12 +203,47 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(self.stages(), ['/build AB-1'])
         self.assertIn('error_max_budget_usd', out)
 
-    def test_verify_fail_stops(self):
-        os.environ['STUB_VERIFY'] = 'fail'
+    def test_verify_fail_routed_to_build_starts_a_fix_round_then_tests_again(self):
+        os.environ['STUB_VERIFIES'] = 'fail pass'
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(self.stages(), ['/build AB-1', '/test AB-1', '/build AB-1 verify fixes', '/test AB-1', '/review AB-1'])
+        self.assertIn('VERIFY result', self.prompt(3))
+        self.assertIn('REQ-001 broken', self.prompt(3))
+
+    def test_verify_fail_twice_more_stops_at_the_cap(self):
+        os.environ['STUB_VERIFIES'] = 'fail fail fail'
         rc, out = self.run_pipeline()
         self.assertEqual(rc, 1)
-        self.assertEqual(self.stages(), ['/build AB-1', '/test AB-1'])
-        self.assertIn('VERIFY FAIL', out)
+        self.assertEqual(self.stages().count('/build AB-1 verify fixes'), 2)
+        self.assertIn('verify round cap', out)
+
+    def test_verify_blocked_stops_with_its_route(self):
+        os.environ['STUB_VERIFY'] = 'blocked'
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 1)
+        self.assertIn('VERIFY BLOCKED', out)
+        self.assertEqual(json.loads((self.handoff / 'AB-1-pipeline-stop.json').read_text())['handoff']['route'], 'owner')
+
+    def test_no_handoff_line_stops_naming_the_stage(self):
+        os.environ['STUB_BUILD'] = 'nofooter'
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 1)
+        self.assertEqual(self.stages(), ['/build AB-1'])
+        self.assertIn('/build gave no HANDOFF line', out)
+
+    def test_handoff_disagreeing_with_the_result_line_stops(self):
+        os.environ['STUB_BUILD'] = 'disagree'
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 1)
+        self.assertIn('HANDOFF disagrees with the result line', out)
+
+    def test_build_routed_to_spec_stops_with_the_route_in_the_stop_file(self):
+        os.environ['STUB_BUILD'] = 'tospec'
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 1)
+        stop = json.loads((self.handoff / 'AB-1-pipeline-stop.json').read_text())
+        self.assertEqual((stop['handoff']['route'], stop['handoff']['ids'], stop['handoff']['decide']), ('/spec', ['REQ-001'], 2))
 
     def test_review_blocked_stops(self):
         os.environ['STUB_REVIEWS'] = 'blocked'
@@ -314,7 +361,7 @@ class Pipeline(unittest.TestCase):
         self.run_pipeline()
         stop = json.loads((self.handoff / 'AB-1-pipeline-stop.json').read_text())
         self.assertEqual(stop['handoff'], {'result': 'BLOCKED', 'route': 'owner', 'ids': [], 'decide': 1})
-        os.environ.update(STUB_BUILD='complete', STUB_VERIFY='fail')
+        os.environ.update(STUB_BUILD='nofooter')
         self.calls.write_text('')
         self.run_pipeline()
         stop = json.loads((self.handoff / 'AB-1-pipeline-stop.json').read_text())
@@ -333,7 +380,7 @@ class Pipeline(unittest.TestCase):
                          [10, 20, 40, 80, 160, 300])
 
     def test_started_again_on_the_same_head_goes_on_after_the_finished_stages(self):
-        os.environ['STUB_VERIFY'] = 'fail'
+        os.environ['STUB_VERIFY'] = 'blocked'
         rc, out = self.run_pipeline()
         self.assertEqual(rc, 1)
         del os.environ['STUB_VERIFY']
@@ -353,9 +400,9 @@ class Pipeline(unittest.TestCase):
         stop = self.handoff / 'AB-1-pipeline-stop.json'
         self.assertIn('BUILD BLOCKED', stop.read_text())
         del os.environ['STUB_BUILD']
-        os.environ['STUB_VERIFY'] = 'fail'                                    # a run that dies before writing a new one
+        os.environ['STUB_VERIFY'] = 'blocked'                                 # another stop replaces it
         self.run_pipeline()
-        self.assertIn('VERIFY FAIL', stop.read_text())                        # replaced, never removed on start
+        self.assertIn('VERIFY BLOCKED', stop.read_text())                     # replaced, never removed on start
         del os.environ['STUB_VERIFY']
         subprocess.run(['git', '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'x'], check=True)
         rc, out = self.run_pipeline()
@@ -363,7 +410,7 @@ class Pipeline(unittest.TestCase):
         self.assertFalse(stop.exists())
 
     def test_another_head_starts_a_fresh_round(self):
-        os.environ['STUB_VERIFY'] = 'fail'
+        os.environ['STUB_VERIFY'] = 'blocked'
         self.run_pipeline()
         del os.environ['STUB_VERIFY']
         subprocess.run(['git', '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty',

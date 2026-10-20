@@ -283,6 +283,19 @@ session ends with the main agent's final message. Every stage prompt now
 ends with `pl.HEADLESS`: dispatch in the foreground, wait, end with the
 result line.
 
+### HR-1 (2026-10-20, evening): the runner's own spec and plan
+
+`dotfiles/docs/specs/HR-1-SPEC.md` (Approved) and `dotfiles/docs/tasks/HR-1-plan.md`
++ `-todo.md` (Approved, eight tasks) replace fix-by-fix work on the runner.
+Done so far: **T001** (the `HANDOFF:` line, `references/stage-handoff.md`,
+`pipeline.handoff()`), **T002** (`pipeline.verdict()` and `Run.route()` read
+the line alone; `SPEC_SIGNALS`, `build_conflict`, `has_conflict`,
+`conflict_text` are gone; a VERIFY FAIL routed to `/build` starts a fix
+round, `VERIFY_CAP` 2), CP-001 green. Next: T003 (one `resolve()`), T004
+(one `inbox()`), T005 (`B<k>` decisions), T006 (pre-flight + merge of
+main, DEC-001), T007 (`--status`), T008 (stop classes, counts, the LD-503
+fixtures under `dotfiles/tools/tests/fixtures/ld-503/` replayed).
+
 ## 5. Open items and ideas (not started)
 
 - **A live session across a runner crash** is not restored (Symphony does
