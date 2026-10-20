@@ -322,6 +322,11 @@ Both reports include:
 
 Never estimate unavailable token/cost/time data.
 
+End the report with the handoff line of `../references/stage-handoff.md`:
+`HANDOFF: result=COMPLETE|BLOCKED route=… ids=… decide=…`. `route` is
+`none` for a complete build, `/test` when tasks are handed on, `/spec`,
+`/plan` or `owner` for a blocker. The runner reads only this line.
+
 Do not dispatch independent verifiers or reviewers here. The next stage is
 `/review`; `/review` decides whether the separate `/test` gate is required for
 this candidate.

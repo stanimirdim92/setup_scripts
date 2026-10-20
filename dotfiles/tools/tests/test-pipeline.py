@@ -9,6 +9,7 @@ SARIF file for HEAD. Anything else stops it. Findings start a fix round up to
 the review round cap, and the run always stops before /ship."""
 import importlib.util
 import io
+import json
 import os
 import subprocess
 import tempfile
@@ -50,7 +51,8 @@ fi
 case "$first" in
   "/build "*) echo "$n" >> work.txt; git add work.txt; git -c user.email=t@t -c user.name=t commit -qm "build $n"
               case "${STUB_BUILD:-complete}" in
-                blocked) reply '**BUILD BLOCKED** — needs a decision' ;;
+                blocked) reply '**BUILD BLOCKED** — needs a decision
+HANDOFF: result=BLOCKED route=owner ids=- decide=1' ;;
                 error)   echo '{"is_error":true,"subtype":"error_max_budget_usd","result":"**BUILD COMPLETE**","total_cost_usd":1}' ;;
                 *)       reply "$STUB_BUILD_TEXT" ;;
               esac ;;
@@ -290,6 +292,41 @@ class Pipeline(unittest.TestCase):
         self.calls.write_text('')
         rc, out = self.run_pipeline()
         self.assertNotIn('events ·', out)
+
+    def test_handoff_line_parses(self):
+        self.assertEqual(pl.handoff('report\nBUILD BLOCKED\nHANDOFF: result=BLOCKED route=/spec ids=REQ-008 decide=2\n'),
+                         {'result': 'BLOCKED', 'route': '/spec', 'ids': ['REQ-008'], 'decide': 2})
+        self.assertEqual(pl.handoff('HANDOFF: result=COMPLETE route=/test ids=T007,T008 decide=0')['ids'], ['T007', 'T008'])
+        self.assertEqual(pl.handoff('HANDOFF: result=COMPLETE route=none ids=- decide=0')['ids'], [])
+        self.assertEqual(pl.handoff('HANDOFF: result=BLOCKED route=owner ids=- decide=1')['route'], 'owner')
+        self.assertEqual(pl.handoff('HANDOFF: result=FAIL route=/build ids=REQ-017,REQ-009 decide=1')['result'], 'FAIL')
+        self.assertIsNone(pl.handoff('The verifier is running in its own worktree. I am waiting for its report.'))
+        with self.assertRaises(ValueError) as err:
+            pl.handoff('HANDOFF: result=BLOCKED route=/ship ids=- decide=0')
+        self.assertIn('route=/ship is not one of', str(err.exception))
+        with self.assertRaises(ValueError):
+            pl.handoff('HANDOFF: result=DONE route=none ids=- decide=0')
+        with self.assertRaises(ValueError):
+            pl.handoff('HANDOFF: result=PASS route=none ids=- decide=many')
+
+    def test_stop_file_carries_the_parsed_handoff(self):
+        os.environ.update(STUB_BUILD='blocked')
+        self.run_pipeline()
+        stop = json.loads((self.handoff / 'AB-1-pipeline-stop.json').read_text())
+        self.assertEqual(stop['handoff'], {'result': 'BLOCKED', 'route': 'owner', 'ids': [], 'decide': 1})
+        os.environ.update(STUB_BUILD='complete', STUB_VERIFY='fail')
+        self.calls.write_text('')
+        self.run_pipeline()
+        stop = json.loads((self.handoff / 'AB-1-pipeline-stop.json').read_text())
+        self.assertIsNone(stop['handoff'])                                      # a report without the line
+
+    def test_commands_name_the_handoff_line(self):
+        root = SCRIPT.parents[2] / 'claude'
+        for name in ('plan', 'build', 'test', 'review'):
+            text = (root / 'commands' / f'{name}.md').read_text()
+            self.assertIn('HANDOFF: result=', text, name)
+            self.assertIn('references/stage-handoff.md', text, name)
+        self.assertTrue((root / 'references' / 'stage-handoff.md').exists())
 
     def test_backoff_doubles_up_to_the_cap(self):
         self.assertEqual([min(pl.BACKOFF[0] * 2 ** (a - 1), pl.BACKOFF[1]) for a in range(1, 7)],

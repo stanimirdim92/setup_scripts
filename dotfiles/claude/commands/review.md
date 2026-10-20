@@ -170,6 +170,12 @@ REQUIRED or ADVISORY, as defined in
 `../references/component-response-contracts.md` §Dispositions. Report it
 unchanged; change one only with a stated reason.
 
+End the report with the handoff line of `../references/stage-handoff.md`:
+`HANDOFF: result=CLEAN|FINDINGS|BLOCKED route=… ids=… decide=…`. `route`
+is `none` when clean, `/build` while BLOCKER or REQUIRED findings remain
+(their ids in `ids`), `owner` when a person must decide. The runner reads
+only this line.
+
 `blind-reviewer` also returns two things no other reviewer produces, and both
 are yours to resolve because you are the only participant holding the diff
 *and* the intent:

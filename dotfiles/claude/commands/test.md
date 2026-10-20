@@ -129,7 +129,12 @@ Do not turn `/test` into a second implementation path.
 
 ## 4. Result
 
-Return exactly one result:
+Return exactly one result, and end the report with the handoff line of
+`../references/stage-handoff.md`: `HANDOFF: result=PASS|FAIL|BLOCKED
+route=… ids=… decide=…`. `route` is `none` on PASS, `/build` on FAIL (a
+spec question in the same report goes in `ids` and `decide`), `/spec` when
+the only finding is a spec decision, `owner` when BLOCKED needs a person.
+The runner reads only this line.
 
 ### VERIFY PASS
 

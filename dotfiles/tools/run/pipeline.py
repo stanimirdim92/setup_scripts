@@ -181,6 +181,29 @@ def is_transient(why):
     return bool(why['rc']) or bool(TRANSIENT.search(why['blob']))
 
 
+RESULTS = ('COMPLETE', 'BLOCKED', 'PASS', 'FAIL', 'CLEAN', 'FINDINGS')
+ROUTES = ('none', '/spec', '/plan', '/build', '/test', 'owner')
+
+
+def handoff(text):
+    """The report's HANDOFF line (references/stage-handoff.md) as {result, route, ids, decide}, or None
+    when there is none. A value outside the closed sets raises ValueError naming it."""
+    lines = [l.strip() for l in text.splitlines() if l.strip().startswith('HANDOFF:')]
+    if not lines:
+        return None
+    fields = dict(re.findall(r'(\w+)=(\S+)', lines[-1]))
+    out = {'result': fields.get('result', ''), 'route': fields.get('route', ''),
+           'ids': [i for i in fields.get('ids', '-').split(',') if i and i != '-'], 'decide': fields.get('decide', '0')}
+    if out['result'] not in RESULTS:
+        raise ValueError(f'HANDOFF result={out["result"] or "?"} is not one of {", ".join(RESULTS)}')
+    if out['route'] not in ROUTES:
+        raise ValueError(f'HANDOFF route={out["route"] or "?"} is not one of {", ".join(ROUTES)}')
+    if not out['decide'].isdigit():
+        raise ValueError(f'HANDOFF decide={out["decide"]} is not a number')
+    out['decide'] = int(out['decide'])
+    return out
+
+
 def line(text, pattern):
     m = re.search(rf'^\W*({pattern}[^\n]*)', text, re.M)
     return m.group(1).replace('**', '').strip() if m else None
@@ -293,7 +316,12 @@ def main(argv=None):
         return error, text
 
     def stop(why):
-        stop_file.write_text(json.dumps({'why': why, 'stage_file': last}) + '\n')
+        """Why it stopped, the last stage's file, and that report's HANDOFF line parsed (None without one)."""
+        try:
+            parsed = handoff((out_dir / last).read_text()) if last else None
+        except (OSError, ValueError):
+            parsed = None
+        stop_file.write_text(json.dumps({'why': why, 'stage_file': last, 'handoff': parsed}) + '\n')
         print(f'\npipeline: stopped — {why}\n  messages and log: {out_dir}\n  measured total: ${total:.2f}')
         return 1
 

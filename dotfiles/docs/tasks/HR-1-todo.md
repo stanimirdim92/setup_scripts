@@ -4,7 +4,7 @@ Plan: dotfiles/docs/tasks/HR-1-plan.md · Spec: dotfiles/docs/specs/HR-1-SPEC.md
 
 ## T001: Every stage report ends with a HANDOFF line, and pipeline.py parses it
 
-**Status:** Pending
+**Status:** Done
 
 **Requirements:** REQ-001, TD-001
 

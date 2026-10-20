@@ -61,7 +61,12 @@ plan status, remaining blockers, and handoff state.
 Only explicit human approval permits Approved and Ready for /build. One
 exception: `tools/run/ticket.py` approves a plan for a spec the owner approved
 when `check-plan.py` passes and the plan has no `SPEC CONFLICT` and no
-`OPEN QUESTION` (ADR 0115). Any other plan waits for a person. After
+`OPEN QUESTION` (ADR 0115). Any other plan waits for a person. End the
+report with the handoff line of `../references/stage-handoff.md`:
+`HANDOFF: result=COMPLETE route=none ids=- decide=0` for a clean plan,
+`result=BLOCKED route=/spec ids=<REQ ids> decide=<n>` for a `SPEC
+CONFLICT`, `result=BLOCKED route=owner` for a plan that waits for a
+person. The runner reads only this line. After
 approval, stop and recommend `/clear` before `/build`, which resumes from the
 plan and task packets (ADR 0084). `/plan` authorizes planning only; it does not implement or invoke
 `/build`, `/test`, `/review`, or `/ship`.
