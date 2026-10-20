@@ -475,7 +475,7 @@ class Ticket(unittest.TestCase):
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
         self.assertEqual(stop[2], r.thread)                                   # the stop is in the ticket's thread
         self.assertIn(stop[0], self.out.notified)                             # and it pings you
-        self.assertIn('Reply here with `TICKET NOTE:', stop[1])
+        self.assertIn('Reply here with a TICKET NOTE', stop[1])
         self.out.say(r.thread, 'TICKET NOTE: use 200')
         self.assertEqual(r.check_inbox(), (False, 'use 200'))
 
@@ -546,6 +546,25 @@ I did not dispatch any executor. Your Slack note ("use 200 status code") settles
 | T001 | Pending | Blocked by the 422 vs 200 conflict |
 **Commits:** none.
 """
+
+    def test_build_conflict_any_blocked_report_that_names_spec(self):
+        report = ('# BUILD BLOCKED — AB-11\n\n## Blockers\n\n1. **T003, the EXPLAIN criterion (REQ-008).** MySQL reads the '
+                  'index. Decide one of these, then the route is `/plan` or `/spec`:\n   - accept the plan MySQL uses;\n'
+                  '   - change the criterion.\n2. **CP-001 fails.** 186 failed outside LD-503.\n\n## What ran\n\n| a | b |\n')
+        conflict = tk.build_conflict(report)
+        self.assertIn('EXPLAIN criterion (REQ-008)', conflict)
+        self.assertIn('CP-001 fails', conflict)                               # /spec sees the whole picture
+        self.assertNotIn('| a | b |', conflict)
+
+    def test_own_posts_are_not_read_as_the_owner(self):
+        self.out.chatty = True
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        with redirect_stdout(io.StringIO()):
+            r.stop('x')                                                        # posts "Reply here with a TICKET NOTE …"
+        for ts, text, thread in self.out.posts:                               # the reader gives them back as the owner's
+            self.out.raw.setdefault(thread or ts, []).append({'author': 'Owner <o@x.io>', 'text': text, 'ts': ts})
+        self.out.raw.setdefault(r.thread, []).append({'author': 'Owner <o@x.io>', 'text': 'TICKET NOTE: real', 'ts': 'n1'})
+        self.assertEqual(r.check_inbox(), (False, 'real'))
 
     def test_build_conflict_reads_the_meaning_not_the_phrase(self):
         conflict = tk.build_conflict(self.BUILD_BLOCKED_WORDED)

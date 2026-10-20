@@ -451,12 +451,23 @@ class Run:
     def save(self):
         self.state_file.write_text(json.dumps(self.state, indent=2) + '\n')
 
+    def post(self, text, thread=None, notify=False):
+        """Post, and remember the ts: the runner's own messages go out through the owner's Slack connector,
+        so the reader returns them as the owner's; mine() keeps them out of the replies."""
+        ts = self.out.post(text, thread=thread, notify=notify)
+        self.state.setdefault('posted', []).append(ts)
+        self.save()
+        return ts
+
+    def mine(self, reply):
+        return reply.get('ts') in self.state.get('posted', [])
+
     def run_thread(self):
         """The one Slack thread of this ticket, opened on first use; None without Slack."""
         if not getattr(self.out, 'chatty', False):
             return None
         if not self.thread:
-            self.thread = self.state['thread'] = self.out.post(
+            self.thread = self.state['thread'] = self.post(
                 f':arrow_forward: *{self.ticket} · Run* · `{os.getcwd()}`\nEverything about this ticket is in this '
                 'thread: questions, progress, stops, the /ship result. Answer here; write `TICKET STOP` or '
                 '`TICKET NOTE: …` here between stages.')
@@ -468,13 +479,13 @@ class Run:
         if not getattr(self.out, 'chatty', False):
             return
         try:
-            self.out.post(text, thread=self.run_thread())
+            self.post(text, thread=self.run_thread())
         except RuntimeError as err:
             print(f'ticket: could not post progress: {err}')
 
     def say(self, text):
         """What needs you: in the ticket's thread with an @mention; top-level without Slack. Returns its ts."""
-        return self.out.post(text, thread=self.run_thread(), notify=True)
+        return self.post(text, thread=self.run_thread(), notify=True)
 
     def check_inbox(self):
         """The owner's word before the next stage: (stop, notes). TICKET STOP / TICKET NOTE: replies in the
@@ -487,7 +498,8 @@ class Run:
             new = []
             for ts in dict.fromkeys(t for t in threads if t):
                 try:
-                    new += [r for r in self.out.owner_replies(ts) if r.get('ts') not in self.state.get('inbox_seen', [])]
+                    new += [r for r in self.out.owner_replies(ts)
+                            if r.get('ts') not in self.state.get('inbox_seen', []) and not self.mine(r)]
                 except RuntimeError as err:
                     print(f'ticket: could not read thread {ts}: {err}')
             self.state.setdefault('inbox_seen', []).extend(r.get('ts') for r in new)
@@ -577,7 +589,7 @@ class Run:
             body = '\n'.join(l for l in (self.dir / file).read_text().splitlines() if l.strip())
             text += f'\n*{file}:*\n```\n{body[:1800]}{" …" if len(body) > 1800 else ""}\n```'
         try:
-            self.say(f'{text}\nLog: `{self.dir}`\nReply here with `TICKET NOTE: …` for the next run.')
+            self.say(f'{text}\nLog: `{self.dir}`\nReply here with a TICKET NOTE for the next run.')
         except RuntimeError as err:
             print(f'ticket: could not post the stop: {err}')
         if self.jira:
@@ -670,7 +682,7 @@ class Run:
             self.state['ask'] = self.ask(text)
             self.save()
             return WAITING
-        new = [r for r in self.out.replies(ask['ts']) if r.get('ts') not in ask['seen']]
+        new = [r for r in self.out.replies(ask['ts']) if r.get('ts') not in ask['seen'] and not self.mine(r)]
         if not new:
             return WAITING
         ask['seen'] += [r.get('ts') for r in new]
@@ -684,7 +696,7 @@ class Run:
                     f'The owner of {t} asks about its spec. Answer from docs/specs/{t}-SPEC.md and '
                     f'docs/specs/{t}-intake.md, in at most 6 short lines for Slack. Read only; change no '
                     f'file.\n\nQuestion: {r["text"].strip()}')
-                self.out.post(f':speech_balloon: *Answer*\n{answer.strip() if not error else "could not answer: " + error}',
+                self.post(f':speech_balloon: *Answer*\n{answer.strip() if not error else "could not answer: " + error}',
                               thread=ask['ts'])
         answers, approved, defaults, redo = {}, False, False, {}
         for r in new:
@@ -702,7 +714,7 @@ class Run:
         bad = [f'{n}{a}' for n, a in answers.items() if n not in qs or a not in qs[n]['options']] + \
             [f'D{n}' for n in redo if not 1 <= n <= len(taken)]
         if bad:
-            self.out.post(f':warning: Not a question and option here: {" ".join(bad)}. Nothing changed.',
+            self.post(f':warning: Not a question and option here: {" ".join(bad)}. Nothing changed.',
                           thread=ask['ts'])
             return WAITING
         if answers or redo:
@@ -723,12 +735,12 @@ class Run:
             set_header(self.spec, {'Status': 'Approved', 'Approved by': f'{self.out_owner()} (reply in thread '
                                    f'{ask["ts"]})', 'Approved at': datetime.date.today().isoformat()})
             self.commit(f'{t}: spec approved by the owner')
-            self.out.post(f':white_check_mark: *{t} · Spec approved.* Planning, then build, test, review and ship.',
+            self.post(f':white_check_mark: *{t} · Spec approved.* Planning, then build, test, review and ship.',
                           thread=ask['ts'])
             return None
         if approved:
             still = ', '.join('Q%d' % q['n'] for q in left)
-            self.out.post(f':hourglass_flowing_sand: Still open: {still}. Answer them, then approve.', thread=ask['ts'])
+            self.post(f':hourglass_flowing_sand: Still open: {still}. Answer them, then approve.', thread=ask['ts'])
         self.state['ask'] = self.ask(text)
         self.save()
         return WAITING
@@ -912,7 +924,7 @@ def has_conflict(plan):
 
 
 SPEC_SIGNALS = re.compile(r'spec conflict|contradicts? the (?:approved )?spec|(?:change|edit|revise|amend)s? (?:to )?the spec|'
-                          r'spec (?:must|needs to|has to) (?:be )?chang|goes to `?/spec|routes? (?:to|toward) `?/spec|route: `?/spec', re.I)
+                          r'spec (?:must|needs to|has to) (?:be )?chang|/spec\b', re.I)
 
 
 def build_conflict(report):

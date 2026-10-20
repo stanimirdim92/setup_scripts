@@ -181,6 +181,10 @@ The owner's decisions, in force:
 - `--note "…"` (also passed by `--watch` to each child, `child_command()`)
   is a TICKET NOTE from the command line: `Run.note`, merged into the first
   `check_inbox()` once.
+- The runner's own posts come back from the Slack reader as the owner's
+  (they go out through his connector): `Run.post()` remembers every ts in
+  state `posted` and `mine()` keeps them out of the replies. LD-503 once
+  read its own "Reply here with `TICKET NOTE: …`" as a note.
 - Every read reply (TICKET ANSWERS / NOTE / STOP) gets a 👀 reaction
   (`Slack.react`, `slack_add_reaction` in `SLACK_TOOLS`), so the owner sees
   it was read. Before the pipeline starts, `go()` reads the inbox once and
