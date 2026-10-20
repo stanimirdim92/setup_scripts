@@ -179,7 +179,7 @@ Plan: dotfiles/docs/tasks/HR-1-plan.md · Spec: dotfiles/docs/specs/HR-1-SPEC.md
 
 ## T006: Pre-flight before the first stage, with the merge of the default branch
 
-**Status:** Pending
+**Status:** Done
 
 **Requirements:** REQ-004
 

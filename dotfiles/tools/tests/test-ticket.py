@@ -436,6 +436,96 @@ class Ticket(unittest.TestCase):
         self.assertEqual(sent[0][:5], ['claude', '--worktree', T, '-p', 'Reply with exactly: ok'])
         self.assertIn('haiku', sent[0])
 
+    def commit_on_main(self, name, text):
+        """A commit on main while the ticket branch stays where it is."""
+        subprocess.run(['git', 'checkout', '-q', 'main'], check=True)
+        Path(name).write_text(text)
+        subprocess.run(['git', 'add', name], check=True)
+        subprocess.run(['git', 'commit', '-qm', f'main: {name}'], check=True)
+        subprocess.run(['git', 'checkout', '-q', f'feature/{T}'], check=True)
+
+    def test_preflight_merges_a_clean_lag_and_reports_the_rest(self):
+        self.commit_on_main('lib.txt', 'from main\n')
+        self.commit_on_main('more.txt', 'more\n')
+        with redirect_stdout(io.StringIO()):
+            failed, lines = tk.preflight(T, self.claude, None, None, Path('.git/handoff'))
+        self.assertEqual(failed, '')
+        self.assertIn('ok  tree: clean', lines)
+        self.assertIn('ok  behind main: merged main: 2 commits', lines)
+        self.assertIn('ok  readiness: no bin/worktree-doctor.sh in this project', lines)
+        self.assertTrue(any(l.startswith('ok  lock: pid') for l in lines))
+        self.assertEqual(Path('lib.txt').read_text(), 'from main\n')
+        self.assertEqual(len(subprocess.run(['git', 'log', '-1', '--format=%P'], capture_output=True, text=True).stdout.split()), 2)
+        self.assertIn(f'Refs: {T}', subprocess.run(['git', 'log', '-1', '--format=%B'], capture_output=True, text=True).stdout)
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(tk.merge_default(T, self.claude), (True, '0 commits'))     # nothing left to merge
+
+    def test_preflight_merge_conflict_goes_to_the_merge_stage(self):
+        Path('shared.txt').write_text('ticket line\n')
+        subprocess.run(['git', 'add', 'shared.txt'], check=True)
+        subprocess.run(['git', 'commit', '-qm', 'ticket: shared'], check=True)
+        self.commit_on_main('shared.txt', 'main line\n')
+        resolved = []
+
+        def claude(prompt):
+            resolved.append(prompt)
+            Path('shared.txt').write_text('both lines\n')                             # the merge stage's work
+            subprocess.run(['git', 'add', 'shared.txt'], check=True)
+            subprocess.run(['git', 'commit', '-qm', f'Merge main into feature/{T}\n\nRefs: {T}'], check=True)
+            return None, 'merged\nHANDOFF: result=COMPLETE route=none ids=- decide=0'
+
+        with redirect_stdout(io.StringIO()):
+            ok, detail = tk.merge_default(T, claude)
+        self.assertTrue(ok, detail)
+        self.assertEqual(detail, 'merged main: 1 commits, conflicts resolved in shared.txt')
+        self.assertIn('conflicts in: shared.txt', resolved[0])
+        self.assertIn('keep this ticket\'s behavior', resolved[0])
+        self.assertIn('run_in_background: false', resolved[0])
+        self.assertEqual(Path('shared.txt').read_text(), 'both lines\n')
+
+    def test_preflight_merge_conflict_the_stage_cannot_resolve_is_aborted(self):
+        Path('shared.txt').write_text('ticket line\n')
+        subprocess.run(['git', 'add', 'shared.txt'], check=True)
+        subprocess.run(['git', 'commit', '-qm', 'ticket: shared'], check=True)
+        before = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout
+        self.commit_on_main('shared.txt', 'main line\n')
+        with redirect_stdout(io.StringIO()):
+            ok, detail = tk.merge_default(T, lambda prompt: (None, 'I could not resolve shared.txt; I ran git merge --abort.'))
+        self.assertFalse(ok)
+        self.assertIn('merge conflict with main in shared.txt; the merge stage could not resolve it', detail)
+        self.assertIn('the branch is as before', detail)
+        self.assertEqual(subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout, before)
+        self.assertTrue(self.clean())
+        self.assertEqual(Path('shared.txt').read_text(), 'ticket line\n')
+
+    def test_preflight_readiness_script_failing_names_it(self):
+        Path('bin').mkdir()
+        Path('bin/worktree-doctor.sh').write_text('#!/bin/sh\necho "schema snapshot does not match the local DB"\nexit 1\n')
+        Path('bin/worktree-doctor.sh').chmod(0o755)
+        subprocess.run(['git', 'add', 'bin'], check=True)
+        subprocess.run(['git', 'commit', '-qm', 'doctor'], check=True)
+        with redirect_stdout(io.StringIO()):
+            failed, lines = tk.preflight(T, self.claude, None, None, Path('.git/handoff'))
+        self.assertEqual(failed, 'readiness: test command cannot start: schema snapshot does not match the local DB')
+        self.assertTrue(any(l.startswith('ok  lock') for l in lines))                  # one report, every item in it
+
+    def test_check_flag_reports_and_starts_nothing(self):
+        stub = Path(self.tmp.name) / 'claude'
+        stub.write_text('#!/bin/sh\ncat >/dev/null\nprintf \'%s\\n\' \'{"type":"result","subtype":"success","is_error":false,'
+                        '"result":"{\\"status\\":\\"In Progress\\",\\"category\\":\\"In Progress\\",\\"labels\\":[\\"harness-run\\"]}","total_cost_usd":0}\'\n')
+        stub.chmod(0o755)
+        os.environ['CLAUDE_BIN'] = str(stub)
+        try:
+            with redirect_stdout(io.StringIO()) as out:
+                self.assertEqual(tk.main([T, '--check']), tk.DONE)
+        finally:
+            del os.environ['CLAUDE_BIN']
+        text = out.getvalue()
+        self.assertIn('ok  tree: clean', text)
+        self.assertIn('ok  jira: In Progress · labels harness-run', text)
+        self.assertIn('ticket: --check: nothing started; ready', text)
+        self.assertEqual(self.prompts, [])
+
     def test_help_shows_the_whole_docstring(self):
         with redirect_stdout(io.StringIO()) as out, self.assertRaises(SystemExit):
             tk.main(['--help'])

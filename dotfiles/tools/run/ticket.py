@@ -624,7 +624,7 @@ class Run:
                       f'Run ticket.py {self.ticket} again to go on.')
         return PAUSED
 
-    def stop(self, why, file=''):
+    def stop(self, why, file='', cls=''):
         print(f'ticket: {self.ticket} stopped: {why}' + (f'\n  read: {self.dir / file}' if file else ''))
         text = f':octagonal_sign: *{self.ticket} · Stopped*\n*Why:* {why}'
         if file and (self.dir / file).exists():
@@ -1074,6 +1074,95 @@ def alive(pid):
     return True
 
 
+def preflight(ticket, claude, slack, jira, out_dir):
+    """One look before the first stage (HR-1 REQ-004): the tree, the lag behind the default branch (merged
+    per DEC-001), the project's readiness script, the .worktreeinclude files, a Slack and a Jira read, the
+    lock. Returns (the first failed item or '', the lines to print)."""
+    lines, failed = [], ''
+
+    def item(name, ok, detail=''):
+        nonlocal failed
+        lines.append(f'{"ok " if ok else "!! "} {name}' + (f': {detail}' if detail else ''))
+        if not ok and not failed:
+            failed = f'{name}: {detail}' if detail else name
+
+    dirty = pl.git('status', '--porcelain')[1]
+    item('tree', not dirty, 'clean' if not dirty else 'uncommitted changes: ' + ', '.join(l[3:] for l in dirty.splitlines()[:6]))
+    if dirty:
+        return failed, lines                            # a merge or a stage on a dirty tree makes it worse
+    ok, detail = merge_default(ticket, claude)
+    item(f'behind {default_branch()}', ok, detail)
+    if not ok:
+        return failed, lines
+    top = Path(pl.git('rev-parse', '--show-toplevel')[1])
+    doctor = top / 'bin' / 'worktree-doctor.sh'
+    if doctor.exists():
+        try:
+            check = subprocess.run([str(doctor), '--infrastructure'], cwd=top, capture_output=True, text=True, timeout=60)
+            item('readiness', check.returncode == 0, 'bin/worktree-doctor.sh --infrastructure' if check.returncode == 0
+                 else f'test command cannot start: {(check.stdout + check.stderr).strip()[-300:] or f"exit {check.returncode}"}')
+        except subprocess.TimeoutExpired:
+            item('readiness', False, 'test command cannot start: bin/worktree-doctor.sh took over 60 s')
+    else:
+        item('readiness', True, 'no bin/worktree-doctor.sh in this project')
+    include = top / '.worktreeinclude'
+    if include.exists():
+        wanted = [l.strip() for l in include.read_text().splitlines() if l.strip() and not l.startswith('#')]
+        missing = [w for w in wanted if not (top / w.rstrip('/')).exists()]
+        item('.worktreeinclude', not missing, 'all present' if not missing else 'missing: ' + ', '.join(missing))
+    if slack is not None:
+        try:
+            slack.owner_replies(json.loads((out_dir / f'{ticket}-ticket.json').read_text()).get('thread') or '0')
+            item('slack', True, 'reads')
+        except (OSError, ValueError):
+            item('slack', True, 'no thread yet')
+        except RuntimeError as err:
+            item('slack', False, str(err)[:200])
+    if jira is not None:
+        try:
+            status = jira.status()
+            item('jira', True, f'{status.get("status", "?")} · labels {", ".join(status.get("labels") or []) or "-"}')
+        except RuntimeError as err:
+            item('jira', False, str(err)[:200])
+    item('lock', True, f'pid {os.getpid()}')
+    return failed, lines
+
+
+def merge_default(ticket, claude):
+    """Merge the default branch into the ticket branch when it is behind (DEC-001). A clean merge is
+    committed; a conflict goes to a `claude -p` merge stage, which keeps the ticket's behavior, runs the
+    project's fast checks and commits, or the merge is aborted and the branch is as before. (ok, detail)."""
+    base, branch = default_branch(), pl.git('symbolic-ref', '--short', '-q', 'HEAD')[1]
+    if branch == base or pl.git('rev-parse', '-q', '--verify', base)[0]:
+        return True, 'not a ticket branch' if branch == base else f'no local {base}'
+    behind = int(pl.git('rev-list', '--count', f'HEAD..{base}')[1] or 0)
+    if not behind:
+        return True, '0 commits'
+    rc, out = pl.git('merge', '--no-ff', '--no-edit', '-m', f'Merge {base} into {branch}\n\nRefs: {ticket}', base)
+    if not rc:
+        return True, f'merged {base}: {behind} commits'
+    conflicted = pl.git('diff', '--name-only', '--diff-filter=U')[1].split()
+    if not conflicted:
+        pl.git('merge', '--abort')
+        return False, f'git merge {base} failed: {out[-300:]}'
+    print(f'  merge conflict in {", ".join(conflicted)}; the merge stage resolves it')
+    error, text = claude(f'A merge of {base} into {branch} is in progress in this worktree with conflicts in: '
+                         f'{", ".join(conflicted)}. Resolve them: keep this ticket\'s behavior ({ticket}) and take '
+                         f'everything else from {base}. Run the project\'s fast checks (the lint, typecheck and unit '
+                         f'test commands its CLAUDE.md or bin/worktree-doctor.sh names). If they pass, stage the '
+                         f'files and commit the merge with the message "Merge {base} into {branch}" and the trailer '
+                         f'"Refs: {ticket}". If you cannot resolve a file or a check fails, run `git merge --abort` and '
+                         f'say which file and why. Do not push.\n\n{pl.HEADLESS}')
+    merged = not (Path(pl.git('rev-parse', '--git-dir')[1]) / 'MERGE_HEAD').exists() and \
+        not pl.git('status', '--porcelain')[1] and len(pl.git('log', '-1', '--format=%P')[1].split()) == 2
+    if merged and not error:
+        return True, f'merged {base}: {behind} commits, conflicts resolved in {", ".join(conflicted)}'
+    if (Path(pl.git('rev-parse', '--git-dir')[1]) / 'MERGE_HEAD').exists():
+        pl.git('merge', '--abort')
+    return False, f'merge conflict with {base} in {", ".join(conflicted)}; the merge stage could not resolve it' \
+        + (f' ({error})' if error else '') + '; the branch is as before'
+
+
 def claim(path):
     """Take the ticket's lock for this process. Returns the live holder's record instead when another run
     on this host has it; a dead holder's lock is taken over."""
@@ -1232,6 +1321,8 @@ def main(argv=None):
     parser.add_argument('--jobs', type=int, default=2, help='how many tickets --watch runs at once (default 2)')
     parser.add_argument('--note', default='', help='your word for the first stage, like a TICKET NOTE in Slack; '
                         'with --watch, every run it starts gets it')
+    parser.add_argument('--check', action='store_true',
+                        help='run the pre-flight (tree, lag behind the default branch, readiness, Slack, Jira, lock) and exit')
     parser.add_argument('--reply', help='your answer when Slack is not configured, e.g. "1A 2B LD-1"')
     parser.add_argument('--wait', type=float, default=8,
                         help='with Slack: keep checking for your answer this many hours instead of exiting (0: exit)')
@@ -1280,11 +1371,6 @@ def main(argv=None):
 def drive(args, log):
     """The run itself, under the ticket's lock."""
     binary, key = os.environ.get('CLAUDE_BIN', 'claude'), args.ticket
-    dirty = pl.git('status', '--porcelain')[1]          # the checkout the ticket runs in
-    if dirty:
-        print(f'ticket: {os.getcwd()} has uncommitted changes. Commit or stash them first:')
-        print('\n'.join('  ' + line for line in dirty.splitlines()[:20]))
-        return NOT_CHECKOUT
 
     slack_model = os.environ.get('HARNESS_SLACK_MODEL', 'haiku')     # posting and reading needs no big model
     allowed = tuple(t.strip() for t in os.environ.get('HARNESS_ALLOWED_TOOLS', '').split(',') if t.strip()) \
@@ -1327,6 +1413,18 @@ def drive(args, log):
     print(f'ticket: {args.ticket} in {os.getcwd()}')
     print(f'  messages: {log.parent}/{args.ticket}-ticket-<n>.md · log: {log}')
     print(f'  questions and results: ' + (f'Slack channel {channel}' if channel and owner else f'this terminal and {log.with_suffix(".md")}'))
+    failed, lines = preflight(key, claude, out if isinstance(out, Slack) else None, jira, log.parent)
+    print('\n'.join(f'  {l}' for l in lines))
+    if args.check:
+        print('ticket: --check: nothing started' + ('' if failed else '; ready'))
+        return STOPPED if failed else DONE
+    if failed.startswith('tree:'):                      # not a ticket checkout yet: say so here, post nothing
+        print(f'ticket: {os.getcwd()} has uncommitted changes. Commit or stash them first:')
+        print('\n'.join('  ' + line for line in pl.git('status', '--porcelain')[1].splitlines()[:20]))
+        return NOT_CHECKOUT
+    if failed:
+        run = Run(args.ticket, out, claude, pipeline, args.budget, args.until, jira, args.note)
+        return run.stop(f'pre-flight: {failed}', cls='environment')
     waits = isinstance(out, Slack) and args.wait > 0
     deadline = time.monotonic() + args.wait * 3600
     while True:
