@@ -131,6 +131,12 @@ class Pipeline(unittest.TestCase):
         self.assertIn(BUILD, self.prompt(3))
         self.assertIn(VERIFY, self.prompt(3))
 
+    def test_every_stage_is_told_it_runs_headless(self):
+        self.run_pipeline()
+        for n in (1, 2, 3):
+            self.assertIn('Dispatch every agent in the foreground (run_in_background: false)', self.prompt(n))
+        self.assertTrue(self.prompt(2).rstrip().endswith('this command requires.'))   # after the handed-on messages
+
     def test_every_message_is_saved_for_the_owner(self):
         self.run_pipeline()
         saved = sorted(p.name for p in self.handoff.iterdir())

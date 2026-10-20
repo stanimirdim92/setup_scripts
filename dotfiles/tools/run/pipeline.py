@@ -48,6 +48,11 @@ from pathlib import Path
 ROUND_CAP = 3
 PROTECTED = ('master',)            # this repository works in main directly
 SUPPLIED = 'Supplied verbatim by pipeline.py from the previous session (target-selection.md §Gate handoffs):'
+# A -p session ends with the main agent's final message, and a background agent dies with it (LD-503: /test
+# ended with "I am waiting for the verifier's report" and no VERIFY line). Every stage is told so.
+HEADLESS = ('This is a headless `claude -p` run: the session ends with your final message, and any agent still '
+            'running in the background is lost. Dispatch every agent in the foreground (run_in_background: false) '
+            'and wait for its report; end only with the complete result line this command requires.')
 BACKOFF = (10, 300)                # seconds: first wait, longest wait (Symphony's numbers)
 # What a retry can get past: the API or the network, not the task. An auth or billing problem, or a
 # budget or turn cap, stops at once.
@@ -279,6 +284,7 @@ def main(argv=None):
         step += 1
         for label, text in given:
             prompt += f'\n\n{label} — {SUPPLIED}\n\n{text}'
+        prompt += f'\n\n{HEADLESS}'
         error, text, cost = claude(binary, prompt, args.budget, args.permission_mode, log)
         total += cost
         last = f'{ticket}-{step}-{name}.md'

@@ -548,6 +548,7 @@ class Run:
             return f'stopped by the owner ({stop})', ''
         if notes:
             prompt += f'\n\nOwner notes from Slack (TICKET NOTE). Follow them unless they conflict with the approved spec:\n{notes}'
+        prompt += f'\n\n{pl.HEADLESS}'
         print(f'  {datetime.datetime.now():%H:%M} {prompt.splitlines()[0][:110]}')
         started = time.monotonic()
         error, text = self.claude(prompt)

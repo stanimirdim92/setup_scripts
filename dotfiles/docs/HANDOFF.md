@@ -277,6 +277,12 @@ blocked only on T007 (`/test`, browser) and T008 (the owner's replica
 timing): build.md let a plan with such tasks never leave `/build`. build.md
 §"Tasks that are not /build's" now hands them on and reports COMPLETE.
 
+`/test` once ended its `-p` session with "I am waiting for the verifier's
+report": it had dispatched the verifier in the background, and a `-p`
+session ends with the main agent's final message. Every stage prompt now
+ends with `pl.HEADLESS`: dispatch in the foreground, wait, end with the
+result line.
+
 ## 5. Open items and ideas (not started)
 
 - **A live session across a runner crash** is not restored (Symphony does

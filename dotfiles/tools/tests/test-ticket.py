@@ -651,6 +651,14 @@ I did not dispatch any executor. Your Slack note ("use 200 status code") settles
             self.assertEqual(r2.go(), tk.STOPPED)
         self.assertNotIn('pipeline.py', self.prompts[-1:])
 
+    def test_every_stage_is_told_it_runs_headless(self):
+        full = []
+        real = self.claude
+        self.claude = lambda prompt: (full.append(prompt), real(prompt))[1]
+        self.run_once()
+        self.assertTrue(all('run_in_background: false' in p for p in full), full)
+        self.assertNotIn('run_in_background', self.prompts[0])                       # the first line stays the command
+
     def test_note_from_the_command_line_goes_to_the_first_stage_once(self):
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5, note='use 200; leave Google Ads alone')
         self.assertEqual(r.check_inbox(), (False, 'use 200; leave Google Ads alone'))
