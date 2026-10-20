@@ -211,7 +211,7 @@ def set_header(path, values):
 
 # ---- the reply ------------------------------------------------------------------------------
 
-ANSWERS = re.compile(r'\*?TICKET ANSWERS:\*?', re.I)
+ANSWERS = re.compile(r'\*?TICKET ANSWERS?:\*?', re.I)      # ANSWER: too; people write both
 
 
 def answers_part(text):
@@ -539,7 +539,9 @@ class Run:
             body = '\n'.join(l for l in (self.dir / file).read_text().splitlines() if l.strip())
             text += f'\n*{file}:*\n```\n{body[:1800]}{" …" if len(body) > 1800 else ""}\n```'
         try:
-            self.out.post(f'{text}\nLog: `{self.dir}`')
+            ts = self.out.post(f'{text}\nLog: `{self.dir}`\nReply here with `TICKET NOTE: …` for the next run.')
+            self.state.setdefault('inbox_threads', []).append(ts)   # a reply under the stop is read next run
+            self.save()
         except RuntimeError as err:
             print(f'ticket: could not post the stop: {err}')
         if self.jira:

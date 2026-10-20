@@ -448,6 +448,17 @@ class Ticket(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             self.assertEqual(r.stage('/note-check AB-11'), ('stopped by the owner (TICKET STOP)', ''))
 
+    def test_note_under_the_stop_message_counts_next_run(self):
+        self.out.chatty = True
+        self.pipeline_rc = 1
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.STOPPED)
+        stop_ts = [p[0] for p in self.out.posts if 'Stopped' in p[1]][-1]
+        self.assertIn('Reply here with `TICKET NOTE:', self.out.posts[-1][1])
+        self.out.say(stop_ts, 'TICKET NOTE: use 200')
+        self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5).check_inbox(), (False, 'use 200'))
+
     def test_note_in_the_question_thread_counts(self):
         self.out.chatty = True
         self.run_once()
@@ -776,6 +787,11 @@ class Parsing(unittest.TestCase):
         self.assertFalse(tk.has_conflict('# Plan\nStatus: Draft\n\nResolves the earlier REQ-004 SPEC CONFLICT (DEC-008).\n'))
         self.assertTrue(tk.has_conflict('# Plan\n\n## SPEC CONFLICT\nREQ-1\n'))
         self.assertTrue(tk.has_conflict('# Plan\nHandoff: Blocked — SPEC CONFLICT (REQ-004)\n'))
+
+    def test_answers_part_takes_the_singular_too(self):
+        self.assertEqual(tk.answers_part('TICKET ANSWER: Use 200'), ' Use 200')
+        self.assertEqual(tk.answers_part('*TICKET ANSWERS:* 1A ok'), ' 1A ok')
+        self.assertIsNone(tk.answers_part('the PO says use 200'))
 
     def test_reply(self):
         self.assertEqual(tk.parse_reply('1A 2b, approve AB-11', 'AB-11'), ({1: 'A', 2: 'B'}, True, False))
