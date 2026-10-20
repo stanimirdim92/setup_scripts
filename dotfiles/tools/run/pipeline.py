@@ -239,8 +239,8 @@ def main(argv=None):
     out_dir = Path(common) / 'handoff'
     out_dir.mkdir(parents=True, exist_ok=True)
     log = out_dir / f'{ticket}-pipeline.log'
-    stop_file = out_dir / f'{ticket}-pipeline-stop.json'      # why it stopped, for ticket.py to post
-    stop_file.unlink(missing_ok=True)
+    stop_file = out_dir / f'{ticket}-pipeline-stop.json'      # why it stopped, for ticket.py to post; a clean
+                                                              # run removes it, a start keeps the last one
     state_file = out_dir / f'{ticket}-pipeline.json'          # the finished stages, to go on after a crash
     total, step, last = 0.0, 0, ''
     state = resume_state(state_file)
@@ -327,6 +327,7 @@ def main(argv=None):
             return stop(f'/review wrote no review file for {head[:7]}')
         if sum(counts) == 0:
             state_file.unlink(missing_ok=True)
+            stop_file.unlink(missing_ok=True)
             print(f'\npipeline: {ticket} review is clean; ready for /ship. Paste {out_dir}/{ticket}-{step}-REVIEW.md '
                   f'into /ship in a new session.\n  measured total: ${total:.2f}')
             return 0

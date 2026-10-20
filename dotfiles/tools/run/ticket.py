@@ -737,6 +737,9 @@ class Run:
         report = self.dir / str(info.get('stage_file', ''))
         if not report.name.endswith('BUILD.md') or not report.is_file():
             return '', ''
+        spec_at = pl.git('log', '-1', '--format=%ct', '--', str(self.spec))[1]
+        if spec_at and int(spec_at) > report.stat().st_mtime:      # the spec moved since: the report is old news
+            return '', ''
         return build_conflict(report.read_text()), report.name
 
     def pipeline_step(self, prompt, cost, step=None):
@@ -944,6 +947,12 @@ def ticket_checkout(ticket, create):
 
 
 def first_line(text):
+    """The first line that says something; a JSON answer is summed up (a Slack read is a list)."""
+    data = first_json(text) if text.lstrip()[:1] in '[{' else None
+    if isinstance(data, list):
+        return f'{len(data)} item{"s" * (len(data) != 1)}' + (' (replies)' if data and isinstance(data[0], dict) and 'text' in data[0] else '')
+    if isinstance(data, dict):
+        return ', '.join(f'{k}: {str(v)[:40]}' for k, v in list(data.items())[:4])
     for raw in text.splitlines():
         line = raw.strip().strip('*#> ').strip()
         if line and not line.startswith('```'):
@@ -1018,9 +1027,11 @@ def watch(args, search=None, start=None, rounds=None, updated=None):
         def start(key):
             child = [sys.executable, '-u', str(Path(__file__).resolve()), key, '--budget', str(args.budget), '--wait',
                      str(args.wait), '--poll', str(args.poll), '--permission-mode', args.permission_mode]
-            proc = subprocess.Popen(child, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                                    text=True, env={**os.environ, 'HARNESS_LABEL': args.label})
-            threading.Thread(target=relay, args=(key, proc.stdout, out_dir / f'{key}-ticket.out'), daemon=True).start()
+            out = out_dir / f'{key}-ticket.out'
+            with open(out, 'a') as fh:            # the child writes its own file: the watch may go, it stays
+                proc = subprocess.Popen(child, stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                        start_new_session=True, env={**os.environ, 'HARNESS_LABEL': args.label})
+            threading.Thread(target=relay, args=(key, proc, out), daemon=True).start()
             return proc
     print(f'ticket: watching Jira for label "{args.label}" every {args.poll}s, {args.jobs} at once, from {os.getcwd()}')
     running, finished, held = {}, {}, {}         # key → process; key → exit code; key → when it stopped
@@ -1064,18 +1075,24 @@ def watch(args, search=None, start=None, rounds=None, updated=None):
         try:
             pl.sleep(args.poll)
         except KeyboardInterrupt:
-            print(f'\nticket: watch ends; {len(running)} run(s) go on by themselves: {", ".join(running) or "none"}')
+            print(f'\nticket: watch ends; {len(running)} run(s) go on by themselves: {", ".join(running) or "none"}\n'
+                  f'  their output: {out_dir}/<KEY>-ticket.out; a new watch leaves them alone while their lock lives')
             break
     return DONE
 
 
-def relay(key, stream, path):
-    """A child's output: to the terminal with the ticket in front, and to its .out file."""
-    with open(path, 'a') as fh:
-        for line in stream:
-            fh.write(line)
-            fh.flush()
-            print(f'  {key} │ {line}', end='', flush=True)
+def relay(key, proc, path):
+    """Follow a child's .out file and print its new lines with the ticket in front, until the child ends."""
+    with open(path) as fh:
+        fh.seek(0, os.SEEK_END)
+        while True:
+            line = fh.readline()
+            if line:
+                print(f'  {key} │ {line}', end='' if line.endswith('\n') else '\n', flush=True)
+            elif proc.poll() is not None:
+                break
+            else:
+                time.sleep(0.5)
 
 
 def shipped(state_file):
