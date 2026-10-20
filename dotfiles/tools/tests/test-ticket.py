@@ -473,7 +473,7 @@ class Ticket(unittest.TestCase):
             r.stage('/note-check AB-11')
         self.assertIn('TICKET NOTE read', self.out.posts[-2][1])
         self.out.say(r.thread, 'PO says hi')                                # conversation: ignored
-        self.assertEqual(r.check_inbox(), (False, ''))
+        self.assertEqual(r.inbox(), (False, ''))
         self.out.say(r.thread, 'ticket stop')
         with redirect_stdout(io.StringIO()):
             self.assertEqual(r.stage('/note-check AB-11'), ('stopped by the owner (TICKET STOP)', ''))
@@ -490,16 +490,16 @@ class Ticket(unittest.TestCase):
         self.assertIn(stop[0], self.out.notified)                             # and it pings you
         self.assertIn('Reply here with a TICKET NOTE', stop[1])
         self.out.say(r.thread, 'TICKET NOTE: use 200')
-        self.assertEqual(r.check_inbox(), (False, 'use 200'))
+        self.assertEqual(r.inbox(), (False, 'use 200'))
 
     def test_long_threads_are_read_from_the_last_reply_on(self):
         self.out.chatty = True
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
         r.progress('started')
         self.out.raw.setdefault(r.thread, []).append({'author': 'Owner <o@x.io>', 'text': 'TICKET NOTE: one', 'ts': '100.1'})
-        self.assertEqual(r.check_inbox(), (False, 'one'))
+        self.assertEqual(r.inbox(), (False, 'one'))
         self.out.raw[r.thread].append({'author': 'Owner <o@x.io>', 'text': 'TICKET NOTE: two', 'ts': '100.2'})
-        self.assertEqual(r.check_inbox(), (False, 'two'))
+        self.assertEqual(r.inbox(), (False, 'two'))
         self.assertEqual(self.out.asked_after[-1], '100.1')                     # asked only for what came after
         self.assertEqual(r.state['inbox_after'][r.thread], '100.2')
         sent = []
@@ -512,7 +512,7 @@ class Ticket(unittest.TestCase):
         self.run_once()
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
         self.out.say(r.state['ask']['ts'], 'TICKET NOTE: send min and max')
-        self.assertEqual(r.check_inbox(), (False, 'send min and max'))
+        self.assertEqual(r.inbox(), (False, 'send min and max'))
 
     def test_pipeline_step_hands_the_owner_word_to_pipeline(self):
         self.out.chatty = True
@@ -560,7 +560,7 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         for ts, text, thread in self.out.posts:                               # the reader gives them back as the owner's
             self.out.raw.setdefault(thread or ts, []).append({'author': 'Owner <o@x.io>', 'text': text, 'ts': ts})
         self.out.raw.setdefault(r.thread, []).append({'author': 'Owner <o@x.io>', 'text': 'TICKET NOTE: real', 'ts': 'n1'})
-        self.assertEqual(r.check_inbox(), (False, 'real'))
+        self.assertEqual(r.inbox(), (False, 'real'))
 
     def test_build_conflict_goes_back_to_spec_then_plans_and_builds_again(self):
         self.conflict_fix_by_default = True
@@ -656,6 +656,12 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         callers = [l.strip() for l in source.splitlines() if 'self.resolve(' in l]
         self.assertEqual(len(callers), 3)                                       # route(), and make_plan() twice
 
+    def test_one_inbox(self):
+        source = SCRIPT.read_text()
+        self.assertEqual(source.count('def inbox('), 1)
+        self.assertNotRegex(source, r'check_inbox|jira_stop')
+        self.assertIn('HARNESS_INBOX', (SCRIPT.parent / 'pipeline.py').read_text())   # the pipeline's first stage reads it too
+
     def test_prose_detectors_are_gone(self):
         self.assertNotRegex(SCRIPT.read_text(), r'SPEC_SIGNALS|build_conflict|routed|has_conflict|conflict_text')
 
@@ -689,8 +695,8 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
 
     def test_note_from_the_command_line_goes_to_the_first_stage_once(self):
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5, note='use 200; leave Google Ads alone')
-        self.assertEqual(r.check_inbox(), (False, 'use 200; leave Google Ads alone'))
-        self.assertEqual(r.check_inbox(), (False, ''))                         # once
+        self.assertEqual(r.inbox(), (False, 'use 200; leave Google Ads alone'))
+        self.assertEqual(r.inbox(), (False, ''))                         # once
         full = []
         real = self.claude
         self.claude = lambda prompt: (full.append(prompt), real(prompt))[1]
@@ -721,7 +727,7 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         r.progress('started')
         self.out.say(r.thread, 'TICKET NOTE: x')
         self.out.say(r.thread, 'PO says hi')
-        r.check_inbox()
+        r.inbox()
         self.assertEqual(len(reacted), 2)                                               # the note, not the talk
 
     def test_slack_react_prompt(self):
@@ -831,15 +837,15 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         self.assertIn('stopped by the owner (Jira status Done)', self.out.posts[-1][1])
         self.assertNotIn(f'/plan {T}', self.prompts)
         jira.set('Blocked', 'To Do')                                  # named in HARNESS_JIRA_STOP
-        self.assertEqual(r().jira_stop(), 'Blocked')
+        self.assertEqual(r().inbox()[0], 'Jira status Blocked')
         jira.set('Waiting for PO', 'To Do')
-        self.assertEqual(r().jira_stop(), '')
+        self.assertEqual(r().inbox()[0], False)
         os.environ['HARNESS_JIRA_STOP'] = 'Waiting for PO'
         try:
-            self.assertEqual(r().jira_stop(), 'Waiting for PO')
+            self.assertEqual(r().inbox()[0], 'Jira status Waiting for PO')
             os.environ['HARNESS_JIRA_STOP'] = '0'
             jira.set('Done', 'Done')
-            self.assertEqual(r().jira_stop(), '')                    # the check is off
+            self.assertEqual(r().inbox()[0], False)                  # the check is off
         finally:
             del os.environ['HARNESS_JIRA_STOP']
 
@@ -911,14 +917,14 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         jira = FakeJira('In Progress', 'In Progress')
         jira._status['labels'] = ['harness-run', 'be']
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=jira)
-        self.assertEqual(r.jira_stop(), '')                           # a run by hand ignores labels
+        self.assertEqual(r.inbox()[0], False)                         # a run by hand ignores labels
         os.environ['HARNESS_LABEL'] = 'harness-run'
         try:
-            self.assertEqual(r.jira_stop(), '')
+            self.assertEqual(r.inbox()[0], False)
             jira._status['labels'] = ['be']
-            self.assertEqual(r.jira_stop(), 'In Progress, label harness-run removed')
+            self.assertEqual(r.inbox()[0], 'Jira status In Progress, label harness-run removed')
             os.environ['HARNESS_JIRA_STOP'] = '0'                     # the status check off, the label still counts
-            self.assertEqual(r.jira_stop(), 'In Progress, label harness-run removed')
+            self.assertEqual(r.inbox()[0], 'Jira status In Progress, label harness-run removed')
         finally:
             del os.environ['HARNESS_LABEL'], os.environ['HARNESS_JIRA_STOP']
 
@@ -1042,7 +1048,7 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
                 raise RuntimeError('no tool')
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=Broken())
         with redirect_stdout(io.StringIO()) as out:
-            self.assertEqual(r.check_inbox(), (False, ''))
+            self.assertEqual(r.inbox(), (False, ''))
         self.assertIn('could not read the Jira status: no tool', out.getvalue())
 
     def test_pipeline_step_takes_pipeline_own_count(self):

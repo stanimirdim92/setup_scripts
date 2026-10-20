@@ -491,10 +491,11 @@ class Run:
         """What needs you: in the ticket's thread with an @mention; top-level without Slack. Returns its ts."""
         return self.post(text, thread=self.run_thread(), notify=True)
 
-    def check_inbox(self):
-        """The owner's word before the next stage: (stop, notes). TICKET STOP / TICKET NOTE: replies in the
-        run thread, the question thread or the latest conflict thread; and the ticket's Jira status, when
-        a stopping one means the same as TICKET STOP."""
+    def inbox(self):
+        """The one reader of the owner's word, before every stage (HR-1 REQ-007): (stop, notes). Slack: the
+        ticket's threads from the last reply seen, TICKET STOP / TICKET NOTE, the runner's own posts skipped,
+        👀 on each reply read. --note: once, for the first stage. Jira: a stopping status (Done, or one named in
+        HARNESS_JIRA_STOP), or the label HARNESS_LABEL gone (the label is the claim when --watch started it)."""
         stop, notes = False, ''
         if getattr(self.out, 'chatty', False):
             threads = [self.thread, (self.state.get('ask') or {}).get('ts'),
@@ -520,37 +521,31 @@ class Run:
                 self.progress(':octagonal_sign: TICKET STOP read: nothing new starts.')
             elif notes:
                 self.progress(f':memo: TICKET NOTE read; it goes to the next stage:\n{notes}')
-        status = self.jira_stop()
-        if status:
-            self.progress(f':octagonal_sign: Jira status is *{status}*: nothing new starts. Move the ticket back '
-                          'and run ticket.py again to go on.')
-            stop = stop or f'Jira status {status}'
         if self.note:                                       # given on the command line: the first stage gets it
             notes, self.note = '\n'.join(n for n in (self.note, notes) if n), ''
+        stopping, label = os.environ.get('HARNESS_JIRA_STOP', JIRA_STOP), os.environ.get('HARNESS_LABEL', '')
+        if self.jira and (stopping.strip() not in ('0', '') or label):
+            try:
+                status = self.jira.status() or {}
+            except RuntimeError as err:
+                print(f'ticket: could not read the Jira status: {err}')
+                status = {}
+            name, category = str(status.get('status', '')).strip(), str(status.get('category', '')).strip()
+            names = {x.strip().lower() for x in stopping.split(',') if x.strip()}
+            labels = status.get('labels')
+            why = ''
+            if stopping.strip() not in ('0', '') and (category.lower() == 'done' or name.lower() in names):
+                why = name
+            elif label and isinstance(labels, list) and label.lower() not in {str(l).lower() for l in labels}:
+                why = f'{name}, label {label} removed'
+            if why:
+                self.progress(f':octagonal_sign: Jira status is *{why}*: nothing new starts. Move the ticket back '
+                              'and run ticket.py again to go on.')
+                stop = stop or f'Jira status {why}'
         return stop, notes
 
-    def jira_stop(self):
-        """What in Jira says to stop: the status (Done, or one named in HARNESS_JIRA_STOP), or the label
-        HARNESS_LABEL gone from the ticket (the label is the claim when --watch started the run). Else ''."""
-        stopping, label = os.environ.get('HARNESS_JIRA_STOP', JIRA_STOP), os.environ.get('HARNESS_LABEL', '')
-        if not self.jira or (stopping.strip() in ('0', '') and not label):
-            return ''
-        try:
-            status = self.jira.status() or {}
-        except RuntimeError as err:
-            print(f'ticket: could not read the Jira status: {err}')
-            return ''
-        name, category = str(status.get('status', '')).strip(), str(status.get('category', '')).strip()
-        names = {s.strip().lower() for s in stopping.split(',') if s.strip()}
-        if stopping.strip() not in ('0', '') and (category.lower() == 'done' or name.lower() in names):
-            return name
-        labels = status.get('labels')
-        if label and isinstance(labels, list) and label.lower() not in {str(l).lower() for l in labels}:
-            return f'{name}, label {label} removed'
-        return ''
-
     def stage(self, prompt):
-        stop, notes = self.check_inbox()
+        stop, notes = self.inbox()
         if stop:
             return f'stopped by the owner ({stop})', ''
         if notes:
@@ -643,7 +638,7 @@ class Run:
             report = (self.dir / (info.get('stage_file') or '')).read_text() if info.get('stage_file') else ''
             if h.get('route') == '/plan' or (h.get('route') == '/spec' and self.may_resolve(report, h['ids'])):
                 return self.route(info)                      # an earlier run's stage sent it there; a conflict
-            stop, notes = self.check_inbox()                 # already taken is old news, and the pipeline runs
+            stop, notes = self.inbox()                       # already taken is old news, and the pipeline runs
             if stop:
                 return self.stop(f'stopped by the owner ({stop})')
             (self.dir / f'{t}-inbox.json').write_text(json.dumps({'after_step': 0, 'stop': False,
@@ -815,7 +810,7 @@ class Run:
         stop, notes = False, ''
         try:
             self.pipeline_progress(prompt, cost)
-            stop, notes = self.check_inbox()
+            stop, notes = self.inbox()
         finally:                                        # pipeline.py waits for this file before its next stage
             (self.dir / f'{self.ticket}-inbox.json').write_text(json.dumps(
                 {'after_step': self.pipeline_steps, 'stop': bool(stop), 'notes': [notes] if notes else []}))
