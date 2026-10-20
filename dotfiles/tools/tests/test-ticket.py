@@ -514,6 +514,29 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         self.assertEqual(tk.build_conflict('# BUILD BLOCKED\n\nT002 needs a migration. Route: human decision.\n'), '')
         self.assertEqual(tk.build_conflict('resolves the earlier SPEC CONFLICT; see /spec history'), '')   # no blocker
 
+    BUILD_BLOCKED_WORDED = """## BUILD BLOCKED: AB-11
+I did not dispatch any executor. Your Slack note ("use 200 status code") settles the open 422 conflict. It still contradicts the approved spec, so `/build` cannot act on it yet.
+**Why it stopped**
+- The spec at `docs/specs/AB-11-SPEC.md:128` (REQ-001) says an invalid value MUST get HTTP 422.
+- `ValidationFailedOverride` returns HTTP 200 with an `errors` body for non-Inertia requests. Your note picks that behaviour.
+- Changing what the API returns is a behaviour change to the spec. `/build` does not edit the spec.
+**Task state at HEAD**
+
+| Task | Status | Note |
+|---|---|---|
+| T001 | Pending | Blocked by the 422 vs 200 conflict |
+**Commits:** none.
+"""
+
+    def test_build_conflict_reads_the_meaning_not_the_phrase(self):
+        conflict = tk.build_conflict(self.BUILD_BLOCKED_WORDED)
+        self.assertIn('contradicts the approved spec', conflict)
+        self.assertIn('Changing what the API returns is a behaviour change to the spec', conflict)
+        self.assertNotIn('| T001 |', conflict)                                  # the table stays out
+        self.assertEqual(tk.build_conflict('## BUILD BLOCKED: AB-11\nThe schema snapshot does not match the local DB. '
+                                           'Refresh it on main or on this branch?\n'), '')
+        self.assertEqual(tk.build_conflict('**BUILD COMPLETE**\nthe spec conflict from before is resolved'), '')
+
     def test_build_conflict_goes_back_to_spec_then_plans_and_builds_again(self):
         self.conflict_fix_by_default = True
         handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
