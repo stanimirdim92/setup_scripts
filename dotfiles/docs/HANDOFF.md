@@ -46,7 +46,9 @@ The owner's decisions, in force:
 - **Plan conflicts.** A `SPEC CONFLICT` goes back to `/spec T unattended`.
   Fixed by default (no OPEN QUESTION left): his approval stands, he gets a
   note, `/plan` runs again. High-risk or behavior-changing: the spec goes
-  back to Draft and he answers again. After 2 conflicts the run stops.
+  back to Draft and he answers again. The same conflict coming back (by
+  the REQ/DEC/TD ids it names, `conflict_digest()`), or a sixth one, stops
+  the run (`may_resolve()`); different conflicts in a row are progress.
 - **No per-stage time limit** as such; a stall (no event for 60 min) is
   killed and retried. He chose 60 min over Symphony's 5: a long test run
   makes no events.
@@ -157,7 +159,7 @@ The owner's decisions, in force:
    (`build_conflict()`: a top-level item naming "goes to `/spec`" and a
    conflict) goes to `back_to_spec(conflict, '/build')`; when the default
    keeps the approval, `go()` runs again: `plan_stale()` → `/plan` →
-   pipeline on the commits so far. Same two-conflict cap. Other BUILD
+   pipeline on the commits so far. Same same-conflict rule. Other BUILD
    BLOCKED reasons (e.g. the schema snapshot drift LD-503 hit) stop.
 7. **Ship.** `/ship T` with the last REVIEW message. The result is posted
    to Slack and as a Jira comment (branch, HEAD, spend, "nothing is

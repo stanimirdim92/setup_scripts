@@ -620,7 +620,7 @@ class Run:
             if self.until == 'plan':
                 return self.stop_at('plan')
             conflict, report = self.last_build_conflict()
-            if conflict and self.state.get('conflict_seen') != report and self.state.get('conflicts', 0) < 2:
+            if conflict and self.state.get('conflict_seen') != report and self.may_resolve(conflict):
                 self.state['conflict_seen'] = report              # an earlier run's /build sent this to /spec
                 self.save()
                 result = self.back_to_spec(conflict, '/build')
@@ -639,7 +639,7 @@ class Run:
                 if not fresh:                                      # it died before a stage: say what it printed
                     info = {'why': f'exited {rc}: {getattr(self.pipeline, "last", "") or "no output"}'}
                 conflict, report = self.last_build_conflict() if fresh else ('', '')
-                if conflict and self.state.get('conflicts', 0) < 2:   # /build routed a blocker to /spec
+                if conflict and self.may_resolve(conflict):            # /build routed a blocker to /spec
                     self.state['conflict_seen'] = report
                     self.save()
                     result = self.back_to_spec(conflict, '/build')
@@ -753,6 +753,12 @@ class Run:
             seen = []
         return {'ts': where, 'spec': hashlib.sha1(spec_text.encode()).hexdigest(), 'seen': seen}
 
+    def may_resolve(self, conflict):
+        """A conflict goes to /spec unless the same one came back (the fix did not take) or this is the
+        sixth for the ticket: then it stops and the owner looks. Different conflicts in a row are progress."""
+        seen = self.state.get('conflict_digests', [])
+        return conflict_digest(conflict) not in seen and len(seen) < 5
+
     def last_build_conflict(self):
         """(conflict text, report file name) from the last pipeline stop when its BUILD report routed a
         blocker to /spec, else ('', '')."""
@@ -801,9 +807,10 @@ class Run:
         """plan or build → spec (component-response-contracts §5): /spec resolves the conflict unattended. A fix
         it decided by default (Low/Medium) keeps the owner's approval and the run goes on (None); a High one
         stays an OPEN QUESTION, the spec goes back to Draft and the owner answers and approves again
-        (ADR 0115). Twice at most; then it stops."""
+        (ADR 0115). The same conflict twice, or a sixth one, stops instead (may_resolve)."""
         t = self.ticket
         self.state['conflicts'] = self.state.get('conflicts', 0) + 1
+        self.state.setdefault('conflict_digests', []).append(conflict_digest(conflict))
         self.state.pop('ask', None)                     # a fresh ask for the revised spec
         self.save()
         self.commit(f'{t}: plan stopped at a spec conflict')
@@ -836,7 +843,7 @@ class Run:
     def make_plan(self):
         t = self.ticket
         if (self.plan.exists() and has_conflict(self.plan.read_text()) and not self.plan_stale()
-                and self.state.get('conflicts', 0) < 2):             # this spec already has a conflict: no new /plan
+                and self.may_resolve(conflict_text(self.plan.read_text()))):   # this spec already has a conflict
             result = self.back_to_spec(conflict_text(self.plan.read_text()))
             if result is not None:
                 return result
@@ -846,7 +853,7 @@ class Run:
         if not self.plan.exists():
             return self.stop(f'/plan wrote no {self.plan}')
         plan = self.plan.read_text()
-        if has_conflict(plan) and self.state.get('conflicts', 0) < 2:
+        if has_conflict(plan) and self.may_resolve(conflict_text(plan)):
             result = self.back_to_spec(conflict_text(plan))
             return self.make_plan() if result is None else result
         if has_conflict(plan) or open_questions(plan):
@@ -936,6 +943,13 @@ def build_conflict(report):
         return ''
     head = re.split(r'\n(?=\|)|\n#+\s*(?:Task state|Status per task|Checkpoints|Commits|Verification)', report, maxsplit=1)[0]
     return head.strip()[:4000]
+
+
+def conflict_digest(conflict):
+    """The same conflict in other words is still the same: the REQ/DEC/TD ids it names, else its first lines."""
+    ids = sorted(set(re.findall(r'\b(?:REQ|DEC|TD|CP|T)-\d{3}\b', conflict)))
+    key = ' '.join(ids) if ids else ' '.join(conflict.split())[:300]
+    return hashlib.sha1(key.encode()).hexdigest()[:12]
 
 
 def conflict_text(plan):

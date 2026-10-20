@@ -312,14 +312,25 @@ class Ticket(unittest.TestCase):
         self.assertEqual(self.prompts.count(f'/plan {T}'), 2)
         self.assertTrue(self.clean())
 
+    def test_different_conflicts_in_a_row_each_go_to_spec_the_same_one_stops(self):
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        a = 'Decision needed (routes to `/spec`). REQ-008: the EXPLAIN criterion fails as written.'
+        b = 'Spec conflict on REQ-001 (goes to `/spec`): 422 vs 200.'
+        self.assertTrue(r.may_resolve(a))
+        r.state.setdefault('conflict_digests', []).append(tk.conflict_digest(a))
+        self.assertTrue(r.may_resolve(b))                                        # another one: progress
+        self.assertFalse(r.may_resolve('REQ-008 again, worded differently, same EXPLAIN criterion'))   # the same ids
+        r.state['conflict_digests'] += [tk.conflict_digest(f'something about TD-00{i}') for i in range(4)]
+        self.assertFalse(r.may_resolve(b))                                       # the sixth stops
+
     def test_repeated_plan_conflict_stops(self):
+        """The same conflict coming back means the fix did not take: the owner looks, not /spec again."""
         self.plan_text = PLAN + '\n## SPEC CONFLICT\nREQ-001 cannot be met\n'
         self.run_once()
-        for _ in range(2):
-            self.out.reply(f'1A {T}')
-            self.assertEqual(self.run_once(), tk.WAITING)
         self.out.reply(f'1A {T}')
-        self.assertEqual(self.run_once(), tk.STOPPED)
+        self.assertEqual(self.run_once(), tk.WAITING)                  # once: back to /spec, asked again
+        self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.STOPPED)                  # the same REQ-001 conflict again: stop
         self.assertNotIn('pipeline.py', self.prompts)
 
     def test_failing_check_plan_stops(self):

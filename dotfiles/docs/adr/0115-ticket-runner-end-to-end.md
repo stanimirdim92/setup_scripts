@@ -41,7 +41,10 @@ four points for the owner, who answered them on 2026-10-19:
   `OPEN QUESTION` left), the owner's approval stands, the owner gets a note in
   the run thread and `/plan` runs again. A High-risk fix or a behavior change
   stays an `OPEN QUESTION`: the spec returns to Draft and the owner answers
-  and approves again. After two conflicts the run stops.
+  and approves again. The same conflict coming back, or a sixth one on the
+  ticket, stops the run: the fix did not take, and a person looks
+  (amended 2026-10-20; the first rule, two per ticket, stopped LD-503 on
+  its third distinct conflict with the build half done).
 - `pipeline.py` runs `/build`, `/test` and `/review` with fix rounds
   (ADR 0114). Then `/ship` runs with the last review message, and its GO,
   NO-GO or SHIP BLOCKED line is posted. The run never pushes.
@@ -106,7 +109,7 @@ owner asked for the run to need fewer restarts. Taken from Symphony
   the commits made. The first real run stopped on exactly such a conflict
   (REQ-001 asked for 422 where the repository answers 200), with the
   recommendation the unattended rule would have taken. Any other
-  BUILD BLOCKED still stops; the two-conflict cap covers both stages.
+  BUILD BLOCKED still stops; the same-conflict rule covers both stages.
 - The Slack message numbers the defaults it took and lists the owner's own
   earlier decisions. `D<n>: …` in the reply changes a default: `/spec`
   rewrites that DEC as the owner's, with the default as the alternative
