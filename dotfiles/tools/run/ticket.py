@@ -491,6 +491,44 @@ class Run:
         """What needs you: in the ticket's thread with an @mention; top-level without Slack. Returns its ts."""
         return self.post(text, thread=self.run_thread(), notify=True)
 
+    def decide(self, report, h, stage, file):
+        """A stage asked the owner to choose (HANDOFF decide=n): post the numbered options as B<k> in the
+        thread, the recommended one starred, and keep it in the state until TICKET ANSWERS: B<k>=<n> answers it
+        (HR-1 REQ-006). Returns the key."""
+        decisions = self.state.setdefault('decisions', {})
+        key = f'B{len(decisions) + 1}'
+        options = options_in(report)
+        decisions[key] = {'stage': stage, 'ids': h['ids'], 'file': file, 'chosen': None,
+                          'options': [o['text'] for o in options]}
+        self.save()
+        lines = [f':question: *{self.ticket} · {key} — {stage} needs your decision*' + (f' ({", ".join(h["ids"])})' if h['ids'] else ''),
+                 *(f'      • *{o["n"]}*{" :star:" if o["recommended"] else ""}  {o["text"][:300]}' for o in options)]
+        if len(options) != h['decide']:
+            lines.append(f'      _({h["decide"]} option{"s" * (h["decide"] != 1)} per the report; read `{file}`)_')
+        rec = next((o['n'] for o in options if o['recommended']), options[0]['n'] if options else 1)
+        lines.append(f':speech_balloon: Reply in this thread:  `TICKET ANSWERS: {key}={rec}`  — or a `TICKET NOTE: …` in your words')
+        self.say('\n'.join(lines))
+        return key
+
+    def answer_decisions(self, replies):
+        """TICKET ANSWERS: B<k>=<n> in the owner's replies: the choice goes to the state and comes back as a note for
+        the next stage; an unknown key or option is refused with the valid ones."""
+        notes, decisions = [], self.state.get('decisions', {})
+        for r in replies:
+            for key, n in re.findall(r'\b(B\d+)\s*=\s*(\d+)', str(r.get('text', '')), re.I):
+                key, n = key.upper(), int(n)
+                d = decisions.get(key)
+                if not d or not 1 <= n <= max(len(d['options']), 1):
+                    valid = ', '.join(f'{k}=1..{max(len(v["options"]), 1)}' for k, v in decisions.items() if v['chosen'] is None) or 'none open'
+                    self.post(f':warning: {key}={n} is not a decision and option here. Open: {valid}. Nothing changed.', thread=self.run_thread())
+                    continue
+                d['chosen'] = n
+                text = d['options'][n - 1] if d['options'] else f'option {n}'
+                notes.append(f'Your decision {key} ({d["stage"]}{", " + ", ".join(d["ids"]) if d["ids"] else ""}): option {n} — {text}')
+        if notes:
+            self.save()
+        return notes
+
     def inbox(self):
         """The one reader of the owner's word, before every stage (HR-1 REQ-007): (stop, notes). Slack: the
         ticket's threads from the last reply seen, TICKET STOP / TICKET NOTE, the runner's own posts skipped,
@@ -511,12 +549,13 @@ class Run:
                 if latest(after.get(ts), *(r.get('ts') for r in got)):
                     after[ts] = latest(after.get(ts), *(r.get('ts') for r in got))
             self.state.setdefault('inbox_seen', []).extend(r.get('ts') for r in new)
-            for r in new:                                   # 👀 on each STOP / NOTE read, where it was written
-                if re.search(r'\bTICKET (?:STOP|NOTE)\b', r['text'], re.I) and hasattr(self.out, 'react'):
+            for r in new:                                   # 👀 on each STOP / NOTE / ANSWERS read, where it was written
+                if re.search(r'\bTICKET (?:STOP|NOTE|ANSWERS?)\b', r['text'], re.I) and hasattr(self.out, 'react'):
                     self.out.react(r['ts'])
             self.save()
             stop = 'TICKET STOP' if any(re.search(r'\bTICKET STOP\b', r['text'], re.I) for r in new) else False
-            notes = '\n'.join(m.group(1).strip() for r in new for m in [re.search(r'TICKET NOTE:\s*(.+)', r['text'], re.I | re.S)] if m)
+            notes = '\n'.join([m.group(1).strip() for r in new for m in [re.search(r'TICKET NOTE:\s*(.+)', r['text'], re.I | re.S)] if m]
+                              + self.answer_decisions([r for r in new if answers_part(r['text']) is not None]))
             if stop:
                 self.progress(':octagonal_sign: TICKET STOP read: nothing new starts.')
             elif notes:
@@ -798,8 +837,10 @@ class Run:
             result = self.make_plan()
             return self.go() if result is None else result
         if h['route'] == 'owner':
-            options = f' ({h["decide"]} option{"s" * (h["decide"] != 1)} in the report)' if h['decide'] else ''
-            return self.stop(f'{stage}: a decision is yours{options} · {why}', file)
+            if h['decide']:
+                key = self.decide(report, h, stage, file)
+                return self.stop(f'{stage}: decision {key} is yours · {why}', file)
+            return self.stop(f'{stage}: it needs you · {why}', file)
         return self.stop(f'pipeline.py: {why} → {h["route"]}', file)
 
     def pipeline_step(self, prompt, cost, step=None):
@@ -947,6 +988,22 @@ def digest(text, lines=6, chars=700):
     kept = [l.rstrip() for l in text.splitlines() if l.strip() and not l.strip().startswith('```')][:lines]
     out = '\n'.join(kept)
     return out[:chars] + (' …' if len(out) > chars else '')
+
+
+def options_in(report):
+    """The numbered options a report offers a person: top-level `1.` / `1)` lines in order, with the recommended
+    one flagged (its own line says so, or a line names "recommendation is option n")."""
+    out = []
+    for line in report.splitlines():
+        m = re.match(r'^\s{0,3}(\d+)[.)]\s+(.*\S)', line)
+        if m and int(m.group(1)) == len(out) + 1:
+            out.append({'n': int(m.group(1)), 'text': m.group(2).strip().strip('*').strip(),
+                        'recommended': bool(re.search(r'recommend', m.group(2), re.I))})
+    m = re.search(r'recommend\w*\s+(?:is\s+)?option\s+\(?(\d+)', report, re.I)
+    if m and not any(o['recommended'] for o in out):
+        for o in out:
+            o['recommended'] = o['n'] == int(m.group(1))
+    return out
 
 
 def conflict_digest(conflict, ids=()):

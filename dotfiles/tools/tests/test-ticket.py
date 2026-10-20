@@ -636,9 +636,58 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         self.assertEqual(self.run_once(), tk.STOPPED)
         self.assertEqual(self.prompts.count('pipeline.py'), 1)
         self.assertNotIn(f'/spec {T} unattended', self.prompts[2:])
-        self.assertIn('/build: a decision is yours (2 options in the report)', self.out.posts[-1][1])
+        self.assertIn('/build: decision B1 is yours', self.out.posts[-1][1])
+        ask = [p[1] for p in self.out.posts if 'B1 — /build needs your decision' in p[1]][-1]
+        self.assertIn('`TICKET ANSWERS: B1=1`', ask)                                  # no options found as lines: 1 suggested
         self.assertEqual(self.run_once(), tk.STOPPED)                                 # a new run: the same stop, no retry
         self.assertEqual(self.prompts.count('pipeline.py'), 2)
+
+    def test_numbered_decision_posted_and_answered(self):
+        self.out.chatty = True
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
+                                      text=True).stdout.strip()) / 'handoff'
+        handoff.mkdir(exist_ok=True)
+        report = ('# BUILD BLOCKED\n\n**Decision needed. My recommendation is option 1:**\n'
+                  '1. Accept the plan MySQL uses; amend the criterion.\n2. Change the subquery shape.\n\n| T | S |\n'
+                  'HANDOFF: result=BLOCKED route=owner ids=REQ-008 decide=2\n')
+        full = []
+
+        def pipeline(ticket, budget, step=None):
+            self.prompts.append('pipeline.py')
+            full.append(json.loads((handoff / f'{T}-inbox.json').read_text()))
+            if len(full) == 1:
+                (handoff / f'{T}-1-BUILD.md').write_text(report)
+                (handoff / f'{T}-pipeline-stop.json').write_text(json.dumps({'why': 'BUILD BLOCKED', 'stage_file': f'{T}-1-BUILD.md',
+                    'handoff': {'result': 'BLOCKED', 'route': 'owner', 'ids': ['REQ-008'], 'decide': 2}}))
+                return 1
+            (handoff / f'{T}-3-REVIEW.md').write_text('**Findings: 0 BLOCKER · 0 REQUIRED**\n')
+            return 0
+
+        self.pipeline = pipeline
+        self.assertEqual(self.run_once(), tk.STOPPED)
+        ask = [p for p in self.out.posts if 'B1 — /build needs your decision* (REQ-008)' in p[1]][-1]
+        self.assertIn('      • *1* :star:  Accept the plan MySQL uses; amend the criterion.', ask[1])
+        self.assertIn('      • *2*  Change the subquery shape.', ask[1])
+        self.assertIn('`TICKET ANSWERS: B1=1`', ask[1])
+        self.assertIn(ask[0], self.out.notified)
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        self.out.say(r.thread, 'TICKET ANSWERS: B1=7')                                   # not an option
+        self.assertEqual(r.inbox(), (False, ''))
+        self.assertIn('B1=7 is not a decision and option here. Open: B1=1..2', self.out.posts[-1][1])
+        self.out.say(r.thread, 'TICKET ANSWERS: B1=2')
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5).go(), tk.DONE)
+        self.assertEqual(full[1]['notes'], ['Your decision B1 (/build, REQ-008): option 2 — Change the subquery shape.'])
+        self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5).state['decisions']['B1']['chosen'], 2)
+
+    def test_options_in(self):
+        self.assertEqual([(o['n'], o['recommended']) for o in tk.options_in('x\n1. **A** (recommended)\n2. B\n3. C\n')],
+                         [(1, True), (2, False), (3, False)])
+        self.assertEqual([o['recommended'] for o in tk.options_in('My recommendation is option 2:\n1. A\n2. B\n')], [False, True])
+        self.assertEqual(tk.options_in('no list\n- bullet\n'), [])
+        self.assertEqual([o['text'] for o in tk.options_in('1. A\n\n5. not next\n2) B\n')], ['A', 'B'])
 
     def test_plan_without_a_handoff_line_stops(self):
         real = self.claude

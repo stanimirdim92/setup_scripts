@@ -144,7 +144,7 @@ Plan: dotfiles/docs/tasks/HR-1-plan.md · Spec: dotfiles/docs/specs/HR-1-SPEC.md
 
 ## T005: Build-time and test-time decisions as numbered options
 
-**Status:** Pending
+**Status:** Done
 
 **Requirements:** REQ-006
 

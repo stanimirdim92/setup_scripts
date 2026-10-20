@@ -80,6 +80,7 @@ SWITCHES = [
      'answers the open questions; ok, go or the ticket id approves the spec', 'TICKET ANSWERS:'),
     ('D1: what you want instead', 'the same reply, last',
      'changes a default the runner took; /spec rewrites that DEC as yours', 'changes a default'),
+    ('TICKET ANSWERS: B1=2', 'the same thread', 'answers a numbered decision a stage asked you (B1, B2 …)', 'TICKET ANSWERS: {key}='),
     ('a question with ?', 'the same thread', 'gets an answer from the spec, in the thread', "'?' in str(r.get('text'"),
     ('TICKET STOP', 'the run thread', 'nothing new starts after the current stage', 'TICKET STOP'),
     ('TICKET NOTE: …', 'the run thread', "goes into the next stage's prompt", 'TICKET NOTE:'),
