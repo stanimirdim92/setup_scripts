@@ -60,7 +60,9 @@ process; a second start is refused while it lives, and takes over when it is
 gone. A run picks up where the last one stopped: the state file, the spec and
 plan status, and pipeline.py's finished stages on the same HEAD. A stage that
 hits a rate limit, a dropped connection or a stall is retried by pipeline.py's
-`claude` (HARNESS_RETRIES, HARNESS_STALL_MIN).
+`claude` (HARNESS_RETRIES, HARNESS_STALL_MIN). A SPEC CONFLICT that /build routes to
+/spec goes back to /spec like one from /plan: fixed by default, the run plans and
+builds again on the commits so far; High risk asks you. Any other BUILD BLOCKED stops.
 
 Between stages the runner also reads the ticket's Jira status: Done, or a
 status named in HARNESS_JIRA_STOP (default "Blocked, On Hold, Paused,
@@ -584,6 +586,11 @@ class Run:
             if rc != 0:
                 stopped = self.dir / f'{t}-pipeline-stop.json'
                 info = json.loads(stopped.read_text()) if stopped.exists() else {}
+                report = self.dir / info.get('stage_file', '')
+                conflict = build_conflict(report.read_text()) if report.is_file() and report.name.endswith('BUILD.md') else ''
+                if conflict and self.state.get('conflicts', 0) < 2:   # /build routed a blocker to /spec
+                    result = self.back_to_spec(conflict, '/build')
+                    return self.go() if result is None else result    # the spec moved: plan again, build again
                 return self.stop(f'pipeline.py: {info.get("why") or f"exited {rc}"}', info.get('stage_file', ''))
             self.state['pipeline_done'] = True
             self.save()
@@ -711,9 +718,9 @@ class Run:
             print(f'  the plan predates the current spec; /plan runs again')
         return stale
 
-    def back_to_spec(self, conflict):
-        """plan → spec (component-response-contracts §5): /spec resolves the conflict unattended. A fix it
-        decided by default (Low/Medium) keeps the owner's approval and planning goes on (None); a High one
+    def back_to_spec(self, conflict, stage='/plan'):
+        """plan or build → spec (component-response-contracts §5): /spec resolves the conflict unattended. A fix
+        it decided by default (Low/Medium) keeps the owner's approval and the run goes on (None); a High one
         stays an OPEN QUESTION, the spec goes back to Draft and the owner answers and approves again
         (ADR 0115). Twice at most; then it stops."""
         t = self.ticket
@@ -722,7 +729,7 @@ class Run:
         self.save()
         self.commit(f'{t}: plan stopped at a spec conflict')
         try:
-            back = self.out.post(f':leftwards_arrow_with_hook: *{t} · Back to spec.* /plan found a conflict:\n```\n'
+            back = self.out.post(f':leftwards_arrow_with_hook: *{t} · Back to spec.* {stage} found a conflict:\n```\n'
                                  f'{conflict[:1500]}\n```\n/spec revises the spec now; you approve it again after.')
             self.state.setdefault('inbox_threads', []).append(back)
             self.save()
@@ -730,7 +737,7 @@ class Run:
             print(f'ticket: could not post the conflict: {err}')
         before = self.spec.read_text()
         approved = {k: header(before, k) for k in ('Status', 'Approved by', 'Approved at')}
-        error, _ = self.stage(f'/spec {t} unattended\nThe plan stopped at this SPEC CONFLICT. Revise the spec to '
+        error, _ = self.stage(f'/spec {t} unattended\n{stage} stopped at this SPEC CONFLICT. Revise the spec to '
                               f'resolve it, under the unattended rules; keep the decisions the owner made unless the '
                               f'conflict is about them. A fix that changes behavior or is High risk stays an OPEN '
                               f'QUESTION.\n\n{conflict}')
@@ -810,6 +817,23 @@ def has_conflict(plan):
     ("resolves the earlier SPEC CONFLICT")."""
     return any(CONFLICT.match(l) for l in plan.splitlines()) or \
         bool(re.search(r'SPEC CONFLICT', header(plan, 'Handoff') or ''))
+
+
+def build_conflict(report):
+    """The blockers a BUILD BLOCKED report routes to /spec (build.md §3: each blocker names its stage): the
+    top-level list items or paragraphs that name `/spec` and a conflict, with their indented lines. Else ''."""
+    blocks, cur = [], []
+    for line in report.splitlines():
+        new = re.match(r'^(?:\d+\.|[-*])\s', line) or line.startswith('#') or not line.strip()
+        if new and cur:
+            blocks.append('\n'.join(cur))
+            cur = []
+        if line.strip() and not line.startswith('#'):
+            cur.append(line)
+    blocks.append('\n'.join(cur))
+    routed = re.compile(r'(?:goes to|routes? (?:to|toward)|route:|→)\s*`?/spec\b', re.I)
+    hits = [b for b in blocks if routed.search(b) and re.search(r'spec conflict', b, re.I)]
+    return '\n'.join(hits).strip()[:4000]
 
 
 def conflict_text(plan):

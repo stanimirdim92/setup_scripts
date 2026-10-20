@@ -100,6 +100,13 @@ owner asked for the run to need fewer restarts. Taken from Symphony
   off and put back, so a failure does not loop. One watcher per checkout
   serializes the starts; the per-ticket lock covers runs started by hand.
 
+- A `SPEC CONFLICT` that `/build` routes to `/spec` (build.md: each blocker
+  names its stage) takes the plan conflict's path: `/spec` unattended, the
+  default keeps the approval, `/plan` runs again and `/build` goes on from
+  the commits made. The first real run stopped on exactly such a conflict
+  (REQ-001 asked for 422 where the repository answers 200), with the
+  recommendation the unattended rule would have taken. Any other
+  BUILD BLOCKED still stops; the two-conflict cap covers both stages.
 - The Slack message numbers the defaults it took and lists the owner's own
   earlier decisions. `D<n>: …` in the reply changes a default: `/spec`
   rewrites that DEC as the owner's, with the default as the alternative

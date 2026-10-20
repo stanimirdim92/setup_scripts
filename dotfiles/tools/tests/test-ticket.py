@@ -474,6 +474,63 @@ class Ticket(unittest.TestCase):
         self.assertIn('Paused after /plan', self.out.posts[-1][1])
         self.assertEqual(self.run_once(), tk.DONE)                           # without --until it goes on
 
+    BUILD_BLOCKED = """# BUILD BLOCKED — AB-11
+
+Frontend tasks are done and merged. Backend T001 is stuck. You need to make two decisions.
+
+## Decisions you need to make
+
+1. **Spec conflict on REQ-001 (goes to `/spec`).** The spec requires HTTP 422 for an invalid value. These routes return **HTTP 200** with an `errors` body instead.
+   - **My recommendation:** change REQ-001 to accept the existing 200 response. Every other key already behaves this way.
+   - The alternative is to return 422 for the whole request.
+2. **Schema snapshot drift.** The committed fingerprint no longer matches the local DB.
+   - Should I refresh and commit it on `main`, or on this branch?
+
+## Status per task
+
+| Task | State |
+| --- | --- |
+| T001 | Blocked. |
+"""
+
+    def test_build_conflict_takes_the_spec_routed_blocker_with_its_lines(self):
+        conflict = tk.build_conflict(self.BUILD_BLOCKED)
+        self.assertTrue(conflict.startswith('1. **Spec conflict on REQ-001 (goes to `/spec`).**'))
+        self.assertIn('My recommendation:', conflict)
+        self.assertIn('The alternative is to return 422', conflict)
+        self.assertNotIn('Schema snapshot drift', conflict)
+        self.assertEqual(tk.build_conflict('# BUILD BLOCKED\n\nT002 needs a migration. Route: human decision.\n'), '')
+        self.assertEqual(tk.build_conflict('resolves the earlier SPEC CONFLICT; see /spec history'), '')   # no blocker
+
+    def test_build_conflict_goes_back_to_spec_then_plans_and_builds_again(self):
+        self.conflict_fix_by_default = True
+        handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
+                                      text=True).stdout.strip()) / 'handoff'
+        handoff.mkdir(exist_ok=True)
+        blocked = [True]
+
+        def pipeline(ticket, budget, step=None):
+            self.prompts.append('pipeline.py')
+            if blocked.pop() if blocked else False:
+                (handoff / f'{T}-1-BUILD.md').write_text(self.BUILD_BLOCKED)
+                (handoff / f'{T}-pipeline-stop.json').write_text(json.dumps({'why': 'BUILD BLOCKED — AB-11', 'stage_file': f'{T}-1-BUILD.md'}))
+                return 1
+            (handoff / f'{T}-3-REVIEW.md').write_text('**Findings: 0 BLOCKER · 0 REQUIRED**\n')
+            return 0
+
+        self.pipeline = pipeline
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.DONE)
+        tail = self.prompts[self.prompts.index('pipeline.py'):]
+        self.assertEqual(tail, ['pipeline.py', f'/spec {T} unattended', f'/plan {T}', 'pipeline.py', f'/ship {T}'])
+        back = [p[1] for p in self.out.posts if 'Back to spec' in p[1]]
+        self.assertEqual(len(back), 1)
+        self.assertIn('/build found a conflict', back[0])
+        self.assertIn('Spec conflict on REQ-001', back[0])
+        self.assertEqual(self.header(f'docs/specs/{T}-SPEC.md', 'Status'), 'Approved')   # the default kept it
+        self.assertTrue(self.clean())
+
     def test_pipeline_stop_reason_is_posted(self):
         self.pipeline_rc = 1
         self.run_once()

@@ -153,6 +153,12 @@ The owner's decisions, in force:
 6. **Pipeline.** `pipeline.py T --yes`, output streamed; each stage line →
    `pipeline_step()` posts progress, runs `check_inbox()`, writes
    `<T>-inbox.json`; `pipeline.py` waits for it up to 300 s.
+   A pipeline stop whose BUILD report routes a blocker to `/spec`
+   (`build_conflict()`: a top-level item naming "goes to `/spec`" and a
+   conflict) goes to `back_to_spec(conflict, '/build')`; when the default
+   keeps the approval, `go()` runs again: `plan_stale()` → `/plan` →
+   pipeline on the commits so far. Same two-conflict cap. Other BUILD
+   BLOCKED reasons (e.g. the schema snapshot drift LD-503 hit) stop.
 7. **Ship.** `/ship T` with the last REVIEW message. The result is posted
    to Slack and as a Jira comment (branch, HEAD, spend, "nothing is
    pushed"); GO moves the ticket to `HARNESS_JIRA_REVIEW` (Code Review, or
