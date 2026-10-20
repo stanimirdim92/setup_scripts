@@ -368,16 +368,54 @@ class Ticket(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             self.assertTrue(tk.Run(T, self.out, self.claude, self.pipeline, 5).plan_stale())
 
-    def test_default_branch_moves_into_ticket_worktree(self):
+    def git_worktree(self, ticket):
+        """What `claude --worktree` does, for the tests: the worktree on its branch, without the model."""
+        self.made.append(ticket)
+        path = self.repo / '.claude' / 'worktrees' / ticket
+        out = subprocess.run(['git', 'worktree', 'add', '-q', '-b', f'worktree-{ticket}', str(path)],
+                             capture_output=True, text=True)
+        return out.returncode, out.stderr
+
+    def test_default_branch_moves_into_ticket_worktree_made_by_claude(self):
         subprocess.run(['git', 'checkout', '-q', 'main'], check=True)
-        path = tk.ticket_checkout(T)
+        self.made = []
+        with redirect_stdout(io.StringIO()) as out:
+            path = tk.ticket_checkout(T, self.git_worktree)
+        self.assertEqual(self.made, [T])
+        self.assertIn(f'claude --worktree {T} makes the worktree', out.getvalue())
         self.assertEqual(path, self.repo / '.claude' / 'worktrees' / T)
         self.assertEqual(Path(os.getcwd()).resolve(), path.resolve())
         self.assertEqual(subprocess.run(['git', 'branch', '--show-current'], capture_output=True, text=True)
                          .stdout.strip(), f'worktree-{T}')
-        self.assertEqual(tk.ticket_checkout(T), None)             # already in it
+        self.assertEqual(tk.ticket_checkout(T, self.git_worktree), None)     # already in it
         os.chdir(self.repo)
-        self.assertEqual(tk.ticket_checkout(T), path)             # reused
+        self.assertEqual(tk.ticket_checkout(T, self.git_worktree), path)     # reused, not made again
+        self.assertEqual(self.made, [T])
+
+    def test_worktree_claude_did_not_make_stops(self):
+        subprocess.run(['git', 'checkout', '-q', 'main'], check=True)
+        with self.assertRaises(RuntimeError) as err:
+            tk.ticket_checkout(T, lambda ticket: (1, 'Not logged in'))
+        self.assertIn(f'claude --worktree {T} made no', str(err.exception))
+        self.assertIn('Not logged in', str(err.exception))
+
+    def test_claude_worktree_command(self):
+        sent = []
+        real = tk.subprocess.run
+        tk.subprocess.run = lambda cmd, **kw: (sent.append(cmd), type('R', (), {'returncode': 0, 'stdout': '{"result":"ok"}', 'stderr': ''})())[1]
+        try:
+            self.assertEqual(tk.claude_worktree('claude', 'haiku')(T), (0, '{"result":"ok"}'))
+        finally:
+            tk.subprocess.run = real
+        self.assertEqual(sent[0][:5], ['claude', '--worktree', T, '-p', 'Reply with exactly: ok'])
+        self.assertIn('haiku', sent[0])
+
+    def test_help_shows_the_whole_docstring(self):
+        with redirect_stdout(io.StringIO()) as out, self.assertRaises(SystemExit):
+            tk.main(['--help'])
+        self.assertIn('ticket.py --watch', out.getvalue())
+        self.assertIn('TICKET ANSWERS:', out.getvalue())
+        self.assertIn('Exit: 0 the ticket reached', out.getvalue())
 
     def test_chatty_out_reports_each_stage_in_one_thread(self):
         self.out.chatty = True
@@ -435,24 +473,6 @@ class Ticket(unittest.TestCase):
         self.assertEqual(self.header(f'docs/tasks/{T}-plan.md', 'Status'), 'Approved')
         self.assertIn('Paused after /plan', self.out.posts[-1][1])
         self.assertEqual(self.run_once(), tk.DONE)                           # without --until it goes on
-
-    def test_new_worktree_gets_worktreeinclude_files(self):
-        subprocess.run(['git', 'checkout', '-q', 'main'], check=True)
-        Path('.gitignore').write_text('.env\nvendor/\nsecret.txt\n')
-        Path('.worktreeinclude').write_text('.env\nvendor\nnot-ignored.txt\n')
-        Path('not-ignored.txt').write_text('x')
-        subprocess.run(['git', 'add', '.gitignore', '.worktreeinclude'], check=True)
-        subprocess.run(['git', 'commit', '-qm', 'ignore'], check=True)
-        Path('.env').write_text('APP_KEY=1\n')
-        Path('vendor/pkg').mkdir(parents=True)
-        Path('vendor/pkg/a.php').write_text('<?php\n')
-        Path('secret.txt').write_text('no')
-        with redirect_stdout(io.StringIO()):
-            path = tk.ticket_checkout(T)
-        self.assertEqual((path / '.env').read_text(), 'APP_KEY=1\n')
-        self.assertTrue((path / 'vendor/pkg/a.php').exists())
-        self.assertFalse((path / 'secret.txt').exists())             # ignored, but not in .worktreeinclude
-        self.assertFalse((path / 'not-ignored.txt').exists())        # listed, but not ignored
 
     def test_pipeline_stop_reason_is_posted(self):
         self.pipeline_rc = 1

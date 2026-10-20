@@ -71,9 +71,12 @@ The owner's decisions, in force:
 1. `ticket_key()` takes a key or a Jira URL. `--watch` needs no ticket.
 2. Refuses `master` and a detached HEAD.
 3. `ticket_checkout()`: on the main checkout's default branch it moves into
-   `.claude/worktrees/<T>` on branch `worktree-<T>` (as `claude --worktree`
-   does; `/build` refuses the default branch), creating it from HEAD and
-   copying the gitignored files `.worktreeinclude` names.
+   `.claude/worktrees/<T>` on branch `worktree-<T>` (`/build` refuses the
+   default branch). A missing worktree is made by `claude --worktree <T> -p`
+   itself (`claude_worktree()`, one tiny turn on the small model), so Claude
+   Code applies `worktree.baseRef` and copies the `.worktreeinclude` files;
+   verified live on 2026-10-20 (`.env` and `vendor` arrived). The worktree
+   is left `locked` in `git worktree list`; harmless.
 4. **Lock.** `claim()` writes `<git-common-dir>/handoff/<T>-ticket.lock`
    (pid, host, cwd, started). A live holder on this host → exit 5 (`BUSY`).
    A dead one is taken over. Released in `finally`. The lock comes before
@@ -195,7 +198,9 @@ main checkout on its default branch. Each poll: reap finished children,
 `Jira.labelled()` runs `labels = "<label>" AND statusCategory != Done ORDER
 BY priority ASC, created ASC`, then starts `ticket.py <KEY>` (with
 `HARNESS_LABEL` in its env, stdout to `<KEY>-ticket.out`) for each key
-until `--jobs` run. Rules: a key whose run reached `/ship` (state `ship`,
+until `--jobs` run. Each child's stdout is relayed to the watch terminal
+with `KEY │` in front (`relay()`, a thread per child) and kept in
+`<KEY>-ticket.out`; each poll prints one line. Rules: a key whose run reached `/ship` (state `ship`,
 or exit 0) is never started again; exit 1 or 2 puts it in `held` until it
 disappears from a poll (label taken off) and comes back; exit 3 or 4 goes
 again at the next poll; a lock held by a run started by hand is respected.

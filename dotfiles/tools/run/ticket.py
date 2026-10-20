@@ -25,6 +25,9 @@ then waits for your Slack answer (--wait hours) or stops; run it again to go on:
     /ship <TICKET>                       GO, NO-GO or SHIP BLOCKED, posted.
 
 It commits the spec and plan files as it goes. It never pushes: you push.
+Started on the main checkout's default branch, it moves into the ticket
+worktree .claude/worktrees/<TICKET>; a missing one is made by
+`claude --worktree <TICKET>` itself, so it gets the .worktreeinclude files.
 
 Slack goes through `claude -p` and your Slack connector, so it needs no
 token. Set the channel and the person whose replies count:
@@ -44,7 +47,9 @@ Usage (from the ticket's checkout):
     ticket.py LD-1 --budget 15
     ticket.py --watch                    from the main checkout: every --poll seconds,
                                          start a run for each open Jira issue with the
-                                         label --label (harness-run), --jobs (2) at once.
+                                         label --label (harness-run), --jobs (2) at once;
+                                         each child's output shows here with its key
+                                         in front and is kept in handoff/<KEY>-ticket.out.
                                          Put the label on to start; take it off to stop
                                          the run before its next stage. A stopped run
                                          (exit 1 or 2) starts again only after the label
@@ -84,6 +89,7 @@ import re
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -826,43 +832,30 @@ def default_branch():
     return 'main' if not pl.git('rev-parse', '-q', '--verify', 'refs/heads/main')[0] else 'master'
 
 
-def copy_worktree_include(main, path):
-    """Copy what .worktreeinclude names and git ignores (.env, vendor, node_modules …) from the main
-    checkout into a new worktree, as Claude Code does for `claude --worktree`. Plain git does not."""
-    include = main / '.worktreeinclude'
-    if not include.exists():
-        return []
-    rc, listed = pl.git('-C', str(main), 'ls-files', '--others', '--ignored', '--directory', '--no-empty-directory',
-                        f'--exclude-from={include}')
-    copied = []
-    for entry in listed.splitlines():
-        rel = entry.rstrip('/')
-        if not rel or pl.git('-C', str(main), 'check-ignore', '-q', rel)[0]:    # matched but not gitignored
-            continue
-        target = path / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if subprocess.run(['cp', '-a', str(main / rel), str(target.parent) + '/']).returncode == 0:
-            copied.append(rel)
-    return copied
+def claude_worktree(binary, model):
+    """The worktree maker: `claude --worktree <ticket> -p` on the small model, one tiny turn. Claude Code
+    makes .claude/worktrees/<ticket> on branch worktree-<ticket> from worktree.baseRef and copies the
+    gitignored files .worktreeinclude names (AGENTS.md §Worktrees); plain git would do neither."""
+    def create(ticket):
+        out = subprocess.run([binary, '--worktree', ticket, '-p', 'Reply with exactly: ok', '--max-budget-usd', '0.1',
+                              '--model', model, '--output-format', 'json'], capture_output=True, text=True)
+        return out.returncode, (out.stderr.strip() or out.stdout.strip())[-300:]
+    return create
 
 
-def ticket_checkout(ticket):
-    """On the main checkout's default branch, move into the ticket worktree .claude/worktrees/<ticket>
-    on branch worktree-<ticket>, as `claude --worktree <ticket>` makes it (AGENTS.md §Worktrees), creating
-    it from HEAD when missing. /build refuses the default branch. Returns the worktree path, or None."""
+def ticket_checkout(ticket, create):
+    """On the main checkout's default branch, move into the ticket worktree .claude/worktrees/<ticket>,
+    as `claude --worktree <ticket>` makes it, having `create(ticket)` make it when missing. /build refuses
+    the default branch. Returns the worktree path, or None when this is not the main checkout."""
     git_dir, common = (pl.git('rev-parse', '--path-format=absolute', flag)[1] for flag in ('--git-dir', '--git-common-dir'))
     if git_dir != common or pl.git('symbolic-ref', '--short', '-q', 'HEAD')[1] != default_branch():
         return None
     path = Path(pl.git('rev-parse', '--show-toplevel')[1]) / '.claude' / 'worktrees' / ticket
     if not path.exists():
-        branch = f'worktree-{ticket}'
-        exists = not pl.git('rev-parse', '-q', '--verify', f'refs/heads/{branch}')[0]
-        rc, out = pl.git('worktree', 'add', str(path), *([branch] if exists else ['-b', branch]))
-        if rc:
-            raise RuntimeError(f'git worktree add {path} failed: {out}')
-        copied = copy_worktree_include(Path(pl.git('rev-parse', '--show-toplevel')[1]), path)
-        if copied:
-            print(f'ticket: copied from .worktreeinclude: {", ".join(copied)}')
+        print(f'ticket: claude --worktree {ticket} makes the worktree')
+        rc, out = create(ticket)
+        if rc or not path.exists():
+            raise RuntimeError(f'claude --worktree {ticket} made no {path}' + (f': {out}' if out else ''))
     os.chdir(path)
     return path
 
@@ -935,9 +928,10 @@ def watch(args, search=None, start=None, rounds=None):
         def start(key):
             child = [sys.executable, '-u', str(Path(__file__).resolve()), key, '--budget', str(args.budget), '--wait',
                      str(args.wait), '--poll', str(args.poll), '--permission-mode', args.permission_mode]
-            out = open(out_dir / f'{key}-ticket.out', 'a')
-            return subprocess.Popen(child, stdout=out, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                                    env={**os.environ, 'HARNESS_LABEL': args.label})
+            proc = subprocess.Popen(child, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                    text=True, env={**os.environ, 'HARNESS_LABEL': args.label})
+            threading.Thread(target=relay, args=(key, proc.stdout, out_dir / f'{key}-ticket.out'), daemon=True).start()
+            return proc
     print(f'ticket: watching Jira for label "{args.label}" every {args.poll}s, {args.jobs} at once, from {os.getcwd()}')
     running, finished, held = {}, {}, set()      # key → process; key → exit code; stopped until relabelled
     rounds_left = rounds
@@ -956,6 +950,9 @@ def watch(args, search=None, start=None, rounds=None):
             print(f'ticket: could not search Jira: {err}')
             keys = None
         if keys is not None:
+            print(f'  {datetime.datetime.now():%H:%M} poll: {len(keys)} with the label'
+                  + (f' ({", ".join(keys)})' if keys else '') + f' · running {", ".join(running) or "none"}'
+                  + (f' · held until relabelled {", ".join(sorted(held & set(keys)))}' if held & set(keys) else ''))
             held &= set(keys)                     # the label came off: a later put-back starts it again
             for key in keys:
                 if len(running) >= args.jobs:
@@ -976,6 +973,15 @@ def watch(args, search=None, start=None, rounds=None):
     return DONE
 
 
+def relay(key, stream, path):
+    """A child's output: to the terminal with the ticket in front, and to its .out file."""
+    with open(path, 'a') as fh:
+        for line in stream:
+            fh.write(line)
+            fh.flush()
+            print(f'  {key} │ {line}', end='', flush=True)
+
+
 def shipped(state_file):
     try:
         return bool(json.loads(state_file.read_text()).get('ship'))
@@ -994,7 +1000,8 @@ def claim_holder(path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    parser = argparse.ArgumentParser(description=__doc__.split('\n')[0], epilog=__doc__.split('\n', 1)[1],
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('ticket', nargs='?', help='the Jira key (LD-503) or the ticket URL')
     parser.add_argument('--watch', action='store_true',
                         help='no ticket: from the main checkout, start a run for every open Jira issue with --label')
@@ -1023,7 +1030,8 @@ def main(argv=None):
         print(f'ticket: run it in the ticket checkout (branch is {branch or "detached"})')
         return NOT_CHECKOUT
     try:
-        moved = ticket_checkout(args.ticket)
+        moved = ticket_checkout(args.ticket, claude_worktree(os.environ.get('CLAUDE_BIN', 'claude'),
+                                                             os.environ.get('HARNESS_SLACK_MODEL', 'haiku')))
     except RuntimeError as err:
         print(f'ticket: {err}')
         return NOT_CHECKOUT
