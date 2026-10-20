@@ -153,9 +153,19 @@ run with that item named; `--check` alone MUST only report.
 - THEN the runner stops before the first stage with `test command cannot start: <its message>` and posts it to the thread
 
 #### Scenario: Branch behind the default branch
-- GIVEN the ticket branch is 85 commits behind `main`
+- GIVEN the ticket branch is 85 commits behind `main` and the merge is clean
 - WHEN the run starts
-- THEN the runner reports `behind main: 85 commits` and goes on (DEC-001)
+- THEN the runner merges `main`, commits the merge, reports `merged main: 85 commits` and goes on (DEC-001)
+
+#### Scenario: Merge conflict the merge stage resolves
+- GIVEN the merge conflicts in two files
+- WHEN the run starts
+- THEN a `claude -p` merge stage resolves them, the project's fast checks pass, the merge is committed, and the report names the two files
+
+#### Scenario: Merge conflict that stays
+- GIVEN the merge stage cannot resolve a conflict, or its checks fail
+- WHEN the run starts
+- THEN the runner aborts the merge, stops with `route=owner` and names the conflicted files; the branch is as before
 
 ### Requirement: REQ-005 — A status command
 Source: owner 2026-10-20 ("say which file to look at"; eleven messages asking where the run was)
@@ -232,11 +242,11 @@ each stop with a cause class (`decision`, `environment`, `harness`,
 
 ## Material Decisions
 
-### DEC-001 — A branch behind the default branch is reported, not merged
-- Decision: the pre-flight reports how many commits the ticket branch is behind the default branch and goes on. The runner never merges; the owner merges when he wants.
-- Alternatives: merge the default branch at pre-flight (Symphony's model; rejected: the owner does not want the runner to move the branch base); stop and ask every time (one more stop per run).
-- Reason: REQ-004 scenario 3 needs a rule. The owner's words: "main does not matter" to the run.
-- Source: owner decision 2026-10-20, in reply to Q1
+### DEC-001 — A branch behind the default branch is merged at pre-flight
+- Decision: when the ticket branch is behind the default branch, the pre-flight merges the default branch into it and commits the merge (`Merge <default> into <branch>`, `Refs: <T>`). A merge conflict is resolved by a `claude -p` merge stage in the worktree, which keeps the ticket's behavior and the default branch's everything else, runs the project's fast checks, and commits. If that stage cannot resolve it, or its checks fail, the run stops with `route=owner` and the conflicted files named. The runner never pushes the merge.
+- Alternatives: report only and let the owner merge (first answer, withdrawn the same day: a later branch may need the merge, and a conflict is work the runner can do); stop and ask on every lag (one more stop per run).
+- Reason: REQ-004 scenario 3 needs a rule; the schema stop on LD-503 came from an 85-commit lag.
+- Source: owner decision 2026-10-20, in reply to Q1 ("merge main; if there is a conflict, fix it")
 - Affects: REQ-004
 
 ### DEC-002 — The footer is the contract; prose detection is removed, not kept as a fallback
@@ -291,4 +301,4 @@ ticket keeps its state for `ticket-stats.py`. N/A otherwise.
 
 ## Open Questions
 
-None. Q1 (a branch behind the default branch) was answered on 2026-10-20: DEC-001.
+None. Q1 (a branch behind the default branch) was answered on 2026-10-20: DEC-001 (merge; a conflict is resolved by a merge stage, else the owner).
