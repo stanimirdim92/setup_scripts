@@ -217,8 +217,10 @@ BY priority ASC, created ASC`, then starts `ticket.py <KEY>` (with
 until `--jobs` run. Each child's stdout is relayed to the watch terminal
 with `KEY │` in front (`relay()`, a thread per child) and kept in
 `<KEY>-ticket.out`; each poll prints one line. Rules: a key whose run reached `/ship` (state `ship`,
-or exit 0) is never started again; exit 1 or 2 puts it in `held` until it
-disappears from a poll (label taken off) and comes back; exit 3 or 4 goes
+or exit 0) is never started again; exit 1 or 2 puts it in `held` (with the stop time) until the ticket's Jira
+`updated` is later than that (`Jira.updated_at()`, one haiku call per held
+ticket per poll; the label off and on counts, so does any edit) or it
+disappears from a poll; exit 3 or 4 goes
 again at the next poll; a lock held by a run started by hand is respected.
 Ctrl+C ends the watcher and leaves the children running. The owner chose
 two at once and "label off = stop".

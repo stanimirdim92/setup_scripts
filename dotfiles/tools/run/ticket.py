@@ -52,8 +52,9 @@ Usage (from the ticket's checkout):
                                          in front and is kept in handoff/<KEY>-ticket.out.
                                          Put the label on to start; take it off to stop
                                          the run before its next stage. A stopped run
-                                         (exit 1 or 2) starts again only after the label
-                                         is taken off and put back.
+                                         (exit 1 or 2) starts again once the ticket
+                                         changes in Jira after the stop: the label off
+                                         and on, or any edit.
 
 One run per ticket: `<git-common-dir>/handoff/<TICKET>-ticket.lock` names the
 process; a second start is refused while it lives, and takes over when it is
@@ -335,6 +336,13 @@ class Jira:
         if not isinstance(data, list):
             raise RuntimeError(error or out[:200])
         return [ticket_key(str(k)) for k in data if ticket_key(str(k))]
+
+    def updated_at(self):
+        """When the ticket last changed in Jira (label, status, comment, field), as an aware datetime, or None."""
+        error, out = self.run(f'Read the Jira issue {self.ticket} with your Jira tool (getJiraIssue, fields: updated). '
+                              'Print only JSON: {"updated": "<its updated field, ISO 8601 with the offset>"}.', READ_TOOLS)
+        data = first_json(out) if not error else None
+        return parse_time(str(data.get('updated', ''))) if isinstance(data, dict) else None
 
     def comment(self, text):
         """Add `text` as a comment on the ticket. Returns True when Jira confirmed it."""
@@ -829,6 +837,16 @@ class Run:
         return os.environ.get('HARNESS_SLACK_OWNER') or 'the owner'
 
 
+def parse_time(text):
+    """An aware datetime from Jira's "2026-10-20T12:51:03.000+0300" or an ISO string, else None."""
+    text = re.sub(r'([+-]\d\d)(\d\d)$', r'\1:\2', text.strip().replace('Z', '+00:00'))
+    try:
+        when = datetime.datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=datetime.timezone.utc)
+
+
 def ticket_key(arg):
     """The Jira key from "LD-503" or a ticket URL such as https://x.atlassian.net/browse/LD-503."""
     m = re.search(r'(?<![A-Za-z0-9])([A-Z][A-Z0-9]+-\d+)(?![0-9])', arg)
@@ -968,12 +986,13 @@ def release(path):
         pass
 
 
-def watch(args, search=None, start=None, rounds=None):
+def watch(args, search=None, start=None, rounds=None, updated=None):
     """From the main checkout on its default branch: every --poll seconds, start `ticket.py <KEY>` for each
     open issue with --label, up to --jobs at once, most urgent first. A finished run is not started again:
-    done (0) stays done; stopped (1, 2) waits until the label is taken off and put back; waiting (3) and
-    paused (4) go again at the next poll. Children log to <git-common-dir>/handoff/<KEY>-ticket.out.
-    `search`, `start` and `rounds` are for tests."""
+    done (0) stays done; stopped (1, 2) waits until the ticket changes in Jira after the stop (the label
+    taken off and put back counts, so does any edit); waiting (3) and paused (4) go again at the next poll.
+    Children log to <git-common-dir>/handoff/<KEY>-ticket.out. `search`, `start`, `updated` and `rounds`
+    are for tests."""
     rc, _ = pl.git('rev-parse', '--git-dir')
     branch = pl.git('symbolic-ref', '--short', '-q', 'HEAD')[1]
     if rc or branch != default_branch():
@@ -986,9 +1005,15 @@ def watch(args, search=None, start=None, rounds=None):
         binary, slack_model = os.environ.get('CLAUDE_BIN', 'claude'), os.environ.get('HARNESS_SLACK_MODEL', 'haiku')
         log = out_dir / 'watch.log'
 
-        def search():
+        def jira(key=''):
             return Jira(lambda prompt, tools: pl.claude(binary, prompt, 1, args.permission_mode, log, tools, slack_model)[:2],
-                        '', write=False).labelled(args.label)
+                        key, write=False)
+
+        def search():
+            return jira().labelled(args.label)
+
+        def updated(key):
+            return jira(key).updated_at()
 
         def start(key):
             child = [sys.executable, '-u', str(Path(__file__).resolve()), key, '--budget', str(args.budget), '--wait',
@@ -998,7 +1023,7 @@ def watch(args, search=None, start=None, rounds=None):
             threading.Thread(target=relay, args=(key, proc.stdout, out_dir / f'{key}-ticket.out'), daemon=True).start()
             return proc
     print(f'ticket: watching Jira for label "{args.label}" every {args.poll}s, {args.jobs} at once, from {os.getcwd()}')
-    running, finished, held = {}, {}, set()      # key → process; key → exit code; stopped until relabelled
+    running, finished, held = {}, {}, {}         # key → process; key → exit code; key → when it stopped
     rounds_left = rounds
     while rounds_left is None or rounds_left > 0:
         rounds_left = None if rounds_left is None else rounds_left - 1
@@ -1006,19 +1031,25 @@ def watch(args, search=None, start=None, rounds=None):
             if proc.poll() is not None:
                 finished[key] = running.pop(key).returncode
                 print(f'  {datetime.datetime.now():%H:%M} {key} exited {finished[key]}'
-                      + (': stopped; take the label off and on to run it again' if finished[key] in (STOPPED, NOT_CHECKOUT) else ''))
+                      + (': stopped; change the ticket in Jira (label off and on) to run it again'
+                         if finished[key] in (STOPPED, NOT_CHECKOUT) else ''))
                 if finished[key] in (STOPPED, NOT_CHECKOUT):
-                    held.add(key)
+                    held[key] = datetime.datetime.now(datetime.timezone.utc)
         try:
             keys = search()
         except RuntimeError as err:
             print(f'ticket: could not search Jira: {err}')
             keys = None
         if keys is not None:
+            for key in [k for k in keys if k in held]:       # changed in Jira since it stopped: it may run again
+                when = updated(key) if updated else None
+                if when and when > held[key]:
+                    print(f'  {datetime.datetime.now():%H:%M} {key} changed in Jira at {when:%H:%M}; it runs again')
+                    del held[key]
+            held = {k: t for k, t in held.items() if k in keys}  # the label came off: a later put-back starts it again
             print(f'  {datetime.datetime.now():%H:%M} poll: {len(keys)} with the label'
                   + (f' ({", ".join(keys)})' if keys else '') + f' · running {", ".join(running) or "none"}'
-                  + (f' · held until relabelled {", ".join(sorted(held & set(keys)))}' if held & set(keys) else ''))
-            held &= set(keys)                     # the label came off: a later put-back starts it again
+                  + (f' · stopped, waiting for a change {", ".join(sorted(held))}' if held else ''))
             for key in keys:
                 if len(running) >= args.jobs:
                     break

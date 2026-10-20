@@ -5,6 +5,7 @@
 test the runner's decisions: High-risk questions wait for the owner, defaults
 are reported, only the owner's reply naming the ticket approves the spec, a
 clean plan goes on by itself, anything else stops, and nothing is pushed."""
+import datetime
 import importlib.util
 import io
 import json
@@ -790,7 +791,49 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         # poll 4: AB-2 done; AB-1 is back and may run. poll 5: AB-3 waited → runs again.
         self.assertEqual(started, ['AB-1', 'AB-2', 'AB-3', 'AB-1', 'AB-3'])
         self.assertEqual(slept, [7, 7, 7, 7])
-        self.assertIn('AB-1 exited 1: stopped; take the label off and on to run it again', out.getvalue())
+        self.assertIn('AB-1 exited 1: stopped; change the ticket in Jira (label off and on) to run it again', out.getvalue())
+
+    def test_watch_runs_a_stopped_ticket_again_once_it_changed_in_jira(self):
+        class Proc:
+            pid, returncode = 1, None
+
+            def poll(self):
+                return self.returncode
+
+        subprocess.run(['git', 'checkout', '-q', 'main'], check=True)
+        started, procs, when = [], {}, [None]
+
+        def start(key):
+            started.append(key)
+            procs[key] = Proc()
+            return procs[key]
+
+        slept = []
+
+        def sleep(seconds):
+            slept.append(seconds)
+            if len(slept) == 1:
+                procs['AB-1'].returncode = tk.STOPPED
+            if len(slept) == 2:                                             # the owner takes the label off and on
+                when[0] = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=5)
+
+        tk.pl.sleep = sleep
+        self.addCleanup(setattr, tk.pl, 'sleep', __import__('time').sleep)
+        args = tk.argparse.Namespace(label='harness-run', jobs=2, poll=7, budget=5, wait=8, permission_mode='')
+        asked = []
+        with redirect_stdout(io.StringIO()) as out:
+            tk.watch(args, lambda: ['AB-1'], start, rounds=4, updated=lambda k: (asked.append(k), when[0])[1])
+        # poll 1 starts; poll 2 sees it stopped and not yet changed; poll 3 sees the change and starts it again
+        self.assertEqual(started, ['AB-1', 'AB-1'])
+        self.assertEqual(asked, ['AB-1', 'AB-1'])                           # asked only while it waits
+        self.assertIn('AB-1 changed in Jira at', out.getvalue())
+        self.assertIn('stopped, waiting for a change AB-1', out.getvalue())
+
+    def test_parse_time(self):
+        self.assertEqual(tk.parse_time('2026-10-20T12:51:03.000+0300').utcoffset(), datetime.timedelta(hours=3))
+        self.assertEqual(tk.parse_time('2026-10-20T09:51:03Z').hour, 9)
+        self.assertIsNone(tk.parse_time('yesterday'))
+        self.assertIsNotNone(tk.parse_time('2026-10-20T09:51:03').tzinfo)
 
     def test_watch_skips_a_ticket_held_by_hand_or_shipped(self):
         subprocess.run(['git', 'checkout', '-q', 'main'], check=True)
