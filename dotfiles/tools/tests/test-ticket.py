@@ -600,11 +600,13 @@ I did not dispatch any executor. Your Slack note ("use 200 status code") settles
         self.prompts.clear()
         self.assertEqual(self.run_once(), tk.DONE)
         self.assertEqual(self.prompts, [f'/spec {T} unattended', f'/plan {T}', 'pipeline.py', f'/ship {T}'])
-        self.prompts.clear()                                                          # the same report is not re-read
+        self.prompts.clear()                                                          # the same conflict is not re-read
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
-        self.assertEqual(r.state.get('conflict_seen'), f'{T}-1-BUILD.md')
+        self.assertFalse(r.may_resolve(tk.build_conflict(self.BUILD_BLOCKED)))
+        # a new conflict in a report with the same file name is read (stage numbers restart on a new HEAD)
+        (handoff / f'{T}-1-BUILD.md').write_text(self.BUILD_BLOCKED.replace('REQ-001', 'REQ-008').replace('422', 'EXPLAIN'))
+        self.assertTrue(r.may_resolve(r.last_build_conflict()[0]))
         # a report older than the spec's last commit is old news
-        r.state.pop('conflict_seen')
         self.assertTrue(r.last_build_conflict()[0])
         old = __import__('time').time() - 3600
         os.utime(handoff / f'{T}-1-BUILD.md', (old, old))

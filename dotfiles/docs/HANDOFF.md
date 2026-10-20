@@ -186,7 +186,7 @@ The owner's decisions, in force:
   it was read. Before the pipeline starts, `go()` reads the inbox once and
   writes `<T>-inbox.json` with `after_step: 0`; `pipeline.py` reads it
   before its first stage too. An earlier run's BUILD conflict
-  (`last_build_conflict()`, remembered in state `conflict_seen`) goes to
+  (`last_build_conflict()`; one already taken is in `conflict_digests`) goes to
   `/spec` before anything is built again.
 
 ### Slack

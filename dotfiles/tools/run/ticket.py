@@ -620,10 +620,8 @@ class Run:
             if self.until == 'plan':
                 return self.stop_at('plan')
             conflict, report = self.last_build_conflict()
-            if conflict and self.state.get('conflict_seen') != report and self.may_resolve(conflict):
-                self.state['conflict_seen'] = report              # an earlier run's /build sent this to /spec
-                self.save()
-                result = self.back_to_spec(conflict, '/build')
+            if conflict and self.may_resolve(conflict):            # an earlier run's /build sent this to /spec
+                result = self.back_to_spec(conflict, '/build')     # (one it already took is in conflict_digests)
                 return self.go() if result is None else result
             stop, notes = self.check_inbox()                     # the owner's word before the first stage
             if stop:
@@ -640,8 +638,6 @@ class Run:
                     info = {'why': f'exited {rc}: {getattr(self.pipeline, "last", "") or "no output"}'}
                 conflict, report = self.last_build_conflict() if fresh else ('', '')
                 if conflict and self.may_resolve(conflict):            # /build routed a blocker to /spec
-                    self.state['conflict_seen'] = report
-                    self.save()
                     result = self.back_to_spec(conflict, '/build')
                     return self.go() if result is None else result    # the spec moved: plan again, build again
                 return self.stop(f'pipeline.py: {info.get("why") or f"exited {rc}"}', info.get('stage_file', ''))
