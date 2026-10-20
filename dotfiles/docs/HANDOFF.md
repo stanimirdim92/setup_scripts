@@ -272,6 +272,11 @@ The retry/`--resume` path and the Jira writes were tested against stubs,
 not a real `claude -p`: **watch the first real run.** The log keeps the
 result line and stderr of every attempt.
 
+The sixth `/build` (DEC-010 EXPLAIN, DEC-011 red baseline, CP-001 green)
+blocked only on T007 (`/test`, browser) and T008 (the owner's replica
+timing): build.md let a plan with such tasks never leave `/build`. build.md
+§"Tasks that are not /build's" now hands them on and reports COMPLETE.
+
 ## 5. Open items and ideas (not started)
 
 - **A live session across a runner crash** is not restored (Symphony does

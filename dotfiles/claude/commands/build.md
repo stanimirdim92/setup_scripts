@@ -53,6 +53,18 @@ the integrated verification later fails is not trusted for being marked: it
 returns to an executor like any other failure. External trackers keep their own
 status; update it at the same point instead.
 
+### Tasks that are not `/build`'s
+
+A task the plan gives to a later stage or to a person — a browser check that
+`/test` runs, a measurement on production-size data, a sign-off — is not
+`/build`'s to implement, whatever workstream it sits in. Do not dispatch an
+executor for it, leave its `Status` as the plan set it, and do not count it as
+unimplemented: when every task `/build` owns is implemented and the
+checkpoints pass, report **BUILD COMPLETE** and list those tasks under
+**Handed on**, each with its stage (`/test`) or person. A checkpoint that
+depends on such a task runs without it and says so. (Before this rule a plan
+with a `/test` task could never leave `/build`.)
+
 For each selected task resolve:
 
 - outcome and acceptance criteria;
@@ -278,7 +290,8 @@ existing blocker process rather than declaring the documentation complete.
 
 **BUILD COMPLETE** — only when all of the following hold:
 
-- all selected tasks are implemented;
+- all selected tasks `/build` owns are implemented (tasks handed on to `/test`
+  or a person are listed, not implemented);
 - all selected workstreams are integrated;
 - every plan checkpoint in the selected scope was executed and passed;
 - executor-required verification is green;
@@ -288,13 +301,13 @@ existing blocker process rather than declaring the documentation complete.
 - the tree is in the expected state.
 
 **BUILD BLOCKED** — in every other terminal state. Never report BUILD COMPLETE
-with open blockers, skipped checkpoints, or unimplemented selected tasks.
+with open blockers, skipped checkpoints, or unimplemented tasks of its own.
 
 Both reports include:
 
-- tasks/workstreams completed, and (for BUILD BLOCKED) tasks blocked or not
-  started, each with its blocker and the stage it routes to (`/spec`, `/plan`,
-  or human decision);
+- tasks/workstreams completed, tasks handed on (to `/test` or a person), and
+  (for BUILD BLOCKED) tasks blocked or not started, each with its blocker and
+  the stage it routes to (`/spec`, `/plan`, or human decision);
 - checkpoints executed and their outcomes;
 - commits created;
 - exact verification commands and outcomes;
