@@ -102,6 +102,8 @@ def attempt_once(cmd, prompt, stall, log, title):
         sel = selectors.DefaultSelector()
         sel.register(proc.stdout, selectors.EVENT_READ)
         result, session, last, stalled, events = {}, None, time.monotonic(), False, 0
+        beat = float(os.environ.get('HARNESS_HEARTBEAT_S', '60'))
+        started, next_beat, doing = last, last + beat, ''
         while True:
             if sel.select(timeout=1):
                 line = proc.stdout.readline()
@@ -110,8 +112,14 @@ def attempt_once(cmd, prompt, stall, log, title):
                 events, last = events + 1, time.monotonic()
                 data = parse_event(line)
                 session = data.get('session_id') or session
+                doing = tool_call(data) or doing
                 if data.get('type') == 'result' or ('type' not in data and 'result' in data):
                     result = data
+            elif beat > 0 and time.monotonic() >= next_beat:          # a sign of life while a stage runs
+                took = int(time.monotonic() - started)
+                print(f'    … {took // 60}m{took % 60:02d}s · {events} events · last {int(time.monotonic() - last)}s ago'
+                      + (f' · {doing}' if doing else ''), flush=True)
+                next_beat = time.monotonic() + beat
             elif stall > 0 and time.monotonic() - last > stall:
                 proc.kill()
                 stalled = True
@@ -137,6 +145,18 @@ def attempt_once(cmd, prompt, stall, log, title):
         error = f'exited {rc}'
     why = {'stalled': stalled, 'rc': rc, 'blob': f'{error or ""}\n{stderr}\n{text if error else ""}'}
     return error, text, result, why
+
+
+def tool_call(data):
+    """'Bash php artisan test …' for an assistant event that calls a tool, else ''."""
+    if data.get('type') != 'assistant':
+        return ''
+    for block in (data.get('message') or {}).get('content') or []:
+        if isinstance(block, dict) and block.get('type') == 'tool_use':
+            inp = block.get('input') or {}
+            arg = inp.get('command') or inp.get('file_path') or inp.get('pattern') or inp.get('description') or ''
+            return ' '.join(f'{block.get("name", "")} {str(arg)[:70]}'.split())
+    return ''
 
 
 def parse_event(line):

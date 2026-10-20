@@ -104,6 +104,9 @@ The owner's decisions, in force:
   "your previous turn was cut off; carry on" prompt with `--resume`; without
   one it resends the original prompt. Cost adds up across attempts.
 - The log gets the result line, stderr and each retry note, not every event.
+- A heartbeat line every `HARNESS_HEARTBEAT_S` seconds (default 60; 0 none)
+  while a stage runs: elapsed, events, seconds since the last one, the
+  last tool call (`tool_call()`), so a quiet `/build` is seen to be alive.
 - Permission mode is empty by default (the user's settings.json applies).
   `READ_TOOLS`: read-only Atlassian and Figma tools under several server
   prefixes; `HARNESS_ALLOWED_TOOLS` replaces the list. `JIRA_WRITE_TOOLS`:

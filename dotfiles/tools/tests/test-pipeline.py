@@ -35,6 +35,10 @@ echo "$first" >> "$STUB_CALLS"
 echo "$*" >> "$STUB_PROMPTS/args.txt"
 printf '%s' "$prompt" > "$STUB_PROMPTS/$n.txt"
 reply() { python3 -c 'import json,sys; print(json.dumps({"result": sys.argv[1], "total_cost_usd": 1}))' "$1"; }
+if [ -n "$STUB_SLOW" ] && [ "$n" = 1 ]; then          # a stage that works for a while
+  echo '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"php artisan test --filter=Export"}}]}}'
+  sleep 2.5
+fi
 if [ -n "$STUB_FLAKY" ] && [ "$n" = 1 ]; then          # the first call fails for a passing reason
   echo '{"type":"system","subtype":"init","session_id":"s1"}'
   case "$STUB_FLAKY" in
@@ -270,6 +274,16 @@ class Pipeline(unittest.TestCase):
         rc, out = self.run_pipeline()
         self.assertEqual(rc, 1)
         self.assertEqual(self.stages(), ['/build AB-1'])
+
+    def test_heartbeat_shows_the_stage_is_alive(self):
+        os.environ.update(STUB_SLOW='1', HARNESS_HEARTBEAT_S='1')
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 0, out)
+        self.assertRegex(out, r'… 0m0[1-3]s · 1 events · last \ds ago · Bash php artisan test --filter=Export')
+        os.environ['HARNESS_HEARTBEAT_S'] = '0'
+        self.calls.write_text('')
+        rc, out = self.run_pipeline()
+        self.assertNotIn('events ·', out)
 
     def test_backoff_doubles_up_to_the_cap(self):
         self.assertEqual([min(pl.BACKOFF[0] * 2 ** (a - 1), pl.BACKOFF[1]) for a in range(1, 7)],

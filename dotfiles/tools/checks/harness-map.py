@@ -97,6 +97,7 @@ ENV = {
     'HARNESS_ALLOWED_TOOLS': 'replaces the read-only Jira, Confluence and Figma tools a stage may use',
     'HARNESS_RETRIES': 'attempts per stage on a passing failure (rate limit, network, crash, stall)',
     'HARNESS_STALL_MIN': 'minutes without an event before a stage is killed and retried; 0 never',
+    'HARNESS_HEARTBEAT_S': 'seconds between the sign-of-life lines while a stage runs (time, events, last tool); 0 none',
     'HARNESS_JIRA_STOP': 'statuses that stop the run before its next stage, besides any Done status; 0 turns the check off',
     'HARNESS_JIRA_WRITE': '0 keeps Jira read-only: no status moves, no comments',
     'HARNESS_JIRA_START': 'where a run moves the ticket when it starts',
