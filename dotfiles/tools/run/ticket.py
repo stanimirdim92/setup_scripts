@@ -944,6 +944,12 @@ def ticket_checkout(ticket, create):
 
 
 def first_line(text):
+    """The first line that says something; a JSON answer is summed up (a Slack read is a list)."""
+    data = first_json(text) if text.lstrip()[:1] in '[{' else None
+    if isinstance(data, list):
+        return f'{len(data)} item{"s" * (len(data) != 1)}' + (' (replies)' if data and isinstance(data[0], dict) and 'text' in data[0] else '')
+    if isinstance(data, dict):
+        return ', '.join(f'{k}: {str(v)[:40]}' for k, v in list(data.items())[:4])
     for raw in text.splitlines():
         line = raw.strip().strip('*#> ').strip()
         if line and not line.startswith('```'):

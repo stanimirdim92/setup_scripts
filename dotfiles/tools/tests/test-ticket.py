@@ -829,6 +829,13 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         self.assertIn('AB-1 changed in Jira at', out.getvalue())
         self.assertIn('stopped, waiting for a change AB-1', out.getvalue())
 
+    def test_first_line_sums_up_json(self):
+        self.assertEqual(tk.first_line('[\n {"author": "o", "text": "TICKET NOTE: x", "ts": "1"},\n {"author": "o", "text": "hi", "ts": "2"}\n]'),
+                         '2 items (replies)')
+        self.assertEqual(tk.first_line('[]'), '0 items')
+        self.assertEqual(tk.first_line('{"ok": true, "status": "In Progress"}'), 'ok: True, status: In Progress')
+        self.assertEqual(tk.first_line('**BUILD COMPLETE**\nmore'), 'BUILD COMPLETE')
+
     def test_parse_time(self):
         self.assertEqual(tk.parse_time('2026-10-20T12:51:03.000+0300').utcoffset(), datetime.timedelta(hours=3))
         self.assertEqual(tk.parse_time('2026-10-20T09:51:03Z').hour, 9)
