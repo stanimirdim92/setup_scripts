@@ -1,11 +1,11 @@
 # Spec: The ticket runner stops only for a real decision
 
-Status: Draft
+Status: Approved
 Ticket: N/A (harness work; key HR-1 for the runner's own tooling)
 Change kind: Modify
 Supersedes: N/A (extends ADR 0115; no requirement replaced)
-Approved by: —
-Approved at: —
+Approved by: the owner (reply "ok" in the Claude Code session, 2026-10-20)
+Approved at: 2026-10-20
 
 ## Objective
 
