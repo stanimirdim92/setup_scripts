@@ -61,9 +61,10 @@ class FakeOut:
     def __init__(self):
         self.posts, self.thread, self.raw = [], {}, {}
 
-    def post(self, text, thread=None):
+    def post(self, text, thread=None, notify=False):
         ts = f'{len(self.posts) + 1}.0'
         self.posts.append((ts, text, thread))
+        self.notified = getattr(self, 'notified', []) + ([ts] if notify else [])
         return ts
 
     def replies(self, ts):
@@ -422,11 +423,15 @@ class Ticket(unittest.TestCase):
         self.out.chatty = True
         self.run_once()
         top = [p for p in self.out.posts if p[2] is None]
+        self.assertEqual(len(top), 1)                                 # one top-level message per ticket
         self.assertTrue(top[0][1].startswith(f':arrow_forward: *{T} · Run*'))
-        replies = [p[1] for p in self.out.posts if p[2] == top[0][0]]
-        self.assertTrue(replies[0].startswith(f':white_check_mark: */jira-ticket {T}* · 0m'))
-        self.assertIn('\ndone', replies[0])
-        self.assertTrue(top[-1][1].startswith(':question:'))         # the ask stays top-level
+        replies = [p for p in self.out.posts if p[2] == top[0][0]]
+        self.assertTrue(replies[0][1].startswith(f':white_check_mark: */jira-ticket {T}* · 0m'))
+        self.assertIn('\ndone', replies[0][1])
+        self.assertTrue(replies[-1][1].startswith(':question:'))      # the ask is in the thread, with a mention
+        self.assertIn(replies[-1][0], self.out.notified)
+        self.assertNotIn(replies[0][0], self.out.notified)            # progress does not notify
+        self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5).state['ask']['ts'], top[0][0])
 
     def test_pipeline_step_posts_the_stage_file(self):
         self.out.chatty = True
@@ -455,10 +460,13 @@ class Ticket(unittest.TestCase):
         self.run_once()
         self.out.reply(f'1A {T}')
         self.assertEqual(self.run_once(), tk.STOPPED)
-        stop_ts = [p[0] for p in self.out.posts if 'Stopped' in p[1]][-1]
-        self.assertIn('Reply here with `TICKET NOTE:', self.out.posts[-1][1])
-        self.out.say(stop_ts, 'TICKET NOTE: use 200')
-        self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5).check_inbox(), (False, 'use 200'))
+        stop = [p for p in self.out.posts if 'Stopped' in p[1]][-1]
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        self.assertEqual(stop[2], r.thread)                                   # the stop is in the ticket's thread
+        self.assertIn(stop[0], self.out.notified)                             # and it pings you
+        self.assertIn('Reply here with `TICKET NOTE:', stop[1])
+        self.out.say(r.thread, 'TICKET NOTE: use 200')
+        self.assertEqual(r.check_inbox(), (False, 'use 200'))
 
     def test_note_in_the_question_thread_counts(self):
         self.out.chatty = True

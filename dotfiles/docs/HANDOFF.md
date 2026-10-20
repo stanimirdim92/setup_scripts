@@ -190,9 +190,13 @@ Through `claude -p` and the owner's Slack connector; the runner keeps no
 token. `HARNESS_SLACK_CHANNEL`, `HARNESS_SLACK_OWNER` (email) and
 `HARNESS_SLACK_MENTION` (Slack user id: the `<@id>` mention, and his
 identity when haiku gives no email) live in his `.bashrc`/`.profile`, never
-in the repo. Top-level with @mention: questions, stops, "Back to spec", the
-`/ship` result. One "▶️ T · Run" thread per ticket for stage progress
-(✅/❌, time, cost, first 6 lines; pipeline stages 🛠 🧪 🔍). Waiting: with
+in the repo. One top-level message per ticket, "▶️ T · Run"; everything else is a
+reply in its thread: stage progress (✅/❌, time, cost, first 6 lines;
+pipeline stages 🛠 🧪 🔍) without a mention, and what needs the owner
+(questions, stops, "Back to spec", Paused, the `/ship` result) with one
+(`Run.say()`, `Slack.post(notify=True)`). The ask state's `ts` is the
+thread; `ask()` seeds `seen` with the replies already there so an earlier
+ask's answers do not count again. Waiting: with
 Slack the run polls every `--poll` 90 s for up to `--wait` 8 h; without
 Slack, `--reply "1A ok"`. Exit codes: DONE 0, STOPPED 1, NOT_CHECKOUT 2,
 WAITING 3, PAUSED 4, BUSY 5.

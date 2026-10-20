@@ -8,9 +8,9 @@ then waits for your Slack answer (--wait hours) or stops; run it again to go on:
                                          risk take the recommended option as a
                                          DEC "decided by default"; High-risk
                                          questions stay open.
-    ask on Slack                         one message per ticket: the open
-                                         questions, the defaults taken (D1, D2 …)
-                                         and your earlier decisions.
+    ask on Slack                         in the ticket's one thread, with an
+                                         @mention: the open questions, the defaults
+                                         taken (D1, D2 …) and your earlier decisions.
     your reply in its thread             starts with "TICKET ANSWERS:" (other
                                          replies are talk, say with the PO);
                                          "1A 2B" answers; the ticket id ("AB-11"
@@ -265,8 +265,8 @@ class Slack:
     def __init__(self, run, channel, owner, mention=''):
         self.run, self.channel, self.owner, self.mention = run, channel, owner.lower(), mention
 
-    def post(self, text, thread=None):
-        if self.mention and not thread:                 # only top-level messages notify you
+    def post(self, text, thread=None, notify=False):
+        if self.mention and (notify or not thread):     # top-level, and the thread replies that need you
             text = f'<@{self.mention}> {text}'
         where = f'as a reply in the thread whose ts is {thread} ' if thread else ''
         error, out = self.run(f'Post this exact message to the Slack channel {self.channel} {where}with your Slack '
@@ -377,7 +377,7 @@ class Terminal:
     def __init__(self, path, reply):
         self.path, self.reply = path, reply
 
-    def post(self, text, thread=None):
+    def post(self, text, thread=None, notify=False):
         print(text)
         with open(self.path, 'a') as fh:
             fh.write(text.rstrip() + '\n\n')
@@ -449,19 +449,30 @@ class Run:
     def save(self):
         self.state_file.write_text(json.dumps(self.state, indent=2) + '\n')
 
+    def run_thread(self):
+        """The one Slack thread of this ticket, opened on first use; None without Slack."""
+        if not getattr(self.out, 'chatty', False):
+            return None
+        if not self.thread:
+            self.thread = self.state['thread'] = self.out.post(
+                f':arrow_forward: *{self.ticket} · Run* · `{os.getcwd()}`\nEverything about this ticket is in this '
+                'thread: questions, progress, stops, the /ship result. Answer here; write `TICKET STOP` or '
+                '`TICKET NOTE: …` here between stages.')
+            self.save()
+        return self.thread
+
     def progress(self, text):
-        """A reply in this run's thread. Questions, stops and the /ship result stay top-level."""
+        """A reply in the ticket's thread, without a notification."""
         if not getattr(self.out, 'chatty', False):
             return
         try:
-            if not self.thread:
-                self.thread = self.state['thread'] = self.out.post(
-                    f':arrow_forward: *{self.ticket} · Run* · `{os.getcwd()}`\nEach stage reports in this thread. '
-                    'Write `TICKET STOP` or `TICKET NOTE: …` here between stages.')
-                self.save()
-            self.out.post(text, thread=self.thread)
+            self.out.post(text, thread=self.run_thread())
         except RuntimeError as err:
             print(f'ticket: could not post progress: {err}')
+
+    def say(self, text):
+        """What needs you: in the ticket's thread with an @mention; top-level without Slack. Returns its ts."""
+        return self.out.post(text, thread=self.run_thread(), notify=True)
 
     def check_inbox(self):
         """The owner's word before the next stage: (stop, notes). TICKET STOP / TICKET NOTE: replies in the
@@ -548,7 +559,7 @@ class Run:
 
     def stop_at(self, where):
         print(f'ticket: {self.ticket} stops after /{where} (--until {where})')
-        self.out.post(f':double_vertical_bar: *{self.ticket} · Paused after /{where}* (--until {where}). '
+        self.say(f':double_vertical_bar: *{self.ticket} · Paused after /{where}* (--until {where}). '
                       f'Run ticket.py {self.ticket} again to go on.')
         return PAUSED
 
@@ -559,9 +570,7 @@ class Run:
             body = '\n'.join(l for l in (self.dir / file).read_text().splitlines() if l.strip())
             text += f'\n*{file}:*\n```\n{body[:1800]}{" …" if len(body) > 1800 else ""}\n```'
         try:
-            ts = self.out.post(f'{text}\nLog: `{self.dir}`\nReply here with `TICKET NOTE: …` for the next run.')
-            self.state.setdefault('inbox_threads', []).append(ts)   # a reply under the stop is read next run
-            self.save()
+            self.say(f'{text}\nLog: `{self.dir}`\nReply here with `TICKET NOTE: …` for the next run.')
         except RuntimeError as err:
             print(f'ticket: could not post the stop: {err}')
         if self.jira:
@@ -635,7 +644,7 @@ class Run:
             return self.stop(f'/ship {error}')
         result = pl.line(text, '(?:GO|NO-GO|SHIP BLOCKED)') or 'no GO / NO-GO line'
         icon = ':rocket:' if result.startswith('GO') else ':no_entry:' if result.startswith('NO-GO') else ':construction:'
-        self.out.post(f'{icon} *{t} · /ship: {result}*\n:lock: Nothing is pushed; you push. Report: `{self.dir}`')
+        self.say(f'{icon} *{t} · /ship: {result}*\n:lock: Nothing is pushed; you push. Report: `{self.dir}`')
         self.state['ship'] = result
         self.save()
         if self.jira:
@@ -651,7 +660,7 @@ class Run:
         digest = hashlib.sha1(text.encode()).hexdigest()
         ask = self.state.get('ask')
         if not ask or ask.get('spec') != digest:
-            self.state['ask'] = {'ts': self.ask(text), 'spec': digest, 'seen': []}
+            self.state['ask'] = self.ask(text)
             self.save()
             return WAITING
         new = [r for r in self.out.replies(ask['ts']) if r.get('ts') not in ask['seen']]
@@ -713,18 +722,25 @@ class Run:
         if approved:
             still = ', '.join('Q%d' % q['n'] for q in left)
             self.out.post(f':hourglass_flowing_sand: Still open: {still}. Answer them, then approve.', thread=ask['ts'])
-        self.state['ask'] = {'ts': self.ask(text), 'spec': hashlib.sha1(text.encode()).hexdigest(), 'seen': []}
+        self.state['ask'] = self.ask(text)
         self.save()
         return WAITING
 
     def ask(self, spec_text):
-        """Post the questions and defaults; the same text, without Slack markup, goes on the Jira ticket."""
+        """Post the questions and defaults, and the same text without Slack markup on the Jira ticket. Returns
+        the ask state: the thread the answers come in, the spec they answer, and the replies already there
+        (an earlier ask's answers in the same thread do not count again)."""
         text = ask_text(self.ticket, spec_text)
-        ts = self.out.post(text)
+        ts = self.say(text)
         if self.jira:
             self.jira.comment(plain(text) + ('\n\nAnswers go in the Slack thread.'
                                              if getattr(self.out, 'chatty', False) else ''))
-        return ts
+        where = self.thread or ts
+        try:
+            seen = [r.get('ts') for r in self.out.replies(where)] if self.thread else []
+        except RuntimeError:
+            seen = []
+        return {'ts': where, 'spec': hashlib.sha1(spec_text.encode()).hexdigest(), 'seen': seen}
 
     def last_build_conflict(self):
         """(conflict text, report file name) from the last pipeline stop when its BUILD report routed a
@@ -781,7 +797,7 @@ class Run:
         self.save()
         self.commit(f'{t}: plan stopped at a spec conflict')
         try:
-            back = self.out.post(f':leftwards_arrow_with_hook: *{t} · Back to spec.* {stage} found a conflict:\n```\n'
+            back = self.say(f':leftwards_arrow_with_hook: *{t} · Back to spec.* {stage} found a conflict:\n```\n'
                                  f'{conflict[:1500]}\n```\n/spec revises the spec now; you approve it again after.')
             self.state.setdefault('inbox_threads', []).append(back)
             self.save()
