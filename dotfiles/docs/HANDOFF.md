@@ -176,6 +176,9 @@ The owner's decisions, in force:
   printed and ignored.
 - A stop posts to the run thread, leaves a one-line Jira comment via
   `stop()`, and the stage returns `stopped by the owner (<reason>)`.
+- `--note "…"` (also passed by `--watch` to each child, `child_command()`)
+  is a TICKET NOTE from the command line: `Run.note`, merged into the first
+  `check_inbox()` once.
 - Every read reply (TICKET ANSWERS / NOTE / STOP) gets a 👀 reaction
   (`Slack.react`, `slack_add_reaction` in `SLACK_TOOLS`), so the owner sees
   it was read. Before the pipeline starts, `go()` reads the inbox once and

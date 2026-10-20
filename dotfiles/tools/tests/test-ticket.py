@@ -619,6 +619,28 @@ I did not dispatch any executor. Your Slack note ("use 200 status code") settles
             self.assertEqual(r2.go(), tk.STOPPED)
         self.assertNotIn('pipeline.py', self.prompts[-1:])
 
+    def test_note_from_the_command_line_goes_to_the_first_stage_once(self):
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5, note='use 200; leave Google Ads alone')
+        self.assertEqual(r.check_inbox(), (False, 'use 200; leave Google Ads alone'))
+        self.assertEqual(r.check_inbox(), (False, ''))                         # once
+        full = []
+        real = self.claude
+        self.claude = lambda prompt: (full.append(prompt), real(prompt))[1]
+        with redirect_stdout(io.StringIO()):
+            tk.Run(T, self.out, self.claude, self.pipeline, 5, note='work in English').go()
+        self.assertIn('Owner notes from Slack (TICKET NOTE)', full[0])
+        self.assertIn('work in English', full[0])
+        self.assertNotIn('work in English', full[1])
+
+    def test_watch_hands_its_note_to_each_child(self):
+        args = tk.argparse.Namespace(label='harness-run', jobs=2, poll=7, budget=5, wait=8, permission_mode='',
+                                     note='be brief')
+        cmd = tk.child_command('AB-9', args)
+        self.assertEqual(cmd[-2:], ['--note', 'be brief'])
+        self.assertIn('AB-9', cmd)
+        args.note = ''
+        self.assertNotIn('--note', tk.child_command('AB-9', args))
+
     def test_read_replies_get_a_reaction(self):
         reacted = []
         self.out.chatty = True

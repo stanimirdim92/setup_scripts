@@ -45,6 +45,7 @@ Usage (from the ticket's checkout):
     ticket.py LD-1
     ticket.py LD-1 --reply "1A 2B LD-1"
     ticket.py LD-1 --budget 15
+    ticket.py LD-1 --note "use 200; leave Google Ads alone"   your word for the first stage
     ticket.py --watch                    from the main checkout: every --poll seconds,
                                          start a run for each open Jira issue with the
                                          label --label (harness-run), --jobs (2) at once;
@@ -433,9 +434,10 @@ def ask_text(ticket, spec_text):
 
 
 class Run:
-    def __init__(self, ticket, out, claude, pipeline, budget, until=None, jira=None):
+    def __init__(self, ticket, out, claude, pipeline, budget, until=None, jira=None, note=''):
         self.ticket, self.out, self.claude, self.pipeline, self.budget = ticket, out, claude, pipeline, budget
         self.until, self.jira = until, jira                 # jira() reads the ticket's status, or None
+        self.note = note                                    # --note: your word for the first stage, once
         rc, common = pl.git('rev-parse', '--path-format=absolute', '--git-common-dir')
         self.dir = Path(common) / 'handoff'
         self.dir.mkdir(parents=True, exist_ok=True)
@@ -504,6 +506,8 @@ class Run:
             self.progress(f':octagonal_sign: Jira status is *{status}*: nothing new starts. Move the ticket back '
                           'and run ticket.py again to go on.')
             stop = stop or f'Jira status {status}'
+        if self.note:                                       # given on the command line: the first stage gets it
+            notes, self.note = '\n'.join(n for n in (self.note, notes) if n), ''
         return stop, notes
 
     def jira_stop(self):
@@ -1061,8 +1065,7 @@ def watch(args, search=None, start=None, rounds=None, updated=None):
             return jira(key).updated_at()
 
         def start(key):
-            child = [sys.executable, '-u', str(Path(__file__).resolve()), key, '--budget', str(args.budget), '--wait',
-                     str(args.wait), '--poll', str(args.poll), '--permission-mode', args.permission_mode]
+            child = child_command(key, args)
             out = out_dir / f'{key}-ticket.out'
             with open(out, 'a') as fh:            # the child writes its own file: the watch may go, it stays
                 proc = subprocess.Popen(child, stdout=fh, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
@@ -1117,6 +1120,13 @@ def watch(args, search=None, start=None, rounds=None, updated=None):
     return DONE
 
 
+def child_command(key, args):
+    """The ticket.py command --watch starts for one ticket, with the watch's own settings and note."""
+    return [sys.executable, '-u', str(Path(__file__).resolve()), key, '--budget', str(args.budget), '--wait',
+            str(args.wait), '--poll', str(args.poll), '--permission-mode', args.permission_mode,
+            *(['--note', args.note] if args.note else [])]
+
+
 def relay(key, proc, path):
     """Follow a child's .out file and print its new lines with the ticket in front, until the child ends."""
     with open(path) as fh:
@@ -1156,6 +1166,8 @@ def main(argv=None):
                         help='no ticket: from the main checkout, start a run for every open Jira issue with --label')
     parser.add_argument('--label', default='harness-run', help='the Jira label --watch starts on (default harness-run)')
     parser.add_argument('--jobs', type=int, default=2, help='how many tickets --watch runs at once (default 2)')
+    parser.add_argument('--note', default='', help='your word for the first stage, like a TICKET NOTE in Slack; '
+                        'with --watch, every run it starts gets it')
     parser.add_argument('--reply', help='your answer when Slack is not configured, e.g. "1A 2B LD-1"')
     parser.add_argument('--wait', type=float, default=8,
                         help='with Slack: keep checking for your answer this many hours instead of exiting (0: exit)')
@@ -1255,7 +1267,7 @@ def drive(args, log):
     deadline = time.monotonic() + args.wait * 3600
     while True:
         try:
-            result = Run(args.ticket, out, claude, pipeline, args.budget, args.until, jira).go()
+            result = Run(args.ticket, out, claude, pipeline, args.budget, args.until, jira, args.note).go()
         except RuntimeError as err:
             print(f'ticket: {err}')
             return STOPPED
