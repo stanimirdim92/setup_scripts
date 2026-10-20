@@ -798,10 +798,7 @@ class Run:
             return self.stop(f'pipeline.py: {why}', file)
         report = (self.dir / file).read_text() if (self.dir / file).is_file() else ''
         if h['route'] == '/spec':
-            if not self.may_resolve(report, h['ids']):
-                return self.stop(f'{stage}: the same conflict came back ({", ".join(h["ids"]) or "no ids"}); it needs you', file)
-            result = self.back_to_spec(report[:4000], stage, h['ids'])
-            return self.go() if result is None else result
+            return self.resolve(report[:4000], stage, h['ids'], file)
         if h['route'] == '/plan':
             result = self.make_plan()
             return self.go() if result is None else result
@@ -838,17 +835,21 @@ class Run:
             print(f'  the plan predates the current spec; /plan runs again')
         return stale
 
-    def back_to_spec(self, conflict, stage='/plan', ids=()):
-        """plan or build → spec (component-response-contracts §5): /spec resolves the conflict unattended. A fix
-        it decided by default (Low/Medium) keeps the owner's approval and the run goes on (None); a High one
-        stays an OPEN QUESTION, the spec goes back to Draft and the owner answers and approves again
-        (ADR 0115). The same conflict twice, or a sixth one, stops instead (may_resolve)."""
+    def resolve(self, conflict, stage, ids=(), file=''):
+        """The one conflict path, from any stage (HR-1 REQ-003; component-response-contracts §5): /spec resolves
+        it unattended. A fix decided by default (Low/Medium) keeps the owner's approval and the run goes on from
+        go(): the plan is stale, /plan runs, the pipeline resumes. A High one stays an OPEN QUESTION, the spec
+        goes back to Draft and the owner answers and approves again (ADR 0115). The same conflict twice, or a
+        sixth one, stops instead: the fix did not take, and a person looks."""
         t = self.ticket
+        if not self.may_resolve(conflict, ids):
+            self.commit(f'{t}: stopped at a conflict')
+            return self.stop(f'{stage}: the same conflict came back ({", ".join(ids) or "no ids"}); it needs you', file)
         self.state['conflicts'] = self.state.get('conflicts', 0) + 1
         self.state.setdefault('conflict_digests', []).append(conflict_digest(conflict, ids))
         self.state.pop('ask', None)                     # a fresh ask for the revised spec
         self.save()
-        self.commit(f'{t}: plan stopped at a spec conflict')
+        self.commit(f'{t}: {stage.strip("/")} stopped at a spec conflict')
         try:
             back = self.say(f':leftwards_arrow_with_hook: *{t} · Back to spec.* {stage} found a conflict:\n```\n'
                                  f'{conflict[:1500]}\n```\n/spec revises the spec now; you approve it again after.')
@@ -863,16 +864,16 @@ class Run:
                               f'conflict is about them. A fix that changes behavior or is High risk stays an OPEN '
                               f'QUESTION.\n\n{conflict}')
         if error:
-            return self.stop(f'/spec after the plan conflict {error}')
+            return self.stop(f'/spec after the {stage} conflict {error}')
         if approved['Status'] == 'Approved' and not open_questions(self.spec.read_text()):
             set_header(self.spec, {'Status': 'Approved', 'Approved by': approved['Approved by'],
                                    'Approved at': approved['Approved at']})
-            self.commit(f'{t}: spec fixed for the plan conflict by default; approval kept (ADR 0115)')
+            self.commit(f'{t}: spec fixed for the {stage} conflict by default; approval kept (ADR 0115)')
             self.progress(':white_check_mark: The conflict was fixed by default (Low/Medium risk); your approval '
                           'stands. Planning again.')
-            return None
+            return self.go()
         set_header(self.spec, {'Status': 'Draft', 'Approved by': '—', 'Approved at': '—'})
-        self.commit(f'{t}: spec revised for the plan conflict')
+        self.commit(f'{t}: spec revised for the {stage} conflict')
         return self.settle_spec()
 
     def make_plan(self):
@@ -882,10 +883,7 @@ class Run:
         last = self.state.get('plan_handoff') or {}
         if last.get('route') == '/spec' and self.plan.exists() and not self.plan_stale():   # the committed plan carries it
             report = (self.dir / last.get('report', '')).read_text() if (self.dir / last.get('report', '')).is_file() else ''
-            if self.may_resolve(report, last.get('ids', [])):
-                result = self.back_to_spec(report[:4000], '/plan', last.get('ids', []))
-                if result is not None:
-                    return result
+            return self.resolve(report[:4000], '/plan', last.get('ids', []), last.get('report', ''))
         error, text = self.stage(f'/plan {t}')
         if error:
             return self.stop(f'/plan {error}')
@@ -900,11 +898,7 @@ class Run:
         self.state['plan_handoff'] = {**h, 'report': self.last_file}
         self.save()
         if h['result'] == 'BLOCKED' and h['route'] == '/spec':
-            if not self.may_resolve(text, h['ids']):
-                self.commit(f'{t}: plan draft')
-                return self.stop(f'/plan: the same conflict came back ({", ".join(h["ids"]) or "no ids"}); it needs you', self.last_file)
-            result = self.back_to_spec(text[:4000], '/plan', h['ids'])
-            return self.make_plan() if result is None else result
+            return self.resolve(text[:4000], '/plan', h['ids'], self.last_file)
         if h['result'] != 'COMPLETE':
             self.commit(f'{t}: plan draft')
             return self.stop(f'/plan waits for a person → {h["route"]}; read {self.plan}', self.last_file)

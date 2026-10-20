@@ -304,7 +304,7 @@ class Ticket(unittest.TestCase):
         self.plan_text = PLAN + '\n## SPEC CONFLICT\nREQ-001 cannot be met\n'
         self.run_once()
         self.out.reply(f'1A {T}')
-        with unittest.mock.patch.object(tk.Run, 'back_to_spec', return_value=tk.STOPPED):
+        with unittest.mock.patch.object(tk.Run, 'resolve', return_value=tk.STOPPED):
             self.run_once()                                          # /plan writes the conflict
             Path(f'docs/tasks/{T}-plan.md').write_text(self.plan_text)
             subprocess.run(['git', 'add', '-A'], check=True)
@@ -648,6 +648,13 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         self.assertEqual(self.run_once(), tk.STOPPED)
         self.assertIn('/plan gave no HANDOFF line', self.out.posts[-1][1])
         self.assertNotIn('pipeline.py', self.prompts)
+
+    def test_one_conflict_path(self):
+        source = SCRIPT.read_text()
+        self.assertEqual(source.count('def resolve('), 1)
+        self.assertNotIn('back_to_spec', source)
+        callers = [l.strip() for l in source.splitlines() if 'self.resolve(' in l]
+        self.assertEqual(len(callers), 3)                                       # route(), and make_plan() twice
 
     def test_prose_detectors_are_gone(self):
         self.assertNotRegex(SCRIPT.read_text(), r'SPEC_SIGNALS|build_conflict|routed|has_conflict|conflict_text')

@@ -80,7 +80,7 @@ Plan: dotfiles/docs/tasks/HR-1-plan.md · Spec: dotfiles/docs/specs/HR-1-SPEC.md
 
 ## T003: One conflict path for every stage
 
-**Status:** Pending
+**Status:** Done
 
 **Requirements:** REQ-003
 
