@@ -15,3 +15,4 @@ and user id do not appear in them; commit shas are the ticket's.
 | `06-verify-no-result-line.md` | /test | none (no HANDOFF line) | stop 6; the verifier ran in the background |
 | `07-build-complete-handed-on.md` | /build | /test | the first run that went on by itself |
 | `08-verify-fail-two-findings.md` | /test | /build (D-1) + /spec (D-2) | a real failure: a stale URL key, and a style decision |
+| `09-verify-fail-repro-patch.md` | /test | /build (REQ-017) + /spec (REQ-009) | the earlier /test on the same candidate, with a repro patch |

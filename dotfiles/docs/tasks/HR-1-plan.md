@@ -1,13 +1,13 @@
 # Implementation Plan: The ticket runner stops only for a real decision
 
-Status: Draft
+Status: Approved
 Spec: dotfiles/docs/specs/HR-1-SPEC.md
 Modules: N/A
 Not yet planned: None
 Spec status: Approved
 Spec revision: git-commit:b6cc02fee4dafe307c053f1cb3ea6d27501f9890:dotfiles/docs/specs/HR-1-SPEC.md
-Approved by: —
-Approved at: —
+Approved by: the owner (reply "ok" in the Claude Code session, 2026-10-20)
+Approved at: 2026-10-20
 
 ## Technical Approach
 
@@ -146,4 +146,4 @@ Orphan tasks: None
 None
 
 ---
-Handoff: Awaiting plan approval
+Handoff: Ready for /build
