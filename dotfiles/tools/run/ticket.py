@@ -570,6 +570,8 @@ class Run:
                 print(f'ticket: could not read the Jira status: {err}')
                 status = {}
             name, category = str(status.get('status', '')).strip(), str(status.get('category', '')).strip()
+            if name:
+                self.state['jira_last'] = name
             names = {x.strip().lower() for x in stopping.split(',') if x.strip()}
             labels = status.get('labels')
             why = ''
@@ -625,6 +627,11 @@ class Run:
         return PAUSED
 
     def stop(self, why, file='', cls=''):
+        """Stop the run and say why, everywhere: terminal, thread, Jira, and the state with the cause class
+        (decision · environment · harness · retry; runner when the code did not say, which is a bug)."""
+        self.state.setdefault('stops', []).append({'at': datetime.datetime.now().isoformat(timespec='seconds'),
+                                                   'class': cls or 'runner', 'reason': why[:300], 'report': file})
+        self.save()
         print(f'ticket: {self.ticket} stopped: {why}' + (f'\n  read: {self.dir / file}' if file else ''))
         text = f':octagonal_sign: *{self.ticket} · Stopped*\n*Why:* {why}'
         if file and (self.dir / file).exists():
@@ -652,11 +659,11 @@ class Run:
             for prompt in (f'/jira-ticket {t}', f'/spec {t} unattended'):
                 error, text = self.stage(prompt)
                 if error:
-                    return self.stop(f'{prompt} {error}')
+                    return self.stop(f'{prompt} {error}', cls='retry')
                 if prompt.startswith('/jira-ticket') and not intake.exists():
-                    return self.stop(f'intake wrote no {intake}: {first_line(text)}')
+                    return self.stop(f'intake wrote no {intake}: {first_line(text)}', cls='harness')
             if not self.spec.exists():
-                return self.stop(f'/spec wrote no {self.spec}')
+                return self.stop(f'/spec wrote no {self.spec}', cls='harness')
             self.commit(f'{t}: draft spec (unattended)')
 
         if header(self.spec.read_text(), 'Status') != 'Approved':
@@ -679,7 +686,7 @@ class Run:
                 return self.route(info)                      # an earlier run's stage sent it there; a conflict
             stop, notes = self.inbox()                       # already taken is old news, and the pipeline runs
             if stop:
-                return self.stop(f'stopped by the owner ({stop})')
+                return self.stop(f'stopped by the owner ({stop})', cls='decision')
             (self.dir / f'{t}-inbox.json').write_text(json.dumps({'after_step': 0, 'stop': False,
                                                                    'notes': [notes] if notes else []}))
             started = time.time()
@@ -698,7 +705,7 @@ class Run:
         given = f'\n\nREVIEW result — {pl.SUPPLIED}\n\n{reviews[-1].read_text()}' if reviews else ''
         error, text = self.stage(f'/ship {t}{given}')
         if error:
-            return self.stop(f'/ship {error}')
+            return self.stop(f'/ship {error}', cls='retry')
         result = pl.line(text, '(?:GO|NO-GO|SHIP BLOCKED)') or 'no GO / NO-GO line'
         icon = ':rocket:' if result.startswith('GO') else ':no_entry:' if result.startswith('NO-GO') else ':construction:'
         self.say(f'{icon} *{t} · /ship: {result}*\n:lock: Nothing is pushed; you push. Report: `{self.dir}`')
@@ -766,7 +773,7 @@ class Run:
                                      f'default as the alternative that lost, and "Decided by: owner":\n{changed}'
                                      if changed else ''))
             if error:
-                return self.stop(f'/spec decisions {error}')
+                return self.stop(f'/spec decisions {error}', cls='retry')
             self.commit(f'{t}: spec decisions from the owner')
             text = self.spec.read_text()
         left = open_questions(text)
@@ -829,7 +836,7 @@ class Run:
         h, file, why = info.get('handoff') or {}, info.get('stage_file') or '', info.get('why') or 'stopped'
         stage = {'BUILD': '/build', 'VERIFY': '/test', 'REVIEW': '/review'}.get(file.rsplit('-', 1)[-1][:-3], 'pipeline.py')
         if not h:
-            return self.stop(f'pipeline.py: {why}', file)
+            return self.stop(f'pipeline.py: {why}', file, classify(why))
         report = (self.dir / file).read_text() if (self.dir / file).is_file() else ''
         if h['route'] == '/spec':
             return self.resolve(report[:4000], stage, h['ids'], file)
@@ -839,9 +846,9 @@ class Run:
         if h['route'] == 'owner':
             if h['decide']:
                 key = self.decide(report, h, stage, file)
-                return self.stop(f'{stage}: decision {key} is yours · {why}', file)
-            return self.stop(f'{stage}: it needs you · {why}', file)
-        return self.stop(f'pipeline.py: {why} → {h["route"]}', file)
+                return self.stop(f'{stage}: decision {key} is yours · {why}', file, 'decision')
+            return self.stop(f'{stage}: it needs you · {why}', file, 'decision')
+        return self.stop(f'pipeline.py: {why} → {h["route"]}', file, classify(why))
 
     def pipeline_step(self, prompt, cost, step=None):
         """pipeline.py finished a stage: post what its message file says, then hand it the owner's word.
@@ -880,7 +887,7 @@ class Run:
         t = self.ticket
         if not self.may_resolve(conflict, ids):
             self.commit(f'{t}: stopped at a conflict')
-            return self.stop(f'{stage}: the same conflict came back ({", ".join(ids) or "no ids"}); it needs you', file)
+            return self.stop(f'{stage}: the same conflict came back ({", ".join(ids) or "no ids"}); it needs you', file, 'decision')
         self.state['conflicts'] = self.state.get('conflicts', 0) + 1
         self.state.setdefault('conflict_digests', []).append(conflict_digest(conflict, ids))
         self.state.pop('ask', None)                     # a fresh ask for the revised spec
@@ -900,7 +907,7 @@ class Run:
                               f'conflict is about them. A fix that changes behavior or is High risk stays an OPEN '
                               f'QUESTION.\n\n{conflict}')
         if error:
-            return self.stop(f'/spec after the {stage} conflict {error}')
+            return self.stop(f'/spec after the {stage} conflict {error}', cls='retry')
         if approved['Status'] == 'Approved' and not open_questions(self.spec.read_text()):
             set_header(self.spec, {'Status': 'Approved', 'Approved by': approved['Approved by'],
                                    'Approved at': approved['Approved at']})
@@ -922,27 +929,27 @@ class Run:
             return self.resolve(report[:4000], '/plan', last.get('ids', []), last.get('report', ''))
         error, text = self.stage(f'/plan {t}')
         if error:
-            return self.stop(f'/plan {error}')
+            return self.stop(f'/plan {error}', cls='retry')
         if not self.plan.exists():
-            return self.stop(f'/plan wrote no {self.plan}')
+            return self.stop(f'/plan wrote no {self.plan}', cls='harness')
         try:
             h = pl.handoff(text)
         except ValueError as err:
-            return self.stop(f'/plan: {err}', self.last_file)
+            return self.stop(f'/plan: {err}', self.last_file, 'harness')
         if h is None:
-            return self.stop('/plan gave no HANDOFF line', self.last_file)
+            return self.stop('/plan gave no HANDOFF line', self.last_file, 'harness')
         self.state['plan_handoff'] = {**h, 'report': self.last_file}
         self.save()
         if h['result'] == 'BLOCKED' and h['route'] == '/spec':
             return self.resolve(text[:4000], '/plan', h['ids'], self.last_file)
         if h['result'] != 'COMPLETE':
             self.commit(f'{t}: plan draft')
-            return self.stop(f'/plan waits for a person → {h["route"]}; read {self.plan}', self.last_file)
+            return self.stop(f'/plan waits for a person → {h["route"]}; read {self.plan}', self.last_file, 'decision')
         check = subprocess.run([sys.executable, str(CHECK_PLAN), str(self.plan), '--todo', str(self.todo),
                                 '--spec', str(self.spec)], capture_output=True, text=True)
         if check.returncode:
             self.commit(f'{t}: plan draft')
-            return self.stop('check-plan failed:\n' + (check.stdout + check.stderr)[-1500:])
+            return self.stop('check-plan failed:\n' + (check.stdout + check.stderr)[-1500:], cls='harness')
         set_header(self.plan, {'Status': 'Approved', 'Approved by': 'ticket.py: clean plan under the approved spec '
                                '(ADR 0115)', 'Approved at': datetime.date.today().isoformat(),
                                'Handoff': 'Ready for /build'})
@@ -1072,6 +1079,65 @@ def alive(pid):
     except PermissionError:
         return True
     return True
+
+
+def classify(why):
+    """The cause class of a pipeline.py stop, from its reason: what a person must decide, what the environment
+    broke, what a command did wrong, or a model call that failed after its retries."""
+    if re.search(r'round cap|needs you|it needs a person|a person looks', why):
+        return 'decision'
+    if re.search(r'uncommitted changes|not in a git repository|branch is|no output', why):
+        return 'environment'
+    if re.search(r'exited \d+|reported an error|printed no JSON|no event for', why):
+        return 'retry'
+    return 'harness'
+
+
+def status(ticket, out_dir):
+    """What `--status` prints, from the state file and the handoff dir, with no model call (HR-1 REQ-005)."""
+    state_file = out_dir / f'{ticket}-ticket.json'
+    if not state_file.exists():
+        return ['no run yet']
+    st = json.loads(state_file.read_text())
+    reports = sorted((p for p in out_dir.glob(f'{ticket}-*-*.md') if re.fullmatch(rf'{re.escape(ticket)}-\d+-[A-Z]+\.md', p.name)),
+                     key=lambda p: p.stat().st_mtime)
+    messages = sorted(out_dir.glob(f'{ticket}-ticket-*.md'), key=lambda p: p.stat().st_mtime)
+    last = max(reports + messages, key=lambda p: p.stat().st_mtime, default=None)
+    stops, decisions = st.get('stops', []), st.get('decisions', {})
+    spec = Path(f'docs/specs/{ticket}-SPEC.md')
+    holder = claim_holder(out_dir / f'{ticket}-ticket.lock')
+    open_b = [k for k, v in decisions.items() if v.get('chosen') is None]
+    if st.get('ship'):
+        waits = f'nothing — reached /ship: {st["ship"]}'
+    elif holder:
+        waits = f'a stage is running (pid {holder["pid"]} since {holder.get("started")})'
+    elif open_b:
+        counts = ', '.join(f'{k}: {len(decisions[k]["options"]) or "?"} options' for k in open_b)
+        waits = f'you — {", ".join(open_b)} ({counts}), reply in the thread'
+    elif st.get('ask') and spec.exists() and header(spec.read_text(), 'Status') != 'Approved':
+        waits = 'you — the spec questions (TICKET ANSWERS), reply in the thread'
+    elif stops and stops[-1]['class'] == 'decision':
+        waits = f'you — {stops[-1]["reason"][:120]}'
+    elif stops:
+        waits = f'a start: run ticket.py {ticket} (last stop: {stops[-1]["class"]} — {stops[-1]["reason"][:100]})'
+    else:
+        waits = f'a start: run ticket.py {ticket}'
+    decs = [f'{d["title"].split(" — ")[0]} ({d["by"] or "?"})' for d in decisions_in(spec)] if spec.exists() else []
+    decs += [f'{k}={v.get("chosen") or "open"}' for k, v in decisions.items()]
+    lines = [f'{ticket}: last stage: {st["log"][-1] if st.get("log") else "none"}',
+             f'waits for: {waits}',
+             f'last report: {last if last else "-"}',
+             f'cost so far: ${st.get("cost", 0):.2f}',
+             f'decisions: {", ".join(decs) or "-"}',
+             f'lock: {"pid " + str(holder["pid"]) if holder else "free"}',
+             f'jira: {st.get("jira_last", "not read yet")}']
+    for stop in stops[-3:]:
+        lines.append(f'stop {stop["at"]} · {stop["class"]}: {stop["reason"][:120]}' + (f' · {stop["report"]}' if stop.get('report') else ''))
+    return lines
+
+
+def decisions_in(spec):
+    return decisions(spec.read_text())
 
 
 def preflight(ticket, claude, slack, jira, out_dir):
@@ -1238,6 +1304,8 @@ def watch(args, search=None, start=None, rounds=None, updated=None):
                          if finished[key] in (STOPPED, NOT_CHECKOUT) else ''))
                 if finished[key] in (STOPPED, NOT_CHECKOUT):
                     held[key] = datetime.datetime.now(datetime.timezone.utc)
+                for l in status(key, out_dir):
+                    print(f'  {key} │ {l}')
         try:
             keys = search()
         except RuntimeError as err:
@@ -1321,6 +1389,7 @@ def main(argv=None):
     parser.add_argument('--jobs', type=int, default=2, help='how many tickets --watch runs at once (default 2)')
     parser.add_argument('--note', default='', help='your word for the first stage, like a TICKET NOTE in Slack; '
                         'with --watch, every run it starts gets it')
+    parser.add_argument('--status', action='store_true', help='print where the run is, from its files; no model call')
     parser.add_argument('--check', action='store_true',
                         help='run the pre-flight (tree, lag behind the default branch, readiness, Slack, Jira, lock) and exit')
     parser.add_argument('--reply', help='your answer when Slack is not configured, e.g. "1A 2B LD-1"')
@@ -1356,6 +1425,9 @@ def main(argv=None):
     common = pl.git('rev-parse', '--path-format=absolute', '--git-common-dir')[1]
     log = Path(common) / 'handoff' / f'{args.ticket}-ticket.log'
     log.parent.mkdir(parents=True, exist_ok=True)
+    if args.status:
+        print('\n'.join(status(args.ticket, log.parent)))
+        return DONE
     lock = log.with_suffix('.lock')
     holder = claim(lock)                                # one run per ticket; a dirty tree is often its /build
     if holder:

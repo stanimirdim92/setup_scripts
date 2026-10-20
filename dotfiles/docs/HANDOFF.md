@@ -287,14 +287,19 @@ result line.
 
 `dotfiles/docs/specs/HR-1-SPEC.md` (Approved) and `dotfiles/docs/tasks/HR-1-plan.md`
 + `-todo.md` (Approved, eight tasks) replace fix-by-fix work on the runner.
-Done so far: **T001** (the `HANDOFF:` line, `references/stage-handoff.md`,
-`pipeline.handoff()`), **T002** (`pipeline.verdict()` and `Run.route()` read
-the line alone; `SPEC_SIGNALS`, `build_conflict`, `has_conflict`,
-`conflict_text` are gone; a VERIFY FAIL routed to `/build` starts a fix
-round, `VERIFY_CAP` 2), CP-001 green. Next: T003 (one `resolve()`), T004
-(one `inbox()`), T005 (`B<k>` decisions), T006 (pre-flight + merge of
-main, DEC-001), T007 (`--status`), T008 (stop classes, counts, the LD-503
-fixtures under `dotfiles/tools/tests/fixtures/ld-503/` replayed).
+All eight tasks are Done: **T001** the `HANDOFF:` line
+(`references/stage-handoff.md`, `pipeline.handoff()`); **T002**
+`pipeline.verdict()` and `Run.route()` read it alone, the prose detectors
+are gone, a VERIFY FAIL routed to `/build` starts a fix round
+(`VERIFY_CAP` 2); **T003** one `Run.resolve()`; **T004** one `Run.inbox()`;
+**T005** `Run.decide()` posts `B<k>` options, `TICKET ANSWERS: B1=2` answers;
+**T006** `preflight()` and `merge_default()` (`--check`); **T007** `status()`
+and `--status`, printed by `--watch` when a child exits; **T008** every
+`stop()` carries a class (`classify()` for pipeline reasons),
+`ticket-stats.py run_stats()`, and the nine LD-503 reports under
+`dotfiles/tools/tests/fixtures/ld-503/` replayed through `route()` with no
+`runner` stop. Not yet run on a real ticket: the first one after this is
+the proof, and `ticket-stats.py`'s `run:` line is the measure.
 
 ## 5. Open items and ideas (not started)
 

@@ -89,6 +89,34 @@ def stats(ticket, review_dir):
     return found
 
 
+def run_stats(ticket, handoff_dir):
+    """What the unattended runner recorded for the ticket (HR-1 REQ-008): owner interventions (replies it
+    acted on), its stops by cause class, stage retries, conflicts taken to /spec, and what it spent. None
+    when ticket.py never ran the ticket."""
+    state_file = Path(handoff_dir) / f'{ticket}-ticket.json'
+    if not state_file.exists():
+        return None
+    st = json.loads(state_file.read_text())
+    by_class = {}
+    for stop in st.get('stops', []):
+        by_class[stop.get('class', 'runner')] = by_class.get(stop.get('class', 'runner'), 0) + 1
+    retries = 0
+    for name in (f'{ticket}-ticket.log', f'{ticket}-pipeline.log'):
+        log = Path(handoff_dir) / name
+        if log.exists():
+            retries += len(re.findall(r'^retry \d+/\d+ in', log.read_text(), re.M))
+    return {'interventions': len(st.get('inbox_seen', [])) + len((st.get('ask') or {}).get('seen', [])),
+            'stops': by_class, 'runner_stops': by_class.get('runner', 0), 'retries': retries,
+            'conflicts': st.get('conflicts', 0), 'cost_usd': st.get('cost', 0),
+            'decisions_asked': len(st.get('decisions', {}))}
+
+
+def run_line(r):
+    stops = ', '.join(f'{n} {c}' for c, n in sorted(r['stops'].items())) or 'none'
+    return (f'run: {r["interventions"]} owner interventions · stops: {stops} · {r["retries"]} stage retries · '
+            f'{r["conflicts"]} conflicts to /spec · ${r["cost_usd"]:.2f}')
+
+
 def slug(path):
     """Claude Code's project-dir name: every character that is not a letter or digit becomes '-'."""
     return re.sub(r'[^A-Za-z0-9]', '-', str(path))
@@ -269,7 +297,8 @@ def main(argv=None):
     common = Path(common.strip())
     s = stats(args.ticket, args.review_dir or common / 'review')
     s['spend'] = spend(args.ticket, common.parent, args.projects_dir, args.idle_cap)
-    print(json.dumps(s, indent=2) if args.json else row(s))
+    s['run'] = run_stats(args.ticket, common / 'handoff')
+    print(json.dumps(s, indent=2) if args.json else row(s) + (f'\n{run_line(s["run"])}' if s['run'] else ''))
     return 0
 
 

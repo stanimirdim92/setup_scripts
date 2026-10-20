@@ -526,6 +526,94 @@ class Ticket(unittest.TestCase):
         self.assertIn('ticket: --check: nothing started; ready', text)
         self.assertEqual(self.prompts, [])
 
+    def test_status_without_a_run(self):
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(tk.main([T, '--status']), tk.DONE)
+        self.assertEqual(out.getvalue().strip(), 'no run yet')
+
+    def test_status_after_a_stop_on_a_decision(self):
+        self.out.chatty = True
+        self.run_once()                                                               # the ask is open
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        lines = tk.status(T, r.dir)
+        self.assertEqual(lines[0], f'{T}: last stage: /spec {T} unattended')
+        self.assertEqual(lines[1], 'waits for: you — the spec questions (TICKET ANSWERS), reply in the thread')
+        self.assertIn('DEC-001 (default)', lines[4])
+        self.assertEqual(lines[5], 'lock: free')
+        self.out.reply(f'1A {T}')
+        handoff = r.dir
+        report = '# BUILD BLOCKED\n1. Refresh on main.\n2. Refresh on this branch.\nHANDOFF: result=BLOCKED route=owner ids=- decide=2\n'
+
+        def pipeline(ticket, budget, step=None):
+            self.prompts.append('pipeline.py')
+            (handoff / f'{T}-1-BUILD.md').write_text(report)
+            (handoff / f'{T}-pipeline-stop.json').write_text(json.dumps({'why': 'BUILD BLOCKED', 'stage_file': f'{T}-1-BUILD.md',
+                'handoff': {'result': 'BLOCKED', 'route': 'owner', 'ids': [], 'decide': 2}}))
+            return 1
+
+        self.pipeline = pipeline
+        self.assertEqual(self.run_once(), tk.STOPPED)
+        lines = tk.status(T, handoff)
+        self.assertEqual(lines[1], 'waits for: you — B1 (B1: 2 options), reply in the thread')
+        self.assertTrue(lines[2].endswith(f'{T}-1-BUILD.md'), lines[2])                 # the last report, by time
+        self.assertTrue(lines[3].startswith('cost so far: $'))
+        self.assertIn('B1=open', lines[4])
+        self.assertTrue(lines[-1].startswith('stop ') and ' · decision: /build: decision B1 is yours' in lines[-1], lines[-1])
+        st = json.loads((handoff / f'{T}-ticket.json').read_text())
+        self.assertEqual([x['class'] for x in st['stops']], ['decision'])
+        old = {k: v for k, v in st.items() if k not in ('stops', 'decisions')}         # a state from before HR-1
+        (handoff / f'{T}-ticket.json').write_text(json.dumps(old))
+        self.assertTrue(tk.status(T, handoff)[1].startswith('waits for:'))
+
+    def test_every_stop_carries_a_class_and_none_is_runner(self):
+        source = SCRIPT.read_text()
+        calls = [l for l in source.splitlines() if 'self.stop(' in l and 'def stop' not in l]
+        self.assertGreater(len(calls), 15)
+        bare = [l.strip() for l in calls if not re.search(r"cls=|classify\(|, 'decision'\)|, 'harness'\)|, 'retry'\)|, 'environment'\)", l)]
+        self.assertEqual(bare, [])
+        self.assertEqual(tk.classify('round cap: 3 reviews and findings remain; the approach needs you'), 'decision')
+        self.assertEqual(tk.classify('exited 2: pipeline: uncommitted changes in the checkout'), 'environment')
+        self.assertEqual(tk.classify('/build exited 1'), 'retry')
+        self.assertEqual(tk.classify('/test gave no HANDOFF line'), 'harness')
+
+    def test_ld_503_replayed_stops_only_for_a_decision_or_the_environment(self):
+        """The reports of 2026-10-20, with the HANDOFF line each command would write today, through route()."""
+        fixtures = Path(__file__).resolve().parent / 'fixtures' / 'ld-503'
+        lines = {
+            '01-build-blocked-req-001.md': 'HANDOFF: result=BLOCKED route=/spec ids=REQ-001 decide=2',
+            '02-build-blocked-note-contradicts-spec.md': 'HANDOFF: result=BLOCKED route=/spec ids=REQ-001 decide=0',
+            '03-build-blocked-req-008-and-cp-001.md': 'HANDOFF: result=BLOCKED route=/spec ids=REQ-008 decide=2',
+            '04-build-blocked-route-plan-or-spec.md': 'HANDOFF: result=BLOCKED route=/spec ids=REQ-008 decide=3',
+            '05-build-blocked-handed-on-tasks.md': None,                     # build.md now hands T007/T008 on: COMPLETE
+            '06-verify-no-result-line.md': None,                             # no line: pipeline.py stops it (harness)
+            '07-build-complete-handed-on.md': 'HANDOFF: result=COMPLETE route=/test ids=T007,T008 decide=0',
+            '08-verify-fail-two-findings.md': 'HANDOFF: result=FAIL route=/build ids=REQ-017,REQ-009 decide=1',
+            '09-verify-fail-repro-patch.md': 'HANDOFF: result=FAIL route=/build ids=REQ-017,REQ-009 decide=0',
+        }
+        resolved, classes = [], []
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        r.resolve = lambda conflict, stage, ids=(), file='': (resolved.append((stage, tuple(ids))), tk.DONE)[1]
+        r.go = lambda: tk.DONE
+        for name, line in lines.items():
+            if not (fixtures / name).exists():
+                continue
+            text = (fixtures / name).read_text() + (f'\n{line}\n' if line else '')
+            h = tk.pl.handoff(text)
+            kind = 'BUILD' if 'build' in name else 'VERIFY'
+            (r.dir / f'{T}-1-{kind}.md').write_text(text)
+            if h is None:
+                self.assertEqual(tk.classify(f'/test gave no HANDOFF line'), 'harness')   # pipeline.py's stop
+                continue
+            if h['result'] in tk.pl.OK_RESULTS or (h['result'] == 'FAIL' and h['route'] == '/build'):
+                continue                                                      # the pipeline goes on by itself
+            before = len(r.state.get('stops', []))
+            with redirect_stdout(io.StringIO()):
+                r.route({'why': name, 'stage_file': f'{T}-1-{kind}.md', 'handoff': h})
+            classes += [x['class'] for x in r.state.get('stops', [])[before:]]
+        self.assertEqual([ids for _, ids in resolved], [('REQ-001',), ('REQ-001',), ('REQ-008',), ('REQ-008',)])
+        self.assertEqual(classes, [])                                          # not one stop was the runner's
+        self.assertNotIn('runner', classes)
+
     def test_help_shows_the_whole_docstring(self):
         with redirect_stdout(io.StringIO()) as out, self.assertRaises(SystemExit):
             tk.main(['--help'])

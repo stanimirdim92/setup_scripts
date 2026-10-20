@@ -115,6 +115,15 @@ owner asked for the run to need fewer restarts. Taken from Symphony
   rewrites that DEC as the owner's, with the default as the alternative
   that lost. Editing the spec by hand is no longer the only way.
 
+- **HR-1 (2026-10-20, evening).** After the first real ticket, the runner's
+  own changes went through the harness: `dotfiles/docs/specs/HR-1-SPEC.md`
+  and `dotfiles/docs/tasks/HR-1-plan.md`. The stage commands end their
+  reports with a `HANDOFF:` line (`references/stage-handoff.md`) and the
+  runner routes from it alone; one conflict path; one inbox; a stage's
+  decision for the owner as numbered `B<k>` options; a pre-flight that
+  merges the default branch (DEC-001 there); `--status`; every stop with a
+  cause class, and the LD-503 reports replayed as fixtures.
+
 Rejected — a Jira automation webhook into the owner's machine. It needs a
 public endpoint; polling needs nothing and 90 s is soon enough.
 

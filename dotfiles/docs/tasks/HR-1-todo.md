@@ -216,7 +216,7 @@ Plan: dotfiles/docs/tasks/HR-1-plan.md · Spec: dotfiles/docs/specs/HR-1-SPEC.md
 
 ## T007: A status command
 
-**Status:** Pending
+**Status:** Done
 
 **Requirements:** REQ-005
 
@@ -246,7 +246,7 @@ Plan: dotfiles/docs/tasks/HR-1-plan.md · Spec: dotfiles/docs/specs/HR-1-SPEC.md
 
 ## T008: Stop classes, per-ticket counts, and the LD-503 replay
 
-**Status:** Pending
+**Status:** Done
 
 **Requirements:** REQ-008
 

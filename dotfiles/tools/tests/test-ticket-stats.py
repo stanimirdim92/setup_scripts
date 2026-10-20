@@ -69,6 +69,22 @@ class TicketStats(unittest.TestCase):
                          '| 2026-10-18 | AB-1 | 2 | 2 | 3 | 2 | 2 fixed, 1 refuted, 1 other | '
                          'no transcript found | no transcript found | no transcript found | 0 |')
 
+    def test_run_stats_from_the_runner_state(self):
+        handoff = Path(self.tmp.name) / 'handoff'
+        handoff.mkdir()
+        self.assertIsNone(ts.run_stats('AB-1', handoff))
+        (handoff / 'AB-1-ticket.json').write_text(json.dumps({
+            'inbox_seen': ['1', '2'], 'ask': {'seen': ['3']}, 'conflicts': 2, 'cost': 31.5,
+            'decisions': {'B1': {'chosen': 1}},
+            'stops': [{'class': 'decision', 'reason': 'x'}, {'class': 'environment', 'reason': 'y'}, {'class': 'decision', 'reason': 'z'}]}))
+        (handoff / 'AB-1-ticket.log').write_text('$ /spec\nretry 2/5 in 10s: exited 1\nretry 3/5 in 20s: exited 1\n')
+        (handoff / 'AB-1-pipeline.log').write_text('retry 2/5 in 10s: no event for 60 min\n')
+        r = ts.run_stats('AB-1', handoff)
+        self.assertEqual((r['interventions'], r['runner_stops'], r['retries'], r['conflicts'], r['cost_usd'], r['decisions_asked']),
+                         (3, 0, 3, 2, 31.5, 1))
+        self.assertEqual(r['stops'], {'decision': 2, 'environment': 1})
+        self.assertEqual(ts.run_line(r), 'run: 3 owner interventions · stops: 2 decision, 1 environment · 3 stage retries · 2 conflicts to /spec · $31.50')
+
     def test_missing_spec(self):
         with redirect_stderr(io.StringIO()):
             self.assertEqual(ts.main(['AB-9', '--review-dir', str(self.reviews)]), 1)
