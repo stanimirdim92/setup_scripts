@@ -155,7 +155,7 @@ run with that item named; `--check` alone MUST only report.
 #### Scenario: Branch behind the default branch
 - GIVEN the ticket branch is 85 commits behind `main`
 - WHEN the run starts
-- THEN the runner reports the number and acts per DEC-001
+- THEN the runner reports `behind main: 85 commits` and goes on (DEC-001)
 
 ### Requirement: REQ-005 — A status command
 Source: owner 2026-10-20 ("say which file to look at"; eleven messages asking where the run was)
@@ -232,11 +232,11 @@ each stop with a cause class (`decision`, `environment`, `harness`,
 
 ## Material Decisions
 
-### DEC-001 — A branch behind the default branch
-- Decision: OPEN (see Open Questions, Q1)
-- Alternatives: see Q1
-- Reason: REQ-004 scenario 3 needs a rule
-- Source: owner, pending
+### DEC-001 — A branch behind the default branch is reported, not merged
+- Decision: the pre-flight reports how many commits the ticket branch is behind the default branch and goes on. The runner never merges; the owner merges when he wants.
+- Alternatives: merge the default branch at pre-flight (Symphony's model; rejected: the owner does not want the runner to move the branch base); stop and ask every time (one more stop per run).
+- Reason: REQ-004 scenario 3 needs a rule. The owner's words: "main does not matter" to the run.
+- Source: owner decision 2026-10-20, in reply to Q1
 - Affects: REQ-004
 
 ### DEC-002 — The footer is the contract; prose detection is removed, not kept as a fallback
@@ -291,9 +291,4 @@ ticket keeps its state for `ticket-stats.py`. N/A otherwise.
 
 ## Open Questions
 
-OPEN QUESTION: Q1 — What does the runner do when the ticket branch is behind the default branch?
-- Option A (recommended — Symphony and the harness "pull first" rule both start from a current base; a stale branch produced the schema stop): merge the default branch into the ticket branch at pre-flight when it is behind, commit the merge, and stop only on a conflict.
-- Option B: report the number and continue; the owner merges.
-- Option C: stop and ask every time.
-Risk: Medium
-→ Decision needed before this spec can be approved.
+None. Q1 (a branch behind the default branch) was answered on 2026-10-20: DEC-001.
