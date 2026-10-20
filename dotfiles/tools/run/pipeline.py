@@ -270,7 +270,7 @@ def main(argv=None):
 
     def stage(prompt, name, *given):
         nonlocal total, step, last
-        if step:
+        if step or os.environ.get('HARNESS_INBOX'):    # ticket.py's word, before the first stage too
             stop_now, notes = inbox(step)
             if stop_now:
                 return 'stopped by the owner (TICKET STOP)', ''

@@ -542,6 +542,67 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         self.assertEqual(self.header(f'docs/specs/{T}-SPEC.md', 'Status'), 'Approved')   # the default kept it
         self.assertTrue(self.clean())
 
+    def test_new_run_after_a_build_conflict_goes_to_spec_first(self):
+        """The stop file and BUILD report of an earlier run are read before building again."""
+        self.conflict_fix_by_default = True
+        handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
+                                      text=True).stdout.strip()) / 'handoff'
+        handoff.mkdir(exist_ok=True)
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        with redirect_stdout(io.StringIO()):
+            tk.Run(T, self.out, self.claude, self.pipeline, 5, 'plan').go()        # approved plan, no build
+        (handoff / f'{T}-1-BUILD.md').write_text(self.BUILD_BLOCKED)                  # left by a run that stopped
+        (handoff / f'{T}-pipeline-stop.json').write_text(json.dumps({'why': 'BUILD BLOCKED — AB-11', 'stage_file': f'{T}-1-BUILD.md'}))
+        self.prompts.clear()
+        self.assertEqual(self.run_once(), tk.DONE)
+        self.assertEqual(self.prompts, [f'/spec {T} unattended', f'/plan {T}', 'pipeline.py', f'/ship {T}'])
+        self.prompts.clear()                                                          # the same report is not re-read
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        self.assertEqual(r.state.get('conflict_seen'), f'{T}-1-BUILD.md')
+
+    def test_owner_word_reaches_the_first_pipeline_stage(self):
+        self.out.chatty = True
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        with redirect_stdout(io.StringIO()):
+            tk.Run(T, self.out, self.claude, self.pipeline, 5, 'plan').go()        # stopped after the plan
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        self.out.say(r.thread, 'TICKET NOTE: use 200 http status')                   # written while it was stopped
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(r.go(), tk.DONE)
+        inbox = json.loads((r.dir / f'{T}-inbox.json').read_text())
+        self.assertEqual(inbox['notes'], ['use 200 http status'])                      # written before pipeline.py ran
+        self.out.say(r.thread, 'TICKET STOP')
+        r2 = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        r2.state['pipeline_done'] = False                                               # as if /build were still ahead
+        r2.state.pop('ship')
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(r2.go(), tk.STOPPED)
+        self.assertNotIn('pipeline.py', self.prompts[-1:])
+
+    def test_read_replies_get_a_reaction(self):
+        reacted = []
+        self.out.chatty = True
+        self.out.react = lambda ts, emoji='eyes': reacted.append((ts, emoji))
+        self.run_once()
+        self.out.reply(f'1A {T}')                                                       # TICKET ANSWERS
+        self.run_once()
+        self.assertEqual([e for _, e in reacted], ['eyes'])
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        r.progress('started')
+        self.out.say(r.thread, 'TICKET NOTE: x')
+        self.out.say(r.thread, 'PO says hi')
+        r.check_inbox()
+        self.assertEqual(len(reacted), 2)                                               # the note, not the talk
+
+    def test_slack_react_prompt(self):
+        sent = []
+        slack = tk.Slack(lambda p: (sent.append(p), (None, '{"ok": true}'))[1], 'C1', 'o@x.io')
+        slack.react('17.5')
+        self.assertIn('Add the :eyes: reaction to the message whose ts is 17.5 in the Slack channel C1', sent[0])
+        self.assertIn('mcp__Slack__slack_add_reaction', tk.SLACK_TOOLS)
+
     def test_pipeline_stop_reason_is_posted(self):
         self.pipeline_rc = 1
         self.run_once()

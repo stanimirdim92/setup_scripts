@@ -122,7 +122,8 @@ READ_TOOLS = tuple(f'mcp__{server}__{tool}'
                    for tool in _ATLASSIAN_READ) + tuple(
     f'mcp__{server}__{tool}' for server in ('figma', 'claude_ai_Figma') for tool in _FIGMA_READ)
 SLACK_TOOLS = ('mcp__claude_ai_Slack__slack_send_message', 'mcp__claude_ai_Slack__slack_read_thread',
-               'mcp__Slack__slack_send_message', 'mcp__Slack__slack_read_thread')
+               'mcp__claude_ai_Slack__slack_add_reaction', 'mcp__Slack__slack_send_message',
+               'mcp__Slack__slack_read_thread', 'mcp__Slack__slack_add_reaction')
 # What the runner may write to Jira: the ticket's status and a comment on it, nothing else (no field
 # edits, no new issues). Used only with HARNESS_JIRA_WRITE on (the default).
 _ATLASSIAN_WRITE = ('transitionJiraIssue', 'getTransitionsForJiraIssue', 'addCommentToJiraIssue',
@@ -274,6 +275,14 @@ class Slack:
         if not isinstance(data, dict) or not data.get('ts'):
             raise RuntimeError(f'Slack post failed: {error or out[:200]}')
         return str(data['ts'])
+
+    def react(self, ts, emoji='eyes'):
+        """Mark a reply as read with a reaction on it; a failure is printed, nothing more."""
+        error, out = self.run(f'Add the :{emoji}: reaction to the message whose ts is {ts} in the Slack channel '
+                              f'{self.channel} with your Slack reaction tool. Then print only JSON: {{"ok": true}}.')
+        data = first_json(out) if not error else None
+        if not isinstance(data, dict) or not data.get('ok'):
+            print(f'ticket: could not react to {ts}: {error or out[:120]}')
 
     def replies(self, ts):
         """The owner's replies that start with TICKET ANSWERS:, that part only."""
@@ -461,6 +470,9 @@ class Run:
                 except RuntimeError as err:
                     print(f'ticket: could not read thread {ts}: {err}')
             self.state.setdefault('inbox_seen', []).extend(r.get('ts') for r in new)
+            for r in new:                                   # 👀 on each STOP / NOTE read, where it was written
+                if re.search(r'\bTICKET (?:STOP|NOTE)\b', r['text'], re.I) and hasattr(self.out, 'react'):
+                    self.out.react(r['ts'])
             self.save()
             stop = 'TICKET STOP' if any(re.search(r'\bTICKET STOP\b', r['text'], re.I) for r in new) else False
             notes = '\n'.join(m.group(1).strip() for r in new for m in [re.search(r'TICKET NOTE:\s*(.+)', r['text'], re.I | re.S)] if m)
@@ -583,14 +595,25 @@ class Run:
             print(f'  spec and plan are approved; pipeline.py runs /build, /test and /review')
             if self.until == 'plan':
                 return self.stop_at('plan')
-            (self.dir / f'{t}-inbox.json').unlink(missing_ok=True)
+            conflict, report = self.last_build_conflict()
+            if conflict and self.state.get('conflict_seen') != report and self.state.get('conflicts', 0) < 2:
+                self.state['conflict_seen'] = report              # an earlier run's /build sent this to /spec
+                self.save()
+                result = self.back_to_spec(conflict, '/build')
+                return self.go() if result is None else result
+            stop, notes = self.check_inbox()                     # the owner's word before the first stage
+            if stop:
+                return self.stop(f'stopped by the owner ({stop})')
+            (self.dir / f'{t}-inbox.json').write_text(json.dumps({'after_step': 0, 'stop': False,
+                                                                   'notes': [notes] if notes else []}))
             rc = self.pipeline(t, self.budget, self.pipeline_step)
             if rc != 0:
                 stopped = self.dir / f'{t}-pipeline-stop.json'
                 info = json.loads(stopped.read_text()) if stopped.exists() else {}
-                report = self.dir / info.get('stage_file', '')
-                conflict = build_conflict(report.read_text()) if report.is_file() and report.name.endswith('BUILD.md') else ''
+                conflict, report = self.last_build_conflict()
                 if conflict and self.state.get('conflicts', 0) < 2:   # /build routed a blocker to /spec
+                    self.state['conflict_seen'] = report
+                    self.save()
                     result = self.back_to_spec(conflict, '/build')
                     return self.go() if result is None else result    # the spec moved: plan again, build again
                 return self.stop(f'pipeline.py: {info.get("why") or f"exited {rc}"}', info.get('stage_file', ''))
@@ -627,6 +650,9 @@ class Run:
         if not new:
             return WAITING
         ask['seen'] += [r.get('ts') for r in new]
+        for r in new:
+            if hasattr(self.out, 'react'):
+                self.out.react(r['ts'])
         self.save()
         for r in new:                                   # a question to the runner gets an answer in the thread
             if '?' in str(r.get('text', '')):
@@ -691,6 +717,19 @@ class Run:
             self.jira.comment(plain(text) + ('\n\nAnswers go in the Slack thread.'
                                              if getattr(self.out, 'chatty', False) else ''))
         return ts
+
+    def last_build_conflict(self):
+        """(conflict text, report file name) from the last pipeline stop when its BUILD report routed a
+        blocker to /spec, else ('', '')."""
+        stopped = self.dir / f'{self.ticket}-pipeline-stop.json'
+        try:
+            info = json.loads(stopped.read_text())
+        except (OSError, ValueError):
+            return '', ''
+        report = self.dir / str(info.get('stage_file', ''))
+        if not report.name.endswith('BUILD.md') or not report.is_file():
+            return '', ''
+        return build_conflict(report.read_text()), report.name
 
     def pipeline_step(self, prompt, cost, step=None):
         """pipeline.py finished a stage: post what its message file says, then hand it the owner's word.

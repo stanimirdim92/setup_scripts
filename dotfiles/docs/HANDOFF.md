@@ -176,6 +176,13 @@ The owner's decisions, in force:
   printed and ignored.
 - A stop posts to the run thread, leaves a one-line Jira comment via
   `stop()`, and the stage returns `stopped by the owner (<reason>)`.
+- Every read reply (TICKET ANSWERS / NOTE / STOP) gets a 👀 reaction
+  (`Slack.react`, `slack_add_reaction` in `SLACK_TOOLS`), so the owner sees
+  it was read. Before the pipeline starts, `go()` reads the inbox once and
+  writes `<T>-inbox.json` with `after_step: 0`; `pipeline.py` reads it
+  before its first stage too. An earlier run's BUILD conflict
+  (`last_build_conflict()`, remembered in state `conflict_seen`) goes to
+  `/spec` before anything is built again.
 
 ### Slack
 
