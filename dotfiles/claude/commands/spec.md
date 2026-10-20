@@ -114,5 +114,8 @@ works without the conversation transcript.
 - Do not ask in the chat, and never set Approved.
 
 A later `/spec <TICKET> decisions: …` from `ticket.py` records each answer as
-a `DEC-###` decided by the owner. `ticket.py` sets Approved only when the
-owner's own reply names the ticket. That reply is the explicit human approval.
+a `DEC-###` decided by the owner. When it names a default the owner changes
+("the owner decides instead of the default: …"), rewrite that `DEC-###` with
+the owner's choice, the default as the alternative that lost, and
+`Decided by: owner`. `ticket.py` sets Approved only when the owner's own
+reply names the ticket. That reply is the explicit human approval.

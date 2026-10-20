@@ -100,6 +100,11 @@ owner asked for the run to need fewer restarts. Taken from Symphony
   off and put back, so a failure does not loop. One watcher per checkout
   serializes the starts; the per-ticket lock covers runs started by hand.
 
+- The Slack message numbers the defaults it took and lists the owner's own
+  earlier decisions. `D<n>: …` in the reply changes a default: `/spec`
+  rewrites that DEC as the owner's, with the default as the alternative
+  that lost. Editing the spec by hand is no longer the only way.
+
 Rejected — a Jira automation webhook into the owner's machine. It needs a
 public endpoint; polling needs nothing and 90 s is soon enough.
 

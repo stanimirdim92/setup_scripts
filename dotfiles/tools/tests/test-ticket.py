@@ -132,6 +132,8 @@ class Ticket(unittest.TestCase):
 
     def claude(self, prompt):
         self.prompts.append(prompt.splitlines()[0])
+        if 'decisions:' in prompt:
+            self.spec_prompt = prompt
         first = prompt.split()[0]
         spec = Path(f'docs/specs/{T}-SPEC.md')
         if first == '/jira-ticket':
@@ -145,8 +147,12 @@ class Ticket(unittest.TestCase):
             spec.write_text(DRAFT)
         elif first == '/spec' and 'decisions:' in prompt:
             text = spec.read_text()
-            text = re.sub(r'\nOPEN QUESTION:.*?→[^\n]*\n', '\n### DEC-002 — Soft-deleted\nDecided by: owner\n',
-                          text, flags=re.S)
+            if 'Q1=' in prompt:
+                text = re.sub(r'\nOPEN QUESTION:.*?→[^\n]*\n', '\n### DEC-002 — Soft-deleted\nDecided by: owner\n',
+                              text, flags=re.S)
+            if 'DEC-001' in prompt:
+                text = text.replace('- Chosen: 3. Lost: 5.\nDecided by: default (unattended, ADR 0115)',
+                                    '- Chosen: 5. Lost: 3 (the default).\nDecided by: owner')
             spec.write_text(text)
         elif first == '/plan':
             Path('docs/tasks').mkdir(exist_ok=True)
@@ -201,6 +207,39 @@ class Ticket(unittest.TestCase):
         before = list(self.prompts)
         self.assertEqual(self.run_once(), tk.DONE)                   # a rerun ships nothing twice
         self.assertEqual(self.prompts, before)
+
+    def test_ask_numbers_the_defaults_and_lists_the_owner_decisions(self):
+        self.run_once()
+        ask = self.out.posts[-1][1]
+        self.assertIn(':gear: *Decided by default*  _Low/Medium risk · to change one, reply `D<n>: what you want instead`_', ask)
+        self.assertIn('      • *D1*  DEC-001 — Retries before failed', ask)
+        self.assertNotIn('Your decisions', ask)
+        self.assertIn('`D<n>: …` changes a default; put those last.', ask)
+        self.out.reply('D1: 5 retries, the API is flaky')
+        self.assertEqual(self.run_once(), tk.WAITING)
+        self.assertIn('- DEC-001 — Retries before failed: the owner decides instead of the default: 5 retries, the API is flaky',
+                      self.spec_prompt)
+        self.assertIn('"Decided by: owner"', self.spec_prompt)
+        ask = self.out.posts[-1][1]
+        self.assertNotIn('Decided by default', ask)                   # the default is now the owner's decision
+        self.assertIn(':bust_in_silhouette: *Your decisions*\n      • DEC-001 — Retries before failed', ask)
+        self.assertIn(':red_circle: *1. Soft-deleted', ask)            # the High question is still open
+        self.assertEqual(self.header(f'docs/specs/{T}-SPEC.md', 'Status'), 'Draft')
+
+    def test_unknown_default_number_changes_nothing(self):
+        self.run_once()
+        self.out.reply('D4: something')
+        self.assertEqual(self.run_once(), tk.WAITING)
+        self.assertIn(':warning: Not a question and option here: D4. Nothing changed.', self.out.posts[-1][1])
+        self.assertEqual([p for p in self.prompts if 'decisions:' in p], [])
+
+    def test_answer_change_and_approval_in_one_reply(self):
+        self.run_once()
+        self.out.reply(f'1A {T} D1: 5 retries')
+        self.assertEqual(self.run_once(), tk.DONE)
+        self.assertIn('Q1=Option A', self.spec_prompt)
+        self.assertIn('5 retries', self.spec_prompt)
+        self.assertEqual(self.header(f'docs/specs/{T}-SPEC.md', 'Status'), 'Approved')
 
     def test_approval_waits_while_a_question_is_open(self):
         self.run_once()
@@ -670,6 +709,19 @@ class Parsing(unittest.TestCase):
         for word in ('go', 'OK', 'approved', '1A approve'):
             self.assertTrue(tk.parse_reply(word, 'AB-11')[1], word)
         self.assertFalse(tk.parse_reply('1A good', 'AB-11')[1])
+
+    def test_split_redo(self):
+        self.assertEqual(tk.split_redo('1A ok D1: 5 retries, D2 = keep both; and log it'),
+                         ('1A ok ', {1: '5 retries', 2: 'keep both; and log it'}))
+        self.assertEqual(tk.split_redo('1A ok'), ('1A ok', {}))
+        self.assertEqual(tk.split_redo('D1: it is ok as is'), ('', {1: 'it is ok as is'}))
+        self.assertEqual(tk.split_redo('see DEC-003: fine'), ('see DEC-003: fine', {}))   # not a D<n>
+
+    def test_decisions(self):
+        text = '### DEC-001 — A\n- x\nDecided by: default (unattended)\n\n### DEC-002 — B\nDecided by: owner, 2026\n\n### DEC-003 — C\n- no line\n\n## Next\n'
+        self.assertEqual([(d['title'], d['by']) for d in tk.decisions(text)],
+                         [('DEC-001 — A', 'default'), ('DEC-002 — B', 'owner'), ('DEC-003 — C', '')])
+        self.assertEqual(tk.defaults_taken(text), ['DEC-001 — A'])
 
     def test_options_with_reason_and_digit(self):
         qs = tk.open_questions('OPEN QUESTION: Q1 — detected\n\n'

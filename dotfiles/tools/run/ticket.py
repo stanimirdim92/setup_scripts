@@ -9,12 +9,14 @@ then waits for your Slack answer (--wait hours) or stops; run it again to go on:
                                          DEC "decided by default"; High-risk
                                          questions stay open.
     ask on Slack                         one message per ticket: the open
-                                         questions and the defaults taken.
+                                         questions, the defaults taken (D1, D2 …)
+                                         and your earlier decisions.
     your reply in its thread             starts with "TICKET ANSWERS:" (other
                                          replies are talk, say with the PO);
                                          "1A 2B" answers; the ticket id ("AB-11"
                                          or "AB11"), "approved", "go" or "ok"
-                                         approves the spec.
+                                         approves the spec; "D1: …", last,
+                                         changes a default.
     /plan <TICKET>                       a clean plan (check-plan passes, no
                                          SPEC CONFLICT) is approved by the
                                          runner and goes on; any other plan is
@@ -155,17 +157,27 @@ def open_questions(text):
     return out
 
 
-def defaults_taken(text):
-    """DEC headings whose body says the runner took the recommended option."""
-    found, title = [], None
+def decisions(text):
+    """The spec's DEC headings with who decided each: 'default' (the runner took the recommended option),
+    'owner', or '' when the body says nothing, in spec order."""
+    found, cur = [], None
     for raw in text.splitlines():
         m = re.match(r'^###\s+(DEC-\d{3}\b.*)', raw)
         if m:
-            title = m.group(1).strip()
-        elif title and re.search(r'decided by:?\s*default', raw, re.I):
-            found.append(title)
-            title = None
+            cur = {'title': m.group(1).strip(), 'by': ''}
+            found.append(cur)
+        elif cur is not None and cur['by'] == '':
+            m = re.search(r'decided by:?\s*(default|owner)', raw, re.I)
+            if m:
+                cur['by'] = m.group(1).lower()
+            elif raw.startswith('#'):
+                cur = None
     return found
+
+
+def defaults_taken(text):
+    """DEC headings whose body says the runner took the recommended option."""
+    return [d['title'] for d in decisions(text) if d['by'] == 'default']
 
 
 def header(text, key):
@@ -198,6 +210,20 @@ def answers_part(text):
     """The text after "TICKET ANSWERS:", or None: any other reply in the thread is conversation."""
     m = ANSWERS.search(text)
     return text[m.end():] if m else None
+
+
+REDO = re.compile(r'(?<![\w-])D(\d+)\s*[:=]\s*', re.I)
+
+
+def split_redo(text):
+    """(the reply before its first "D<n>: …", {n: what the owner wants instead}): a default the owner
+    changes. Each D<n> runs to the next one, so they come last in the reply."""
+    parts = REDO.split(text)
+    head, redo = parts[0], {}
+    for n, what in zip(parts[1::2], parts[2::2]):
+        if what.strip():
+            redo[int(n)] = what.strip().rstrip(',;')
+    return head, redo
 
 
 def parse_reply(text, ticket):
@@ -362,16 +388,22 @@ def ask_text(ticket, spec_text):
         lines.append(f'{RISK_ICON.get(q["risk"], ":white_circle:")} *{q["n"]}. {title}*  '
                      f'_{q["risk"] or "risk not stated"}_')
         lines += [option_line(k, v) for k, v in q['options'].items()]
-    taken = defaults_taken(spec_text)
+    decided = decisions(spec_text)
+    taken = [d['title'] for d in decided if d['by'] == 'default']
     if taken:
-        lines.append(':gear: *Decided by default*  _Low/Medium risk · to change one, edit the spec before you approve_')
-        lines += [f'      • {t}' for t in taken]
+        lines.append(':gear: *Decided by default*  _Low/Medium risk · to change one, reply `D<n>: what you want instead`_')
+        lines += [f'      • *D{i}*  {t}' for i, t in enumerate(taken, 1)]
+    yours = [d['title'] for d in decided if d['by'] == 'owner']
+    if yours:
+        lines.append(':bust_in_silhouette: *Your decisions*')
+        lines += [f'      • {t}' for t in yours]
     lines.append(RULE)
     example = 'TICKET ANSWERS: ' + ' '.join(f'{q["n"]}{q["recommended"] or "A"}' for q in qs) + (' ok' if qs else 'ok')
     lines.append(f':speech_balloon: Reply in this thread:  `{example}`')
     lines.append('_Only replies that start with TICKET ANSWERS: are read; the rest is conversation. '
-                 + ('`ok`, `go` or the ticket id approves once nothing is open._' if qs else
-                    '`ok`, `go` or the ticket id approves._'))
+                 + ('`ok`, `go` or the ticket id approves once nothing is open.' if qs else
+                    '`ok`, `go` or the ticket id approves.')
+                 + (' `D<n>: …` changes a default; put those last._' if taken else '_'))
     return '\n'.join(lines)
 
 
@@ -589,25 +621,34 @@ class Run:
                     f'file.\n\nQuestion: {r["text"].strip()}')
                 self.out.post(f':speech_balloon: *Answer*\n{answer.strip() if not error else "could not answer: " + error}',
                               thread=ask['ts'])
-        answers, approved, defaults = {}, False, False
+        answers, approved, defaults, redo = {}, False, False, {}
         for r in new:
-            a, ok, d = parse_reply(str(r.get('text', '')), t)
+            head, changes = split_redo(str(r.get('text', '')))
+            a, ok, d = parse_reply(head, t)
             answers.update(a)
+            redo.update(changes)
             approved, defaults = approved or ok, defaults or d
         qs = {q['n']: q for q in open_questions(text)}
+        taken = defaults_taken(text)
         if defaults:
             for n, q in qs.items():
                 if n not in answers and q['recommended'] and q['risk'] != 'High':
                     answers[n] = q['recommended']
-        bad = [f'{n}{a}' for n, a in answers.items() if n not in qs or a not in qs[n]['options']]
+        bad = [f'{n}{a}' for n, a in answers.items() if n not in qs or a not in qs[n]['options']] + \
+            [f'D{n}' for n in redo if not 1 <= n <= len(taken)]
         if bad:
             self.out.post(f':warning: Not a question and option here: {" ".join(bad)}. Nothing changed.',
                           thread=ask['ts'])
             return WAITING
-        if answers:
+        if answers or redo:
             given = ', '.join(f'Q{n}=Option {a}: {qs[n]["options"][a]}' for n, a in sorted(answers.items()))
+            changed = '\n'.join(f'- {taken[n - 1]}: the owner decides instead of the default: {what}'
+                                for n, what in sorted(redo.items()))
             error, _ = self.stage(f'/spec {t} decisions: {given}\nRecord each as a DEC decided by '
-                                  f'{self.out_owner()}; do not set Approved.')
+                                  f'{self.out_owner()}; do not set Approved.'
+                                  + (f'\n\nThese defaults change; rewrite each DEC with the owner\'s choice, the '
+                                     f'default as the alternative that lost, and "Decided by: owner":\n{changed}'
+                                     if changed else ''))
             if error:
                 return self.stop(f'/spec decisions {error}')
             self.commit(f'{t}: spec decisions from the owner')
