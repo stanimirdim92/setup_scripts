@@ -82,6 +82,27 @@ class FakeOut:
                                                'ts': f'r{len(self.posts)}'})
 
 
+class FakeJira:
+    """The ticket in Jira: a status to read, and what the run wrote."""
+    def __init__(self, status='Selected for Development', category='To Do'):
+        self.set(status, category)
+        self.moves, self.comments = [], []
+
+    def set(self, status, category):
+        self._status = {'status': status, 'category': category}
+
+    def status(self):
+        return self._status
+
+    def move(self, statuses):
+        self.moves.append(statuses)
+        return True
+
+    def comment(self, text):
+        self.comments.append(text)
+        return True
+
+
 class Ticket(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -436,33 +457,98 @@ class Ticket(unittest.TestCase):
         self.assertFalse(lock.exists())
 
     def test_jira_status_stops_before_the_next_stage(self):
-        status = {'status': 'In Progress', 'category': 'In Progress'}
-        r = lambda: tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=lambda: status)
+        jira = FakeJira('In Progress', 'In Progress')
+        r = lambda: tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=jira)
         with redirect_stdout(io.StringIO()):
             self.assertEqual(r().go(), tk.WAITING)                    # an active status changes nothing
         self.out.reply(f'1A {T}')
-        status = {'status': 'Done', 'category': 'Done'}
+        jira.set('Done', 'Done')
         with redirect_stdout(io.StringIO()):
             self.assertEqual(r().go(), tk.STOPPED)
         self.assertIn('stopped by the owner (Jira status Done)', self.out.posts[-1][1])
         self.assertNotIn(f'/plan {T}', self.prompts)
-        status = {'status': 'Blocked', 'category': 'To Do'}          # named in HARNESS_JIRA_STOP
+        jira.set('Blocked', 'To Do')                                  # named in HARNESS_JIRA_STOP
         self.assertEqual(r().jira_stop(), 'Blocked')
-        status = {'status': 'Waiting for PO', 'category': 'To Do'}
+        jira.set('Waiting for PO', 'To Do')
         self.assertEqual(r().jira_stop(), '')
         os.environ['HARNESS_JIRA_STOP'] = 'Waiting for PO'
         try:
             self.assertEqual(r().jira_stop(), 'Waiting for PO')
             os.environ['HARNESS_JIRA_STOP'] = '0'
-            status = {'status': 'Done', 'category': 'Done'}
+            jira.set('Done', 'Done')
             self.assertEqual(r().jira_stop(), '')                    # the check is off
         finally:
             del os.environ['HARNESS_JIRA_STOP']
 
+    def test_jira_mirrors_the_run(self):
+        jira = FakeJira()
+        run = lambda: tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=jira)
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(run().go(), tk.WAITING)
+        self.assertEqual(jira.moves, ['In Progress'])                 # once, when the run starts
+        self.assertEqual(len(jira.comments), 1)
+        ask = jira.comments[0]
+        self.assertIn('1. Soft-deleted advertisers in the export  High', ask)
+        self.assertIn('A  never (recommended)', ask)
+        self.assertNotIn(':red_circle:', ask)
+        self.assertNotIn('*', ask)
+        self.out.reply(f'1A {T}')
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(run().go(), tk.DONE)
+        self.assertEqual(jira.moves, ['In Progress', 'Code Review, In Review'])   # GO: to review
+        self.assertTrue(jira.comments[-1].startswith('/ship: GO'), jira.comments[-1])
+        self.assertIn('Branch: feature/AB-11 · HEAD: ', jira.comments[-1])
+        self.assertIn('Nothing is pushed', jira.comments[-1])
+
+    def test_jira_gets_the_stop_and_no_review_move_on_no_go(self):
+        jira = FakeJira()
+        real = self.claude
+        self.claude = lambda prompt: (None, '**NO-GO** — rollback needed') if prompt.startswith('/ship') else real(prompt)
+        with redirect_stdout(io.StringIO()):
+            tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=jira).go()
+        self.out.reply(f'1A {T}')
+        with redirect_stdout(io.StringIO()):
+            self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=jira).go(), tk.DONE)
+        self.assertEqual(jira.moves, ['In Progress'])
+        self.assertTrue(jira.comments[-1].startswith('/ship: NO-GO'))
+        self.pipeline_rc = 1
+        jira2 = FakeJira()
+        self.out = FakeOut()
+        self.tmp2 = None
+        r = tk.Run('AB-12', self.out, lambda p: (None, 'x'), self.pipeline, 5, jira=jira2)
+        with redirect_stdout(io.StringIO()):
+            r.stop('pipeline.py: *VERIFY FAIL*')
+        self.assertEqual(jira2.comments, ['ticket.py stopped: pipeline.py: VERIFY FAIL'])
+
+    def test_jira_writes_are_moves_and_comments_only_and_can_be_off(self):
+        for name in tk.JIRA_WRITE_TOOLS:
+            self.assertRegex(name, r'(?i)transition|comment')
+            self.assertNotRegex(name, r'(?i)create|delete|editJiraIssue$|destructive')
+        sent = []
+        jira = tk.Jira(lambda p, tools: (sent.append((p, tools)), (None, '{"ok": true, "status": "In Progress"}'))[1], T)
+        self.assertTrue(jira.move('In Progress'))
+        self.assertIn('move the issue AB-11 to the first of these statuses', sent[0][0])
+        self.assertTrue(set(tk.JIRA_WRITE_TOOLS) <= set(sent[0][1]))
+        self.assertTrue(jira.comment('hello\nworld'))
+        self.assertTrue(sent[1][0].endswith('---\nhello\nworld'))
+        self.assertEqual(jira.status(), {'ok': True, 'status': 'In Progress'})
+        self.assertNotIn(tk.JIRA_WRITE_TOOLS[0], sent[2][1])         # a read uses the read tools only
+        off = tk.Jira(lambda p, tools: (sent.append(p), (None, '{"ok": true}'))[1], T, write=False)
+        self.assertFalse(off.move('In Progress'))
+        self.assertFalse(off.comment('x'))
+        self.assertEqual(len(sent), 3)                                 # nothing ran
+
+    def test_plain(self):
+        self.assertEqual(tk.plain(':question: *AB-11 · Spec needs 1 answer*\n`docs/x.md` · Draft\n      • *A* :star:  never'),
+                         'AB-11 · Spec needs 1 answer\ndocs/x.md · Draft\n      • A  never')
+        self.assertEqual(tk.plain('<@U1> _Low/Medium risk · edit the spec_'), 'Low/Medium risk · edit the spec')
+        self.assertEqual(tk.plain('followers_min and followers_max'), 'followers_min and followers_max')
+
     def test_unreadable_jira_status_does_not_stop(self):
-        def broken():
-            raise RuntimeError('no tool')
-        r = tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=broken)
+        class Broken(FakeJira):
+            def status(self):
+                raise RuntimeError('no tool')
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=Broken())
         with redirect_stdout(io.StringIO()) as out:
             self.assertEqual(r.check_inbox(), (False, ''))
         self.assertIn('could not read the Jira status: no tool', out.getvalue())

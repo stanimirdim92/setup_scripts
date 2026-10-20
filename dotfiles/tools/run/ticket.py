@@ -53,6 +53,14 @@ status named in HARNESS_JIRA_STOP (default "Blocked, On Hold, Paused,
 Cancelled"), stops the run before the next stage, like TICKET STOP.
 HARNESS_JIRA_STOP=0 turns the check off.
 
+Jira mirrors the run (HARNESS_JIRA_WRITE, default on; 0 turns it off): a run
+moves the ticket to HARNESS_JIRA_START ("In Progress") when it starts, the
+questions it asks in Slack go on the ticket as a comment too, a stop leaves a
+one-line comment, and the /ship result is a comment with the branch, HEAD
+and what the run spent; GO moves the ticket to HARNESS_JIRA_REVIEW ("Code
+Review, In Review": the first its workflow offers). Only the status and
+comments are written, nothing else.
+
 Exit: 0 the ticket reached a /ship result · 1 stopped on a problem · 2 not a
 ticket checkout · 3 waiting for your answer · 5 another run holds the ticket.
 """
@@ -97,6 +105,16 @@ READ_TOOLS = tuple(f'mcp__{server}__{tool}'
     f'mcp__{server}__{tool}' for server in ('figma', 'claude_ai_Figma') for tool in _FIGMA_READ)
 SLACK_TOOLS = ('mcp__claude_ai_Slack__slack_send_message', 'mcp__claude_ai_Slack__slack_read_thread',
                'mcp__Slack__slack_send_message', 'mcp__Slack__slack_read_thread')
+# What the runner may write to Jira: the ticket's status and a comment on it, nothing else (no field
+# edits, no new issues). Used only with HARNESS_JIRA_WRITE on (the default).
+_ATLASSIAN_WRITE = ('transitionJiraIssue', 'getTransitionsForJiraIssue', 'addCommentToJiraIssue',
+                    'addOrEditJiraIssueComment')
+JIRA_WRITE_TOOLS = tuple(f'mcp__{server}__{tool}'
+                         for server in ('jira', 'atlassian', 'claude_ai_Atlassian', 'claude_ai_Atlassian_MCP',
+                                        'claude_ai_Atlassian_Rovo')
+                         for tool in _ATLASSIAN_WRITE)
+JIRA_START = 'In Progress'                  # HARNESS_JIRA_START: where a run moves the ticket when it starts
+JIRA_REVIEW = 'Code Review, In Review'     # HARNESS_JIRA_REVIEW: where a GO moves it; the first that exists
 CHECK_PLAN = HERE.parents[1] / 'claude/skills/planning-and-task-breakdown/scripts/check-plan.py'
 
 
@@ -236,6 +254,52 @@ class Slack:
         return self.owner in author or bool(self.mention and self.mention.lower() in author)
 
 
+class Jira:
+    """The ticket in Jira, through `claude -p` and the Atlassian tools: its status to read, and with
+    HARNESS_JIRA_WRITE on, a comment and the status moves the run makes. A failed write is printed and
+    the run goes on: Jira mirrors the run, it does not gate it."""
+
+    def __init__(self, run, ticket, write=True):
+        self.run, self.ticket, self.write = run, ticket, write
+
+    def status(self):
+        """{status, category} of the ticket; RuntimeError when it cannot be read."""
+        error, out = self.run(f'Read the Jira issue {self.ticket} with your Jira tool (getJiraIssue; find the '
+                              'cloudId with getAccessibleAtlassianResources if it asks for one). Print only JSON: '
+                              '{"status": "<status name>", "category": "<its status category: To Do, In Progress or '
+                              'Done>"}.', READ_TOOLS)
+        data = first_json(out) if not error else None
+        if not isinstance(data, dict):
+            raise RuntimeError(error or out[:200])
+        return data
+
+    def comment(self, text):
+        """Add `text` as a comment on the ticket. Returns True when Jira confirmed it."""
+        return self.change(f'Add this comment to the Jira issue {self.ticket} with your Jira tool, as it is, '
+                           f'keeping every line break; change nothing in it. Then print only JSON: '
+                           f'{{"ok": true}}.\n\n---\n{text}', 'comment')
+
+    def move(self, statuses):
+        """Move the ticket to the first status in `statuses` (comma-separated) that its workflow offers."""
+        wanted = [s.strip() for s in statuses.split(',') if s.strip()]
+        if not wanted:
+            return False
+        return self.change(f'With your Jira tools, move the issue {self.ticket} to the first of these statuses that '
+                           f'its transitions offer: {", ".join(wanted)}. If it is in that status already, or none '
+                           f'of them is offered, change nothing. Then print only JSON: {{"ok": true, "status": '
+                           f'"<its status now>"}}.', f'move to {wanted[0]}')
+
+    def change(self, prompt, what):
+        if not self.write:
+            return False
+        error, out = self.run(prompt, READ_TOOLS + JIRA_WRITE_TOOLS)
+        data = first_json(out) if not error else None
+        if not isinstance(data, dict) or not data.get('ok'):
+            print(f'ticket: Jira {what} failed: {error or out[:200]}')
+            return False
+        return True
+
+
 class Terminal:
     """No Slack configured: print, keep a file, and take the reply from --reply."""
 
@@ -357,7 +421,7 @@ class Run:
         if not self.jira or stopping.strip() in ('0', ''):
             return ''
         try:
-            status = self.jira() or {}
+            status = self.jira.status() or {}
         except RuntimeError as err:
             print(f'ticket: could not read the Jira status: {err}')
             return ''
@@ -383,6 +447,7 @@ class Run:
         self.last_file = saved.name
         print(f'    saved: {saved}')
         self.state['log'].append(prompt.splitlines()[0])
+        self.state['cost'] = round(self.state.get('cost', 0) + (cost or 0), 2)
         self.save()
         return error, text
 
@@ -411,6 +476,8 @@ class Run:
             self.out.post(f'{text}\nLog: `{self.dir}`')
         except RuntimeError as err:
             print(f'ticket: could not post the stop: {err}')
+        if self.jira:
+            self.jira.comment(f'ticket.py stopped: {plain(why)}')
         return STOPPED
 
     def go(self):
@@ -418,6 +485,10 @@ class Run:
         if self.state.get('ship'):
             print(f'ticket: {t} already reached /ship: {self.state["ship"]}')
             return DONE
+        if self.jira and not self.state.get('jira_started'):
+            if self.jira.move(os.environ.get('HARNESS_JIRA_START', JIRA_START)):
+                self.state['jira_started'] = True
+                self.save()
         if not self.spec.exists():
             intake = Path(f'docs/specs/{t}-intake.md')
             for prompt in (f'/jira-ticket {t}', f'/spec {t} unattended'):
@@ -463,6 +534,12 @@ class Run:
         self.out.post(f'{icon} *{t} · /ship: {result}*\n:lock: Nothing is pushed; you push. Report: `{self.dir}`')
         self.state['ship'] = result
         self.save()
+        if self.jira:
+            self.jira.comment(f'/ship: {result}\nBranch: {pl.git("symbolic-ref", "--short", "-q", "HEAD")[1]} · '
+                              f'HEAD: {pl.git("rev-parse", "--short", "HEAD")[1]} · spent: ${self.state.get("cost", 0):.2f}\n'
+                              f'Nothing is pushed; the owner pushes. Report: {self.dir}')
+            if result.startswith('GO'):
+                self.jira.move(os.environ.get('HARNESS_JIRA_REVIEW', JIRA_REVIEW))
         return DONE
 
     def settle_spec(self):
@@ -470,7 +547,7 @@ class Run:
         digest = hashlib.sha1(text.encode()).hexdigest()
         ask = self.state.get('ask')
         if not ask or ask.get('spec') != digest:
-            self.state['ask'] = {'ts': self.out.post(ask_text(t, text)), 'spec': digest, 'seen': []}
+            self.state['ask'] = {'ts': self.ask(text), 'spec': digest, 'seen': []}
             self.save()
             return WAITING
         new = [r for r in self.out.replies(ask['ts']) if r.get('ts') not in ask['seen']]
@@ -520,15 +597,24 @@ class Run:
         if approved:
             still = ', '.join('Q%d' % q['n'] for q in left)
             self.out.post(f':hourglass_flowing_sand: Still open: {still}. Answer them, then approve.', thread=ask['ts'])
-        self.state['ask'] = {'ts': self.out.post(ask_text(t, text)), 'spec': hashlib.sha1(text.encode()).hexdigest(),
-                             'seen': []}
+        self.state['ask'] = {'ts': self.ask(text), 'spec': hashlib.sha1(text.encode()).hexdigest(), 'seen': []}
         self.save()
         return WAITING
+
+    def ask(self, spec_text):
+        """Post the questions and defaults; the same text, without Slack markup, goes on the Jira ticket."""
+        text = ask_text(self.ticket, spec_text)
+        ts = self.out.post(text)
+        if self.jira:
+            self.jira.comment(plain(text) + ('\n\nAnswers go in the Slack thread.'
+                                             if getattr(self.out, 'chatty', False) else ''))
+        return ts
 
     def pipeline_step(self, prompt, cost, step=None):
         """pipeline.py finished a stage: post what its message file says, then hand it the owner's word.
         `step` is pipeline.py's own count, which runs on from an earlier run it picked up."""
         self.pipeline_steps = int(step) if step else getattr(self, 'pipeline_steps', 0) + 1
+        self.state['cost'] = round(self.state.get('cost', 0) + float(cost or 0), 2)
         stop, notes = False, ''
         try:
             self.pipeline_progress(prompt, cost)
@@ -626,6 +712,14 @@ def ticket_key(arg):
     """The Jira key from "LD-503" or a ticket URL such as https://x.atlassian.net/browse/LD-503."""
     m = re.search(r'(?<![A-Za-z0-9])([A-Z][A-Z0-9]+-\d+)(?![0-9])', arg)
     return m.group(1) if m else None
+
+
+def plain(text):
+    """Slack mrkdwn as plain text for a Jira comment: no emoji codes, bold, code or mentions."""
+    text = re.sub(r':[a-z0-9_+-]+:\s?', '', text)
+    text = re.sub(r'<@[A-Z0-9]+>\s?', '', text)
+    text = re.sub(r'(?<!\w)[*_`](.+?)[*_`](?!\w)', r'\1', text)
+    return '\n'.join(l.rstrip() for l in text.splitlines()).strip()
 
 
 def digest(text, lines=6, chars=700):
@@ -832,15 +926,7 @@ def drive(args, log):
                 step(m.group(1), m.group(2), m.group(3))
         return proc.wait()
 
-    def jira():
-        """The ticket's Jira status, read with the read-only tools on the small model: {status, category}."""
-        error, out = claude(f'Read the Jira issue {key} with your Jira tool (getJiraIssue; find the cloudId with '
-                            'getAccessibleAtlassianResources if it asks for one). Print only JSON: {"status": "<status '
-                            'name>", "category": "<its status category: To Do, In Progress or Done>"}.', allowed)
-        data = first_json(out) if not error else None
-        if not isinstance(data, dict):
-            raise RuntimeError(error or out[:200])
-        return data
+    jira = Jira(claude, key, write=os.environ.get('HARNESS_JIRA_WRITE', '1').strip() not in ('0', ''))
 
     channel, owner = os.environ.get('HARNESS_SLACK_CHANNEL'), os.environ.get('HARNESS_SLACK_OWNER')
     if channel and owner:

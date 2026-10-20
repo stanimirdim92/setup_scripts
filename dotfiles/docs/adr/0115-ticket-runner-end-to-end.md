@@ -81,7 +81,15 @@ owner asked for the run to need fewer restarts. Taken from Symphony
 - The Jira status is a stop switch, as moving an issue out of an active state
   is in Symphony: Done, or a status named in `HARNESS_JIRA_STOP`, stops the
   run before its next stage, like `TICKET STOP`. The runner reads Jira with
-  the read-only tools on the small model; it still writes nothing to Jira.
+  the read-only tools on the small model.
+- Jira mirrors the run, as the Jira-to-PR pipelines do (In Progress at
+  start, the PR link and In Review at the end): the start moves the ticket
+  to In Progress, the Slack questions and a stop go on it as comments, and
+  the `/ship` result is a comment with branch, HEAD and spend; GO moves it
+  to Code Review. The runner may only move the status and comment
+  (`JIRA_WRITE_TOOLS`); it edits no field and opens no issue, and
+  `HARNESS_JIRA_WRITE=0` keeps Jira read-only. This amends "Nothing here
+  writes to Jira" above for these two writes.
 
 Rejected — restore a live session across a runner crash. Symphony does not
 either; the retry covers the common case (the API, the network) and the lock
