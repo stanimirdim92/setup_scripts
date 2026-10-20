@@ -881,9 +881,17 @@ def has_conflict(plan):
         bool(re.search(r'SPEC CONFLICT', header(plan, 'Handoff') or ''))
 
 
+SPEC_SIGNALS = re.compile(r'spec conflict|contradicts? the (?:approved )?spec|(?:change|edit|revise|amend)s? (?:to )?the spec|'
+                          r'spec (?:must|needs to|has to) (?:be )?chang|goes to `?/spec|routes? (?:to|toward) `?/spec|route: `?/spec', re.I)
+
+
 def build_conflict(report):
-    """The blockers a BUILD BLOCKED report routes to /spec (build.md §3: each blocker names its stage): the
-    top-level list items or paragraphs that name `/spec` and a conflict, with their indented lines. Else ''."""
+    """What a BUILD BLOCKED report sends to /spec, or ''. Preferably the top-level items that route a blocker
+    to `/spec` (build.md §3), with their indented lines; otherwise, when the report says the spec itself
+    is in the way (it contradicts the code, it must change), its text up to the task table. A blocker that
+    is not about the spec (a decision, an environment) returns ''."""
+    if not re.search(r'BUILD BLOCKED', report):
+        return ''
     blocks, cur = [], []
     for line in report.splitlines():
         new = re.match(r'^(?:\d+\.|[-*])\s', line) or line.startswith('#') or not line.strip()
@@ -895,7 +903,12 @@ def build_conflict(report):
     blocks.append('\n'.join(cur))
     routed = re.compile(r'(?:goes to|routes? (?:to|toward)|route:|→)\s*`?/spec\b', re.I)
     hits = [b for b in blocks if routed.search(b) and re.search(r'spec conflict', b, re.I)]
-    return '\n'.join(hits).strip()[:4000]
+    if hits:
+        return '\n'.join(hits).strip()[:4000]
+    if not SPEC_SIGNALS.search(report):
+        return ''
+    head = re.split(r'\n(?=\|)|\n#+\s*(?:Task state|Status per task|Checkpoints|Commits|Verification)', report, maxsplit=1)[0]
+    return head.strip()[:4000]
 
 
 def conflict_text(plan):
