@@ -91,6 +91,18 @@ owner asked for the run to need fewer restarts. Taken from Symphony
   `HARNESS_JIRA_WRITE=0` keeps Jira read-only. This amends "Nothing here
   writes to Jira" above for these two writes.
 
+- `ticket.py --watch` starts runs from Jira, as Symphony polls its board:
+  every 90 s it searches for open issues with the label `harness-run` and
+  starts one run per issue, two at once, most urgent first. The label is the
+  claim (the DIY pipelines use a label too, so a person chooses what the
+  harness takes): put on, it starts; taken off, the run stops before its
+  next stage. A run that stopped starts again only after the label is taken
+  off and put back, so a failure does not loop. One watcher per checkout
+  serializes the starts; the per-ticket lock covers runs started by hand.
+
+Rejected — a Jira automation webhook into the owner's machine. It needs a
+public endpoint; polling needs nothing and 90 s is soon enough.
+
 Rejected — restore a live session across a runner crash. Symphony does not
 either; the retry covers the common case (the API, the network) and the lock
 takeover covers the rest.

@@ -544,6 +544,86 @@ class Ticket(unittest.TestCase):
         self.assertEqual(tk.plain('<@U1> _Low/Medium risk · edit the spec_'), 'Low/Medium risk · edit the spec')
         self.assertEqual(tk.plain('followers_min and followers_max'), 'followers_min and followers_max')
 
+    def test_removed_label_stops_a_watched_run(self):
+        jira = FakeJira('In Progress', 'In Progress')
+        jira._status['labels'] = ['harness-run', 'be']
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=jira)
+        self.assertEqual(r.jira_stop(), '')                           # a run by hand ignores labels
+        os.environ['HARNESS_LABEL'] = 'harness-run'
+        try:
+            self.assertEqual(r.jira_stop(), '')
+            jira._status['labels'] = ['be']
+            self.assertEqual(r.jira_stop(), 'In Progress, label harness-run removed')
+            os.environ['HARNESS_JIRA_STOP'] = '0'                     # the status check off, the label still counts
+            self.assertEqual(r.jira_stop(), 'In Progress, label harness-run removed')
+        finally:
+            del os.environ['HARNESS_LABEL'], os.environ['HARNESS_JIRA_STOP']
+
+    def test_labelled_search(self):
+        sent = []
+        jira = tk.Jira(lambda p, tools: (sent.append(p), (None, 'Here: ["LD-7", "https://x.atlassian.net/browse/LD-9", 3]'))[1], '')
+        self.assertEqual(jira.labelled('harness-run'), ['LD-7', 'LD-9'])
+        self.assertIn('labels = "harness-run" AND statusCategory != Done ORDER BY priority ASC, created ASC', sent[0])
+
+    def test_watch_starts_labelled_tickets_up_to_jobs_and_restarts_only_what_may_run_again(self):
+        class Proc:
+            def __init__(self, key):
+                self.key, self.pid, self.returncode = key, 4242, None
+
+            def poll(self):
+                return self.returncode
+
+        subprocess.run(['git', 'checkout', '-q', 'main'], check=True)
+        polls = [['AB-1', 'AB-2', 'AB-3'], ['AB-1', 'AB-2', 'AB-3'], ['AB-2', 'AB-3'], ['AB-1', 'AB-2', 'AB-3'],
+                 ['AB-1', 'AB-2', 'AB-3']]
+        started, procs = [], {}
+
+        def start(key):
+            started.append(key)
+            procs[key] = Proc(key)
+            return procs[key]
+
+        rounds = iter(polls)
+        after = {1: lambda: setattr(procs['AB-1'], 'returncode', tk.STOPPED),     # after poll 1: AB-1 stopped
+                 3: lambda: setattr(procs['AB-2'], 'returncode', tk.DONE),        # after poll 3: AB-2 done
+                 4: lambda: setattr(procs['AB-3'], 'returncode', tk.WAITING)}     # after poll 4: AB-3 waits
+        slept = []
+
+        def sleep(seconds):                                            # between polls, the children move on
+            slept.append(seconds)
+            after.get(len(slept), lambda: None)()
+
+        tk.pl.sleep = sleep
+        self.addCleanup(setattr, tk.pl, 'sleep', __import__('time').sleep)
+        args = tk.argparse.Namespace(label='harness-run', jobs=2, poll=7, budget=5, wait=8, permission_mode='')
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(tk.watch(args, lambda: next(rounds), start, rounds=5), tk.DONE)
+        # poll 1: AB-1, AB-2 start (jobs 2). poll 2: AB-1 stopped → held; AB-3 starts. poll 3: label off AB-1.
+        # poll 4: AB-2 done; AB-1 is back and may run. poll 5: AB-3 waited → runs again.
+        self.assertEqual(started, ['AB-1', 'AB-2', 'AB-3', 'AB-1', 'AB-3'])
+        self.assertEqual(slept, [7, 7, 7, 7])
+        self.assertIn('AB-1 exited 1: stopped; take the label off and on to run it again', out.getvalue())
+
+    def test_watch_skips_a_ticket_held_by_hand_or_shipped(self):
+        subprocess.run(['git', 'checkout', '-q', 'main'], check=True)
+        handoff = Path(subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True,
+                                      text=True).stdout.strip()) / 'handoff'
+        handoff.mkdir(exist_ok=True)
+        (handoff / 'AB-5-ticket.lock').write_text(json.dumps({'pid': os.getpid(), 'host': tk.socket.gethostname()}))
+        (handoff / 'AB-6-ticket.json').write_text(json.dumps({'ship': 'GO'}))
+        started = []
+        args = tk.argparse.Namespace(label='harness-run', jobs=2, poll=7, budget=5, wait=8, permission_mode='')
+        with redirect_stdout(io.StringIO()):
+            tk.watch(args, lambda: ['AB-5', 'AB-6', 'AB-7'], lambda k: (started.append(k), None)[1] or
+                     type('P', (), {'pid': 1, 'poll': lambda self: None})(), rounds=1)
+        self.assertEqual(started, ['AB-7'])
+
+    def test_watch_refuses_a_ticket_branch(self):
+        args = tk.argparse.Namespace(label='harness-run', jobs=2, poll=7, budget=5, wait=8, permission_mode='')
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(tk.watch(args, lambda: [], lambda k: None, rounds=1), tk.NOT_CHECKOUT)
+        self.assertIn('--watch runs in the main checkout on main', out.getvalue())
+
     def test_unreadable_jira_status_does_not_stop(self):
         class Broken(FakeJira):
             def status(self):

@@ -40,6 +40,13 @@ Usage (from the ticket's checkout):
     ticket.py LD-1
     ticket.py LD-1 --reply "1A 2B LD-1"
     ticket.py LD-1 --budget 15
+    ticket.py --watch                    from the main checkout: every --poll seconds,
+                                         start a run for each open Jira issue with the
+                                         label --label (harness-run), --jobs (2) at once.
+                                         Put the label on to start; take it off to stop
+                                         the run before its next stage. A stopped run
+                                         (exit 1 or 2) starts again only after the label
+                                         is taken off and put back.
 
 One run per ticket: `<git-common-dir>/handoff/<TICKET>-ticket.lock` names the
 process; a second start is refused while it lives, and takes over when it is
@@ -63,6 +70,7 @@ comments are written, nothing else.
 
 Exit: 0 the ticket reached a /ship result · 1 stopped on a problem · 2 not a
 ticket checkout · 3 waiting for your answer · 5 another run holds the ticket.
+HARNESS_LABEL=<label> makes a run by hand obey the label too.
 """
 import argparse
 import datetime
@@ -263,15 +271,27 @@ class Jira:
         self.run, self.ticket, self.write = run, ticket, write
 
     def status(self):
-        """{status, category} of the ticket; RuntimeError when it cannot be read."""
+        """{status, category, labels} of the ticket; RuntimeError when it cannot be read."""
         error, out = self.run(f'Read the Jira issue {self.ticket} with your Jira tool (getJiraIssue; find the '
                               'cloudId with getAccessibleAtlassianResources if it asks for one). Print only JSON: '
                               '{"status": "<status name>", "category": "<its status category: To Do, In Progress or '
-                              'Done>"}.', READ_TOOLS)
+                              'Done>", "labels": ["<each label>"]}.', READ_TOOLS)
         data = first_json(out) if not error else None
         if not isinstance(data, dict):
             raise RuntimeError(error or out[:200])
         return data
+
+    def labelled(self, label, jql_extra='statusCategory != Done'):
+        """The keys of the issues carrying `label` and not done, most urgent first; RuntimeError on failure."""
+        error, out = self.run(f'Search Jira with your Jira tool (searchJiraIssuesUsingJql; find the cloudId with '
+                              f'getAccessibleAtlassianResources if it asks for one) for this JQL, exactly:\n'
+                              f'labels = "{label}" AND {jql_extra} ORDER BY priority ASC, created ASC\n'
+                              f'Print only JSON: a list of the issue keys in that order, e.g. ["AB-1", "AB-2"]; '
+                              f'[] when there are none.', READ_TOOLS)
+        data = first_json(out) if not error else None
+        if not isinstance(data, list):
+            raise RuntimeError(error or out[:200])
+        return [ticket_key(str(k)) for k in data if ticket_key(str(k))]
 
     def comment(self, text):
         """Add `text` as a comment on the ticket. Returns True when Jira confirmed it."""
@@ -416,9 +436,10 @@ class Run:
         return stop, notes
 
     def jira_stop(self):
-        """The ticket's Jira status when it says to stop (Done, or one named in HARNESS_JIRA_STOP), else ''."""
-        stopping = os.environ.get('HARNESS_JIRA_STOP', JIRA_STOP)
-        if not self.jira or stopping.strip() in ('0', ''):
+        """What in Jira says to stop: the status (Done, or one named in HARNESS_JIRA_STOP), or the label
+        HARNESS_LABEL gone from the ticket (the label is the claim when --watch started the run). Else ''."""
+        stopping, label = os.environ.get('HARNESS_JIRA_STOP', JIRA_STOP), os.environ.get('HARNESS_LABEL', '')
+        if not self.jira or (stopping.strip() in ('0', '') and not label):
             return ''
         try:
             status = self.jira.status() or {}
@@ -427,7 +448,12 @@ class Run:
             return ''
         name, category = str(status.get('status', '')).strip(), str(status.get('category', '')).strip()
         names = {s.strip().lower() for s in stopping.split(',') if s.strip()}
-        return name if category.lower() == 'done' or name.lower() in names else ''
+        if stopping.strip() not in ('0', '') and (category.lower() == 'done' or name.lower() in names):
+            return name
+        labels = status.get('labels')
+        if label and isinstance(labels, list) and label.lower() not in {str(l).lower() for l in labels}:
+            return f'{name}, label {label} removed'
+        return ''
 
     def stage(self, prompt):
         stop, notes = self.check_inbox()
@@ -821,15 +847,15 @@ def alive(pid):
 def claim(path):
     """Take the ticket's lock for this process. Returns the live holder's record instead when another run
     on this host has it; a dead holder's lock is taken over."""
+    holder = claim_holder(path)
+    if holder:
+        return holder
     try:
-        held = json.loads(path.read_text())
+        gone = json.loads(path.read_text()).get('pid')
     except (OSError, ValueError):
-        held = {}
-    pid = held.get('pid')
-    if pid and held.get('host') == socket.gethostname():
-        if alive(pid):
-            return held
-        print(f'ticket: taking over the run of pid {pid} (started {held.get("started")}), which is gone')
+        gone = None
+    if gone:
+        print(f'ticket: taking over the run of pid {gone}, which is gone')
     path.write_text(json.dumps({'pid': os.getpid(), 'host': socket.gethostname(), 'cwd': os.getcwd(),
                                 'started': datetime.datetime.now().isoformat(timespec='seconds')}) + '\n')
     return None
@@ -843,9 +869,96 @@ def release(path):
         pass
 
 
+def watch(args, search=None, start=None, rounds=None):
+    """From the main checkout on its default branch: every --poll seconds, start `ticket.py <KEY>` for each
+    open issue with --label, up to --jobs at once, most urgent first. A finished run is not started again:
+    done (0) stays done; stopped (1, 2) waits until the label is taken off and put back; waiting (3) and
+    paused (4) go again at the next poll. Children log to <git-common-dir>/handoff/<KEY>-ticket.out.
+    `search`, `start` and `rounds` are for tests."""
+    rc, _ = pl.git('rev-parse', '--git-dir')
+    branch = pl.git('symbolic-ref', '--short', '-q', 'HEAD')[1]
+    if rc or branch != default_branch():
+        print(f'ticket: --watch runs in the main checkout on {default_branch() if not rc else "its default branch"} '
+              f'(branch is {branch or "detached"}); each ticket gets its own worktree')
+        return NOT_CHECKOUT
+    out_dir = Path(pl.git('rev-parse', '--path-format=absolute', '--git-common-dir')[1]) / 'handoff'
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if search is None or start is None:
+        binary, slack_model = os.environ.get('CLAUDE_BIN', 'claude'), os.environ.get('HARNESS_SLACK_MODEL', 'haiku')
+        log = out_dir / 'watch.log'
+
+        def search():
+            return Jira(lambda prompt, tools: pl.claude(binary, prompt, 1, args.permission_mode, log, tools, slack_model)[:2],
+                        '', write=False).labelled(args.label)
+
+        def start(key):
+            child = [sys.executable, '-u', str(Path(__file__).resolve()), key, '--budget', str(args.budget), '--wait',
+                     str(args.wait), '--poll', str(args.poll), '--permission-mode', args.permission_mode]
+            out = open(out_dir / f'{key}-ticket.out', 'a')
+            return subprocess.Popen(child, stdout=out, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                    env={**os.environ, 'HARNESS_LABEL': args.label})
+    print(f'ticket: watching Jira for label "{args.label}" every {args.poll}s, {args.jobs} at once, from {os.getcwd()}')
+    running, finished, held = {}, {}, set()      # key → process; key → exit code; stopped until relabelled
+    rounds_left = rounds
+    while rounds_left is None or rounds_left > 0:
+        rounds_left = None if rounds_left is None else rounds_left - 1
+        for key, proc in list(running.items()):
+            if proc.poll() is not None:
+                finished[key] = running.pop(key).returncode
+                print(f'  {datetime.datetime.now():%H:%M} {key} exited {finished[key]}'
+                      + (': stopped; take the label off and on to run it again' if finished[key] in (STOPPED, NOT_CHECKOUT) else ''))
+                if finished[key] in (STOPPED, NOT_CHECKOUT):
+                    held.add(key)
+        try:
+            keys = search()
+        except RuntimeError as err:
+            print(f'ticket: could not search Jira: {err}')
+            keys = None
+        if keys is not None:
+            held &= set(keys)                     # the label came off: a later put-back starts it again
+            for key in keys:
+                if len(running) >= args.jobs:
+                    break
+                if key in running or key in held or finished.get(key) == DONE:
+                    continue
+                if claim_holder(out_dir / f'{key}-ticket.lock') or shipped(out_dir / f'{key}-ticket.json'):
+                    continue                      # a run started by hand holds it, or an earlier one finished
+                running[key] = start(key)
+                print(f'  {datetime.datetime.now():%H:%M} {key} started (pid {running[key].pid}); output: {out_dir}/{key}-ticket.out')
+        if rounds_left == 0:
+            break
+        try:
+            pl.sleep(args.poll)
+        except KeyboardInterrupt:
+            print(f'\nticket: watch ends; {len(running)} run(s) go on by themselves: {", ".join(running) or "none"}')
+            break
+    return DONE
+
+
+def shipped(state_file):
+    try:
+        return bool(json.loads(state_file.read_text()).get('ship'))
+    except (OSError, ValueError):
+        return False
+
+
+def claim_holder(path):
+    """The live holder of a lock, or None."""
+    try:
+        held = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    pid = held.get('pid')
+    return held if pid and held.get('host') == socket.gethostname() and alive(pid) else None
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('ticket', help='the Jira key (LD-503) or the ticket URL')
+    parser.add_argument('ticket', nargs='?', help='the Jira key (LD-503) or the ticket URL')
+    parser.add_argument('--watch', action='store_true',
+                        help='no ticket: from the main checkout, start a run for every open Jira issue with --label')
+    parser.add_argument('--label', default='harness-run', help='the Jira label --watch starts on (default harness-run)')
+    parser.add_argument('--jobs', type=int, default=2, help='how many tickets --watch runs at once (default 2)')
     parser.add_argument('--reply', help='your answer when Slack is not configured, e.g. "1A 2B LD-1"')
     parser.add_argument('--wait', type=float, default=8,
                         help='with Slack: keep checking for your answer this many hours instead of exiting (0: exit)')
@@ -855,9 +968,11 @@ def main(argv=None):
     parser.add_argument('--permission-mode', default='',
                         help='claude -p permission mode; empty (the default) uses your settings.json')
     args = parser.parse_args(argv)
-    key = ticket_key(args.ticket)
+    if args.watch:
+        return watch(args)
+    key = ticket_key(args.ticket or '')
     if not key:
-        print(f'ticket: no Jira key in "{args.ticket}"; give LD-503 or the ticket URL')
+        print(f'ticket: no Jira key in "{args.ticket}"; give LD-503 or the ticket URL, or --watch')
         return NOT_CHECKOUT
     args.ticket = key
 
