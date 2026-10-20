@@ -222,7 +222,12 @@ or exit 0) is never started again; exit 1 or 2 puts it in `held` (with the stop 
 ticket per poll; the label off and on counts, so does any edit) or it
 disappears from a poll; exit 3 or 4 goes
 again at the next poll; a lock held by a run started by hand is respected.
-Ctrl+C ends the watcher and leaves the children running. The owner chose
+Ctrl+C ends the watcher and leaves the children running: each child is
+started with `start_new_session=True` and writes its own `.out` file;
+`relay()` tails that file. `pipeline.py` keeps the last stop file across a
+start (a clean run removes it), so an earlier `/build` conflict survives a
+killed run; `last_build_conflict()` ignores a report older than the
+spec's last commit. The owner chose
 two at once and "label off = stop".
 
 ## 4. What the real run taught us (LD-503, `/var/www/html/leadbuster`)

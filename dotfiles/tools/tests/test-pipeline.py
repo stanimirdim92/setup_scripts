@@ -304,6 +304,21 @@ class Pipeline(unittest.TestCase):
                          ['AB-1-1-BUILD.md', 'AB-1-2-VERIFY.md', 'AB-1-3-VERIFY.md', 'AB-1-4-REVIEW.md'])
         self.assertFalse((self.handoff / 'AB-1-pipeline.json').exists())   # a clean run leaves no state
 
+    def test_stop_file_survives_a_start_and_goes_with_a_clean_run(self):
+        os.environ['STUB_BUILD'] = 'blocked'
+        self.run_pipeline()
+        stop = self.handoff / 'AB-1-pipeline-stop.json'
+        self.assertIn('BUILD BLOCKED', stop.read_text())
+        del os.environ['STUB_BUILD']
+        os.environ['STUB_VERIFY'] = 'fail'                                    # a run that dies before writing a new one
+        self.run_pipeline()
+        self.assertIn('VERIFY FAIL', stop.read_text())                        # replaced, never removed on start
+        del os.environ['STUB_VERIFY']
+        subprocess.run(['git', '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'x'], check=True)
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 0, out)
+        self.assertFalse(stop.exists())
+
     def test_another_head_starts_a_fresh_round(self):
         os.environ['STUB_VERIFY'] = 'fail'
         self.run_pipeline()

@@ -561,6 +561,12 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         self.prompts.clear()                                                          # the same report is not re-read
         r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
         self.assertEqual(r.state.get('conflict_seen'), f'{T}-1-BUILD.md')
+        # a report older than the spec's last commit is old news
+        r.state.pop('conflict_seen')
+        self.assertTrue(r.last_build_conflict()[0])
+        old = __import__('time').time() - 3600
+        os.utime(handoff / f'{T}-1-BUILD.md', (old, old))
+        self.assertEqual(r.last_build_conflict(), ('', ''))
 
     def test_owner_word_reaches_the_first_pipeline_stage(self):
         self.out.chatty = True
