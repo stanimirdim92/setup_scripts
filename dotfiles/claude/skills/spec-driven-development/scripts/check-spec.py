@@ -18,7 +18,10 @@ Failures (exit 1):
     THEN;
   - a requirement statement has no uppercase RFC 2119 keyword (MUST, MUST
     NOT, SHOULD, SHOULD NOT, MAY) -- ADR 0075;
-  - the spec is Approved and still holds an OPEN QUESTION.
+  - the spec is Approved and still holds an OPEN QUESTION;
+  - Status is Draft while `Approved by` or `Approved at` is filled, or Status
+    is Approved while either is `—`, empty or missing: approval is one edit of
+    all three lines (LD-507).
 A withdrawn requirement is skipped after its heading.
 
 Warnings (printed, never fail): an EARS condition placed after the keyword
@@ -41,6 +44,8 @@ KEYWORD = re.compile(r'\b(MUST NOT|MUST|SHOULD NOT|SHOULD|MAY)\b')
 CONDITION_AFTER = re.compile(r'\b(MUST NOT|MUST|SHOULD NOT|SHOULD|MAY)\b[^.]*?,?\s\b(when|while)\b\s')
 EXCEPTION = re.compile(r'\b(unless|except|otherwise|exception|other than)\b', re.I)
 SENTENCE = re.compile(r'(?<=[.!?])\s+|\n\s*[-*]\s+')
+APPROVAL = re.compile(r'^\**(Approved by|Approved at):?\**:?[ \t]*(.*)$', re.M)
+UNSET = ('', '—', '–', '-')
 
 
 def requirement_blocks(lines):
@@ -122,6 +127,18 @@ def check(text, rfc=True):
                 warn.append((first, f'{rid}: an `If` requirement reads `If <condition>, then …`: {s[:80]}'))
             if re.search(r'\bSHOULD\b', s) and not EXCEPTION.search(s):
                 warn.append((first, f'{rid}: a SHOULD names the exception that allows otherwise (ADR 0075): {s[:80]}'))
+
+    approval = {}
+    for m in APPROVAL.finditer(text):
+        approval.setdefault(m.group(1), (m.group(2).strip(), text[:m.start()].count('\n') + 1))
+    for key in ('Approved by', 'Approved at'):
+        value, n = approval.get(key, ('', header.get('Status', ('', 1))[1]))
+        if status == 'Draft' and value not in UNSET:
+            fail.append((n, f'Status is Draft but `{key}:` is filled; set Status, Approved by and Approved at '
+                            f'in one edit'))
+        if status == 'Approved' and value in UNSET:
+            fail.append((n, f'Status is Approved but `{key}:` is empty; set Status, Approved by and Approved at '
+                            f'in one edit'))
 
     if status == 'Approved':
         for n, line in enumerate(lines, 1):

@@ -20,6 +20,8 @@ CLEAN = """# Spec: Invoice reminders
 Status: Draft
 Ticket: AB-12
 Change kind: New
+Approved by: —
+Approved at: —
 
 ## Requirements
 
@@ -86,6 +88,26 @@ class CheckSpec(unittest.TestCase):
         self.assertEqual(run(with_question)[0], [])
         fail, _ = run(with_question.replace('Status: Draft', 'Status: Approved'))
         self.assertIn('the spec is Approved but still holds an OPEN QUESTION', fail)
+
+    def test_approval_lines_match_status(self):
+        approved = (CLEAN.replace('Status: Draft', 'Status: Approved')
+                    .replace('Approved by: —', 'Approved by: Ana (chat)').replace('Approved at: —', 'Approved at: 2026-10-20'))
+        self.assertEqual(run(approved), ([], []))
+        fail, _ = run(approved.replace('Status: Approved', 'Status: Draft'))
+        self.assertTrue(any('Status is Draft but `Approved by:` is filled' in m for m in fail))
+        self.assertTrue(any('Status is Draft but `Approved at:` is filled' in m for m in fail))
+        fail, _ = run(CLEAN.replace('Approved by: —', 'Approved by: Ana (chat)'))
+        self.assertTrue(any('Status is Draft but `Approved by:` is filled' in m for m in fail))
+        fail, _ = run(approved.replace('Approved by: Ana (chat)', 'Approved by: —'))
+        self.assertTrue(any('Status is Approved but `Approved by:` is empty' in m for m in fail))
+        fail, _ = run(approved.replace('Approved by: Ana (chat)\n', ''))
+        self.assertTrue(any('Status is Approved but `Approved by:` is empty' in m for m in fail))
+        fail, _ = run(approved.replace('Approved at: 2026-10-20', 'Approved at:'))
+        self.assertTrue(any('Status is Approved but `Approved at:` is empty' in m for m in fail))
+        bold = approved.replace('Status: Approved', '**Status:** Approved').replace('Approved by:', '**Approved by:**')
+        self.assertEqual(run(bold)[0], [])
+        reapproval = approved.replace('Status: Approved', 'Status: Needs reapproval')
+        self.assertEqual(run(reapproval)[0], [])
 
     def test_warnings_for_ears_slips(self):
         _, warn = run(CLEAN.replace(

@@ -28,6 +28,23 @@ before drafting. Open each pinned Figma node with the available Figma tools:
 node that still cannot be read stays an Assumption under the skill's
 design-backed rule.
 
+Design edits are out of `/spec` scope. Read designs with `get_metadata`,
+`get_screenshot` or `get_design_context`. Write tools such as `use_figma` need
+an edit seat. When the owner asks for a design edit, try it once. On a seat or
+access error, stop and give paste-ready comment text for the designer. Ask the
+owner to re-authenticate only when the error names authentication.
+
+## Decision brief
+
+Some questions decide whether a requirement exists at all: a ticket/design
+conflict, or a feature the design drops. When an intake Blocker or an
+`OPEN QUESTION` is of that kind, present a decision brief before drafting.
+The brief holds the questions only, in the skill's question shape, on about
+one page. Number them Q1, Q2, … and end with the `decisions:` line from
+§Approval state. Draft requirements only after the owner answers. All other
+spec content, checks and gates stay as written. Unattended runs skip the brief
+and follow §Unattended.
+
 ## Repository evidence
 
 Follow `../references/repository-precedent.md` §1 for reuse, bounded checks,
@@ -39,7 +56,9 @@ finding a command in source from executing it successfully.
 Use the skill's scope check, form selection, capability-map rules, and Output
 Files rules, including project overrides. Read existing target artifacts before
 writing. Revise in place only for the same work; ask if the target is ambiguous
-or belongs to different work rather than overwriting it.
+or belongs to different work rather than overwriting it. Revise an existing
+spec with targeted edits to the affected sections, not a whole-file rewrite.
+The content rules and the skill's §Keeping the Spec Alive search still apply.
 
 The selected template owns the heading, header, and document shape. Keep the
 skill's requirement ids, source lines, and scenario forms. For an existing spec,
@@ -49,6 +68,20 @@ preserve stable ids and use the status transitions in
 Before asking for approval, run the skill's Approval Check and the applicable
 checks in `../references/spec-quality-gates.md`. A draft may expose questions
 for discussion, but must not be presented as ready for approval while unresolved.
+
+In this conversation, decide some questions by default. Use the risk and
+recommendation rules in §Unattended.
+
+- Low risk: decide it with the recommended option.
+- Low or Medium, and the ticket text or repository precedent already settles
+  it: decide it that way and cite the line.
+- Record each as a `DEC-###` with the alternative that lost and
+  `Decided by: default (interactive)`. Remove the block.
+- Medium questions nothing settles, and every High question, stay
+  `OPEN QUESTION` blocks.
+- List each default in the report, one line each, under
+  `Defaults taken (override by id)`, before the approval request. An override
+  rewrites that `DEC-###` as §Unattended's last paragraph describes.
 
 ## Approval state
 
@@ -65,7 +98,8 @@ python3 "$HOME/.claude/skills/spec-driven-development/scripts/check-spec.py" doc
 
 Fix every FAIL before presenting the spec. A FAIL means a form a later stage
 reads mechanically is missing: a `Source:` line, a scenario's THEN, an RFC 2119
-keyword. Read each warning and fix the ones that are slips. Report the result.
+keyword, or approval lines that disagree with Status. Read each warning and fix
+the ones that are slips. Report the result.
 
 Report the spec's path, status, and remaining blockers. When `OPEN QUESTION`
 blocks remain, number them Q1, Q2, … in spec order and end the report with one
@@ -73,10 +107,21 @@ line the user can fill in and send back:
 `/spec <TICKET> decisions: Q1=…, Q2=…`. A rerun with that line revises the
 same spec in place with those decisions; it does not repeat recon.
 
-When the user approves in this conversation, set Approved and its metadata,
-rerun the shape check, and commit the spec file alone in the same turn. Approval
-is the user's; the commit only stops an approved spec from staying
-uncommitted, which blocks `/plan`.
+When the user approves in this conversation, set `Status: Approved`,
+`Approved by` and `Approved at` in one edit. Read the header back from disk and
+quote its Status and Approved lines in the report. Rerun the shape check, and
+commit the spec file alone in the same turn. Approval is the user's; the commit
+only stops an approved spec from staying uncommitted, which blocks `/plan`.
+On the default branch of the main checkout, first warn in one line that ticket
+work belongs in the ticket worktree (`AGENTS.md` §Worktrees).
+
+On approval, draft a short decision-summary comment for the Jira ticket in the
+report: the spec path, and each `DEC-###` in one line. The comment is visible
+outside the team. Post it only when the project's `CLAUDE.md` holds the exact
+line `Jira decision comments: on`. Otherwise leave it as a draft for the owner.
+After posting, record the comment id in the spec header as
+`Jira comment: <id>` before the commit. On reapproval, update that comment
+instead of adding a new one.
 
 `/spec` ends here; it does not invoke `/plan` or implementation. After approval and commit,
 recommend `/clear` before `/plan`: `/plan` reads the committed spec, and a fresh

@@ -41,6 +41,8 @@ Enumerate the main ticket's complete subtask/child hierarchy, including nested
 children. If a response does not establish a complete child list, query it,
 for example `parent = [TICKET] ORDER BY key ASC`, and exhaust pagination.
 Deduplicate by issue key and count all discovered tickets before handoff.
+A ticket key with sub-tasks means the whole story: take every sub-task into
+scope without asking.
 
 If no integration exists, say so and ask for the description, acceptance
 criteria, relevant comments, and linked/parent context when needed.
@@ -78,7 +80,8 @@ A design file is such a reference: when any ticket in the intake scope names a
 Figma file, frame, or node, open it with the available Figma tools rather than
 recording the link alone. Design commonly lives on a sibling, parent, or linked
 ticket, so enumerate across the hierarchy. Pin each one by file key and node id,
-not by frame name. No Figma tool in the session means the reference is
+not by frame name. Skip cover and thumbnail nodes: they hold no requirements,
+and one `get_metadata` call on a cover returned 80k characters. No Figma tool in the session means the reference is
 unavailable for the recorded reason — report that, never as design that does not
 exist.
 

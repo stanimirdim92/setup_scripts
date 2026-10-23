@@ -90,9 +90,22 @@ of deciding silently:
 ```
 OPEN QUESTION: Deletion semantics for contacts
 - Option A: hard delete — simpler, loses audit trail
-- Option B: soft delete — spec §4 mentions "restore", implies this
+- Option B: soft delete (recommended — keeps data and can be undone) — spec §4 mentions "restore", implies this
+- Risk: Medium
 → Decision needed before this spec can be approved.
 ```
+
+Shape the questions before asking them:
+
+- Merge questions whose options depend on each other into one question.
+- Put the root conflict first; questions it settles follow or disappear.
+- When a design conflicts with the ticket, always offer the option "follow the
+  design / drop the AC".
+- Mark exactly one option `(recommended)`, High-risk questions included. Name
+  the reason after it. Rank and tier options as `../../commands/spec.md`
+  §Unattended says.
+- `../../commands/spec.md` says which questions a run decides by default and
+  when a decision brief comes before the draft.
 
 A spec containing any `OPEN QUESTION` block cannot be presented for approval.
 Ask, record the decision in the spec, remove the block, and rerun the approval
@@ -106,7 +119,11 @@ plan as `TD-###`, a separate id space from the spec's `DEC-###`.
 Treat a choice as needing an `OPEN QUESTION` block when picking the wrong
 option would change an acceptance criterion, a schema, a public contract, or
 data lifecycle behavior; choices below that bar (internal naming, private
-helper structure) may be decided directly.
+helper structure) may be decided directly. A new public parameter or field name
+is part of the contract. When no repository precedent fixes it, ask it as an
+`OPEN QUESTION`, and offer the name derived from the backing column or model as
+an option. A contract owned by a parallel in-progress ticket is confirmed with
+the owner before approval, not deferred to `/plan`.
 
 When plausible readings produce different results, use one small input/output
 example that distinguishes them to resolve the choice and retain the accepted
@@ -216,7 +233,8 @@ Projects may designate different locations in their instruction sources; the
 project rule wins over these defaults.
 
 Read the existing target spec before writing. Revise the same
-work in place, preserving stable ids and applying the approval transitions
+work in place with targeted edits to the affected sections, not a whole-file
+rewrite, preserving stable ids and applying the approval transitions
 below. If the target belongs to different work or cannot be resolved, ask rather
 than overwriting it. New specs use the selected template's Draft header.
 
@@ -263,6 +281,7 @@ the draft but cannot self-certify approval:
 
 - [ ] The human has reviewed and approved the capability map (when one exists)
 - [ ] The human has reviewed and explicitly approved this exact spec
-- [ ] The header records `Status: Approved`, `Approved by`, and `Approved at`
+- [ ] The header records `Status: Approved`, `Approved by`, and `Approved at`,
+  set in one edit and read back from disk
 
 The spec is not ready for `/plan` until all applicable items pass.
