@@ -123,6 +123,7 @@ that explanation here, just the index.
 | [0113](0113-active-time-and-cost-per-ticket.md) | Active time and cost are counted per ticket | Accepted |
 | [0114](0114-pipeline-runner-supplies-gate-handoffs.md) | The pipeline runner supplies gate handoffs | Accepted |
 | [0115](0115-ticket-runner-end-to-end.md) | One ticket runs end to end; only High-risk questions wait | Accepted |
+| [0116](0116-lessons-from-ld-507.md) | Lessons from LD-507: same quality, less owner time and fewer tokens | Proposed (on branch until the evals pass) |
 
 Adding a new decision: create the next-numbered `NNNN-kebab-title.md`
 (4-digit, zero-padded — MADR-style, matches the files already here) and

@@ -22,6 +22,7 @@ push.
 | `test-install-skills.py`, `test-codex-harness.py`, `test-codex-worktree.py` | The Codex side: skill install, roles and hook adapters, and the worktree launcher |
 | `test-weakened-tests.py` | The guard `/review` runs for deleted or weakened tests (the script lives in the code-review skill) |
 | `test-check-spec.py`, `test-check-plan.py` | The checks `/spec` and `/plan` run on their own output (the scripts live in those skills) |
+| `test-junit-diff.py` | The baseline comparison `/build` and `/test` run by test identity (the script lives in the executor discipline skill) |
 
 Run the one for what you changed, from the repository root:
 

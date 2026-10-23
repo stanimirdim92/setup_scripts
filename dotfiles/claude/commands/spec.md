@@ -93,7 +93,7 @@ behavioral revisions require reapproval under the shared transition rules.
 Save the spec, then check its shape:
 
 ```bash
-python3 "$HOME/.claude/skills/spec-driven-development/scripts/check-spec.py" docs/specs/<TICKET>-SPEC.md
+python3 ~/.claude/skills/spec-driven-development/scripts/check-spec.py docs/specs/<TICKET>-SPEC.md
 ```
 
 Fix every FAIL before presenting the spec. A FAIL means a form a later stage

@@ -72,7 +72,7 @@ right: deleted or skipped tests, removed assertions, new suppressions, changed
 checker config, stubs.
 
 ```bash
-python3 "$HOME/.claude/skills/code-review-and-quality/scripts/weakened-tests.py" --base <candidate base>
+python3 ~/.claude/skills/code-review-and-quality/scripts/weakened-tests.py --base <candidate base>
 ```
 
 - Exit 0: record **Weakened tests: none found**.
@@ -94,7 +94,7 @@ report.
 Check the project's "Always a person" list, read from the base branch:
 
 ```bash
-python3 "$HOME/.claude/skills/code-review-and-quality/scripts/always-person.py" --base <candidate base>
+python3 ~/.claude/skills/code-review-and-quality/scripts/always-person.py --base <candidate base>
 ```
 
 Exit 1 means the change touches a path that always needs a person (ADR 0096):
@@ -244,7 +244,7 @@ Check that the change leaves no instruction line pointing at a file or script
 it deleted or renamed (ADR 0098):
 
 ```bash
-python3 "$HOME/.claude/skills/code-review-and-quality/scripts/stale-instructions.py" --base <candidate base>
+python3 ~/.claude/skills/code-review-and-quality/scripts/stale-instructions.py --base <candidate base>
 ```
 
 Report each hit as a REQUIRED finding with the id `STALE-#` and its
@@ -257,7 +257,7 @@ Check that the ticket's records still agree
 (`../references/plan-quality-gates.md` §6):
 
 ```bash
-python3 "$HOME/.claude/skills/spec-driven-development/scripts/check-ledger.py" <TICKET>
+python3 ~/.claude/skills/spec-driven-development/scripts/check-ledger.py <TICKET>
 ```
 
 Report each FAIL as a REQUIRED finding with the id `LEDGER-#`. Report each
@@ -326,7 +326,7 @@ Give every finding a `class` (§Review SARIF). List the names already in use
 first, and reuse one when it fits:
 
 ```bash
-python3 "$HOME/.claude/skills/code-review-and-quality/scripts/review-noise.py" --classes
+python3 ~/.claude/skills/code-review-and-quality/scripts/review-noise.py --classes
 ```
 
 It sits outside the working tree and is never committed. Give its path in the

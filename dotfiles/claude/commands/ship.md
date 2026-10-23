@@ -33,7 +33,7 @@ Run the ledger check with `--ship` on the current tree
 (`../references/plan-quality-gates.md` §6):
 
 ```bash
-python3 "$HOME/.claude/skills/spec-driven-development/scripts/check-ledger.py" <TICKET> --ship
+python3 ~/.claude/skills/spec-driven-development/scripts/check-ledger.py <TICKET> --ship
 ```
 
 Any FAIL is **SHIP BLOCKED**: an `Open` item, a `Pending` task that is not
@@ -62,7 +62,7 @@ Count what the ticket needed from a person (ADR 0112) and what it cost
 list-price dollars from the ticket's transcripts:
 
 ```bash
-python3 "$HOME/.claude/skills/spec-driven-development/scripts/ticket-stats.py" <TICKET>
+python3 ~/.claude/skills/spec-driven-development/scripts/ticket-stats.py <TICKET>
 ```
 
 Print the header and the row exactly as `ticket-stats.py` outputs them, in
@@ -105,7 +105,7 @@ base into a scratch worktree, runs the plan's integrated verification commands
 there, and removes it.
 
 ```bash
-"$HOME/.claude/skills/git-workflow-and-versioning/scripts/base-check.sh" \
+~/.claude/skills/git-workflow-and-versioning/scripts/base-check.sh \
     --base origin/<base branch> [--setup "<worktree setup command>"] -- "<integrated command>" ...
 ```
 
@@ -163,7 +163,7 @@ Then check whether this ticket's findings repeat a class from earlier tickets
 (ADR 0105):
 
 ```bash
-python3 "$HOME/.claude/skills/code-review-and-quality/scripts/review-noise.py" --repeats
+python3 ~/.claude/skills/code-review-and-quality/scripts/review-noise.py --repeats
 ```
 
 For each listed class that this ticket also raised, propose one change under

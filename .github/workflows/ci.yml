@@ -193,6 +193,10 @@ jobs:
       - name: Ticket stats
         run: python3 dotfiles/tools/tests/test-ticket-stats.py
 
+      # Baseline comparison by test identity: new failures, skips, missing tests (adr/0116).
+      - name: JUnit baseline diff
+        run: python3 dotfiles/tools/tests/test-junit-diff.py
+
       # The overnight fixer: round cap, moved candidate, nothing open (adr/0108).
       - name: Batch fix runner
         run: python3 dotfiles/tools/tests/test-batch-fix.py
