@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fixture tests for ticket-stats.py (ADR 0112, ADR 0113): decisions, open items,
 approvals counted from git history, review rounds and finding endings, and the
-active time, tokens and cost read from fixture transcripts."""
+elapsed, agent, waiting and person times, tokens and cost read from fixture transcripts."""
 import importlib.util
 import io
 import json
@@ -67,7 +67,8 @@ class TicketStats(unittest.TestCase):
         self.assertEqual(s['findings'], {'fixed': 2, 'refuted': 1, 'other': 1})
         self.assertEqual(ts.row(s, '2026-10-18'),
                          '| 2026-10-18 | AB-1 | 2 | 2 | 3 | 2 | 2 fixed, 1 refuted, 1 other | '
-                         'no transcript found | no transcript found | no transcript found | 0 |')
+                         'no transcript found | no transcript found | no transcript found | no transcript found | '
+                         'no transcript found | no transcript found | 0 |')
 
     def test_run_stats_from_the_runner_state(self):
         handoff = Path(self.tmp.name) / 'handoff'
@@ -91,10 +92,17 @@ class TicketStats(unittest.TestCase):
         with redirect_stdout(io.StringIO()) as out:
             self.assertEqual(ts.main(['AB-1', '--review-dir', str(self.reviews), '--json']), 0)
         self.assertEqual(json.loads(out.getvalue())['approvals'], 3)
+        empty = ['--review-dir', str(self.reviews), '--projects-dir', str(Path(self.tmp.name) / 'none')]
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(ts.main(['AB-1', *empty]), 0)
+        self.assertEqual(out.getvalue().splitlines()[0], ts.HEADER)
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(ts.main(['AB-1', '--row', *empty]), 0)
+        self.assertEqual(out.getvalue().splitlines(), [ts.row(ts.stats('AB-1', self.reviews) | {'spend': None})])
 
 
 def at(minutes):
-    return f'2026-10-18T09:{minutes:02d}:00Z' if minutes < 60 else f'2026-10-18T10:{minutes - 60:02d}:00Z'
+    return f'2026-10-18T{9 + minutes // 60:02d}:{minutes % 60:02d}:00Z'
 
 
 def prompt(minutes, text):
@@ -134,7 +142,7 @@ class Spend(unittest.TestCase):
             prompt(5, 'looks right'),                        # 3 minutes after the reply
             reply(6, 'm3'),
             {'type': 'user', 'timestamp': at(8), 'message': {'content': '<task-notification>x</task-notification>'}},
-            prompt(70, 'approved'),                          # 62-minute gap: capped at 10
+            prompt(70, 'approved'),                          # 62-minute gap: capped
             reply(71, 'm4', model='claude-haiku-9'),
         ])
         sub = base / 'a' / 'subagents'
@@ -155,7 +163,7 @@ class Spend(unittest.TestCase):
         sp = ts.spend('AB-1', self.main, self.projects)
         self.assertEqual(sp['sessions'], 2)                  # a.jsonl and the worktree's c.jsonl
         self.assertEqual(sp['prompts'], 5)
-        self.assertEqual(sp['active_minutes'], 3 + 10 + 2)
+        self.assertEqual(sp['your_minutes'], 3 + 30 + 2)     # the 62-minute gap counts as the 30-minute cap
         # opus m1, m3, w1, w2: 1000 in + 1000 out each; m2 adds 100k cache read and 20k 1h writes;
         # the sonnet subagent reply; the haiku reply is unpriced.
         opus = 5 * (1000 * 4 + 1000 * 20) + 100000 * 0.2 + 20000 * 8
@@ -168,14 +176,92 @@ class Spend(unittest.TestCase):
         s = {'ticket': 'AB-1', 'decisions': 0, 'open_items': 0, 'approvals': 1, 'review_rounds': 1,
              'findings': {'fixed': 0, 'refuted': 0, 'other': 0},
              'spend': ts.spend('AB-1', self.main, self.projects, idle_cap_min=5)}
-        self.assertEqual(s['spend']['active_minutes'], 3 + 5 + 2)
+        self.assertEqual(s['spend']['your_minutes'], 3 + 5 + 2)
         self.assertEqual(ts.row(s, '2026-10-18'),
-                         '| 2026-10-18 | AB-1 | 0 | 0 | 1 | 1 | 0 fixed, 0 refuted, 0 other | 10 min, 5 prompts | '
-                         '134k in 2 sessions | $0.31 (prices 2026-10-06) + 2k unpriced (claude-haiku-9) | 0 |')
+                         '| 2026-10-18 | AB-1 | 0 | 0 | 1 | 1 | 0 fixed, 0 refuted, 0 other | 1h11m | 5m | 1h06m | '
+                         '10m, 5 prompts | 134k in 2 sessions | $0.31 (prices 2026-10-06) + 2k unpriced (claude-haiku-9) | 0 |')
         prices = json.loads(ts.PRICES.read_text())['models']
         u = {'input_tokens': 1000000, 'output_tokens': 0, 'speed': 'fast'}
         self.assertEqual(ts.cost_of('claude-opus-5-5', u, prices), 8.0)
         self.assertIsNone(ts.cost_of('claude-sonnet-5-5', u, prices))
+
+
+def ask(minutes, mid, tool_id):
+    return {'type': 'assistant', 'timestamp': at(minutes),
+            'message': {'id': mid, 'model': 'claude-opus-5-5', 'content': [
+                {'type': 'tool_use', 'id': tool_id, 'name': 'AskUserQuestion', 'input': {}}]}}
+
+
+def answer(minutes, tool_id):
+    return {'type': 'user', 'timestamp': at(minutes),
+            'message': {'content': [{'type': 'tool_result', 'tool_use_id': tool_id, 'content': 'B'}]}}
+
+
+def queue(minutes, op, text=None):
+    return {'type': 'queue-operation', 'timestamp': at(minutes), 'operation': op, 'content': text}
+
+
+class Times(unittest.TestCase):
+    """Elapsed, Agent, Waiting and You on two sessions, an AskUserQuestion answer, queued prompts and a subagent."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        root = Path(self.tmp.name)
+        self.main = root / 'proj'
+        self.projects = root / 'projects'
+        base = self.projects / ts.slug(self.main)
+        tree = self.projects / f'{ts.slug(self.main)}--claude-worktrees-AB-1'
+        for d in (base, tree):
+            d.mkdir(parents=True)
+        Spend.write(base / 's1.jsonl', [
+            prompt(0, '/spec AB-1'),
+            reply(1, 'r1'), tool_result(2), reply(4, 'r2'),        # agent 0-4
+            queue(19, 'enqueue', 'answers'), queue(20, 'dequeue'),  # became the prompt below: not counted twice
+            prompt(20, 'answers'),                                  # waited 16, you 16
+            ask(21, 'r3', 'q1'),                                    # agent 20-21
+            answer(61, 'q1'),                                       # waited 40 less the subagent's 20; you 40, capped
+            reply(62, 'r4'),
+            queue(63, 'enqueue', 'also rename X'),                  # typed while the agent worked: you 1
+            queue(64, 'remove', 'also rename X'),
+            reply(65, 'r5'),                                        # agent 61-65
+        ])
+        sub = base / 's1' / 'subagents'
+        sub.mkdir(parents=True)
+        Spend.write(sub / 'agent-1.jsonl', [dict(reply(30, 'x1'), isSidechain=True),
+                                            dict(reply(50, 'x2'), isSidechain=True)])  # agent 30-50
+        Spend.write(tree / 's2.jsonl', [
+            prompt(100, '/build AB-1'), reply(101, 'b1'), reply(110, 'b2'),  # agent 100-110
+            prompt(130, 'thanks, looks done'),              # waited 20; the final review, you 20 uncapped
+        ])
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_times(self):
+        sp = ts.spend('AB-1', self.main, self.projects)
+        self.assertEqual((sp['sessions'], sp['prompts'], sp['answers']), (2, 5, 1))
+        self.assertEqual(sp['elapsed_minutes'], 130)
+        self.assertEqual(sp['agent_minutes'], 4 + 1 + 20 + 4 + 10)
+        self.assertEqual(sp['waiting_minutes'], 16 + (40 - 20) + 20)
+        self.assertEqual(sp['your_minutes'], 16 + 30 + 1 + 20)
+
+    def test_final_review_is_not_capped(self):
+        sp = ts.spend('AB-1', self.main, self.projects, idle_cap_min=10)
+        self.assertEqual(sp['your_minutes'], 10 + 10 + 1 + 20)
+
+    def test_table_and_extra(self):
+        s = {'ticket': 'AB-1', 'decisions': 1, 'open_items': 0, 'approvals': 2, 'review_rounds': 1,
+             'findings': {'fixed': 1, 'refuted': 0, 'other': 0},
+             'spend': ts.spend('AB-1', self.main, self.projects, extra_min=45)}
+        lines = ts.table(s, '2026-10-18').splitlines()
+        self.assertEqual(lines[0], ts.HEADER)
+        self.assertEqual(lines[1].count('|'), lines[0].count('|'))
+        self.assertEqual(lines[2], ts.row(s, '2026-10-18'))
+        self.assertIn('| 2h10m | 39m | 56m | 1h07m, 5 prompts, 1 answers + 45m reported |', lines[2])
+        self.assertEqual(lines[2].count('|'), lines[0].count('|'))
+        self.assertIn('outside Claude', lines[-1])
+        log = Path(__file__).resolve().parents[2] / 'docs' / 'observation-log.md'
+        self.assertIn(ts.HEADER, log.read_text().splitlines())
 
 
 if __name__ == '__main__':

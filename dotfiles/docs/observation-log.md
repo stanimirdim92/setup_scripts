@@ -242,16 +242,23 @@ Layers, from the life-of-a-change notes: 1 verification before review ·
 ## Per ticket
 
 One row per shipped ticket, from `ticket-stats.py` at `/ship` (ADR 0112).
-Fewer person stops is the goal of automation (ADR 0109). Active time, tokens
-and cost come from the ticket's transcripts (ADR 0113): active time caps each
-gap before a prompt at 10 minutes, and cost uses the list prices dated in the
-column. The last column
+Fewer person stops is the goal of automation (ADR 0109). The four times,
+tokens and cost come from the ticket's transcripts (ADR 0113):
+
+- Elapsed: first to last record of the ticket's sessions, nights included.
+- Agent: time the agent or a subagent was working, overlaps counted once.
+- Waiting: time a finished turn waited for your next prompt or answer.
+- You: each prompt or answer counts the gap before it, up to 30 minutes.
+  Work outside Claude (reading code, Slack, the PO) is not in the
+  transcripts; `--extra MIN` adds what you report, shown apart.
+
+Cost uses the list prices dated in the column. The last column
 shows whether loosening it costs bugs: add one when a later bug ticket's
 spec names this ticket under "Escaped From" (ADR 0110). Loosen automation
 only while that column stays at 0.
 
-| Shipped | Ticket | Decisions | Open items | Approvals | Review rounds | Findings | Active time | Tokens | Cost | Shipped bugs |
-|---|---|---|---|---|---|---|---|---|---|---|
+| Shipped | Ticket | Decisions | Open items | Approvals | Review rounds | Findings | Elapsed | Agent | Waiting | You | Tokens | Cost | Shipped bugs |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 ## What to look for
 

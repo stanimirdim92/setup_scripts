@@ -34,3 +34,12 @@ and it is gone once the session ends. The transcripts keep the same usage.
 **Cost.** A price file to update when list prices change. The dollar figure
 is list price, not the invoice, and the row prints the price date.
 Reading time before the first prompt of a session is not counted.
+
+**Amended 2026-10-23 — four times instead of one (LD-507).** On LD-507
+active time said 32 minutes for a ticket that ran from 07:27 to 11:01. Each
+gap restarted at every agent record and stopped at 10 minutes, so reading,
+long reviews and everything after the last prompt were lost. The column is
+now four: Elapsed, Agent, Waiting and You. You keeps the capped gap, now 30
+minutes, and also counts AskUserQuestion answers and queued prompts. Work
+outside Claude leaves no record, so `--extra MIN` adds what the owner
+reports, and the script prints the table header with the row.
