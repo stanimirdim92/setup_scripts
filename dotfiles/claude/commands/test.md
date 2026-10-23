@@ -45,6 +45,9 @@ Resolve:
   requirement-by-requirement rather than file-by-file;
 - implemented behavior;
 - risk/regression surface;
+- the risk tier and depth, from `../references/risk-tiers.md` applied to the
+  candidate's diff. When `/review` has already set a Risk · Depth line, take
+  the higher of the two;
 - tests and commands `/build` already ran.
 
 Prefer the handoff and pointers over re-reading the full implementation in the
@@ -58,7 +61,7 @@ BLOCKED** rather than guessing.
 Send `test-engineer` a bounded packet containing:
 
 - candidate identity, baseline tree changes, and selected scope;
-- `/review`'s Risk · Depth line when there is one (`../references/risk-tiers.md`);
+- the Risk · Depth line from §1, always (`../references/risk-tiers.md`);
 - acceptance criteria;
 - implemented behavior;
 - relevant regression risks;
@@ -100,10 +103,32 @@ The verifier should:
 - prove each acceptance criterion has credible evidence;
 - add missing test-only coverage when needed;
 - check meaningful edge/error/regression cases;
-- run the repository-defined focused and broader checks appropriate to the risk.
+- run the repository-defined focused and broader checks appropriate to the risk;
+  at Deep, start the full suite in the background first (`test-engineer` §6);
 - run a repository-defined smoke check when the candidate changes a deployed
   runtime entrypoint or a critical end-to-end path. Do not invent a deployment
   target or mutate a shared environment to manufacture one.
+
+If `/review` later sets a higher tier than the packet carried, the earlier
+VERIFY result does not cover it. Re-verify at the higher depth.
+
+### Re-verification
+
+Send each later verification to a fresh `test-engineer`, never a resumed one.
+This covers a delta re-verify after fixes and a full-suite run requested later.
+Its packet carries the usual §2 fields, plus:
+
+- the previous VERIFY report;
+- the diff since the verified commit;
+- the full requirement list, not only the changed ones.
+
+The fresh verifier re-runs every check the diff can affect, not only the
+changed lines. At Deep it runs the full suite again. A check the diff cannot
+affect keeps its earlier evidence, cited with the verified commit. When unsure
+whether the diff can affect a check, re-run it.
+
+Browser checks may run in their own short-lived `test-engineer` dispatch. The
+same evidence rules apply to it. This split is allowed, not required.
 
 ## 3. Ownership
 
