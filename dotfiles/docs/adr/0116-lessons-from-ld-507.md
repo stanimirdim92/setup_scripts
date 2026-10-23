@@ -66,9 +66,9 @@ The audit found these problems:
   only the method changes.
 
 **Consequences.**
-- These changes land on a branch first. The owner runs the evals against
-  main and then against the branch, and merges only without a regression:
-  review-eval for the reviewer changes (ADR 0111), spec-eval, and the
-  add-business pipeline eval.
+- The owner merged these changes before the evals ran. The evals compare
+  the commit before them with the one after: review-eval for the reviewer
+  changes (ADR 0111), spec-eval, and the add-business pipeline eval. A
+  change behind a WORSE verdict is reverted on its own.
 - Owner reading and token use should fall. The audit estimates about 40% off
   the verifier's tokens. No gate is removed.
