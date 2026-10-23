@@ -216,6 +216,15 @@ Ticket-scoped work defaults to one isolated worktree per ticket.
   never `rm -rf` — that strands metadata, recoverable with `git worktree prune`.
 - A branch lives in exactly one worktree. Free it with `git worktree remove`
   before checking it out elsewhere.
+- In a worktree session, Claude Code refuses commands it cannot prove stay
+  inside the worktree. Each refusal costs a retry. Avoid the refused forms:
+  - Resolve `$HOME` once (`echo $HOME`). Then write literal absolute paths,
+    such as `python3 /home/<user>/.claude/skills/...`. Never pass `"$HOME/..."`
+    as an argument. Harness examples write `~/.claude/...`; replace `~` too.
+  - Write and change files with Write or Edit, not a heredoc or a script.
+  - Run each git command on its own, not inside `;`, `&&` or a heredoc.
+    Write a long commit message to a file with Write, then run
+    `git commit -F <file>`.
 - Concurrency is bounded by the conditions in `commands/build.md`, not by a
   fixed count. Worktrees isolate git and files only; a database, queue, cache,
   or fixed port is still shared, and concurrent writers need their own instance
@@ -225,7 +234,11 @@ Ticket-scoped work defaults to one isolated worktree per ticket.
 
 - Delegate bounded outcomes with acceptance criteria and verification.
 - Commands/user orchestrate; personas do not dispatch personas.
-- Reuse one implementation executor across related tasks in a workstream.
+- Reuse one implementation executor across related tasks in a workstream
+  while it was idle under about 5 minutes and holds under about 150k tokens.
+  Otherwise start a fresh one with the task packet, the previous handoff
+  report and the commits so far. Review fixes always get a fresh executor
+  (`commands/build.md` §2).
 - Parallel writers require separate worktrees/branches and isolated runtimes;
   fan out whenever those hold, queue when any is unproven. Speed never comes
   from skipping or weakening verification.

@@ -50,7 +50,9 @@ If the task is materially ambiguous or conflicts with its acceptance criteria,
 stop before writing code.
 
 When resumed for a later task in the same workstream, retain prior workstream
-knowledge and active skills. Do not rediscover unchanged context.
+knowledge and active skills. Do not rediscover unchanged context. A fresh
+executor for a later task gets the previous handoff report and the commits so
+far in its packet. Start from them; do not rediscover what they state.
 
 ## Context discipline
 
@@ -72,6 +74,9 @@ requires it.
 `executor-development-discipline` is preloaded. It owns thin behavioral slices,
 Red-Green-Refactor, verification cadence, evidence-driven retries, and atomic
 commits. Do not invoke it again.
+
+Edit source and test files with Edit or Write, never a Bash heredoc, `sed -i`
+or a script. The PostToolUse formatter hook runs only on Edit and Write.
 
 Invoke only additional task-specific skills explicitly selected by `/build`.
 On resume, do not reload a skill already active for the workstream.
@@ -110,6 +115,13 @@ Stop and report a blocker when:
 - multiple materially different implementations remain unresolved;
 - a required dependency/contract/capability is missing;
 - evidence shows the planned implementation is no longer viable.
+
+A stop condition the plan pre-authorizes in a `TD-###` is not a stop: follow
+the recorded answer and cite the TD in the report. Any other stop condition
+stays a stop.
+
+Do not re-check a blocker the plan or `docs/tasks/<TICKET>-open.md` already
+records, such as a missing Figma edit seat. Cite it and report it.
 
 Do not blind-retry an unchanged failure.
 

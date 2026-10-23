@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Fixture tests for dotfiles/claude/hooks/require-handoff-report.sh, the
 # SubagentStop hook on executor and test-engineer. Each case builds a JSONL
-# transcript whose last assistant message is a handoff report, runs the hook
+# transcript whose last assistant message or SubagentHandback call is a
+# handoff report, runs the hook
 # with a SubagentStop payload, and checks the decision:
 #   block — report is missing a required section
 #   allow — report is complete, or the hook must stay out of the way
@@ -25,6 +26,34 @@ transcript() { # name, final assistant text  -> path
     jq -nc '{type:"user",message:{role:"user",content:"Implement T001."}}'
     jq -nc '{type:"assistant",message:{role:"assistant",content:[{type:"text",text:"Starting."},{type:"tool_use",id:"t1",name:"Bash",input:{command:"yarn test"}}]}}'
     jq -nc --arg t "$2" '{type:"assistant",message:{role:"assistant",content:[{type:"text",text:$t}]}}'
+  } > "$path"
+  echo "$path"
+}
+
+handback_transcript() { # name, handback message, [text after]  -> path
+  # The shape LD-507 produced: a short text before the commit, then the report
+  # as a SubagentHandback tool call with no text of its own.
+  local path="$TMP/$1.jsonl"
+  {
+    jq -nc '{type:"user",message:{role:"user",content:"Implement T001."}}'
+    jq -nc '{type:"assistant",message:{role:"assistant",content:[{type:"text",text:"Committing."},{type:"tool_use",id:"t1",name:"Bash",input:{command:"git commit"}}]}}'
+    jq -nc '{type:"user",message:{role:"user",content:[{type:"tool_result",tool_use_id:"t1",content:"ok"}]}}'
+    jq -nc --arg m "$2" '{type:"assistant",message:{role:"assistant",content:[{type:"tool_use",id:"t2",name:"SubagentHandback",input:{message:$m}}]}}'
+    jq -nc '{type:"user",message:{role:"user",content:[{type:"tool_result",tool_use_id:"t2",content:"{\"success\":true}"}]}}'
+    [ -n "${3:-}" ] && jq -nc --arg t "$3" '{type:"assistant",message:{role:"assistant",content:[{type:"text",text:$t}]}}'
+  } > "$path"
+  echo "$path"
+}
+
+stale_handback_transcript() { # name, old handback, final text  -> path
+  # A resumed run: a complete handback for T001, then more work and a bare
+  # final text. The old handback must not satisfy the new stop.
+  local path="$TMP/$1.jsonl"
+  {
+    jq -nc --arg m "$2" '{type:"assistant",message:{role:"assistant",content:[{type:"tool_use",id:"t1",name:"SubagentHandback",input:{message:$m}}]}}'
+    jq -nc '{type:"user",message:{role:"user",content:"Implement T002."}}'
+    jq -nc '{type:"assistant",message:{role:"assistant",content:[{type:"tool_use",id:"t2",name:"Edit",input:{file_path:"a.ts"}}]}}'
+    jq -nc --arg t "$3" '{type:"assistant",message:{role:"assistant",content:[{type:"text",text:$t}]}}'
   } > "$path"
   echo "$path"
 }
@@ -76,7 +105,14 @@ check retry_third_allows  allow executor "$STUCK" true  run-1
 check retry_counter_reset block executor "$STUCK" false run-1
 check complete_clears     allow executor "$(transcript c17 "$COMPLETE")" true run-1
 check after_clear_fresh   block executor "$STUCK" false run-1
-check unknown_agent       allow repo-recon    "$(transcript c10 "$CLAIM_ONLY")"         false
+# Reports delivered through the SubagentHandback tool (LD-507).
+check handback_complete       allow executor      "$(handback_transcript c20 "$COMPLETE")"       false
+check handback_complete_tester allow test-engineer "$(handback_transcript c21 "$COMPLETE")"      false
+check handback_missing_tree   block executor      "$(handback_transcript c22 "$MISSING_TREE")"   false
+check handback_claim_only     block executor      "$(handback_transcript c23 "$CLAIM_ONLY")"     false
+check handback_then_announce  block executor      "$(handback_transcript c24 "$COMPLETE" "Next, I'll update the README.")" false
+check handback_stale          block executor      "$(stale_handback_transcript c25 "$COMPLETE" "Committing.")" false
+check unknown_agent      allow repo-recon    "$(transcript c10 "$CLAIM_ONLY")"         false
 check missing_transcript  allow executor      "$TMP/does-not-exist.jsonl"               false
 printf 'not json\n' > "$TMP/garbage.jsonl"
 check garbage_transcript  allow executor      "$TMP/garbage.jsonl"                      false

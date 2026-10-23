@@ -46,7 +46,9 @@ outcome; otherwise one short paragraph.]
 discovery cost for every task]
 
 **Context pointers:** [Only what materially constrains this task; use file
-references rather than copied documents]
+references rather than copied documents. Name any `TD-###` that
+pre-authorizes a stop condition in this task, and any external-tool blocker
+the plan records.]
 - Project/module rules: `[path]` or "None"
 - Closest precedent: `[path]` or "None"
 - Shared contract/invariant: `[path or short named invariant]` or "None"

@@ -96,6 +96,13 @@ plausible implementations existed and the choice needs to survive review.]
 - Source: [REQ-004 / approved invariant mechanism / project rule]
 - Affects: [T001, T002]
 
+### TD-002 — Pre-authorized: [stop condition, e.g. "new index on leads"]
+[One per owner answer in the approval's Pre-authorizations block.]
+- Stop condition: [what would otherwise stop the executor]
+- Answer: [the owner's answer — the recommended default or another choice]
+- Source: owner approval, [date]
+- Affects: [T003]
+
 ## Contracts and Data Changes
 **Conditional** — include only for APIs, schemas, events, shared DTOs, or more
 than one workstream.
@@ -107,14 +114,24 @@ than one workstream.
 - Compatibility: additive | breaking | migration required
 - Stabilization checkpoint: CP-001
 
+## External Tool Access
+**Conditional** — include when a task depends on an MCP server, a design
+tool, or another external service. `/plan` probes each one; an executor does
+not re-check a blocker recorded here.
+
+| Tool | Access needed | Probe and result | Date |
+|---|---|---|---|
+| [Figma MCP] | [read / write (`use_figma` needs an edit seat)] | [`get_metadata <node>` — ok / error text] | [YYYY-MM-DD] |
+
 ## Workstreams
 - ws-main: [scope — default single workstream]
 - [ws-other: only per the skill's workstream criteria; note the contract checkpoint that
   gates it]
 
 ## Task Index
-[Dependency order. Each task's full packet lives in the todo file / tracker per
-task.md; this is the ordered index. Every task names at least one REQ or TD id.
+[Dependency order. Within it, tasks with no checkpoint dependency come before
+checkpoint-gated tasks so they can start early. Each task's full packet lives
+in the todo file / tracker per task.md; this is the ordered index. Every task names at least one REQ or TD id.
 Ids are stable after approval — a dropped task keeps its id and is struck
 through as superseded.]
 

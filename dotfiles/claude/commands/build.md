@@ -86,8 +86,19 @@ inventing a decision. Report what is missing instead of guessing.
 Use **one executor per workstream, not one per task**.
 
 - first selected task in a workstream -> fresh named `executor`;
-- later tasks in that workstream -> resume the same executor;
-- tasks inside a workstream stay sequential and follow dependency order.
+- later tasks in that workstream -> resume the same executor only when both
+  hold: it was idle under about 5 minutes (the prompt-cache lifetime), and its
+  context is under about 150k tokens;
+- otherwise -> a fresh executor. Its packet carries the task packet, the
+  previous handoff report, and the workstream's commits so far, so nothing the
+  old executor knew is lost;
+- tasks inside a workstream stay sequential and follow dependency order;
+- among dependency-ready tasks, dispatch those with no checkpoint dependency
+  before checkpoint-gated ones.
+
+A resume after the cache expired rewrites the whole context at full price. A
+large context also slows and degrades the executor. (LD-507: one executor grew
+from 79k to 344k tokens and was resumed after 62 minutes idle.)
 
 ### Checkout and infrastructure readiness
 
@@ -109,6 +120,32 @@ lacks it, reconcile the project runner changes first. Do not force arbitrary
 merges or refresh dependencies merely because a ticket is behind the default
 branch. Claude's dispatch hook enforces this; other runtimes must perform the
 same readiness check explicitly.
+
+When the project's worktree setup script (such as `bin/worktree-setup.sh`)
+fails, do not replay its steps by hand:
+
+- report the failing step and its error output;
+- use an override only when the project documents one, and name it in the
+  report;
+- with no documented override, the checkout is not ready: report BUILD
+  BLOCKED with route `owner`;
+- never copy an improvised workaround into executor packets.
+
+### Test baseline
+
+When the tree has failures before the change, record them once before
+dispatch. Run the suite once with machine-readable output: JUnit XML (for
+example `--log-junit <file>` or `--reporter=junit`) or the runner's
+equivalent. Save it in the scratchpad. Do not rerun the suite to re-parse its
+text output. Each later comparison writes JUnit too and compares by test
+identity:
+
+```bash
+python3 ~/.claude/skills/executor-development-discipline/scripts/junit-diff.py <baseline.xml> <after.xml>
+```
+
+It exits 1 on a new failure, a newly skipped test, or a baseline test missing
+from the later run. Pass the baseline path to executors in the packet.
 
 ### Checkpoints gate dependency-readiness
 
@@ -139,12 +176,17 @@ Send only what is needed to start correctly:
 - `is_last_selected_task_in_workstream: yes|no`;
 - the todo path and task id whose `Status:` the executor sets to `Done` in its
   completing commit;
+- for a fresh executor on a later task: the previous handoff report and the
+  workstream's commit ids so far;
+- the test-baseline JUnit path, when one was recorded;
+- pre-authorization `TD-###` ids and external-tool blockers the plan records;
 - workstream verification command when applicable;
 - useful pointers to project/module rules, one or two precedents, and any shared
   contract/invariant.
 
 Prefer pointers over pasted documents. Do not dump the full spec, plan, project
-rules, investigation transcript, or another agent's output.
+rules, investigation transcript, or another agent's output. The previous
+handoff report is the one exception.
 
 ### Skills
 
@@ -278,8 +320,8 @@ another reverted.
 Check executor evidence against the selected acceptance criteria and shared
 invariants under the development skill's completion rules. A green command
 or executor summary alone does not establish an outcome its checks did not
-exercise. Return an evidence gap to the same executor for focused verification;
-route missing plan decisions or behavior conflicts under §2.
+exercise. Return an evidence gap to the owning workstream's executor for
+focused verification, resumed or fresh under §2's rule; route missing plan decisions or behavior conflicts under §2.
 
 Confirm affected project documentation matches the integrated result under
 `../references/documentation-practices.md` §Project documentation. Return stale
@@ -347,9 +389,13 @@ The plan checks in §1 still apply; task resume does not.
 2. The scope is every finding still `open` that is BLOCKER or REQUIRED and not
    pre-existing (`baselineState` is not `unchanged`), plus any ADVISORY the user
    named. Nothing else: no refactor, no plan task, no other finding.
-3. Group findings that touch the same files into one workstream. Dispatch an
-   executor per workstream with, for each finding: id, `file:line`, claim,
-   failure scenario and recommendation. A class finding lists every instance.
+3. Group findings that touch the same files into one workstream. Dispatch a
+   fresh executor per workstream; never resume a build executor. Its packet
+   carries, for each finding: id, `file:line`, claim, failure scenario and
+   recommendation. A class finding lists every instance. It also carries the
+   workstream's previous handoff report and the candidate diff (`git diff
+   <candidate base>...HEAD`). When this session has no handoff report (an
+   overnight run), pass the ticket's commit log instead.
 4. The executor fixes test-first: a test that fails on the finding, then the
    fix (Prove-It). If the code is already right, it changes nothing and
    reports the finding as disputed, with `file:line` evidence; the next

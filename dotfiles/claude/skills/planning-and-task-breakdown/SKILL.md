@@ -74,7 +74,9 @@ Describe the current-to-proposed implementation flow, affected areas, and
 component responsibilities without production code or repeated requirements.
 Record a `TD-###` only when two or more plausible implementations existed and
 the choice needs to survive review; cite its spec, project-rule, precedent, or
-new technical-decision source. Id rules live in
+new technical-decision source. The owner's answer to a pre-authorized stop
+condition is also a `TD-###` (the Pre-authorizations block of `/plan`); its source is the
+approval. Id rules live in
 `../../references/plan-quality-gates.md` §3.
 
 ### Behavioral Tasks and Dependencies
@@ -110,6 +112,9 @@ plan, owns actual concurrency and isolation.
 Independent workstreams share no files or mutable state and have no unfinished
 dependency. Contract-separated workstreams retain their dependency and cannot
 start downstream work until the named checkpoint passes.
+
+Order tasks with no checkpoint dependency before checkpoint-gated tasks, so
+they can start early. Dependency order still wins.
 
 Add a `CP-###` only after a risky schema/external-contract decision, before
 dependent work consumes a new contract, or after multiple workstreams integrate.
@@ -147,7 +152,11 @@ Before presenting the plan for human review, confirm:
   `../../references/repository-precedent.md` §1; any intended change is explicit;
 - every task is behavioral, ordered, dispatchable, and covered by requirements;
 - workstreams and checkpoints follow actual dependencies and risk;
-- verification commands come from repository evidence; and
+- verification commands come from repository evidence;
+- each external tool the plan depends on was probed, and the result is
+  recorded, not asserted;
+- each foreseeable stop condition appears in the Pre-authorizations block
+  with a recommended default; and
 - the applicable checks in `../../references/plan-quality-gates.md` §4 pass.
 
 Fix plan-level failures and rerun the check. Return behavioral conflicts to
@@ -187,8 +196,10 @@ The plan indexes tasks; the todo or tracker owns their full packets. Never copy
 the same task packet into both. New plans start with `Status: Draft` and
 `Handoff: Awaiting plan approval`; revisions follow Changes and Reapproval below.
 After explicit human approval, record
-`Status: Approved`, `Approved by`, `Approved at`, and
-`Handoff: Ready for /build`, then stop. `/plan` does not implement or invoke
+`Status: Approved`, `Approved by`, `Approved at`,
+`Handoff: Ready for /build`, and a `TD-###` for each pre-authorization answer.
+Commit the plan and todo in one scoped commit with the `Refs:` trailer, then
+stop. `/plan` does not implement or invoke
 `/build`.
 
 ## Changes and Reapproval

@@ -43,16 +43,36 @@ if [ "$blocks" -ge "$MAX_BLOCKS" ] || { [ "$active" = "true" ] && [ "$blocks" -e
 fi
 [ -n "$transcript" ] && [ -f "$transcript" ] || exit 0
 
-# Last assistant message, text blocks joined. Transcripts are JSONL; a line
-# that is not JSON makes the slurp fail, which allows.
+# The report. A writer delivers it through the SubagentHandback tool, so the
+# latest SubagentHandback call's input.message is the report, plus any text
+# after it. That call counts only when no other tool call follows it: a run
+# that kept working after an earlier handback (a resumed executor) must hand
+# back again. Without a current handback, the report is the last assistant
+# message, text blocks joined. Transcripts are JSONL; a line that is not JSON
+# makes the slurp fail, which allows.
 report="$(jq -rs '
   [ .[]
     | select((.type == "assistant") or (.message.role? == "assistant"))
     | .message.content
-    | if type == "string" then .
-      else ([ .[]? | select(.type == "text") | .text ] | join("\n")) end
-    | select(length > 0)
-  ] | last // ""' "$transcript" 2>/dev/null)" || exit 0
+    | if type == "string" then [{type: "text", text: .}] else [ .[]? ] end
+  ] as $msgs
+  | ([ $msgs | to_entries[]
+       | select(any(.value[]; .type == "tool_use" and .name == "SubagentHandback"))
+       | .key ] | last) as $h
+  | if $h != null
+       and ([ $msgs[$h + 1:][][]
+              | select(.type == "tool_use") ] | length) == 0
+    then
+      [ ([ $msgs[$h][] | select(.type == "tool_use" and .name == "SubagentHandback")
+           | .input.message // "" | if type == "string" then . else tostring end ] | last),
+        ($msgs[$h + 1:][][] | select(.type == "text") | .text) ]
+      | map(select(length > 0)) | join("\n")
+    else
+      [ $msgs[]
+        | [ .[] | select(.type == "text") | .text ] | join("\n")
+        | select(length > 0)
+      ] | last // ""
+    end' "$transcript" 2>/dev/null)" || exit 0
 [ -z "$report" ] && exit 0
 
 missing=()

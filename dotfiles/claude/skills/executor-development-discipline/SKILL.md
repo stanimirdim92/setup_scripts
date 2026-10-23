@@ -44,7 +44,9 @@ reproduction test before the fix.
 
 Issue independent read-only operations (file reads, greps, git inspection) in a
 single turn; serialize only when one call needs another's output. Mutating
-operations stay one per step and follow the TDD loop.
+operations stay one per step and follow the TDD loop. Change source and test
+files with Edit or Write, never a Bash heredoc, `sed -i` or a script: the
+formatter hook below runs only on Edit and Write.
 
 ## Verify at the Right Cadence
 
@@ -59,8 +61,14 @@ At task completion:
 - run every verification command required by the task packet;
 - run the project's own linter and static analyser on the changed files when
   the project defines them (its scripts, CI, or config such as PHPStan,
-  ESLint, ruff, clippy); fix what the change introduced, and leave older
-  errors in untouched code alone, reported as pre-existing;
+  ESLint, ruff, clippy). Changed files include new files and new tests. Fix
+  what the change introduced, and leave older errors in untouched code alone,
+  reported as pre-existing;
+- when the packet names a test-baseline JUnit file, write the same suite's
+  JUnit output and compare by test identity with
+  `~/.claude/skills/executor-development-discipline/scripts/junit-diff.py
+  <baseline> <after>`. Report its result. Do not rerun the suite to re-parse
+  text output;
 - format with the project's formatter, never by hand against it. In Claude
   Code the `format-edited-file.sh` hook formats each edited file; where no
   hook runs (Codex), run the project's formatter on the changed files;

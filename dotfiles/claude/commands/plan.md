@@ -39,6 +39,12 @@ rules. The plan and task templates own document structure. Inspect existing
 targets before writing; revise only the same work and preserve stable ids.
 Honor project-defined output locations and the skill's external-tracker rules.
 
+Probe each external tool the plan depends on before you claim access. Make
+one cheap read call, for example one Figma read. Record the tool, the probe
+and its result in the plan's External Tool Access section. Read access does
+not prove write access: Figma write tools (`use_figma`) need an edit seat.
+Record write access as unproven until a probe or the owner confirms it.
+
 New plans start as Draft. For existing plans, apply
 `../references/plan-quality-gates.md` §1: editorial changes preserve approval;
 material changes set Needs replan immediately and require renewed approval.
@@ -49,7 +55,7 @@ task packets, including decisions and context pointers needed by a fresh
 plan covers the spec and every packet is complete:
 
 ```bash
-python3 "$HOME/.claude/skills/planning-and-task-breakdown/scripts/check-plan.py" \
+python3 ~/.claude/skills/planning-and-task-breakdown/scripts/check-plan.py \
     docs/tasks/<TICKET>-plan.md --todo docs/tasks/<TICKET>-todo.md --spec docs/specs/<TICKET>-SPEC.md
 ```
 
@@ -57,6 +63,19 @@ Fix every FAIL before presenting the plan: a requirement with no task, a task
 naming a requirement the spec lacks, a dependency on an undefined id, or a
 packet missing Status, Requirements, Acceptance criteria or Verification. Report their locations,
 plan status, remaining blockers, and handoff state.
+
+End the approval request with a short `Pre-authorizations` block. List each
+foreseeable stop condition the plan contains, for example:
+
+- a schema or index change;
+- an external design tool that fails or lacks access;
+- a stop condition in a task packet or the executor's stop list.
+
+Give each one a recommended default, so one approval answers them all.
+Record each answer as a `TD-###` in the same edit that records approval.
+An answer that changes task scope, a dependency or a verification command is
+a material change (`../references/plan-quality-gates.md` §1). A stop condition
+the owner does not pre-authorize stays a stop.
 
 Only explicit human approval permits Approved and Ready for /build. One
 exception: `tools/run/ticket.py` approves a plan for a spec the owner approved
@@ -67,6 +86,9 @@ report with the handoff line of `../references/stage-handoff.md`:
 `result=BLOCKED route=/spec ids=<REQ ids> decide=<n>` for a `SPEC
 CONFLICT`, `result=BLOCKED route=owner` for a plan that waits for a
 person. The runner reads only this line. After
-approval, stop and recommend `/clear` before `/build`, which resumes from the
+approval, commit the plan and todo in one scoped commit. Stage only those two
+files. End the message with the `Refs: <TICKET>` trailer
+(`git-workflow-and-versioning` §Ticket trailers). Then stop and recommend
+`/clear` before `/build`, which resumes from the
 plan and task packets (ADR 0084). `/plan` authorizes planning only; it does not implement or invoke
 `/build`, `/test`, `/review`, or `/ship`.

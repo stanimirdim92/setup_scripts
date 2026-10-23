@@ -96,7 +96,7 @@ Three id spaces, one owner each, none reused:
 |---|---|---|---|
 | `REQ-###` | spec | `/spec` | A behavior the system must provide |
 | `DEC-###` | spec | `/spec` | A material product/domain/contract/lifecycle decision |
-| `TD-###` | plan | `/plan` | A technical decision between plausible implementations |
+| `TD-###` | plan | `/plan` | A technical decision between plausible implementations, or the owner's answer to a pre-authorized stop condition |
 | `T###` | plan | `/plan` | A task |
 | `CP-###` | plan | `/plan` | A checkpoint |
 
@@ -146,6 +146,9 @@ takes the next unused number.
   search fails the approval check.
 - Every verification command comes from repository evidence — the recon report,
   package manifests, CI config — never guessed.
+- **Every external tool a task depends on is probed, not asserted.** The plan's
+  External Tool Access table records the probe and its result. Read access
+  does not prove write access. An unprobed dependency fails the approval check.
 - In a full plan, Open Questions reads `None`; a compact plan omits the section
   when none exist. Anything about feature behavior is a `SPEC CONFLICT`, not an
   open question.
@@ -210,7 +213,7 @@ a compaction summary.
 and the branch's commits:
 
 ```bash
-python3 "$HOME/.claude/skills/spec-driven-development/scripts/check-ledger.py" <TICKET>
+python3 ~/.claude/skills/spec-driven-development/scripts/check-ledger.py <TICKET>
 ```
 
 `/review` runs it, and `/ship` runs it with `--ship`, which also fails on an
