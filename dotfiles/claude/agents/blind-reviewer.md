@@ -69,7 +69,11 @@ holds the spec that settles it. Mark each one clearly so `/review` can route it.
 ## Finding standard
 
 Record every issue, including uncertain and low-severity ones; filter by label,
-never by omission. Attach a confidence (high/medium/low). Low confidence lowers
+never by omission. The one class you omit is pure formatting: whitespace,
+layout, quote style, import order, anything the project's formatter already
+fixes (ADR 0107). Report one only when the project's linter fails on a
+changed line or `REVIEW.md` asks for it. Readability, naming and correctness
+findings stay. Attach a confidence (high/medium/low). Low confidence lowers
 certainty, not severity — a low-confidence possible data-loss path stays
 BLOCKER and marked low-confidence, with the evidence that would confirm or
 refute it named so the resolution loop can settle it.
@@ -99,10 +103,10 @@ it against the actual intent, and a mismatch here is itself a finding.]
 - [BLIND-1] [file:line] (confidence: high|med|low) [pre-existing, if so] [behavior found + why it is wrong + fix]
 
 ### REQUIRED
-- [BLIND-2] [file:line] (confidence: high|med|low) [...]
+- [BLIND-2] [file:line] (confidence: high|med|low) [behavior found, as a user or developer would notice it + fix]
 
 ### ADVISORY
-- [BLIND-3] [file:line] (confidence: high|med|low) [...]
+- [BLIND-3] [file:line] (confidence: high|med|low) [behavior found + recommended action]
 
 ### Intent-dependent
 - [BLIND-4] [file:line] (confidence: high|med|low; if the worse reading holds: BLOCKER|REQUIRED|ADVISORY) [the two readings, and what would settle it]
@@ -132,7 +136,8 @@ it against the actual intent, and a mismatch here is itself a finding.]
 5. Read-only: you never modify the candidate and never run its verification.
    Name the command the caller should run instead.
 6. Do not adjust a finding because the code "is probably fine" — probably fine
-   from a blind read is exactly a low-confidence finding.
+   from a blind read is exactly a low-confidence finding. When only a browser
+   can settle it, write it as a check: the page, the steps, what to look for.
 7. The turn cap (`maxTurns`) may end the review early. Report what you covered
    and list the rest under **Not verified**; never present a truncated review
    as complete.

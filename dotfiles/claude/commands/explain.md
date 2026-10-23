@@ -75,8 +75,9 @@ Put these sections in this order:
 
    Say on the page that time outside commits is not counted.
 7. **Findings**: every open finding with its disposition (BLOCKER, REQUIRED,
-   ADVISORY), id, file, and one-line claim. Resolved findings go in a closed
-   `<details>` element.
+   ADVISORY), id, file, and one-line claim. Show a duplicate group as one
+   entry with every alias id (`CODE-5 = BLIND-7`). Resolved findings,
+   `answered` ones included, go in a closed `<details>` element.
 8. **Rollback and decision**: the `/ship` rollback plan and decision, or
    "not shipped".
 

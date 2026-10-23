@@ -4,8 +4,11 @@
 /review writes one SARIF file per round to $(git rev-parse --git-common-dir)/review/,
 and /ship writes each finding's resolution into it (ADR 0093). A finding that
 ends `fixed` was worth raising. One that ends `refuted` was noise: the code was
-already right. `accepted`, `deferred` and `follow-up` are real but not fixed
-now; `declined` is an ADVISORY the author chose not to take.
+already right. `answered` is a question the approved spec already answers, or
+a restatement of the owner's own request: neither a bug found nor a false
+positive, so it counts in no noise figure. `accepted`, `deferred` and
+`follow-up` are real but not fixed now; `declined` is an ADVISORY the author
+chose not to take.
 
 Each finding also carries a `class`, a short slug for the kind of defect
 (`missing-tenant-scope`, `n-plus-one`). A class that keeps coming back across
@@ -31,7 +34,8 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-ENDINGS = ('fixed', 'refuted', 'accepted', 'deferred', 'follow-up', 'declined', 'open')
+ENDINGS = ('fixed', 'refuted', 'answered', 'accepted', 'deferred', 'follow-up', 'declined', 'open')
+UNJUDGED = ('open', 'answered')    # not judged real or false: outside every noise figure
 NAME = re.compile(r'^(?P<ticket>.+)-(?P<sha>[0-9a-f]{7,40})\.sarif$')
 
 
@@ -81,17 +85,18 @@ def repeats(t, min_tickets=3):
     """Classes seen in at least min_tickets tickets, with what to do about each.
 
     A finding is one per ticket: a class raised five times on one ticket is
-    one fix round, not a pattern. 'fix' when most closed findings were real,
-    'silence' when most were refuted, 'watch' while most are still open."""
+    one fix round, not a pattern. 'fix' when most judged findings were real,
+    'silence' when most were refuted, 'watch' while none is judged yet.
+    `answered` is not judged: the spec settled it, not the code."""
     out = []
     for name, tickets in sorted(t['classes'].items()):
         if len(tickets) < min_tickets:
             continue
         endings = Counter(e for found in tickets.values() for e, _ in found)
-        closed = sum(endings.values()) - endings['open']
-        if not closed:
+        judged = sum(endings.values()) - sum(endings[e] for e in UNJUDGED)
+        if not judged:
             action = 'watch'
-        elif endings['refuted'] * 2 > closed:
+        elif endings['refuted'] * 2 > judged:
             action = 'silence'
         else:
             action = 'fix'
@@ -106,7 +111,7 @@ ACTIONS = {
            'else a REVIEW.md "Always check" line if it is a project convention; '
            'else a CLAUDE.md line if it is how the code gets written.',
     'silence': 'mostly refuted: add it to REVIEW.md "Do not report", or narrow the reviewer prompt.',
-    'watch': 'still open on every ticket: decide after /ship resolves them.',
+    'watch': 'nothing judged yet (open or answered): decide after /ship resolves them.',
 }
 
 
@@ -127,8 +132,8 @@ def report(t):
     lines = ['FINDINGS BY REVIEWER (how each ended)',
              f'  {"reviewer":<30} {"total":>5} ' + ' '.join(f'{e:>9}' for e in ENDINGS) + '   noise']
     for name, c in sorted(t['reviewers'].items()):
-        closed = c['total'] - c['open']
-        noise = f'{c["refuted"] / closed:.0%}' if closed else '—'
+        judged = c['total'] - sum(c[e] for e in UNJUDGED)
+        noise = f'{c["refuted"] / judged:.0%}' if judged else '—'
         lines.append(f'  {name:<30} {c["total"]:>5} ' + ' '.join(f'{c[e]:>9}' for e in ENDINGS) + f'   {noise:>5}')
     lines += ['', 'BY DISPOSITION']
     for disp in ('BLOCKER', 'REQUIRED', 'ADVISORY'):
@@ -148,8 +153,9 @@ def report(t):
     found = repeats(t)
     if found:
         lines += ['', repeats_report(found, 3)]
-    lines += ['', 'noise = refuted / closed findings. A reviewer with high noise is a candidate for a',
-              'REVIEW.md rule or a prompt change; measure the change with the review eval.']
+    lines += ['', 'noise = refuted / judged findings (all but open and answered). A reviewer with high',
+              'noise is a candidate for a REVIEW.md rule or a prompt change; measure the change with',
+              'the review eval. answered = the spec or the owner\'s request already settled it.']
     return '\n'.join(lines)
 
 

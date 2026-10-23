@@ -257,7 +257,7 @@ Analysis` template (Current Coverage / Recommended Tests / Priority).
 - [CODE-2] ...
 
 ### ADVISORY
-- [CODE-3] ...
+- [CODE-3] ... [problem + recommended action]
 
 ### What's Done Well
 - [...]
@@ -283,7 +283,7 @@ Analysis` template (Current Coverage / Recommended Tests / Priority).
 - [BLIND-2] ...
 
 ### ADVISORY
-- [BLIND-3] ...
+- [BLIND-3] ... [behavior + recommended action]
 
 ### Intent-dependent
 - [BLIND-4] [file:line] [the two readings, and what would settle it]
@@ -318,6 +318,10 @@ finding names the class and lists every instance in the diff, so one fix round
 removes all of them (ADR 0089). Style is not a finding: formatting, layout,
 import order and naming taste belong to the project's formatter and linter,
 unless that linter fails on a changed line or `REVIEW.md` asks (ADR 0107).
+Every finding, ADVISORY included, states what a user or developer would
+notice and a recommended action. A finding only a browser can settle is
+written as a check (page, steps, what to look for); `/review` routes it to
+`/test`, and to the owner only when the verifier cannot run it.
 A defect present at the candidate base that the
 diff does not introduce or reach is marked `pre-existing` (§Dispositions).
 When the packet holds the project's `REVIEW.md`, its definition of Important
@@ -433,6 +437,9 @@ every finding with disposition and its `REQ-###` where applicable, and one
 requirement-evidence line per spec `REQ-###` (implementation + verification, or
 an explicit gap — `/ship` blocks on a missing entry). Confidence travels with
 each finding so `/ship` can tell a confirmed BLOCKER from a suspected one.
+Every id stays in the report. Duplicates across reviewers are grouped under
+one primary id with aliases (`CODE-5 = BLIND-7`) at the group's highest
+disposition. Answered findings share one `Answered:` line with their ids.
 
 ### Review SARIF
 
@@ -464,6 +471,13 @@ reviewer; the disposition decides `level` (§Dispositions):
 `baselineState` is `unchanged` for a pre-existing finding and `new` otherwise.
 `verification` is the BLOCKER check's verdict (CONFIRMED, REFUTED or UNSURE);
 other findings omit it.
+`resolution` is `open`, `fixed`, `refuted` (the claim is false), `answered`
+(the approved spec answers it, or it restates the owner's request; never a
+BLOCKER), `accepted`, `deferred`, `follow-up` or `declined`. `/review` sets
+`answered`; `/ship` sets the rest. `review-noise.py` counts `answered` as
+neither a finding fixed nor noise.
+`aliases` lists the other ids of a duplicate group (`["BLIND-7"]`). Each id
+stays its own result.
 `class` is a short kebab-case name for the kind of defect, the same name for
 the same kind on every ticket. Reuse a name from `review-noise.py --classes`
 when one fits; coin a new one only when none does (ADR 0105).
@@ -487,6 +501,7 @@ report is lost.
 
 ### Required findings / refutations / accepted risks
 - ...
+- Answered: [ids] — the spec or the owner's request already settles them (or: none)
 
 ### Pre-existing findings (follow-ups)
 - [id] [disposition] — tracked in [ticket or observation-log row]
@@ -495,7 +510,9 @@ report is lost.
 - [class] — [N] tickets; [lint rule | REVIEW.md line | CLAUDE.md line | Do not report]: "[proposed text]" (or: none)
 
 ### Human time
-- [ticket-stats.py row: decisions, open items, approvals, review rounds, findings, active time, tokens, cost]
+[ticket-stats.py header and row, exactly as printed]
+
+[One sentence: what these numbers mean for this ticket.]
 
 ### Shipped-bug record
 - [observation-log row] · eval: `review-eval/run.py --new [name] --repo [project] --fix [sha]` (or: not an escaped bug)
@@ -528,7 +545,10 @@ carrying both implementation and verification evidence, every REQUIRED finding
 resolved/risk-accepted/deferred with a reason, passed release-readiness
 attestations, a concrete rollback plan, and an explained tree state. **GO is a
 readiness verdict only — it does not authorize push, tag, deploy, release,
-protected-branch mutation, or history rewriting.**
+protected-branch mutation, or history rewriting.** `/ship` sets an open
+item's disposition only from a recorded owner decision, and quotes it. After
+the verdict it asks one multi-select question: send selected ADVISORY
+findings to `/build`, post the summary to Jira. Nothing runs unselected.
 
 ## 6. Operator tools
 

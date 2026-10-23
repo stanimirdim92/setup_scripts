@@ -77,8 +77,10 @@ Start with one count line: `**Findings:** N BLOCKER · N REQUIRED · N ADVISORY`
 or `**Nothing to fix.**` when there are none.
 
 Give each finding a stable id (`SEC-1`, ...), severity, confidence, file:line,
-attack path or failure mode, impact, and specific remediation. Include positive
-observations only when they are concrete and useful.
+attack path or failure mode, impact, and specific remediation. Every finding,
+ADVISORY included, carries a remediation. State the impact as what a user or
+attacker would notice. Include positive observations only when they are
+concrete and useful.
 
 Do not invent vulnerabilities from uncertainty; name what could not be verified.
 

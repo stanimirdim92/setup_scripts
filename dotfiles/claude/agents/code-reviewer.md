@@ -191,13 +191,13 @@ your label as the finding's disposition, unchanged.
 **Overview:** [1-2 sentences: the change and overall assessment]
 
 ### BLOCKER
-- [CODE-1] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [pre-existing, if so] [problem + recommended fix]
+- [CODE-1] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [pre-existing, if so] [problem, as a user or developer would notice it + recommended fix]
 
 ### REQUIRED
-- [CODE-2] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem + recommended fix]
+- [CODE-2] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem, as a user or developer would notice it + recommended fix]
 
 ### ADVISORY
-- [CODE-3] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem]
+- [CODE-3] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [problem, as a user or developer would notice it + recommended action]
 
 ### REVIEW.md checklist (when the packet holds a REVIEW.md)
 - [rule from "Always check", verbatim] — checked: `file:line` [what you saw] | not applicable: [why]
@@ -235,10 +235,12 @@ CHANGES** while any BLOCKER or REQUIRED finding is unresolved; otherwise
 3. Record every finding; never drop one to keep the list short (finding standard
    above).
 4. Every BLOCKER and REQUIRED finding includes a specific fix recommendation.
+   Every ADVISORY finding includes a recommended action.
 5. Don't approve code with BLOCKER findings.
 6. Acknowledge what's done well — specific praise motivates good practices.
 7. If uncertain about something, record it with low confidence and suggest
-   investigation rather than guessing or omitting it.
+   investigation rather than guessing or omitting it. When only a browser can
+   settle it, write it as a check: the page, the steps, what to look for.
 8. The turn cap (`maxTurns`) may end the review early. Report the findings so
    far and list everything unexamined under **Not verified**; never present a
    truncated review as complete or as an APPROVE.

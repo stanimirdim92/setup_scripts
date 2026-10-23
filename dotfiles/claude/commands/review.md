@@ -173,8 +173,15 @@ unchanged; change one only with a stated reason.
 End the report with the handoff line of `../references/stage-handoff.md`:
 `HANDOFF: result=CLEAN|FINDINGS|BLOCKED route=… ids=… decide=…`. `route`
 is `none` when clean, `/build` while BLOCKER or REQUIRED findings remain
-(their ids in `ids`), `owner` when a person must decide. The runner reads
+(their ids in `ids`), `/test` when browser checks remain and no BLOCKER or
+REQUIRED does (below), `owner` when a person must decide. The runner reads
 only this line.
+
+A finding that asks for a check in a browser goes to the verifier, not to the
+owner. List it with the page, the steps and what to look for, so `/test` can
+run it before `/ship`. The finding keeps its disposition until that evidence
+exists. Only when the verifier cannot run the check (no browser tool, no
+running app) does it go to the owner, as before.
 
 `blind-reviewer` also returns two things no other reviewer produces, and both
 are yours to resolve because you are the only participant holding the diff
@@ -187,10 +194,16 @@ are yours to resolve because you are the only participant holding the diff
   cannot tell.
 - **Intent-dependent findings** — where correctness genuinely turns on
   information the reviewer was not given. Settle each against the acceptance
-  criteria you hold: close it as answered, or promote it to its warranted
+  criteria you hold: close it as `answered`, or promote it to its warranted
   disposition when the criteria confirm the defect. Never pass one through
   unresolved; an unresolved intent-dependent finding is work you skipped, not a
   finding you reported.
+
+A finding of any reviewer resolves as `answered` when the approved spec already
+answers it, or when it restates what the owner asked for. Name the `REQ-###`
+or `DEC-###` line that answers it, and confirm the code matches that line.
+`answered` is not `refuted`: `refuted` means the claim is false. A BLOCKER
+never resolves as `answered`; it follows §Verify each BLOCKER and `/ship`.
 
 Every finding keeps a stable id, source, disposition, confidence,
 file/location, and resolution state. Confidence travels with the
@@ -273,11 +286,28 @@ Report, starting with one count line before anything else (ADR 0099):
 - each reviewer result under its own heading;
 - the verification verdict of every BLOCKER, with its evidence;
 - all findings with canonical disposition, each tagged with the `REQ-###` it
-  bears on when it bears on one;
+  bears on when it bears on one, in the form below;
 - **requirement evidence**: one line per `REQ-###` in the spec — the change that
   implements it and the verification that proves it, or an explicit statement
   that one of those is missing. `/ship` blocks on a missing entry, so report the
   gap rather than leaving the requirement off the list.
+
+Write the findings so the owner can act on them without the code open:
+
+- Keep every finding and its id. Never drop or merge one away.
+- Group duplicates across reviewers under one primary id with its aliases:
+  `CODE-5 = BLIND-7`. The disposition and the resolution apply to all of them.
+  The group takes the highest disposition among them; say "raised: duplicate
+  of <id>" for any finding it raises. Never lower one.
+- Each line says, in plain words: what a user or developer would notice, the
+  recommended action, and the choice it asks of the owner (or "none").
+- An ADVISORY finding carries a recommendation too.
+- Put the findings the spec answers, or that restate the owner's request, in
+  one line: `Answered: CODE-4, BLIND-2 (REQ-003, DEC-005)`.
+
+Example: `CODE-1 = BLIND-12 · REQUIRED · An import of 50k rows takes about
+a minute with no progress shown. Fix: add a progress bar. Your choice: fix
+now, or accept and measure after release.`
 
 Also write every finding to a SARIF 2.1.0 file, so code-scanning tools can
 read the review (`../references/component-response-contracts.md` §Review SARIF):
@@ -285,6 +315,12 @@ read the review (`../references/component-response-contracts.md` §Review SARIF)
 ```bash
 out="$(git rev-parse --git-common-dir)/review/<TICKET>-$(git rev-parse --short HEAD).sarif"
 ```
+
+In a worktree, the Write tool may refuse that path. Write the file to the
+scratchpad first. Print the target with `git rev-parse --path-format=absolute
+--git-common-dir`. Then run `mkdir -p` and a plain Bash `cp` with both paths
+written out literally, with no variables or `$(...)`. Each id stays its own
+SARIF result. Record a group's aliases in each member's `properties.aliases`.
 
 Give every finding a `class` (§Review SARIF). List the names already in use
 first, and reuse one when it fits:

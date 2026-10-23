@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fixture tests for review-noise.py: endings per reviewer, noise as refuted over
-closed findings, verification verdicts, review rounds, repeated classes."""
+judged findings, `answered` counted apart, verification verdicts, review rounds,
+repeated classes."""
 import importlib.util
 import io
 import json
@@ -51,6 +52,16 @@ class ReviewNoise(unittest.TestCase):
         self.assertRegex(out, r'blind-reviewer\s+1 .*100%')
         self.assertIn('more than one: AB-1 (2)', out)
 
+    def test_answered_is_neither_found_nor_noise(self):
+        # LD-507: a question the spec already answers is not a false positive.
+        (self.dir / 'AB-3-1a2b3c4.sarif').write_text(sarif(
+            ('blind-reviewer', [{'disposition': 'ADVISORY', 'resolution': 'answered'} for _ in range(3)])))
+        t = rn.tally(sorted(self.dir.glob('*.sarif')))
+        blind = t['reviewers']['blind-reviewer']
+        self.assertEqual((blind['total'], blind['answered'], blind['refuted'], blind['open']), (4, 3, 1, 0))
+        self.assertEqual(t['dispositions'][('ADVISORY', 'answered')], 3)
+        self.assertRegex(rn.report(t), r'blind-reviewer\s+4 .*100%')   # 1 refuted of 1 judged
+
     def test_cli_ticket_filter_and_empty_dir(self):
         with redirect_stdout(io.StringIO()) as out:
             self.assertEqual(rn.main(['--dir', str(self.dir), '--ticket', 'AB-2', '--json']), 0)
@@ -87,6 +98,11 @@ class RepeatedClasses(unittest.TestCase):
         self.assertEqual(rn.repeats(t, min_tickets=4), [])
         t['classes']['open-one'] = {'A': [('open', '')], 'B': [('open', '')], 'C': [('open', '')]}
         self.assertEqual([r['action'] for r in rn.repeats(t) if r['class'] == 'open-one'], ['watch'])
+        t['classes']['spec-said'] = {'A': [('answered', '')], 'B': [('answered', '')], 'C': [('refuted', '')]}
+        t['classes']['mostly-real'] = {'A': [('answered', '')], 'B': [('answered', '')],
+                                       'C': [('fixed', ''), ('fixed', ''), ('refuted', '')]}
+        actions = {r['class']: r['action'] for r in rn.repeats(t)}
+        self.assertEqual((actions['spec-said'], actions['mostly-real']), ('silence', 'fix'))
 
     def test_cli_classes_and_repeats(self):
         with redirect_stdout(io.StringIO()) as out:

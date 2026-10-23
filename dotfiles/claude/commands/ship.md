@@ -40,6 +40,17 @@ Any FAIL is **SHIP BLOCKED**: an `Open` item, a `Pending` task that is not
 superseded, a spec that changed after the plan pin, or untracked deferred work.
 Exit 2 is **SHIP BLOCKED** too. Warnings go into the report.
 
+`/ship` never decides an open item itself. It may set an `OPEN-###`
+disposition only when a recorded owner decision backs it. That is a `DEC-###`
+in the approved spec, or the owner's answer to the question below. Quote the
+`DEC-###` id, or the owner's words with the date, in the disposition. Put every
+other `Open` item to the owner in one question before the verdict: one numbered
+line per item, with what it means for the release. Until the owner answers,
+the item stays `Open` and the result stays **SHIP BLOCKED**. A commit that
+changes only `docs/tasks/<TICKET>-open.md` after review leaves the reviewed
+code unchanged. Report it as "Ledger-only commit after review: <sha>". Any
+other change is still **SHIP BLOCKED**.
+
 Do not independently re-run the trigger matrix or substitute new inline testing
 for a missing gate.
 
@@ -47,15 +58,17 @@ for a missing gate.
 
 Count what the ticket needed from a person (ADR 0112) and what it cost
 (ADR 0113), and print the row for the harness's `observation-log.md`
-"Per ticket" table under "Human time". The row adds active minutes, tokens and
+"Per ticket" table under "Human time". The row adds time, tokens and
 list-price dollars from the ticket's transcripts:
 
 ```bash
 python3 "$HOME/.claude/skills/spec-driven-development/scripts/ticket-stats.py" <TICKET>
 ```
 
-The owner adds it to the harness repository; `/ship` does not write it. It
-never affects GO.
+Print the header and the row exactly as `ticket-stats.py` outputs them, in
+one table. Below it, add one plain sentence that says what the numbers mean
+for this ticket, such as where the owner's time went. The owner adds the row
+to the harness repository; `/ship` does not write it. It never affects GO.
 
 ### Shipped-bug record
 
@@ -124,17 +137,27 @@ in `../references/component-response-contracts.md` §Dispositions.
   does not carry. Unlike a BLOCKER, a REQUIRED finding may be refuted at any
   confidence, but the evidence — not the reviewer's own uncertainty — is what
   resolves it, and it comes from the resolution loop, not from `/ship` itself;
+- a finding `/review` closed as **answered** keeps that resolution: the
+  approved spec already answers it, or it restates the owner's own request.
+  It needs the `REQ-###` or `DEC-###` line that answers it, and code that
+  matches that line. It is not a refutation: the finding's claim may be true.
+  A BLOCKER is never resolved as answered;
+- a finding that asks for a check in a browser is resolved by `/test`'s
+  executed evidence for it (`/review` §4). Only when the verifier could not
+  run the check does it go to the owner;
 - **ADVISORY** findings do not block shipping.
 - A finding marked **pre-existing** does not block at any disposition. List it
   under follow-ups with where it is tracked: a ticket, or an observation-log
   row. A pre-existing BLOCKER with no tracked follow-up is NO-GO.
 
 Write each finding's resolution into the review SARIF file
-(`properties.resolution`): `fixed`, `refuted`, `accepted`, `deferred`,
-`follow-up` for a tracked pre-existing finding, or `open`. ADVISORY findings
-the author declined are `declined`. `review-noise.py` counts these to show
-which reviewers raise findings that end as fixes and which raise noise
-(ADR 0093).
+(`properties.resolution`): `fixed`, `refuted`, `answered`, `accepted`,
+`deferred`, `follow-up` for a tracked pre-existing finding, or `open`.
+ADVISORY findings the author declined are `declined`. Never write `refuted`
+for an `answered` finding: `refuted` means the claim is false, and
+`answered` means the spec or the owner already settled it. `review-noise.py`
+counts these to show which reviewers raise findings that end as fixes and
+which raise noise (ADR 0093). It counts `answered` apart, as neither.
 
 Then check whether this ticket's findings repeat a class from earlier tickets
 (ADR 0105):
@@ -204,7 +227,7 @@ only when that is genuinely sufficient and safe.
 
 GO requires:
 
-- unchanged reviewed candidate;
+- unchanged reviewed candidate (a ledger-only commit is reported, §1);
 - the current-base check passing, or the base unchanged;
 - independent verification satisfied exactly as REVIEW required;
 - no unresolved BLOCKER, except a pre-existing one tracked as a follow-up;
@@ -231,6 +254,7 @@ Return:
 
 ### Required findings / refutations / accepted risks
 - ...
+- Answered: [ids] — the spec or the owner's request already settles them (or: none)
 
 ### Pre-existing findings (follow-ups)
 - [id] [disposition] — tracked in [ticket or observation-log row]
@@ -239,7 +263,9 @@ Return:
 - [class] — [N] tickets; [lint rule | REVIEW.md line | CLAUDE.md line | Do not report]: "[proposed text]" (or: none)
 
 ### Human time
-- [ticket-stats.py row: decisions, open items, approvals, review rounds, findings, active time, tokens, cost]
+[ticket-stats.py header and row, exactly as printed]
+
+[One sentence: what these numbers mean for this ticket.]
 
 ### Shipped-bug record
 - [observation-log row] · eval: `review-eval/run.py --new [name] --repo [project] --fix [sha]` (or: not an escaped bug)
@@ -266,3 +292,14 @@ Return:
 
 GO is a readiness verdict only. It does not authorize push, tag, deploy,
 release, protected-branch mutation, or history rewriting.
+
+## 7. Next steps
+
+After the verdict, ask the owner one multi-select question:
+
+1. send the selected ADVISORY findings to `/build` as a fix round, listed by
+   id with the recommended action; `/test` and `/review` follow as usual;
+2. post the ship summary as a comment on the Jira ticket.
+
+Do nothing until the owner selects. With no selection, stop. A fix round
+makes a new candidate, so this verdict no longer applies to it.

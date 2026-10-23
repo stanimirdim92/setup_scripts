@@ -88,10 +88,10 @@ either correctness or failure.
 - [DIST-1] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [failure scenario in production + recommended fix]
 
 ### REQUIRED
-- [DIST-2] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [...]
+- [DIST-2] [file:line] [REQ-### if it bears on one] (confidence: high|med|low) [failure scenario + recommended fix]
 
 ### ADVISORY
-- [DIST-3] [file:line] (confidence: high|med|low) [...]
+- [DIST-3] [file:line] (confidence: high|med|low) [failure scenario + recommended action]
 
 ### Not verified
 - [mechanism you could not verify from the diff and repository, and the evidence that would settle it]

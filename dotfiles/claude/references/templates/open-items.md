@@ -23,5 +23,9 @@ for everything the spec, plan and todo do not track. The rules for it are in
 - **Disposition**: one of these:
   - `Open`;
   - `Done — <evidence>`;
-  - `Accepted — <reason>`;
-  - `Moved — <ticket>`.
+  - `Accepted — <reason>; <DEC-### or "owner, <date>: <their words>">`;
+  - `Moved — <ticket>; <DEC-### or "owner, <date>: <their words>">`.
+
+  Only the owner accepts or moves an item. An agent writes `Accepted` or
+  `Moved` only from a recorded owner decision, and quotes it. It never
+  decides one itself.
