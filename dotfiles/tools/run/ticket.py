@@ -703,7 +703,9 @@ class Run:
 
         reviews = sorted(self.dir.glob(f'{t}-*-REVIEW.md'), key=lambda p: int(p.name.split('-')[-2]))
         given = f'\n\nREVIEW result — {pl.SUPPLIED}\n\n{reviews[-1].read_text()}' if reviews else ''
-        error, text = self.stage(f'/ship {t}{given}')
+        error, text = self.stage(f'/ship {t}\nUnattended run (ticket.py, ADR 0115): §7\'s question cannot be asked here. '
+                                 'List the ADVISORY fixes you would offer, by id with the recommended action, and say that a '
+                                 f'TICKET NOTE in the thread starts them; the Jira summary is posted by ticket.py.{given}')
         if error:
             return self.stop(f'/ship {error}', cls='retry')
         result = pl.line(text, '(?:GO|NO-GO|SHIP BLOCKED)') or 'no GO / NO-GO line'
@@ -927,7 +929,10 @@ class Run:
         if last.get('route') == '/spec' and self.plan.exists() and not self.plan_stale():   # the committed plan carries it
             report = (self.dir / last.get('report', '')).read_text() if (self.dir / last.get('report', '')).is_file() else ''
             return self.resolve(report[:4000], '/plan', last.get('ids', []), last.get('report', ''))
-        error, text = self.stage(f'/plan {t}')
+        error, text = self.stage(f'/plan {t}\nUnattended run (ticket.py, ADR 0115): take the recommended default of '
+                                 'each pre-authorization, record it as a TD "decided by default (unattended, ADR 0115)", '
+                                 'and list them under "Pre-authorizations taken" in the report; the owner overrides '
+                                 'with a TICKET NOTE.')
         if error:
             return self.stop(f'/plan {error}', cls='retry')
         if not self.plan.exists():

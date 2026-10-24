@@ -55,7 +55,10 @@ SUPPLIED = 'Supplied verbatim by pipeline.py from the previous session (target-s
 # ended with "I am waiting for the verifier's report" and no VERIFY line). Every stage is told so.
 HEADLESS = ('This is a headless `claude -p` run: the session ends with your final message, and any agent still '
             'running in the background is lost. Dispatch every agent in the foreground (run_in_background: false) '
-            'and wait for its report; end only with the complete result line this command requires.')
+            'and wait for its report. No person is at this terminal: never call AskUserQuestion or wait for a '
+            'reply; a question for the owner goes in the report as numbered options, with `route=owner` and '
+            '`decide=<n>` on the HANDOFF line, and the owner answers in Slack. End only with the complete result '
+            'line this command requires.')
 BACKOFF = (10, 300)                # seconds: first wait, longest wait (Symphony's numbers)
 # What a retry can get past: the API or the network, not the task. An auth or billing problem, or a
 # budget or turn cap, stops at once.

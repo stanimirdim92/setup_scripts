@@ -301,6 +301,20 @@ and `--status`, printed by `--watch` when a child exits; **T008** every
 `runner` stop. Not yet run on a real ticket: the first one after this is
 the proof, and `ticket-stats.py`'s `run:` line is the measure.
 
+### 2026-10-24: ADR 0116 merged under the runner
+
+Another session landed ADR 0116 (LD-507 lessons: decision brief in `/spec`,
+pre-authorizations in `/plan`, fresh executors, `/test` tiers, grouped
+review findings, `/ship`'s open-item question and closing multi-select,
+`ticket-stats.py` with elapsed/agent/waiting/owner time). The runner's
+tests all pass on it. Two of its asks have no person in a `-p` session:
+`pl.HEADLESS` now says never to call AskUserQuestion and to put a question
+in the report with `route=owner decide=n`; the `/plan` prompt takes each
+pre-authorization's recommended default as a TD (plan.md says so), and the
+`/ship` prompt lists the ADVISORY fixes instead of asking (ship.md says so).
+`/ship` is still outside the HANDOFF contract; a `B<k>` for its open items
+is a natural next step.
+
 ## 5. Open items and ideas (not started)
 
 - **A live session across a runner crash** is not restored (Symphony does

@@ -150,6 +150,7 @@ class Pipeline(unittest.TestCase):
         for n in (1, 2, 3):
             self.assertIn('Dispatch every agent in the foreground (run_in_background: false)', self.prompt(n))
         self.assertTrue(self.prompt(2).rstrip().endswith('this command requires.'))   # after the handed-on messages
+        self.assertIn('never call AskUserQuestion', self.prompt(2))
 
     def test_every_message_is_saved_for_the_owner(self):
         self.run_pipeline()

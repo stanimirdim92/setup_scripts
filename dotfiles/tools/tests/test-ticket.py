@@ -614,6 +614,19 @@ class Ticket(unittest.TestCase):
         self.assertEqual(classes, [])                                          # not one stop was the runner's
         self.assertNotIn('runner', classes)
 
+    def test_plan_and_ship_prompts_carry_the_unattended_rules(self):
+        full = []
+        real = self.claude
+        self.claude = lambda prompt: (full.append(prompt), real(prompt))[1]
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.DONE)
+        plan = next(p for p in full if p.startswith('/plan'))
+        self.assertIn('take the recommended default of each pre-authorization', plan)
+        ship = next(p for p in full if p.startswith('/ship'))
+        self.assertIn('§7\'s question cannot be asked here', ship)
+        self.assertIn('REVIEW result', ship)                                         # the review still follows
+
     def test_help_shows_the_whole_docstring(self):
         with redirect_stdout(io.StringIO()) as out, self.assertRaises(SystemExit):
             tk.main(['--help'])

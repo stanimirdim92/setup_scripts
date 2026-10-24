@@ -301,5 +301,9 @@ After the verdict, ask the owner one multi-select question:
    id with the recommended action; `/test` and `/review` follow as usual;
 2. post the ship summary as a comment on the Jira ticket.
 
-Do nothing until the owner selects. With no selection, stop. A fix round
+Do nothing until the owner selects. With no selection, stop. Under
+`tools/run/ticket.py` (unattended) there is nobody to ask: list the
+ADVISORY fixes by id with the recommended action, say that a `TICKET NOTE`
+in the ticket's thread starts them, and end; ticket.py posts the summary
+to Jira itself. A fix round
 makes a new candidate, so this verdict no longer applies to it.

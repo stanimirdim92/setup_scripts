@@ -75,7 +75,11 @@ Give each one a recommended default, so one approval answers them all.
 Record each answer as a `TD-###` in the same edit that records approval.
 An answer that changes task scope, a dependency or a verification command is
 a material change (`../references/plan-quality-gates.md` §1). A stop condition
-the owner does not pre-authorize stays a stop.
+the owner does not pre-authorize stays a stop. Under `tools/run/ticket.py`
+(unattended, ADR 0115) each pre-authorization takes its recommended default,
+recorded as a `TD-###` with "decided by default (unattended, ADR 0115)" and
+listed under `Pre-authorizations taken` in the report; the owner overrides
+one with a `TICKET NOTE` in the ticket's thread.
 
 Only explicit human approval permits Approved and Ready for /build. One
 exception: `tools/run/ticket.py` approves a plan for a spec the owner approved
