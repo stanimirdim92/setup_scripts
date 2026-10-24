@@ -334,6 +334,15 @@ rule is 15 minutes idle / 350k context (owner, 2026-10-24) in
 `harness-map.py` (persona skills) became a regex split; it had warned on
 every run and never matched.
 
+### 2026-10-24, evening: audit of every command, reference and agent
+
+`dotfiles/docs/harness-audit-2026-10-24.md`: the map (command → references →
+agents → scripts → HANDOFF → runner), the findings ranked A/B/C and a
+six-step plan. The two A findings: `pipeline.py` has no REVIEW → TEST edge
+although `review.md` emits `route=/test`, and it sends `/build <T> verify
+fixes`, a mode `build.md` does not define. Nothing was changed by the audit
+itself; the plan is for the owner to approve.
+
 ## 5. Open items and ideas (not started)
 
 - **A live session across a runner crash** is not restored (Symphony does
