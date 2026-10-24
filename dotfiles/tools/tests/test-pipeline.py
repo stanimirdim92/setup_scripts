@@ -377,6 +377,24 @@ class Pipeline(unittest.TestCase):
             self.assertIn('HANDOFF: result=', text, name)
             self.assertIn('references/stage-handoff.md', text, name)
         self.assertTrue((root / 'references' / 'stage-handoff.md').exists())
+        build = (root / 'commands' / 'build.md').read_text()
+        for mode in ('## Review fixes', '## Verify fixes'):                  # both prompts pipeline.py sends
+            self.assertIn(mode, build)
+        self.assertIn('CLEAN means no BLOCKER and no REQUIRED', (root / 'references' / 'stage-handoff.md').read_text())
+
+    def test_advisory_only_review_is_clean_and_findings_for_it_disagrees(self):
+        os.environ['STUB_CLEAN_TEXT'] = ('**Findings: 0 BLOCKER · 0 REQUIRED · 3 ADVISORY**\n- CODE-1 ADVISORY\n'
+                                         'HANDOFF: result=CLEAN route=none ids=- decide=0')
+        rc, out = self.run_pipeline()
+        self.assertEqual((rc, self.stages()), (0, ['/build AB-1', '/test AB-1', '/review AB-1']))
+        self.assertIn('ready for /ship', out)
+        self.calls.write_text('')
+        os.environ['STUB_CLEAN_TEXT'] = ('**Findings: 0 BLOCKER · 0 REQUIRED · 3 ADVISORY**\n- CODE-1 ADVISORY\n'
+                                         'HANDOFF: result=FINDINGS route=/build ids=CODE-1 decide=0')
+        subprocess.run(['git', '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'new head'])
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 1)
+        self.assertIn('HANDOFF disagrees with the result line (result=FINDINGS)', out)
 
     def test_backoff_doubles_up_to_the_cap(self):
         self.assertEqual([min(pl.BACKOFF[0] * 2 ** (a - 1), pl.BACKOFF[1]) for a in range(1, 7)],

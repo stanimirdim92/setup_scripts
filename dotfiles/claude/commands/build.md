@@ -405,6 +405,34 @@ The plan checks in §1 still apply; task resume does not.
    (evidence), or blocked (why). The plan and todo do not change. The next
    stage is `/review`.
 
+## Verify fixes
+
+`/build <TICKET> verify fixes` fixes the production defects the last `/test`
+proved, instead of planned tasks. `tools/run/pipeline.py` sends it after a
+**VERIFY FAIL** routed to `/build`, with the VERIFY report supplied verbatim;
+by hand, paste that report. The plan checks in §1 still apply; task resume
+does not.
+
+1. The scope is each `REQ-###` the VERIFY FAIL names, with its reproduction:
+   expected versus actual, the failing test, or the patch artifact the
+   verifier preserved. Nothing else: no plan task, no refactor, no review
+   finding. A defect whose fix needs a behavior the spec does not settle is
+   not fixed here: report **BUILD BLOCKED** with `route=/spec` and the REQ id.
+2. Group the defects that touch the same files into one workstream. Dispatch
+   a fresh executor per workstream; never resume a build executor. Its packet
+   carries, per defect: the REQ id, the reproduction, expected versus actual
+   and the verifier's patch when there is one; plus the candidate diff and
+   the workstream's previous handoff report (the ticket's commit log when
+   this session has none).
+3. The executor fixes test-first: the verifier's reproduction, or a test that
+   fails the same way, then the fix (Prove-It). Each commit carries a `Task:`
+   trailer naming the REQ ids (`Task: REQ-017`) and the `Refs:` trailer. The
+   plan and todo do not change.
+4. Report **BUILD COMPLETE** with one line per defect: fixed (commit) or
+   blocked (why), and end with `HANDOFF: result=COMPLETE route=none
+   ids=<REQ ids> decide=0`. The next stage is `/test` again, on the new
+   candidate, at the depth of the failed run or higher.
+
 ## 4. Work outside `/build`
 
 A fix or change made in conversation on a ticket branch skips this command,

@@ -172,7 +172,8 @@ unchanged; change one only with a stated reason.
 
 End the report with the handoff line of `../references/stage-handoff.md`:
 `HANDOFF: result=CLEAN|FINDINGS|BLOCKED route=… ids=… decide=…`. `route`
-is `none` when clean, `/build` while BLOCKER or REQUIRED findings remain
+is `none` when clean (`CLEAN`: no BLOCKER and no REQUIRED remains, whatever
+the ADVISORY count), `/build` while BLOCKER or REQUIRED findings remain
 (their ids in `ids`), `/test` when browser checks remain and no BLOCKER or
 REQUIRED does (below), `owner` when a person must decide. The runner reads
 only this line.

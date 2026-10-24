@@ -12,6 +12,10 @@ HANDOFF: result=<RESULT> route=<ROUTE> ids=<IDS> decide=<N>
   `/plan` COMPLETE | BLOCKED · `/build` COMPLETE | BLOCKED ·
   `/test` PASS | FAIL | BLOCKED · `/review` CLEAN | FINDINGS | BLOCKED ·
   `/ship` GO | NO-GO | BLOCKED (its SHIP BLOCKED).
+  `/review` CLEAN means no BLOCKER and no REQUIRED finding remains,
+  ADVISORY findings included; FINDINGS means at least one does. `/build`
+  writes the same line in all three of its modes: planned tasks,
+  `<TICKET> review fixes` and `<TICKET> verify fixes`.
 - `route` — who acts next, exactly one: `none` (the pipeline goes on),
   `/spec`, `/plan`, `/build`, `/test`, or `owner` (a person decides or does).
   When two parties are owed, name the one that acts first and list the rest
@@ -30,6 +34,8 @@ Examples:
 
 - `/build` blocked on a criterion the code contradicts:
   `HANDOFF: result=BLOCKED route=/spec ids=REQ-008 decide=2`
+- `/build` after `verify fixes`, the defect fixed:
+  `HANDOFF: result=COMPLETE route=none ids=REQ-017 decide=0`
 - `/build` done, with tasks handed on:
   `HANDOFF: result=COMPLETE route=/test ids=T007,T008 decide=0`
 - `/plan` clean: `HANDOFF: result=COMPLETE route=none ids=- decide=0`
