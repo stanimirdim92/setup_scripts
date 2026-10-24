@@ -28,6 +28,15 @@ reference material relevant to that risk:
 
 Do **not** load every security reference by default.
 
+When the diff changes none of these boundaries — authentication or
+authorization, permissions, tenant isolation, secrets or credentials,
+cryptography, untrusted-input handling, sensitive data exposure,
+dependency or supply-chain trust, security-sensitive infrastructure or
+third-party integration behavior (`../references/reviewer-triggers.md`) —
+say so in one line, name the files you read to establish it, and stop with
+**Nothing to fix.** Every review round dispatches you (ADR 0102); the
+one-line answer is what keeps that affordable.
+
 Check as applicable:
 
 - authentication and authorization enforcement;
@@ -92,3 +101,12 @@ never as clean.
 
 `/review` reports your label as the finding's disposition, unchanged. Do not issue GO/NO-GO and
 do not invoke another agent.
+
+## Composition
+
+- **Invoke directly when:** the user asks for a security review of a specific
+  change, file or integration.
+- **Invoke via:** `/review`, on every round (ADR 0102), with the same packet
+  as `code-reviewer`; a fresh instance also verifies another instance's
+  BLOCKER (`/review` §Verify each BLOCKER).
+- **Do not invoke from another agent.** See [docs/agents.md](../docs/agents.md).

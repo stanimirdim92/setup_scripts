@@ -36,7 +36,11 @@ When dispatched by `/test`, expect a bounded packet:
 - implemented behavior and relevant regression risks;
 - tests and commands `/build` already ran — prior evidence, not your conclusion;
 - `required_skills`: invoke each one before testing;
-- pointers to changed code, tests, invariants, and decisions.
+- pointers to changed code, tests, invariants, and decisions;
+- the tasks the BUILD message hands on to `/test` (a browser check, a
+  measurement): each one is in scope and gets its own runtime line;
+- when a `/review` result is supplied: the browser checks it lists (page,
+  steps, what to look for) and its Risk · Depth line, which wins when higher.
 
 **Confirm the candidate before testing.** Your checkout is an isolated worktree
 branched from the session's HEAD commit. Compare its HEAD and tree with the

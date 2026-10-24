@@ -102,3 +102,12 @@ review early: list every unexamined mechanism under **Not verified**; a
 truncated review is reported as partial, never as clean.
 
 Do not issue GO/NO-GO and do not invoke another agent.
+
+## Composition
+
+- **Invoke directly when:** the user asks for a distributed-systems review of
+  a queue, job, retry or consistency change.
+- **Invoke via:** `/review`, when `../references/reviewer-triggers.md`
+  matches the diff, or when the change touches an "Always a person" path; a
+  fresh instance verifies another instance's BLOCKER.
+- **Do not invoke from another agent.** See [docs/agents.md](../docs/agents.md).
