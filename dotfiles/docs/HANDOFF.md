@@ -343,6 +343,20 @@ although `review.md` emits `route=/test`, and it sends `/build <T> verify
 fixes`, a mode `build.md` does not define. Nothing was changed by the audit
 itself; the plan is for the owner to approve.
 
+Then the owner said "fix all": steps 1–5 are in, one commit each, tested
+one by one and as a whole. `pipeline.py` now has the REVIEW → TEST edge
+(`REVIEW_TEST_CAP = 1` per candidate, the review supplied to the verifier,
+then `/review` again; state keys `verify_review`, `review_tests`),
+`build.md` has `## Verify fixes`, `stage-handoff.md` defines CLEAN,
+`review.md` §2 names the stale-depth case (`BLOCKED route=/test`),
+`test.md` and `test-engineer.md` take handed-on tasks and a supplied
+review, `security-auditor.md` has its one-line stop,
+`component-response-contracts.md` is current with
+`tools/tests/test-contracts-doc.py` in CI guarding its three tables. A
+commit that touches `review.md` or a reviewer persona needs a
+`Review-eval:` trailer (`check-rescore.py`); two of today's commits were
+reworded locally before the push to carry one.
+
 ## 5. Open items and ideas (not started)
 
 - **A live session across a runner crash** is not restored (Symphony does

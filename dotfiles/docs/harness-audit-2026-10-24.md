@@ -24,6 +24,12 @@ and one reference that documents the harness as it was six ADRs ago.
 
 Part 1 is the map. Part 2 is the findings, ranked. Part 3 is the plan.
 
+**Status, same day.** Steps 1–5 of the plan are done, one commit each,
+every suite green after each and all together (7 bash hook tests, 18
+python tests, the 5 checks, `test-pipeline.py` 38, `test-ticket.py` 92).
+A-1, A-2, B-1 to B-5 and C-8 are closed; C-6 and C-7 stay open by
+choice; step 6 (a real ticket) is the proof still owed.
+
 ---
 
 ## Part 1. The map
@@ -437,6 +443,7 @@ commit.
    every stage ended on its HANDOFF line without a `harness` stop. The
    observation log gets the row.
 
-Not in this plan: C-6 and C-7 (do with the next change to those commands),
+Done 2026-10-24: steps 1–5 (`2814e8e`, `8603bff`, `99ff2c5`, `095962c`,
+`4b54553`). Open: step 6. Not in this plan: C-6 and C-7 (do with the next change to those commands),
 the schema-fingerprint patch (waits for the owner's scripts), and any new
 gate (the harness-v1 freeze).
