@@ -36,6 +36,14 @@ Goes back:
 /explain: after /build or /review, outside the gates
 ```
 
+Every gate report ends with one machine-readable line,
+`HANDOFF: result=… route=… ids=… decide=…` (`../references/stage-handoff.md`).
+Unattended, `tools/run/ticket.py` drives intake, `/spec`, `/plan`, then
+`tools/run/pipeline.py` for `/build` → `/test` → `/review` with fix rounds,
+then `/ship`; both route from that line alone and never read the prose
+(ADR 0114, 0115). A `route=owner decide=n` becomes numbered options in the
+ticket's Slack thread; `tools/run/README.md` has the rest.
+
 ### Intake
 
 Ticket-backed work starts with the `jira-ticket` skill. It fetches the ticket,

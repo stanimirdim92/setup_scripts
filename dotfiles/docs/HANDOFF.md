@@ -149,15 +149,15 @@ The owner's decisions, in force:
    missing line).
 4. **Plan.** `plan_stale()` (spec commit not an ancestor of the plan's) →
    `/plan` again. `has_conflict()` counts only a heading or the Handoff
-   line, never prose. Conflict → `back_to_spec()`. Clean → `check-plan.py`,
+   line, never prose. Conflict → `resolve()`. Clean → `check-plan.py`,
    then approved.
 5. `--until plan` → `PAUSED` (4).
 6. **Pipeline.** `pipeline.py T --yes`, output streamed; each stage line →
-   `pipeline_step()` posts progress, runs `check_inbox()`, writes
+   `pipeline_step()` posts progress, runs `inbox()`, writes
    `<T>-inbox.json`; `pipeline.py` waits for it up to 300 s.
    A pipeline stop whose BUILD report routes a blocker to `/spec`
    (`build_conflict()`: a top-level item naming "goes to `/spec`" and a
-   conflict) goes to `back_to_spec(conflict, '/build')`; when the default
+   conflict) goes to `resolve(conflict, '/build')`; when the default
    keeps the approval, `go()` runs again: `plan_stale()` → `/plan` →
    pipeline on the commits so far. Same same-conflict rule. Other BUILD
    BLOCKED reasons (e.g. the schema snapshot drift LD-503 hit) stop.
@@ -167,7 +167,7 @@ The owner's decisions, in force:
    GO moves the ticket to `HARNESS_JIRA_REVIEW` (Code Review, or In
    Review). SHIP BLOCKED on open items asks you (`B<k>`) and runs again.
 
-### Between stages: `check_inbox()`
+### Between stages: `inbox()`
 
 - Slack (when configured): new owner replies in the run thread, the ask
   thread and the latest conflict thread. `TICKET STOP` → stop;
@@ -181,7 +181,7 @@ The owner's decisions, in force:
   `stop()`, and the stage returns `stopped by the owner (<reason>)`.
 - `--note "…"` (also passed by `--watch` to each child, `child_command()`)
   is a TICKET NOTE from the command line: `Run.note`, merged into the first
-  `check_inbox()` once.
+  `inbox()` once.
 - The runner's own posts come back from the Slack reader as the owner's
   (they go out through his connector): `Run.post()` remembers every ts in
   state `posted` and `mine()` keeps them out of the replies. LD-503 once

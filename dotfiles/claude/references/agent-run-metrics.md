@@ -51,7 +51,7 @@ mistake rather than a finding.
 Across the full pipeline, useful signals are:
 
 - VERIFY failures that found a production defect missed during BUILD
-- REVIEW NO-GO findings after VERIFY PASS
+- REVIEW BLOCKER or REQUIRED findings after VERIFY PASS
 - number/type of blocking findings
 - triggered-gate loop count: REVIEW → TEST → REVIEW
 - defect rework loop count: TEST/REVIEW → BUILD → REVIEW, with another TEST
