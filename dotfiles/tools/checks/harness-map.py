@@ -460,7 +460,7 @@ def personas():
     for path in sorted((CLAUDE / 'agents').glob('*.md')):
         data, block = frontmatter(read(path))
         tools = [t.strip() for t in data.get('tools', '').split(',') if t.strip()]
-        skills = re.findall(r'^\s+-\s+([\w-]+)\s*$', block.split('skills:', 1)[1].split('\n\S', 1)[0],
+        skills = re.findall(r'^\s+-\s+([\w-]+)\s*$', re.split(r'\n\S', block.split('skills:', 1)[1], 1)[0],
                             re.M) if re.search(r'^skills:', block, re.M) else []
         rows.append({
             'name': data.get('name', path.stem),

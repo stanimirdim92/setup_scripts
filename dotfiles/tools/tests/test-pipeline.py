@@ -348,6 +348,8 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(pl.handoff('HANDOFF: result=COMPLETE route=none ids=- decide=0')['ids'], [])
         self.assertEqual(pl.handoff('HANDOFF: result=BLOCKED route=owner ids=- decide=1')['route'], 'owner')
         self.assertEqual(pl.handoff('HANDOFF: result=FAIL route=/build ids=REQ-017,REQ-009 decide=1')['result'], 'FAIL')
+        self.assertEqual(pl.handoff('HANDOFF: result=NO-GO route=/build ids=SEC-1 decide=0')['result'], 'NO-GO')
+        self.assertEqual(pl.verdict('## Ship Decision: GO\nHANDOFF: result=GO route=none ids=- decide=0', '/ship', True)[0]['result'], 'GO')
         self.assertIsNone(pl.handoff('The verifier is running in its own worktree. I am waiting for its report.'))
         with self.assertRaises(ValueError) as err:
             pl.handoff('HANDOFF: result=BLOCKED route=/ship ids=- decide=0')
@@ -370,7 +372,7 @@ class Pipeline(unittest.TestCase):
 
     def test_commands_name_the_handoff_line(self):
         root = SCRIPT.parents[2] / 'claude'
-        for name in ('plan', 'build', 'test', 'review'):
+        for name in ('plan', 'build', 'test', 'review', 'ship'):
             text = (root / 'commands' / f'{name}.md').read_text()
             self.assertIn('HANDOFF: result=', text, name)
             self.assertIn('references/stage-handoff.md', text, name)

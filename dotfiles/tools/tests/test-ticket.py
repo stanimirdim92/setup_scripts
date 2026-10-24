@@ -174,7 +174,7 @@ class Ticket(unittest.TestCase):
                 return None, f'Planning stopped.\n## SPEC CONFLICT\n{section}\nHANDOFF: result=BLOCKED route=/spec ids=REQ-001 decide=0'
             return None, 'Plan written.\nHANDOFF: result=COMPLETE route=none ids=- decide=0'
         elif first == '/ship':
-            return None, '**GO** — rollback: revert the merge'
+            return None, '## Ship Decision: GO\n\nrollback: revert the merge\nHANDOFF: result=GO route=none ids=- decide=0'
         return None, 'done'
 
     def pipeline(self, ticket, budget, step=None):
@@ -873,11 +873,64 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
         self.assertEqual(full[1]['notes'], ['Your decision B1 (/build, REQ-008): option 2 — Change the subquery shape.'])
         self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5).state['decisions']['B1']['chosen'], 2)
 
+    def test_ship_without_its_handoff_line_stops_naming_the_report(self):
+        real = self.claude
+        self.claude = lambda prompt: (None, '## Ship Decision: GO\n\nrollback: revert') if prompt.startswith('/ship') else real(prompt)
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.STOPPED)
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        self.assertNotIn('ship', r.state)                                             # no verdict was taken
+        stop = r.state['stops'][-1]
+        self.assertEqual((stop['class'], stop['reason']), ('harness', '/ship: /ship gave no HANDOFF line'))
+        self.assertRegex(stop['report'], rf'{T}-ticket-\d+\.md')
+        self.claude = lambda prompt: ((None, '## Ship Decision: NO-GO\nHANDOFF: result=GO route=none ids=- decide=0')
+                                      if prompt.startswith('/ship') else real(prompt))
+        self.assertEqual(self.run_once(), tk.STOPPED)                                 # the line and the heading disagree
+        self.assertIn('HANDOFF disagrees with the result line', tk.Run(T, self.out, self.claude, self.pipeline, 5).state['stops'][-1]['reason'])
+
+    def test_ship_blocked_on_open_items_asks_the_owner_and_ships_after_the_answer(self):
+        self.out.chatty = True
+        full, real = [], self.claude
+        blocked = ('## Ship Decision: SHIP BLOCKED\n\nOpen items need your disposition (recommendation: option 1):\n'
+                   '1. OPEN-001 Accept the slower export for this release.\n2. OPEN-001 Hold the release until the index lands.\n'
+                   'HANDOFF: result=BLOCKED route=owner ids=OPEN-001 decide=2\n')
+
+        def claude(prompt):
+            full.append(prompt)
+            if prompt.startswith('/ship'):
+                return (None, '## Ship Decision: GO\nHANDOFF: result=GO route=none ids=- decide=0') if 'Your decision B1' in prompt else (None, blocked)
+            return real(prompt)
+
+        self.claude = claude
+        self.run_once()
+        self.out.reply(f'1A {T}')
+        self.assertEqual(self.run_once(), tk.STOPPED)
+        ask = [p for p in self.out.posts if 'B1 — /ship needs your decision* (OPEN-001)' in p[1]][-1]
+        self.assertIn('      • *1* :star:  OPEN-001 Accept the slower export for this release.', ask[1])
+        self.assertIn('/ship: SHIP BLOCKED · decision B1 is yours', self.out.posts[-1][1])
+        r = tk.Run(T, self.out, self.claude, self.pipeline, 5)
+        self.assertNotIn('ship', r.state)                                             # not final: /ship runs again
+        self.out.say(r.thread, 'TICKET ANSWERS: B1=2')
+        self.assertEqual(self.run_once(), tk.DONE)
+        self.assertEqual([p.split(chr(10))[0] for p in full if p.startswith('/ship')], [f'/ship {T}', f'/ship {T}'])
+        self.assertIn('Your decision B1 (/ship, OPEN-001): option 2 — OPEN-001 Hold the release until the index lands.', full[-1])
+        self.assertEqual(tk.Run(T, self.out, self.claude, self.pipeline, 5).state['ship'], 'GO')
+        self.assertIn('/ship: GO', self.out.posts[-1][1])
+
+    def test_ship_result_reads_the_heading_or_a_verdict_line(self):
+        self.assertEqual(tk.ship_result('# Report\n\n## Ship Decision: SHIP BLOCKED\n\n**Risk: Low**'), 'SHIP BLOCKED')
+        self.assertEqual(tk.ship_result('## Ship Decision: **NO-GO**\n'), 'NO-GO')
+        self.assertEqual(tk.ship_result('**GO** — rollback: revert the merge'), 'GO')
+        self.assertIsNone(tk.ship_result('GO requires:\n- a rollback plan\n'.replace('GO requires', 'It requires')))
+        self.assertIsNone(tk.ship_result('The verifier is still running.'))
+
     def test_options_in(self):
         self.assertEqual([(o['n'], o['recommended']) for o in tk.options_in('x\n1. **A** (recommended)\n2. B\n3. C\n')],
                          [(1, True), (2, False), (3, False)])
         self.assertEqual([o['recommended'] for o in tk.options_in('My recommendation is option 2:\n1. A\n2. B\n')], [False, True])
         self.assertEqual(tk.options_in('no list\n- bullet\n'), [])
+        self.assertEqual([o['recommended'] for o in tk.options_in('(recommendation: option 1)\n1. A\n2. B\n')], [True, False])
         self.assertEqual([o['text'] for o in tk.options_in('1. A\n\n5. not next\n2) B\n')], ['A', 'B'])
 
     def test_plan_without_a_handoff_line_stops(self):
@@ -1112,7 +1165,8 @@ Frontend tasks are done and merged. Backend T001 is stuck. You need to make two 
     def test_jira_gets_the_stop_and_no_review_move_on_no_go(self):
         jira = FakeJira()
         real = self.claude
-        self.claude = lambda prompt: (None, '**NO-GO** — rollback needed') if prompt.startswith('/ship') else real(prompt)
+        self.claude = lambda prompt: ((None, '**NO-GO** — rollback needed\nHANDOFF: result=NO-GO route=/build ids=SEC-1 decide=0')
+                                      if prompt.startswith('/ship') else real(prompt))
         with redirect_stdout(io.StringIO()):
             tk.Run(T, self.out, self.claude, self.pipeline, 5, jira=jira).go()
         self.out.reply(f'1A {T}')

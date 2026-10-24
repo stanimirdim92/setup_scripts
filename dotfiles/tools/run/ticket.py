@@ -708,9 +708,19 @@ class Run:
                                  f'TICKET NOTE in the thread starts them; the Jira summary is posted by ticket.py.{given}')
         if error:
             return self.stop(f'/ship {error}', cls='retry')
-        result = pl.line(text, '(?:GO|NO-GO|SHIP BLOCKED)') or 'no GO / NO-GO line'
-        icon = ':rocket:' if result.startswith('GO') else ':no_entry:' if result.startswith('NO-GO') else ':construction:'
-        self.say(f'{icon} *{t} · /ship: {result}*\n:lock: Nothing is pushed; you push. Report: `{self.dir}`')
+        result = ship_result(text) or 'no Ship Decision'
+        h, bad = pl.verdict(text, '/ship', result == 'GO')          # the HANDOFF line decides, not the prose (HR-1)
+        if bad:
+            return self.stop(f'/ship: {bad}', self.last_file, 'harness')
+        if h['route'] == 'owner':                            # open items or a gate only a person settles: not final;
+            if h['decide']:                                  # the answer comes back as a note and /ship runs again
+                key = self.decide(text, h, '/ship', self.last_file)
+                return self.stop(f'/ship: {result} · decision {key} is yours', self.last_file, 'decision')
+            return self.stop(f'/ship: {result} · it needs you', self.last_file, 'decision')
+        icon = {'GO': ':rocket:', 'NO-GO': ':no_entry:'}.get(result, ':construction:')
+        about = f' ({", ".join(h["ids"])})' if h['ids'] else ''
+        more = f'\n:arrow_right: {h["route"]} answers it; start the fix round yourself.' if h['route'] != 'none' else ''
+        self.say(f'{icon} *{t} · /ship: {result}*{about}{more}\n:lock: Nothing is pushed; you push. Report: `{self.dir}`')
         self.state['ship'] = result
         self.save()
         if self.jira:
@@ -1002,6 +1012,14 @@ def digest(text, lines=6, chars=700):
     return out[:chars] + (' …' if len(out) > chars else '')
 
 
+def ship_result(text):
+    """GO, NO-GO or SHIP BLOCKED from the report's `## Ship Decision:` heading, else from a line that starts
+    with the verdict; None when there is neither."""
+    m = (re.search(r'^\W*Ship Decision:\W*(GO|NO-GO|SHIP BLOCKED)\b', text, re.M | re.I)
+         or re.search(r'^\W*(GO|NO-GO|SHIP BLOCKED)\b', text, re.M))
+    return m.group(1).upper() if m else None
+
+
 def options_in(report):
     """The numbered options a report offers a person: top-level `1.` / `1)` lines in order, with the recommended
     one flagged (its own line says so, or a line names "recommendation is option n")."""
@@ -1011,7 +1029,7 @@ def options_in(report):
         if m and int(m.group(1)) == len(out) + 1:
             out.append({'n': int(m.group(1)), 'text': m.group(2).strip().strip('*').strip(),
                         'recommended': bool(re.search(r'recommend', m.group(2), re.I))})
-    m = re.search(r'recommend\w*\s+(?:is\s+)?option\s+\(?(\d+)', report, re.I)
+    m = re.search(r'recommend\w*:?\s+(?:is\s+)?option\s+\(?(\d+)', report, re.I)
     if m and not any(o['recommended'] for o in out):
         for o in out:
             o['recommended'] = o['n'] == int(m.group(1))

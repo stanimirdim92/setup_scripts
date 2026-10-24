@@ -187,7 +187,7 @@ def is_transient(why):
     return bool(why['rc']) or bool(TRANSIENT.search(why['blob']))
 
 
-RESULTS = ('COMPLETE', 'BLOCKED', 'PASS', 'FAIL', 'CLEAN', 'FINDINGS')
+RESULTS = ('COMPLETE', 'BLOCKED', 'PASS', 'FAIL', 'CLEAN', 'FINDINGS', 'GO', 'NO-GO')
 ROUTES = ('none', '/spec', '/plan', '/build', '/test', 'owner')
 
 
@@ -210,7 +210,7 @@ def handoff(text):
     return out
 
 
-OK_RESULTS = ('COMPLETE', 'PASS', 'CLEAN')
+OK_RESULTS = ('COMPLETE', 'PASS', 'CLEAN', 'GO')
 
 
 def verdict(text, stage_name, said_ok):

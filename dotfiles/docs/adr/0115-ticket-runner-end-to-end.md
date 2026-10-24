@@ -46,8 +46,11 @@ four points for the owner, who answered them on 2026-10-19:
   (amended 2026-10-20; the first rule, two per ticket, stopped LD-503 on
   its third distinct conflict with the build half done).
 - `pipeline.py` runs `/build`, `/test` and `/review` with fix rounds
-  (ADR 0114). Then `/ship` runs with the last review message, and its GO,
-  NO-GO or SHIP BLOCKED line is posted. The run never pushes.
+  (ADR 0114). Then `/ship` runs with the last review message. Its
+  `HANDOFF:` line decides (amended 2026-10-24): GO and NO-GO are posted and
+  final; SHIP BLOCKED with `route=owner` puts the open items to the owner
+  as `B<k>` options and `/ship` runs again with the answer. The run never
+  pushes.
 - Slack goes through `claude -p` and the owner's Slack connector, so the
   runner keeps no token. The channel and the owner live in environment
   variables, not in this public repository. `HARNESS_SLACK_MENTION` adds an

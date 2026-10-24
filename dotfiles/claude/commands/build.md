@@ -87,8 +87,8 @@ Use **one executor per workstream, not one per task**.
 
 - first selected task in a workstream -> fresh named `executor`;
 - later tasks in that workstream -> resume the same executor only when both
-  hold: it was idle under about 5 minutes (the prompt-cache lifetime), and its
-  context is under about 150k tokens;
+  hold: it was idle under about 15 minutes, and its context is under about
+  350k tokens (owner decision, 2026-10-24; ADR 0116);
 - otherwise -> a fresh executor. Its packet carries the task packet, the
   previous handoff report, and the workstream's commits so far, so nothing the
   old executor knew is lost;

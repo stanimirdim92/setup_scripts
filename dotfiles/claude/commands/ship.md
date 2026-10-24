@@ -45,7 +45,11 @@ disposition only when a recorded owner decision backs it. That is a `DEC-###`
 in the approved spec, or the owner's answer to the question below. Quote the
 `DEC-###` id, or the owner's words with the date, in the disposition. Put every
 other `Open` item to the owner in one question before the verdict: one numbered
-line per item, with what it means for the release. Until the owner answers,
+line per item, with what it means for the release. Unattended (under
+`tools/run/ticket.py`) the question is the report itself: the same numbered
+lines, the recommended disposition marked, and `route=owner decide=<n>` on the
+handoff line below; the owner answers in Slack and `/ship` runs again with the
+answer. Until the owner answers,
 the item stays `Open` and the result stays **SHIP BLOCKED**. A commit that
 changes only `docs/tasks/<TICKET>-open.md` after review leaves the reviewed
 code unchanged. Report it as "Ledger-only commit after review: <sha>". Any
@@ -293,6 +297,27 @@ Return:
 GO is a readiness verdict only. It does not authorize push, tag, deploy,
 release, protected-branch mutation, or history rewriting.
 
+The report ends with the handoff line (`references/stage-handoff.md`), after
+the Ship Decision block and the §7 list:
+
+```
+HANDOFF: result=<GO|NO-GO|BLOCKED> route=<none|/build|owner> ids=<ids or -> decide=<n>
+```
+
+- **GO** → `result=GO route=none ids=- decide=0`. The ADVISORY fixes stay an
+  offer (§7); they are not a decision.
+- **NO-GO** → `result=NO-GO`, `ids` the blocking finding or requirement ids;
+  `route=/build` when a fix round answers them, `route=owner` when a person
+  must act first (a missing gate, infrastructure, a rollback plan nobody can
+  write from here).
+- **SHIP BLOCKED** → `result=BLOCKED`, `ids` the `OPEN-###` or task ids;
+  `route=owner decide=<n>` with the n numbered open-item lines the owner
+  answers; `route=/build decide=0` when the ledger names `Pending` work that is
+  `/build`'s.
+
+The runner reads this line alone, never the prose: a report without it, or
+one that disagrees with the Ship Decision heading, stops with the file named.
+
 ## 7. Next steps
 
 After the verdict, ask the owner one multi-select question:
@@ -304,6 +329,6 @@ After the verdict, ask the owner one multi-select question:
 Do nothing until the owner selects. With no selection, stop. Under
 `tools/run/ticket.py` (unattended) there is nobody to ask: list the
 ADVISORY fixes by id with the recommended action, say that a `TICKET NOTE`
-in the ticket's thread starts them, and end; ticket.py posts the summary
-to Jira itself. A fix round
+in the ticket's thread starts them, and end with the handoff line; ticket.py
+posts the summary to Jira itself. A fix round
 makes a new candidate, so this verdict no longer applies to it.

@@ -35,8 +35,9 @@ The audit found these problems:
 - `/plan` asks for pre-authorizations of each foreseeable stop and commits the
   plan on approval. It probes each external tool it relies on. A stop that
   is not pre-authorized stays a stop.
-- An executor is resumed only when idle under about 5 minutes and under about
-  150k context. Review-fix rounds always start fresh, with the findings, the
+- An executor is resumed only when idle under about 15 minutes and under about
+  350k context (raised from 5 minutes / 150k on 2026-10-24, owner decision:
+  the short window forced fresh executors on nearly every task). Review-fix rounds always start fresh, with the findings, the
   last handoff and the diff.
 - `/test` works out the risk tier itself, and the higher tier wins. At Deep the
   full suite starts first, in the background. Re-verification goes to a

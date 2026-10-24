@@ -235,7 +235,7 @@ Ticket-scoped work defaults to one isolated worktree per ticket.
 - Delegate bounded outcomes with acceptance criteria and verification.
 - Commands/user orchestrate; personas do not dispatch personas.
 - Reuse one implementation executor across related tasks in a workstream
-  while it was idle under about 5 minutes and holds under about 150k tokens.
+  while it was idle under about 15 minutes and holds under about 350k tokens.
   Otherwise start a fresh one with the task packet, the previous handoff
   report and the commits so far. Review fixes always get a fresh executor
   (`commands/build.md` §2).

@@ -161,10 +161,11 @@ The owner's decisions, in force:
    keeps the approval, `go()` runs again: `plan_stale()` → `/plan` →
    pipeline on the commits so far. Same same-conflict rule. Other BUILD
    BLOCKED reasons (e.g. the schema snapshot drift LD-503 hit) stop.
-7. **Ship.** `/ship T` with the last REVIEW message. The result is posted
-   to Slack and as a Jira comment (branch, HEAD, spend, "nothing is
-   pushed"); GO moves the ticket to `HARNESS_JIRA_REVIEW` (Code Review, or
-   In Review).
+7. **Ship.** `/ship T` with the last REVIEW message, read from its
+   `HANDOFF:` line (see 2026-10-24, later). GO and NO-GO are posted to
+   Slack and as a Jira comment (branch, HEAD, spend, "nothing is pushed");
+   GO moves the ticket to `HARNESS_JIRA_REVIEW` (Code Review, or In
+   Review). SHIP BLOCKED on open items asks you (`B<k>`) and runs again.
 
 ### Between stages: `check_inbox()`
 
@@ -314,6 +315,24 @@ pre-authorization's recommended default as a TD (plan.md says so), and the
 `/ship` prompt lists the ADVISORY fixes instead of asking (ship.md says so).
 `/ship` is still outside the HANDOFF contract; a `B<k>` for its open items
 is a natural next step.
+
+### 2026-10-24, later: `/ship` in the contract; executor resume 15 min / 350k
+
+`ship.md` ends with `HANDOFF: result=<GO|NO-GO|BLOCKED> route=<none|/build|owner>
+ids=… decide=n` (`stage-handoff.md` lists it; `pipeline.RESULTS` knows `GO`
+and `NO-GO`, `OK_RESULTS` has `GO`). `Run.go()` reads the verdict from the
+`## Ship Decision:` heading (`ship_result()`), checks it against the line
+with `pl.verdict()`, and: no line or a disagreement → stop `harness` with
+the report named; `route=owner decide=n` → `decide()` posts `B<k>` with the
+open items, stop `decision`, state `ship` stays unset, so the next run
+re-runs `/ship` with the answer as a note; `route=owner decide=0` → stop
+`decision`; otherwise GO / NO-GO are final as before (Slack with the ids,
+Jira comment, GO moves the ticket). The `/ship` prompt text is unchanged.
+`options_in()` also reads `recommendation: option n`. The executor resume
+rule is 15 minutes idle / 350k context (owner, 2026-10-24) in
+`AGENTS.md`, `build.md` §2 and ADR 0116. A literal `split('\n\S')` in
+`harness-map.py` (persona skills) became a regex split; it had warned on
+every run and never matched.
 
 ## 5. Open items and ideas (not started)
 

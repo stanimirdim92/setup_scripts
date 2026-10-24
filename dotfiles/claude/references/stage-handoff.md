@@ -10,7 +10,8 @@ HANDOFF: result=<RESULT> route=<ROUTE> ids=<IDS> decide=<N>
 
 - `result` — the command's own verdict, one word:
   `/plan` COMPLETE | BLOCKED · `/build` COMPLETE | BLOCKED ·
-  `/test` PASS | FAIL | BLOCKED · `/review` CLEAN | FINDINGS | BLOCKED.
+  `/test` PASS | FAIL | BLOCKED · `/review` CLEAN | FINDINGS | BLOCKED ·
+  `/ship` GO | NO-GO | BLOCKED (its SHIP BLOCKED).
 - `route` — who acts next, exactly one: `none` (the pipeline goes on),
   `/spec`, `/plan`, `/build`, `/test`, or `owner` (a person decides or does).
   When two parties are owed, name the one that acts first and list the rest
@@ -38,6 +39,11 @@ Examples:
   `HANDOFF: result=FAIL route=/build ids=REQ-017,REQ-009 decide=1`
 - `/review` with findings to fix:
   `HANDOFF: result=FINDINGS route=/build ids=CODE-1,SEC-2 decide=0`
+- `/ship` ready: `HANDOFF: result=GO route=none ids=- decide=0`
+- `/ship` blocked on two open items the owner dispositions:
+  `HANDOFF: result=BLOCKED route=owner ids=OPEN-001,OPEN-002 decide=2`
+- `/ship` not ready, a fix round answers it:
+  `HANDOFF: result=NO-GO route=/build ids=SEC-1 decide=0`
 
 A report without the line, or with a value outside these sets, stops the
 runner with the file named. That is the intended failure: the command, not
