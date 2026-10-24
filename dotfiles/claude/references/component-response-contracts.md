@@ -14,8 +14,8 @@ sources — review it whenever a file listed below changes shape.
 
 ## 1. Claude hooks
 
-Eight hooks live in `../hooks/`. Each is a `PreToolUse`, `SubagentStop`, or
-`SessionStart` script that reads one JSON object on stdin and prints one JSON
+Ten files live in `../hooks/`: nine hooks and one sourced library. Each hook is a
+`PreToolUse`, `PostToolUse`, `SubagentStop`, or `SessionStart` script that reads one JSON object on stdin and prints one JSON
 decision object on stdout, always exiting 0 — the decision, not the exit code,
 is what the host runtime acts on (per
 [code.claude.com/docs/en/hooks](https://code.claude.com/docs/en/hooks)).
@@ -24,6 +24,8 @@ is what the host runtime acts on (per
 |---|---|---|---|
 | `block-agent-push.sh` | `PreToolUse` (`Bash`) | `executor`, `test-engineer` only (via their frontmatter `hooks:`) | `permissionDecision: "deny"` |
 | `block-destructive-bash.sh` | `PreToolUse` (`Bash`) | global | `permissionDecision: "deny"` |
+| `require-commit-trailers.sh` | `PreToolUse` (`Bash`) | `executor`, `test-engineer` only | `permissionDecision: "deny"` on a new commit message without `Refs:` (ADR 0073) |
+| `format-edited-file.sh` | `PostToolUse` (`Edit`\|`Write`\|`MultiEdit`) | global | no decision: runs the project's own formatter on the one file, prints one line on failure (ADR 0107) |
 | `warn-force-push.sh` | `PreToolUse` (`Bash`) | global | `permissionDecision: "ask"` |
 | `require-isolated-test-runner.sh` | `PreToolUse` (`Bash`) | global, evidence-gated | `permissionDecision: "deny"` or silent allow |
 | `require-worktree-for-writers.sh` | `PreToolUse` (`Agent`\|`Task`) | dispatch of `executor`/`test-engineer` only | `permissionDecision: "deny"` or silent allow |
@@ -80,8 +82,9 @@ all — an empty response is a silent allow, not a passing decision to report.
 
 ### `SubagentStop` block — `{decision: "block", reason}`
 
-`require-handoff-report.sh` reads the writer persona's last assistant message
-from its transcript and denies completion with:
+`require-handoff-report.sh` reads the writer persona's report — the latest
+`SubagentHandback` call in its transcript, plus any text after it; the last
+assistant message when there is no handback (ADR 0116) — and denies completion with:
 
 ```json
 {"decision": "block", "reason": "Handoff report incomplete — add: <missing pieces>. The orchestrator accepts evidence, not a completion claim."}
@@ -142,7 +145,7 @@ python3 "$HOME/.codex/hooks/policy.py" [role]
 ```
 
 `policy.py` is the only Codex-side hook logic. It normalizes the Codex payload
-shape to the Claude one, then **calls the same eight bash hooks above as
+shape to the Claude one, then **calls the same bash hooks above as
 subprocesses** (`SHARED = .../claude/hooks`), passing through their JSON output
 byte-for-byte when they return one. The two harnesses share one set of policy
 reasons; nothing is reimplemented or restated in Python.
@@ -197,26 +200,10 @@ dispatches each one and when.
 
 ### `repo-recon`
 
-```markdown
-## Recon: [area]
-
-### Rules and precedent
-- [rule or convention] — `path:line`
-
-### Verification
-- Framework/location/fixtures: [...]
-- Repository-defined commands: [exact commands]
-
-### Constraints
-- [what this area depends on / what depends on it]
-
-### Unknowns
-- No precedent found for: [aspect or None]
-- Not surveyed: [excluded area and why, or None]
-```
-
-Reads widely; only pointers, verification, constraints, and unknowns leave its
-context — its own reads never enter the caller's.
+The `## Recon: [area]` template in `../agents/repo-recon.md` §Report: Rules
+and precedent, Verification, Touch points (for `/plan`), Claimed reuse,
+Constraints, Unknowns. Reads widely; only pointers, verification, constraints
+and unknowns leave its context — its own reads never enter the caller's.
 
 ### `executor`
 
@@ -243,29 +230,11 @@ Analysis` template (Current Coverage / Recommended Tests / Priority).
 
 ### `code-reviewer`
 
-```markdown
-## Review Summary
-
-**Verdict:** APPROVE | REQUEST CHANGES
-
-**Overview:** [1-2 sentences]
-
-### BLOCKER
-- [CODE-1] [file:line] (confidence: high|med|low) [problem + fix]
-
-### REQUIRED
-- [CODE-2] ...
-
-### ADVISORY
-- [CODE-3] ... [problem + recommended action]
-
-### What's Done Well
-- [...]
-
-### Verification Story
-- Tests reviewed / Build verified / Security checked / Not verified
-```
-
+The `## Review Summary` template in `../agents/code-reviewer.md` §Review
+Output Template. It starts with the count line (ADR 0099), then the verdict,
+BLOCKER / REQUIRED / ADVISORY with `CODE-N` ids, the REVIEW.md checklist
+(ADR 0103), the Root-cause check for a bug fix (ADR 0097), What's Done Well,
+and a Verification Story that includes the weakened-test list.
 `REQUEST CHANGES` while any BLOCKER or REQUIRED finding is unresolved,
 `APPROVE` otherwise — a review recommendation, never a release verdict.
 
@@ -363,21 +332,24 @@ instead, but the response shape each role produces is identical either way.
 
 ## 5. Command stage-gate contracts
 
-Six commands in `../../claude/commands/` own the pipeline
+Seven commands live in `../../claude/commands/`; six own the pipeline
 (`docs/agents.md`): `/spec -> /plan -> /build -> /test -> /review -> /ship`.
 `/test` runs on every production change; only the exempt kinds in
 `verification-triggers.md` skip it (ADR 0104). Jira intake (`jira-ticket` skill) comes
 before `/spec`; `/explain` sits outside the gates. Each ends in exactly one named terminal
-state and, except `/ship`, writes an artifact to a fixed path.
+state and, except `/ship`, writes an artifact to a fixed path. Every gate
+report after `/spec` ends with the handoff line of `stage-handoff.md`; the
+runners (`tools/run/pipeline.py`, `tools/run/ticket.py`) route from it alone.
 
-| Command | Artifact | Terminal states |
-|---|---|---|
-| `/spec` | `docs/specs/[TICKET]-SPEC.md` (a multi-capability initiative adds a `## Capability Map` section, not files) | Draft \| Needs reapproval \| Approved |
-| `/plan` | `docs/tasks/[TICKET]-plan.md` / `-todo.md`, or a bounded `SPEC CONFLICT` | Draft \| Needs replan \| Approved, Ready for `/build` |
-| `/build` | scoped local commits | **BUILD COMPLETE** \| **BUILD BLOCKED** |
-| `/test` | test-only commits | **VERIFY PASS** \| **VERIFY FAIL** \| **VERIFY BLOCKED** |
-| `/review` | — (a report only) | disposition table (below) |
-| `/ship` | — (a decision only) | **GO** \| **NO-GO** \| **SHIP BLOCKED** |
+| Command | Artifact | Terminal states | `HANDOFF: result=` |
+|---|---|---|---|
+| `/spec` | `docs/specs/[TICKET]-SPEC.md` (a multi-capability initiative adds a `## Capability Map` section, not files) | Draft \| Needs reapproval \| Approved | none; the runner reads the header and the `OPEN QUESTION` blocks |
+| `/plan` | `docs/tasks/[TICKET]-plan.md` / `-todo.md`, or a bounded `SPEC CONFLICT` | Draft \| Needs replan \| Approved, Ready for `/build` | COMPLETE \| BLOCKED |
+| `/build` | scoped local commits | **BUILD COMPLETE** \| **BUILD BLOCKED** | COMPLETE \| BLOCKED |
+| `/test` | test-only commits | **VERIFY PASS** \| **VERIFY FAIL** \| **VERIFY BLOCKED** | PASS \| FAIL \| BLOCKED |
+| `/review` | the review SARIF under `<git-common-dir>/review/` | count line, or **REVIEW BLOCKED** | CLEAN \| FINDINGS \| BLOCKED |
+| `/ship` | — (a decision only) | **GO** \| **NO-GO** \| **SHIP BLOCKED** | GO \| NO-GO \| BLOCKED |
+| `/explain` | one HTML page under `<git-common-dir>/explain/` | — (not a gate) | none |
 
 ### `/build` → BUILD COMPLETE / BUILD BLOCKED
 
@@ -549,6 +521,10 @@ protected-branch mutation, or history rewriting.** `/ship` sets an open
 item's disposition only from a recorded owner decision, and quotes it. After
 the verdict it asks one multi-select question: send selected ADVISORY
 findings to `/build`, post the summary to Jira. Nothing runs unselected.
+Unattended (`tools/run/ticket.py`) nobody can be asked: the report lists the
+ADVISORY fixes, the open items go to the owner as numbered options with
+`route=owner decide=<n>` on the handoff line, and `/ship` runs again with the
+answer; GO and NO-GO are final and `ticket.py` posts them to Slack and Jira.
 
 ## 6. Operator tools
 
