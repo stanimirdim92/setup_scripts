@@ -17,7 +17,9 @@ review is clean or three review rounds exist (ADR 0089).
 It moves on only on a clear result: each stage's HANDOFF line
 (references/stage-handoff.md) agreeing with its result line, and the review
 file for HEAD. A VERIFY FAIL routed to /build starts a fix round (at most
-two), then /test again. A CLI error, a missing or disagreeing HANDOFF line,
+two), then /test again. A review routed to /test (browser checks it listed, or
+a depth above the one /test ran at) runs /test with that review, then /review
+again, once per candidate. A CLI error, a missing or disagreeing HANDOFF line,
 BLOCKED, or a route elsewhere stops it; the parsed line is in the stop file. It stops before /ship: GO stays yours. It never pushes.
 Every message is saved to `<git-common-dir>/handoff/<TICKET>-<n>-<STAGE>.md`.
 
@@ -49,6 +51,7 @@ from pathlib import Path
 
 ROUND_CAP = 3                      # reviews per ticket (ADR 0089)
 VERIFY_CAP = 2                     # /build fix rounds a VERIFY FAIL may start before a person looks
+REVIEW_TEST_CAP = 1                # verifier rounds a review may ask for per candidate (browser checks, a deeper tier)
 PROTECTED = ('master',)            # this repository works in main directly
 SUPPLIED = 'Supplied verbatim by pipeline.py from the previous session (target-selection.md §Gate handoffs):'
 # A -p session ends with the main agent's final message, and a background agent dies with it (LD-503: /test
@@ -352,6 +355,7 @@ def main(argv=None):
     review = [('REVIEW result', state['review'])] if state.get('review') else []
     build, verify, done = state.get('build', ''), state.get('verify', ''), state.get('done', '')
     verify_rounds = state.get('verify_rounds', 0)
+    verify_review, review_tests = state.get('verify_review', ''), state.get('review_tests', 0)
     while True:
         if done not in ('BUILD', 'VERIFY'):
             error, build = stage(build_prompt, 'BUILD', *review)
@@ -362,10 +366,12 @@ def main(argv=None):
                 return stop(problem)
             if h['result'] == 'BLOCKED':                     # its route is in the stop file for ticket.py
                 return stop(line(build, 'BUILD BLOCKED') or f'BUILD BLOCKED → {h["route"]}')
+            review_tests = 0
             note('BUILD', build=build)
 
         if done != 'VERIFY':
-            error, verify = stage(f'/test {ticket}', 'VERIFY', ('BUILD COMPLETE', build))
+            error, verify = stage(f'/test {ticket}', 'VERIFY', ('BUILD COMPLETE', build),
+                                  *([('REVIEW result', verify_review)] if verify_review else []))
             if error:
                 return stop(f'/test {error}')
             said = line(verify, 'VERIFY (?:PASS|FAIL|BLOCKED)') or ''
@@ -377,11 +383,13 @@ def main(argv=None):
                 if verify_rounds > VERIFY_CAP:
                     return stop(f'verify round cap: {VERIFY_CAP} fix rounds and /test still fails; a person looks')
                 build_prompt, review, done = f'/build {ticket} verify fixes', [('VERIFY result', verify)], ''
-                note('REVIEW', build_prompt=build_prompt, review=verify, verify_rounds=verify_rounds)
+                note('REVIEW', build_prompt=build_prompt, review=verify, verify_rounds=verify_rounds,
+                     verify_review=verify_review, review_tests=review_tests)
                 continue
             if h['result'] != 'PASS':
                 return stop(said or f'VERIFY {h["result"]} → {h["route"]}')
-            note('VERIFY', build=build, verify=verify)
+            verify_review = ''
+            note('VERIFY', build=build, verify=verify, review_tests=review_tests)
         done = ''
 
         error, text = stage(f'/review {ticket}', 'REVIEW', ('BUILD COMPLETE', build), ('VERIFY PASS', verify))
@@ -391,6 +399,14 @@ def main(argv=None):
         h, problem = verdict(text, '/review', counts is not None and sum(counts) == 0 and not line(text, 'REVIEW BLOCKED'))
         if problem:
             return stop(problem)
+        if h['route'] == '/test':                       # browser checks remain, or the depth rose (review.md §2, §4):
+            review_tests += 1                           # the verifier runs with this review, then /review again
+            if review_tests > REVIEW_TEST_CAP:
+                return stop(f'/review routes to /test again on this candidate after {REVIEW_TEST_CAP} verifier '
+                            'round; the check did not settle it; a person looks')
+            verify_review, done = text, 'BUILD'
+            note('BUILD', build=build, verify_review=verify_review, review_tests=review_tests)
+            continue
         if h['result'] == 'BLOCKED':
             return stop(line(text, 'REVIEW BLOCKED') or f'REVIEW BLOCKED → {h["route"]}')
         if counts is None:
@@ -408,7 +424,7 @@ def main(argv=None):
         if len(files) >= ROUND_CAP:
             return stop(f'round cap: {len(files)} reviews and findings remain; the approach needs you (ADR 0089)')
         build_prompt, review = f'/build {ticket} review fixes', [('REVIEW result', text)]
-        note('REVIEW', build_prompt=build_prompt, review=text, verify_rounds=verify_rounds)
+        note('REVIEW', build_prompt=build_prompt, review=text, verify_rounds=verify_rounds, review_tests=review_tests)
 
 
 def saved_steps(out_dir, ticket):

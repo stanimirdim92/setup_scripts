@@ -26,6 +26,8 @@ BUILD = '**BUILD COMPLETE**\nHEAD: h\n- task done\nHANDOFF: result=COMPLETE rout
 VERIFY = '**VERIFY PASS**\n- REQ-001: ran it\nHANDOFF: result=PASS route=none ids=- decide=0'
 CLEAN = '**Findings: 0 BLOCKER · 0 REQUIRED · 1 ADVISORY**\nmore\nHANDOFF: result=CLEAN route=none ids=- decide=0'
 OPEN = '**Findings: 0 BLOCKER · 1 REQUIRED · 0 ADVISORY**\n- CODE-1\nHANDOFF: result=FINDINGS route=/build ids=CODE-1 decide=0'
+TOTEST = ('**Findings: 0 BLOCKER · 1 REQUIRED · 0 ADVISORY**\n- CODE-3 REQUIRED · browser check: /export, click Export, a file downloads\n'
+          'HANDOFF: result=FINDINGS route=/test ids=CODE-3 decide=0')
 
 STUB = '''#!/usr/bin/env bash
 prompt="$(cat)"
@@ -80,6 +82,7 @@ HANDOFF: result=BLOCKED route=owner ids=- decide=1' ;;
                  blocked)  reply '**REVIEW BLOCKED** — VERIFY PASS missing
 HANDOFF: result=BLOCKED route=owner ids=- decide=0' ;;
                  required) reply "$STUB_OPEN_TEXT" ;;
+                 totest)   reply "$STUB_TOTEST_TEXT" ;;
                  *)        reply "$STUB_CLEAN_TEXT" ;;
                esac ;;
 esac
@@ -109,7 +112,7 @@ class Pipeline(unittest.TestCase):
         self.saved_env = dict(os.environ)
         os.environ.update(CLAUDE_BIN=str(stub), STUB_CALLS=str(self.calls), STUB_PROMPTS=str(self.prompts),
                           STUB_BUILD_TEXT=BUILD, STUB_VERIFY_TEXT=VERIFY, STUB_CLEAN_TEXT=CLEAN,
-                          STUB_OPEN_TEXT=OPEN, STUB_REVIEWS='clean')
+                          STUB_OPEN_TEXT=OPEN, STUB_TOTEST_TEXT=TOTEST, STUB_REVIEWS='clean')
         self.cwd = os.getcwd()
         os.chdir(self.wt)
 
@@ -381,6 +384,51 @@ class Pipeline(unittest.TestCase):
         for mode in ('## Review fixes', '## Verify fixes'):                  # both prompts pipeline.py sends
             self.assertIn(mode, build)
         self.assertIn('CLEAN means no BLOCKER and no REQUIRED', (root / 'references' / 'stage-handoff.md').read_text())
+
+    def test_review_routed_to_test_runs_the_verifier_with_the_review_then_reviews_again(self):
+        os.environ['STUB_REVIEWS'] = 'totest clean'
+        rc, out = self.run_pipeline()
+        self.assertEqual((rc, self.stages()), (0, ['/build AB-1', '/test AB-1', '/review AB-1', '/test AB-1', '/review AB-1']))
+        self.assertIn('ready for /ship', out)
+        second = self.prompt(4)
+        self.assertIn('REVIEW result — Supplied verbatim', second)                  # the verifier gets the review
+        self.assertIn('browser check: /export', second)
+        self.assertIn('BUILD COMPLETE — Supplied verbatim', second)
+        self.assertNotIn('REVIEW result', self.prompt(2))                            # the first /test did not
+        self.assertIn('VERIFY PASS', self.prompt(5))                                 # the review repeats with the new VERIFY
+        self.assertFalse((self.handoff / 'AB-1-pipeline.json').exists())
+
+    def test_review_routing_to_test_twice_on_one_candidate_stops_for_a_person(self):
+        os.environ['STUB_REVIEWS'] = 'totest totest'
+        rc, out = self.run_pipeline()
+        self.assertEqual((rc, self.stages()), (1, ['/build AB-1', '/test AB-1', '/review AB-1', '/test AB-1', '/review AB-1']))
+        self.assertIn('routes to /test again on this candidate', out)
+        stop = json.loads((self.handoff / 'AB-1-pipeline-stop.json').read_text())
+        self.assertEqual(stop['handoff']['route'], '/test')
+        self.assertEqual(stop['stage_file'], 'AB-1-5-REVIEW.md')
+
+    def test_verifier_blocked_in_a_review_round_stops_with_its_route(self):
+        os.environ.update(STUB_REVIEWS='totest', STUB_VERIFIES='pass blocked')
+        rc, out = self.run_pipeline()
+        self.assertEqual((rc, self.stages()), (1, ['/build AB-1', '/test AB-1', '/review AB-1', '/test AB-1']))
+        stop = json.loads((self.handoff / 'AB-1-pipeline-stop.json').read_text())
+        self.assertEqual((stop['handoff']['route'], stop['handoff']['decide']), ('owner', 1))
+        self.assertIn('VERIFY BLOCKED', stop['why'])
+
+    def test_started_again_after_a_blocked_verifier_round_runs_the_verifier_with_the_review_again(self):
+        os.environ.update(STUB_REVIEWS='totest clean', STUB_VERIFIES='pass blocked pass')
+        self.assertEqual(self.run_pipeline()[0], 1)
+        rc, out = self.run_pipeline()                                                # the same HEAD: goes on
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.stages()[4:], ['/test AB-1', '/review AB-1'])
+        self.assertIn('browser check: /export', self.prompt(5))                     # the review still travels
+
+    def test_a_fix_round_after_a_review_round_resets_the_verifier_round_count(self):
+        os.environ.update(STUB_REVIEWS='totest required totest clean')
+        rc, out = self.run_pipeline()
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.stages(), ['/build AB-1', '/test AB-1', '/review AB-1', '/test AB-1', '/review AB-1',
+                                         '/build AB-1 review fixes', '/test AB-1', '/review AB-1', '/test AB-1', '/review AB-1'])
 
     def test_advisory_only_review_is_clean_and_findings_for_it_disagrees(self):
         os.environ['STUB_CLEAN_TEXT'] = ('**Findings: 0 BLOCKER · 0 REQUIRED · 3 ADVISORY**\n- CODE-1 ADVISORY\n'

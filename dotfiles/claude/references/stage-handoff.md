@@ -45,6 +45,8 @@ Examples:
   `HANDOFF: result=FAIL route=/build ids=REQ-017,REQ-009 decide=1`
 - `/review` with findings to fix:
   `HANDOFF: result=FINDINGS route=/build ids=CODE-1,SEC-2 decide=0`
+- `/review` with a browser check left for the verifier, nothing else open:
+  `HANDOFF: result=FINDINGS route=/test ids=CODE-3 decide=0`
 - `/ship` ready: `HANDOFF: result=GO route=none ids=- decide=0`
 - `/ship` blocked on two open items the owner dispositions:
   `HANDOFF: result=BLOCKED route=owner ids=OPEN-001,OPEN-002 decide=2`

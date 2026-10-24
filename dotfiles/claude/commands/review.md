@@ -56,8 +56,14 @@ Evaluate the candidate against
 - Otherwise, if the candidate is exempt, record **Independent verification:
   NOT REQUIRED** with the exemption and use `/build`'s verification evidence.
 - Otherwise, require a **VERIFY PASS** for this exact candidate.
+- A **VERIFY PASS** run at a lower depth than the tier §3 sets for this
+  candidate is stale: Deep needs the full suite and a mutation probe on
+  every changed condition (`../references/risk-tiers.md`). Record
+  **Independent verification: STALE (depth)**.
 - If required verification is missing or stale, return **REVIEW BLOCKED** with
-  `/test` as the next step.
+  `/test` as the next step: `HANDOFF: result=BLOCKED route=/test ids=-
+  decide=0`. Under `tools/run/pipeline.py` the verifier then runs with this
+  report, at the depth it names, and the review repeats.
 
 Do not re-run `/test` inline and do not duplicate the exemption list here.
 
@@ -181,7 +187,9 @@ only this line.
 A finding that asks for a check in a browser goes to the verifier, not to the
 owner. List it with the page, the steps and what to look for, so `/test` can
 run it before `/ship`. The finding keeps its disposition until that evidence
-exists. Only when the verifier cannot run the check (no browser tool, no
+exists; `route=/test` carries it, and under `tools/run/pipeline.py` the
+verifier runs with this report and the review repeats on the same
+candidate, once. Only when the verifier cannot run the check (no browser tool, no
 running app) does it go to the owner, as before.
 
 `blind-reviewer` also returns two things no other reviewer produces, and both

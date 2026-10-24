@@ -34,3 +34,11 @@ personas, and a stage that starts the next would keep its own context.
 
 **Cost.** Three headless runs per round, each capped by `--max-budget-usd`.
 A ticket that needs every fix round costs up to nine runs.
+
+**Amended 2026-10-24.** `/review` can route to `/test` (a browser check it
+leaves to the verifier, or a Risk · Depth above the one the VERIFY PASS ran
+at; ADR 0106, 0116). The runner had no such edge: a `CLEAN route=/test`
+report went to `/ship` with the check never run. Now it runs `/test` with
+that review supplied, then `/review` again on the same candidate, once per
+candidate; a second such route stops for a person. The review round count is
+still one SARIF per reviewed HEAD.

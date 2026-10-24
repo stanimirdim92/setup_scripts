@@ -40,6 +40,8 @@ verification and return VERIFY BLOCKED for the missing BUILD evidence.
 
 Resolve:
 
+- the tasks the BUILD message lists under **Handed on** to `/test` (a browser
+  check, a measurement): each is in scope and gets its own runtime line;
 - acceptance criteria — pass the spec's enumerated `### Requirement:` /
   `#### Scenario:` list with its `REQ-###` ids, so coverage maps back
   requirement-by-requirement rather than file-by-file;
@@ -129,6 +131,13 @@ whether the diff can affect a check, re-run it.
 
 Browser checks may run in their own short-lived `test-engineer` dispatch. The
 same evidence rules apply to it. This split is allowed, not required.
+
+When a `/review` result is supplied with the BUILD message (it routed here:
+browser checks it listed, or a Risk · Depth above the one the last VERIFY
+ran at), the packet also carries those checks verbatim (page, steps, what
+to look for) and the review's Risk · Depth line, which wins when higher.
+The earlier VERIFY PASS stays valid for what the diff and the depth do not
+touch; cite it. The result is the usual PASS, FAIL or BLOCKED.
 
 ## 3. Ownership
 
