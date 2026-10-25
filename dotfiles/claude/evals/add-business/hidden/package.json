@@ -1,9 +1,0 @@
-{
-  "name": "add-business-grader",
-  "private": true,
-  "description": "Hidden UI checks for the add-business eval. Run through ../grade.sh.",
-  "type": "module",
-  "devDependencies": {
-    "@playwright/test": "1.63.0"
-  }
-}

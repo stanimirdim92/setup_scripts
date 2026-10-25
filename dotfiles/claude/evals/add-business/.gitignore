@@ -1,3 +1,0 @@
-# grade.sh installs Playwright here; Playwright writes failure context here.
-/hidden/node_modules/
-/hidden/test-results/

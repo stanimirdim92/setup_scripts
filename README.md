@@ -12,14 +12,10 @@ provisioning scripts.
 | `linux/etc/` | `limits.conf` and network `sysctl` tuning |
 | `tools/php_update.sh` | Installs a PHP version and its extensions (run as root; `./tools/php_update.sh 8.3`) |
 | `terminal.md` | Terminal tooling notes |
-| `dotfiles/claude/evals/add-business/` | A public pipeline eval: one full-stack ticket, a seed app, hidden grader tests ([README](dotfiles/claude/evals/add-business/README.md)) |
 
 ## AI tool dotfiles
 
-`dotfiles/` holds the Claude Code and Codex harness: agents, commands, skills,
-hooks, its tools and tests, its decision records, and its observation log.
-Start with [dotfiles/README.md](dotfiles/README.md) and
-[dotfiles/ARCHITECTURE.md](dotfiles/ARCHITECTURE.md).
-
-`.github/workflows/ci.yml` runs the harness's self-tests. It stays at the root
-because GitHub reads workflows only from there.
+The Claude Code and Codex harness lived under `dotfiles/` here until
+2026-10-25. It is its own repository now, with its history:
+[stanimirdim92/harness](https://github.com/stanimirdim92/harness). Its CI
+workflow moved with it.
